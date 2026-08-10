@@ -1469,6 +1469,27 @@
     .toast-stack { top: 8px; right: 8px; left: 8px; width: auto; }
   }
 
+  .update-banner {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: #12240f;
+    border-bottom: 1px solid #21ffb055;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .update-banner.show { display: flex; }
+  .update-banner .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex: none; }
+  .update-banner a {
+    color: var(--green); font-weight: 700; text-decoration: none; border-bottom: 1px dashed #21ffb088;
+  }
+  .update-banner a:hover { border-bottom-style: solid; }
+  .update-banner .close-update {
+    margin-left: auto; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; background: none; border: none;
+  }
+  .update-banner .close-update:hover { color: var(--text); }
+
   .footer-bar{
     padding:10px 22px; border-top:1px solid var(--line-strong);
     background:#0a1620; font-size:11px; color:var(--muted);
@@ -1478,6 +1499,11 @@
 </head>
 <body>
 <div class="toast-stack" id="toastStack"></div>
+<div class="update-banner" id="updateBanner">
+  <span class="dot"></span>
+  <span id="updateBannerText"></span>
+  <button class="close-update" id="updateBannerClose" title="Fechar">✕</button>
+</div>
 <div class="frame">
 
   <header>
@@ -3722,17 +3748,75 @@ function logEvent(msg, cls='', devName='', devId='sys'){
   addConsoleLine(devId, devName || 'Sistema', 'system', msg, cls === 'amber', cls === 'error');
 }
 
-function loadDevices(){ 
+const UPDATE_DISMISS_KEY = 'nerdqaxe:update-dismissed-version';
+
+async function checkForUpdate(){
   try {
-    const res = localStorage.getItem(DEVICES_KEY); 
-    if(res) {
-      devices = JSON.parse(res);
-      devices.forEach(d => { if(!histories[d.id]) histories[d.id] = []; });
-    }
-  } catch(e) { devices = []; }
+    const res = await fetch('/api/update/check');
+    const data = await res.json();
+    if(!data.update_available || !data.latest_version) return;
+
+    let dismissed = '';
+    try { dismissed = localStorage.getItem(UPDATE_DISMISS_KEY) || ''; } catch(e){}
+    if(dismissed === data.latest_version) return; // já fechou este aviso
+
+    const banner = $('updateBanner');
+    const text = $('updateBannerText');
+    if(!banner || !text) return;
+
+    text.innerHTML = `Está disponível a versão <b>v${data.latest_version}</b> ` +
+      `(tens a v${data.current_version}). ` +
+      `<a href="${data.release_url}" target="_blank" rel="noopener">Ver e descarregar</a>`;
+    banner.classList.add('show');
+
+    $('updateBannerClose').onclick = () => {
+      banner.classList.remove('show');
+      try { localStorage.setItem(UPDATE_DISMISS_KEY, data.latest_version); } catch(e){}
+    };
+  } catch(e) {
+    // sem internet ou GitHub em baixo - falha silenciosamente
+  }
 }
-function saveDevices(){ 
-  try { localStorage.setItem(DEVICES_KEY, JSON.stringify(devices)); } catch(e){} 
+
+function loadDevicesFromLocalStorage(){
+  try {
+    const res = localStorage.getItem(DEVICES_KEY);
+    return res ? JSON.parse(res) : [];
+  } catch(e) { return []; }
+}
+
+// As máquinas registadas ficam gravadas no servidor (power_profiles.json),
+// para não se perderem se limpares o cache do browser ou abrires o painel
+// noutro PC. Na primeira vez que o servidor não tem nada gravado, migra
+// automaticamente o que já estava no localStorage deste browser.
+async function loadDevices(){
+  const localDevices = loadDevicesFromLocalStorage();
+  try {
+    const res = await fetch('/api/devices');
+    const data = await res.json();
+    const serverDevices = Array.isArray(data.devices) ? data.devices : [];
+
+    if(serverDevices.length === 0 && localDevices.length > 0) {
+      devices = localDevices;
+      await saveDevices(); // migra para o servidor
+    } else {
+      devices = serverDevices;
+    }
+  } catch(e) {
+    // servidor indisponível - usa o que houver localmente como reserva
+    devices = localDevices;
+  }
+  devices.forEach(d => { if(!histories[d.id]) histories[d.id] = []; });
+}
+
+function saveDevices(){
+  // grava sempre uma cópia local como reserva (funciona mesmo offline)
+  try { localStorage.setItem(DEVICES_KEY, JSON.stringify(devices)); } catch(e){}
+  return fetch('/api/devices', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({devices})
+  }).catch(()=>{});
 }
 
 function addDevice(name, ip){
@@ -4468,16 +4552,19 @@ $('clearLogBtn').onclick = () => {
 };
 
 loadTheme();
-loadDevices();
-loadNotifications();
-updateToastToggleBtn();
-loadThermalHistory();
-loadThermalProtectionSettings();
-devices.forEach(d => { thermalAlertState[d.id] = computeThermalHealth(d.id).status; });
-updateThermalBadge();
-updateNotifBadge();
-updateLogMachineDropdown();
-renderAll();
+(async () => {
+  await loadDevices();
+  loadNotifications();
+  updateToastToggleBtn();
+  loadThermalHistory();
+  loadThermalProtectionSettings();
+  devices.forEach(d => { thermalAlertState[d.id] = computeThermalHealth(d.id).status; });
+  updateThermalBadge();
+  updateNotifBadge();
+  updateLogMachineDropdown();
+  renderAll();
+  checkForUpdate();
+})();
 logEvent('Painel iniciado com alertas sonoros.', 'new', 'Sistema', 'sys');
 setInterval(pollAll, 5000);
 pollAll();
