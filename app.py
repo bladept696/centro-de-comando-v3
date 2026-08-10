@@ -751,6 +751,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
+        global power_config
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         length = int(self.headers.get('Content-Length') or 0)
@@ -770,7 +771,6 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/api/power/config':
-            global power_config
             with POWER_CONFIG_LOCK:
                 new_cfg = copy.deepcopy(power_config)
                 incoming_mqtt = body.get("mqtt", {}) or {}
@@ -801,7 +801,6 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/api/devices':
-            global power_config
             incoming = body.get("devices")
             if not isinstance(incoming, list):
                 self.send_response(400)
