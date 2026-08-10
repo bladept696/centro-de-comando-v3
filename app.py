@@ -34,6 +34,15 @@ PORT = 8765
 SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
+# --- Versão da app / auto-update -------------------------------------------
+# Atualiza este número a cada release publicada no GitHub (a tag da release
+# deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
+APP_VERSION = "3.0"
+GITHUB_REPO = "bladept696/centro-de-comando-v3"
+UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
+_update_cache = {"ts": 0, "data": None}
+_update_cache_lock = threading.Lock()
+
 # --- Fecho total automático ------------------------------------------------
 # O painel corre no browser predefinido (não é uma janela nativa), por isso
 # o Python não sabe diretamente quando o utilizador fecha o separador/janela
@@ -287,7 +296,8 @@ DEFAULT_POWER_CONFIG = {
         "topic_solar": "",
         "topic_tariff": "",
     },
-    "profiles": []
+    "profiles": [],
+    "devices": []   # lista de máquinas registadas: {id, name, ip}
 }
 
 mqtt_state_lock = threading.Lock()
@@ -299,6 +309,68 @@ mqtt_state = {
     "last_update": None,
 }
 mqtt_client_ref = {"client": None}
+
+
+def _parse_version(v):
+    """Converte 'v3.10.2' ou '3.10.2' em (3, 10, 2) para comparação numérica."""
+    v = (v or "").strip().lstrip('vV')
+    parts = []
+    for p in v.split('.'):
+        num = ''
+        for ch in p:
+            if ch.isdigit():
+                num += ch
+            else:
+                break
+        parts.append(int(num) if num else 0)
+    while len(parts) < 3:
+        parts.append(0)
+    return tuple(parts[:3])
+
+
+def check_for_update(force=False):
+    """Consulta a última release pública no GitHub e compara com APP_VERSION.
+    Faz cache em memória durante UPDATE_CHECK_CACHE_SECONDS para não exceder
+    o limite de pedidos não-autenticados da API do GitHub."""
+    with _update_cache_lock:
+        cached = _update_cache["data"]
+        age = time.time() - _update_cache["ts"]
+        if cached is not None and not force and age < UPDATE_CHECK_CACHE_SECONDS:
+            return cached
+
+    result = {
+        "current_version": APP_VERSION,
+        "latest_version": None,
+        "update_available": False,
+        "release_url": None,
+        "release_notes": None,
+        "error": None,
+    }
+    try:
+        api_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+        req = urllib.request.Request(
+            api_url,
+            headers={
+                'User-Agent': 'CentroDeComando-UpdateCheck',
+                'Accept': 'application/vnd.github+json',
+            }
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode('utf-8', errors='ignore'))
+
+        tag = data.get('tag_name', '') or ''
+        result["latest_version"] = tag.lstrip('vV') or None
+        result["release_url"] = data.get('html_url')
+        notes = data.get('body') or ''
+        result["release_notes"] = notes[:2000]  # evita respostas gigantes
+        result["update_available"] = _parse_version(tag) > _parse_version(APP_VERSION)
+    except Exception as e:
+        result["error"] = str(e)
+
+    with _update_cache_lock:
+        _update_cache["ts"] = time.time()
+        _update_cache["data"] = result
+    return result
 
 
 def writable_dir():
@@ -322,6 +394,7 @@ def load_power_config():
         cfg = copy.deepcopy(DEFAULT_POWER_CONFIG)
         cfg["mqtt"].update(data.get("mqtt", {}) or {})
         cfg["profiles"] = data.get("profiles", []) or []
+        cfg["devices"] = data.get("devices", []) or []
         return cfg
     except Exception:
         return copy.deepcopy(DEFAULT_POWER_CONFIG)
@@ -657,6 +730,24 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(state).encode('utf-8'))
             return
 
+        if path == '/api/update/check':
+            force = query_params.get('force', ['0'])[0] == '1'
+            result = check_for_update(force=force)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/devices':
+            with POWER_CONFIG_LOCK:
+                devices = copy.deepcopy(power_config.get("devices", []))
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"devices": devices}).encode('utf-8'))
+            return
+
         super().do_GET()
 
     def do_POST(self):
@@ -707,6 +798,42 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
+            return
+
+        if path == '/api/devices':
+            global power_config
+            incoming = body.get("devices")
+            if not isinstance(incoming, list):
+                self.send_response(400)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "'devices' tem de ser uma lista"}).encode('utf-8'))
+                return
+
+            clean = []
+            for d in incoming:
+                if not isinstance(d, dict):
+                    continue
+                dev_id = str(d.get("id") or "").strip()
+                name = str(d.get("name") or "").strip()
+                ip = str(d.get("ip") or "").strip()
+                if not dev_id or not ip:
+                    continue
+                clean.append({"id": dev_id, "name": name or ip, "ip": ip})
+
+            with POWER_CONFIG_LOCK:
+                new_cfg = copy.deepcopy(power_config)
+                new_cfg["devices"] = clean
+                saved = save_power_config(new_cfg)
+                if saved:
+                    power_config = new_cfg
+
+            self.send_response(200 if saved else 500)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": saved, "devices": clean}).encode('utf-8'))
             return
 
         if path == '/api/apply-profile':
