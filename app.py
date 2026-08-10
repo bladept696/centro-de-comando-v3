@@ -34,10 +34,239 @@ PORT = 8765
 SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
+# --- Fecho total automático ------------------------------------------------
+# O painel corre no browser predefinido (não é uma janela nativa), por isso
+# o Python não sabe diretamente quando o utilizador fecha o separador/janela
+# com o "X". Para resolver isto, o painel (JS) envia um "heartbeat" periódico
+# a este servidor. Se o heartbeat parar de chegar (separador/janela fechado,
+# browser fechado, PC a desligar, etc.) durante mais de HEARTBEAT_TIMEOUT
+# segundos, o watchdog abaixo desliga o processo por completo.
+LAST_HEARTBEAT = {"ts": None}
+HEARTBEAT_TIMEOUT = 8       # segs sem heartbeat até se considerar "fechado"
+HEARTBEAT_GRACE = 20        # segs de tolerância no arranque antes de vigiar
+
+
+def watchdog_loop():
+    """Fecha o processo por completo assim que o painel deixar de responder."""
+    started = time.time()
+    while True:
+        time.sleep(1)
+        ts = LAST_HEARTBEAT["ts"]
+        if ts is None:
+            # o painel ainda não enviou nenhum heartbeat - só força fecho
+            # se isto se arrastar demasiado tempo logo no arranque, para não
+            # matar a app por engano se o utilizador ainda estiver a abrir
+            # o browser.
+            continue
+        if time.time() - ts > HEARTBEAT_TIMEOUT:
+            os._exit(0)
+
 NERDQAXE_SIGNATURE_FIELDS = {
     'ASICModel', 'hashRate', 'bestDiff', 'bestSessionDiff',
     'stratumURL', 'hostname', 'boardVersion'
 }
+
+# --- Suporte a máquinas LuxOS / Antminer (API cgminer) --------------------
+# Ao contrário das NerdQAxe++ (API REST em HTTP), os Antminers com LuxOS
+# (e outros firmwares derivados do cgminer/BMMiner, ex: stock, Braiins OS)
+# expõem os dados através de um socket TCP simples na porta 4028, ao qual
+# se enviam comandos JSON como {"command":"summary"}. As funções abaixo
+# consultam essa API e normalizam a resposta para o mesmo formato que o
+# painel já espera das NerdQAxe++, para que o resto do código (frontend
+# incluído) não precise de saber a diferença entre os dois tipos de máquina.
+
+CGMINER_PORT = 4028
+CGMINER_TIMEOUT = 2.5
+CGMINER_SCAN_TIMEOUT = 0.6
+
+
+def cgminer_command(ip, command, port=CGMINER_PORT, timeout=CGMINER_TIMEOUT):
+    """Envia um comando à API cgminer/LuxOS via socket TCP e devolve o
+    JSON de resposta (ou None em caso de falha/timeout/porta fechada)."""
+    try:
+        with socket.create_connection((ip, port), timeout=timeout) as sock:
+            sock.settimeout(timeout)
+            sock.sendall(json.dumps({"command": command}).encode('utf-8'))
+            chunks = []
+            while True:
+                try:
+                    chunk = sock.recv(4096)
+                except socket.timeout:
+                    break
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                if chunk.endswith(b'\x00'):
+                    break
+            raw = b''.join(chunks).rstrip(b'\x00').strip()
+            if not raw:
+                return None
+            return json.loads(raw.decode('utf-8', errors='ignore'))
+    except Exception:
+        return None
+
+
+def _cgminer_scan_numeric_fields(stats_entry, prefix_pattern):
+    """Procura defensivamente por campos cujo nome contenha o padrão dado
+    (ex: 'temp', 'fan', 'freq') dentro de uma entrada de STATS, ignorando
+    zeros (sensores desligados/não usados) e devolvendo os valores válidos.
+    Os nomes destes campos variam bastante entre modelos/firmwares."""
+    import re
+    values = []
+    for key, val in stats_entry.items():
+        if not re.search(prefix_pattern, key, re.IGNORECASE):
+            continue
+        try:
+            num = float(val)
+        except (TypeError, ValueError):
+            continue
+        if num > 0:
+            values.append(num)
+    return values
+
+
+def _cgminer_scan_numeric_fields_recursive(node, prefix_pattern, _depth=0):
+    """Como _cgminer_scan_numeric_fields, mas percorre recursivamente dicts
+    e listas aninhadas. Necessário porque, ao contrário de temp/fan/freq
+    (que costumam vir "soltos" na entrada de STATS), a potência em Watts
+    em firmwares LuxOS/Antminer aparece frequentemente dentro de blocos
+    aninhados (ex: resposta do comando 'power', ou sub-blocos por placa em
+    'estats'), com nomes de campo que variam bastante entre modelos."""
+    import re
+    values = []
+    if _depth > 4:
+        return values
+    if isinstance(node, dict):
+        for key, val in node.items():
+            if isinstance(val, (dict, list)):
+                values.extend(_cgminer_scan_numeric_fields_recursive(val, prefix_pattern, _depth + 1))
+                continue
+            if not re.search(prefix_pattern, key, re.IGNORECASE):
+                continue
+            try:
+                num = float(val)
+            except (TypeError, ValueError):
+                continue
+            if num > 0:
+                values.append(num)
+    elif isinstance(node, list):
+        for item in node:
+            values.extend(_cgminer_scan_numeric_fields_recursive(item, prefix_pattern, _depth + 1))
+    return values
+
+
+def probe_cgminer(ip, port=None):
+    """Testa se o IP responde à API cgminer/LuxOS (porta 4028 por omissão).
+    Usado no scan de rede para identificar Antminers/LuxOS, tal como
+    probe_ip faz para as NerdQAxe++."""
+    data = cgminer_command(ip, 'summary', port=port or CGMINER_PORT, timeout=CGMINER_SCAN_TIMEOUT)
+    if not data or 'SUMMARY' not in data:
+        return None
+    summary = (data.get('SUMMARY') or [{}])[0]
+    version_desc = ''
+    try:
+        version_desc = (data.get('STATUS') or [{}])[0].get('Description', '')
+    except Exception:
+        pass
+    return {
+        "ip": ip,
+        "hostname": ip,
+        "model": version_desc or "LuxOS / cgminer",
+        "protocol": "cgminer",
+    }
+
+
+def fetch_cgminer_full(ip, port=None):
+    """Consulta summary/pools/stats via API cgminer/LuxOS e normaliza os
+    dados para o mesmo formato JSON que as NerdQAxe++ devolvem, para que
+    o painel (e o resto do backend) os processem sem alterações."""
+    port = port or CGMINER_PORT
+    summary_data = cgminer_command(ip, 'summary', port=port)
+    if not summary_data or 'SUMMARY' not in summary_data:
+        return None
+
+    summary = (summary_data.get('SUMMARY') or [{}])[0]
+    pools_data = cgminer_command(ip, 'pools', port=port) or {}
+    pool_entry = (pools_data.get('POOLS') or [{}])
+    pool_entry = pool_entry[0] if pool_entry else {}
+    stats_data = cgminer_command(ip, 'stats', port=port) or {}
+    stats_entries = stats_data.get('STATS') or []
+    # a primeira entrada de STATS é normalmente um resumo genérico; os
+    # dados por chip/placa (temp, fan, freq) costumam vir na 2ª entrada
+    stats_entry = stats_entries[1] if len(stats_entries) > 1 else (stats_entries[0] if stats_entries else {})
+
+    temps = _cgminer_scan_numeric_fields(stats_entry, r'temp')
+    fans = _cgminer_scan_numeric_fields(stats_entry, r'fan')
+    freqs = _cgminer_scan_numeric_fields(stats_entry, r'freq')
+
+    # --- Potência (Watts) --------------------------------------------------
+    # Ao contrário de temp/fan/freq, a API 'stats' de muitos firmwares
+    # LuxOS/Antminer NÃO expõe watts (era o caso que causava 0.00 J/Th no
+    # painel). A potência real costuma vir noutro lado consoante o
+    # firmware/modelo, por isso tentamos várias fontes, por ordem de
+    # confiança, e ficamos com a primeira que der um valor válido:
+    #   1) comando dedicado 'power' (LuxOS)
+    #   2) 'estats' (stats "estendido", tem mais campos que 'stats')
+    #   3) SUMMARY (alguns firmwares expõem 'Power' aqui)
+    #   4) STATS normal (fallback já existente, alguns firmwares expõem)
+    #   5) calculado a partir de tensão × corrente, se ambos existirem
+    power_vals = []
+
+    power_cmd_data = cgminer_command(ip, 'power', port=port)
+    if power_cmd_data:
+        power_vals = _cgminer_scan_numeric_fields_recursive(power_cmd_data, r'watt|actual|current.?power')
+
+    if not power_vals:
+        estats_data = cgminer_command(ip, 'estats', port=port) or {}
+        estats_entries = estats_data.get('ESTATS') or estats_data.get('STATS') or []
+        for entry in estats_entries:
+            power_vals = _cgminer_scan_numeric_fields(entry, r'power|watt')
+            if power_vals:
+                break
+
+    if not power_vals:
+        power_vals = _cgminer_scan_numeric_fields(summary, r'power|watt')
+
+    if not power_vals:
+        power_vals = _cgminer_scan_numeric_fields(stats_entry, r'power|watt')
+
+    if not power_vals:
+        # último recurso: estimar a partir de tensão (V) × corrente (A),
+        # se a entrada de stats/estats tiver ambos os campos
+        volt_vals = _cgminer_scan_numeric_fields(stats_entry, r'^volt|voltage')
+        amp_vals = _cgminer_scan_numeric_fields(stats_entry, r'^amp|current(?!.?power)')
+        if volt_vals and amp_vals:
+            power_vals = [max(volt_vals) * max(amp_vals)]
+
+    try:
+        hashrate_ghs = float(summary.get('GHS 5s') or summary.get('GHS av') or 0)
+    except (TypeError, ValueError):
+        hashrate_ghs = 0
+
+    version_desc = ''
+    try:
+        version_desc = (summary_data.get('STATUS') or [{}])[0].get('Description', '')
+    except Exception:
+        pass
+
+    pool_url = pool_entry.get('URL') or pool_entry.get('Stratum URL') or '—'
+
+    return {
+        "hostname": ip,
+        "ASICModel": version_desc or "LuxOS / Antminer",
+        "hashRate": hashrate_ghs,
+        "temp": max(temps) if temps else None,
+        "fanrpm": max(fans) if fans else 0,
+        "frequency": (sum(freqs) / len(freqs)) if freqs else 0,
+        "power": max(power_vals) if power_vals else None,
+        "sharesAccepted": summary.get('Accepted', 0),
+        "sharesRejected": summary.get('Rejected', 0),
+        "bestDiff": summary.get('Best Share', 0),
+        "bestSessionDiff": summary.get('Best Share', 0),
+        "stratumURL": pool_url,
+        "uptimeSeconds": summary.get('Elapsed', 0),
+        "protocol": "cgminer",
+    }
 
 # --- Gestão Dinâmica de Perfil de Alimentação (MQTT / Home Assistant) -----
 # Cruza dados de produção solar / tarifa dinâmica (via MQTT, tipicamente
@@ -277,7 +506,9 @@ def probe_ip(ip):
                 }
         except Exception:
             continue
-    return None
+    # Não é uma NerdQAxe++ (ou similar baseada em HTTP) — tenta a API
+    # cgminer/LuxOS (Antminer e derivados) antes de desistir deste IP.
+    return probe_cgminer(ip)
 
 
 def scan_subnet(subnet):
@@ -359,6 +590,18 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                         self.wfile.write(data_alt)
                         return
                 except Exception as e2:
+                    # Não respondeu como NerdQAxe++ (HTTP) — tenta a API
+                    # cgminer/LuxOS (Antminer e derivados) na porta 4028
+                    # antes de reportar a máquina como offline.
+                    cgminer_data = fetch_cgminer_full(target_ip)
+                    if cgminer_data is not None:
+                        self.send_response(200)
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.send_header('Content-Type', 'application/json; charset=utf-8')
+                        self.end_headers()
+                        self.wfile.write(json.dumps(cgminer_data).encode('utf-8'))
+                        return
+
                     self.send_response(502)
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -425,6 +668,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             body = json.loads(raw_body.decode('utf-8')) if raw_body else {}
         except Exception:
             body = {}
+
+        if path == '/api/heartbeat':
+            LAST_HEARTBEAT["ts"] = time.time()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
+            return
 
         if path == '/api/power/config':
             global power_config
@@ -528,11 +780,23 @@ def main():
         time.sleep(0.6)  # pequena pausa para o servidor arrancar
         start_mqtt_client(power_config)
 
-    webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
+        # Este processo é o "dono" do servidor - vigia o painel e desliga
+        # tudo (fecho total) assim que o utilizador fechar o separador/janela.
+        watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
+        watchdog_thread.start()
 
-    # Mantém o processo vivo enquanto o servidor corre em background
-    while True:
-        time.sleep(3600)
+        webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
+
+        # Mantém o processo vivo enquanto o servidor corre em background
+        # (o watchdog acima é quem trata do fecho total quando for preciso)
+        while True:
+            time.sleep(3600)
+    else:
+        # Já há um servidor a correr (outra instância já aberta) - só
+        # reaproveita esse servidor e abre mais um separador. Este processo
+        # não é dono de nada, por isso não deve ficar escondido em segundo
+        # plano depois disto.
+        webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
 
 
 if __name__ == '__main__':

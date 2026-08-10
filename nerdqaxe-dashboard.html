@@ -1389,6 +1389,86 @@
   .notif-text { font-size: 12px; color: var(--muted); }
   .notif-time { font-size: 10px; color: var(--muted-2); font-family: monospace; }
 
+  /* --- Toasts (pop-ups de notificação) --------------------------------- */
+  .toast-stack {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(340px, calc(100vw - 32px));
+    pointer-events: none;
+  }
+  .toast-item {
+    pointer-events: auto;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--cyan);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    box-shadow: 0 8px 24px #000a, 0 0 0 1px #ffffff08;
+    cursor: pointer;
+    animation: toast-in 0.25s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  .toast-item.leaving {
+    animation: toast-out 0.2s ease-in forwards;
+  }
+  .toast-item.type-block {
+    border-left-color: var(--green);
+    background: linear-gradient(90deg, #0a2218, var(--panel-2) 45%);
+  }
+  .toast-item.type-best {
+    border-left-color: var(--amber);
+    background: linear-gradient(90deg, #221c0a, var(--panel-2) 45%);
+  }
+  .toast-item.type-thermal,
+  .toast-item.type-critical {
+    border-left-color: var(--red);
+    background: linear-gradient(90deg, #2b120a, var(--panel-2) 45%);
+  }
+  .toast-item.type-thermal-warning {
+    border-left-color: var(--amber);
+    background: linear-gradient(90deg, #221c0a, var(--panel-2) 45%);
+  }
+  .toast-icon { font-size: 18px; line-height: 1; margin-top: 1px; }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 2px; }
+  .toast-text { font-size: 11.5px; color: var(--muted); line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .toast-close {
+    background: none; border: none; color: var(--muted-2); font-size: 14px;
+    cursor: pointer; padding: 0 0 0 6px; line-height: 1; flex-shrink: 0;
+  }
+  .toast-close:hover { color: var(--text); }
+  .toast-progress {
+    position: absolute; left: 0; bottom: 0; height: 2px;
+    background: currentColor; opacity: 0.5;
+    animation-name: toast-progress;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes toast-out {
+    from { opacity: 1; transform: translateX(0); max-height: 200px; margin-bottom: 0; }
+    to   { opacity: 0; transform: translateX(24px); max-height: 0; margin-bottom: -10px; padding-top: 0; padding-bottom: 0; }
+  }
+  @keyframes toast-progress {
+    from { width: 100%; }
+    to   { width: 0%; }
+  }
+  @media (max-width: 480px) {
+    .toast-stack { top: 8px; right: 8px; left: 8px; width: auto; }
+  }
+
   .footer-bar{
     padding:10px 22px; border-top:1px solid var(--line-strong);
     background:#0a1620; font-size:11px; color:var(--muted);
@@ -1397,6 +1477,7 @@
 </style>
 </head>
 <body>
+<div class="toast-stack" id="toastStack"></div>
 <div class="frame">
 
   <header>
@@ -1647,6 +1728,7 @@
       <div class="notif-toolbar">
         <span style="font-size: 12px; font-weight: 600; color: var(--text);">Histórico de Alertas (Blocos Encontrados & Recordes de Dificuldade)</span>
         <div style="display: flex; gap: 8px;">
+          <button class="config ghost" id="toastToggleBtn" onclick="toggleToastSetting()" style="padding: 6px 12px; font-size: 10px;">🔔 Pop-ups: ON</button>
           <button class="config" onclick="triggerTestNotifications()" style="padding: 6px 12px; font-size: 10px; background: #0c2b22; color: var(--green); border-color: #21ffb055;">🧪 Testar Alertas</button>
           <button class="config ghost" onclick="clearNotifications()" style="padding: 6px 12px; font-size: 10px;">Limpar Notificações</button>
         </div>
@@ -2023,6 +2105,12 @@ let devices = [];
 let readings = {};
 let histories = {};
 let selectedId = null;
+
+// Marca, por dispositivo, se já recebemos pelo menos uma leitura nesta
+// sessão do painel. Serve para não disparar notificações de "novo recorde"
+// / "bloco encontrado" logo na primeira leitura (que só está a carregar os
+// valores já existentes na máquina, não é um evento novo).
+let baselineSeen = {};
 
 let thermalHistory = {};
 let thermalAlertState = {};
@@ -2450,6 +2538,7 @@ function addNotification(type, title, description, machineName) {
   saveNotifications();
 
   playSound(type);
+  showToast(item);
 
   if(!$('tab-notifications').classList.contains('active')) {
     unreadNotifs++;
@@ -2457,6 +2546,80 @@ function addNotification(type, title, description, machineName) {
   } else {
     renderNotifications();
   }
+}
+
+// --- Toasts (pop-ups no canto do ecrã) -------------------------------------
+const TOAST_DURATION_MS = 7000;
+const TOAST_STYLES = {
+  block:             { itemClass: 'type-block',            icon: '🚀' },
+  best:              { itemClass: 'type-best',              icon: '🏆' },
+  thermal:           { itemClass: 'type-thermal',            icon: '🧬' },
+  'thermal-warning': { itemClass: 'type-thermal-warning',    icon: '🧬' },
+  critical:          { itemClass: 'type-critical',           icon: '🛡️' },
+};
+
+function toastsEnabled() {
+  try { return localStorage.getItem('nerdqaxe:toasts-enabled') !== 'off'; } catch(e) { return true; }
+}
+
+function setToastsEnabled(on) {
+  try { localStorage.setItem('nerdqaxe:toasts-enabled', on ? 'on' : 'off'); } catch(e) {}
+}
+
+function showToast(item) {
+  if(!toastsEnabled()) return;
+  const stack = $('toastStack');
+  if(!stack) return;
+
+  const style = TOAST_STYLES[item.type] || TOAST_STYLES.best;
+  const el = document.createElement('div');
+  el.className = `toast-item ${style.itemClass}`;
+  el.innerHTML = `
+    <div class="toast-icon">${style.icon}</div>
+    <div class="toast-body">
+      <div class="toast-title">[${item.machineName}] ${item.title}</div>
+      <div class="toast-text">${item.description}</div>
+    </div>
+    <button class="toast-close" onclick="event.stopPropagation(); dismissToast(this.closest('.toast-item'))">✕</button>
+    <div class="toast-progress" style="animation-duration:${TOAST_DURATION_MS}ms;"></div>
+  `;
+
+  // Clicar no toast leva diretamente à aba de notificações
+  el.addEventListener('click', () => {
+    dismissToast(el);
+    const notifTabBtn = document.querySelector('.tab-btn[onclick*="notifications"]');
+    if(notifTabBtn) switchTab('notifications', notifTabBtn);
+  });
+
+  stack.appendChild(el);
+
+  // Limita a 4 toasts visíveis ao mesmo tempo, para não tapar o ecrã
+  while(stack.children.length > 4) {
+    stack.removeChild(stack.firstChild);
+  }
+
+  const timer = setTimeout(() => dismissToast(el), TOAST_DURATION_MS);
+  el._toastTimer = timer;
+}
+
+function dismissToast(el) {
+  if(!el || el.classList.contains('leaving')) return;
+  if(el._toastTimer) clearTimeout(el._toastTimer);
+  el.classList.add('leaving');
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+}
+
+function updateToastToggleBtn() {
+  const btn = $('toastToggleBtn');
+  if(!btn) return;
+  const on = toastsEnabled();
+  btn.textContent = on ? '🔔 Pop-ups: ON' : '🔕 Pop-ups: OFF';
+  btn.style.color = on ? 'var(--green)' : 'var(--muted)';
+}
+
+function toggleToastSetting() {
+  setToastsEnabled(!toastsEnabled());
+  updateToastToggleBtn();
 }
 
 function triggerTestNotifications() {
@@ -3591,6 +3754,7 @@ function removeDevice(id){
   devices = devices.filter(d => d.id !== id);
   delete readings[id]; delete histories[id];
   delete thermalHistory[id]; delete thermalAlertState[id];
+  delete baselineSeen[id];
   saveDevices();
   saveThermalHistory();
   if(selectedId === id) selectedId = devices[0]?.id || null;
@@ -3706,6 +3870,7 @@ async function pollOneDevice(dev){
     const oldBest = oldReading?.best || 0;
     const oldBlocks = oldReading?.blocksFound || 0;
     const oldPoolPing = oldReading?.poolPing;
+    const hasBaseline = !!baselineSeen[dev.id];
 
     if(oldReading?.uptime != null && reading.uptime != null && reading.uptime < oldReading.uptime - 30) {
       logEvent(`Reinício detetado — uptime voltou a zero.`, 'error', dev.name, dev.id);
@@ -3716,17 +3881,18 @@ async function pollOneDevice(dev){
       logEvent(`Ping ao pool elevado: ${poolPingVal.toFixed(0)} ms.`, 'error', dev.name, dev.id);
     }
 
-    if(currentBest > oldBest && oldBest > 0) {
+    if(hasBaseline && currentBest > oldBest) {
       const fmt = formatDiff(currentBest);
       logEvent(`Novo recorde de dificuldade! ${fmt.value} ${fmt.unit}`, 'new', dev.name, dev.id);
       addNotification('best', `Novo Recorde de Dificuldade: ${fmt.value} ${fmt.unit}`, `A máquina alcançou um novo best diff de ${currentBest.toLocaleString()} na sessão.`, dev.name);
     }
 
-    if(blocksFoundVal > oldBlocks && oldBlocks >= 0) {
+    if(hasBaseline && blocksFoundVal > oldBlocks) {
       logEvent(`Bloco encontrado com sucesso! 🎉`, 'new', dev.name, dev.id);
       addNotification('block', `Bloco Encontrado com Sucesso!`, `Total de blocos encontrados por esta máquina atualizado para ${blocksFoundVal}.`, dev.name);
     }
 
+    baselineSeen[dev.id] = true;
     readings[dev.id] = reading;
     histories[dev.id] = (histories[dev.id] || []).concat(reading).slice(-MAX_POINTS);
     recordThermalSnapshot(dev, reading);
@@ -4304,6 +4470,7 @@ $('clearLogBtn').onclick = () => {
 loadTheme();
 loadDevices();
 loadNotifications();
+updateToastToggleBtn();
 loadThermalHistory();
 loadThermalProtectionSettings();
 devices.forEach(d => { thermalAlertState[d.id] = computeThermalHealth(d.id).status; });
@@ -4322,6 +4489,16 @@ setInterval(pollPowerStatus, 5000);
 pollPowerStatus();
 
 initAiAgent();
+
+// --- Fecho total automático -------------------------------------------
+// Avisa o servidor local (app.py) de que este separador/janela continua
+// aberto. Se isto parar de chegar (X premido, browser fechado, etc.), o
+// backend desliga-se por completo ao fim de alguns segundos.
+function sendHeartbeat() {
+  fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+}
+sendHeartbeat();
+setInterval(sendHeartbeat, 3000);
 </script>
 </body>
 </html>
