@@ -1,0 +1,4327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Centro de Comando // Mineração</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #060d14;
+    --panel: #0d1a26;
+    --panel-2: #0f2130;
+    --line: #16334033;
+    --line-strong: #1c3a49;
+    --green: #21ffb0;
+    --green-dim: #21ffb055;
+    --amber: #ffb020;
+    --amber-dim: #ffb02044;
+    --red: #ff5d5d;
+    --cyan: #4fd6ff;
+    --text: #eaf6f7;
+    --muted: #6f95a3;
+    --muted-2: #4a6975;
+    --glow-1: #0d2230;
+    --glow-2: #0a2a24;
+    --deep: #09141e;
+    --frame-top: #0b1723;
+    --header-top: #0e1e2c;
+  }
+
+  body[data-theme="cyberpunk"]{
+    --bg: #0a0514;
+    --panel: #170a24;
+    --panel-2: #1d0e2e;
+    --line: #4a247033;
+    --line-strong: #5c2d8a;
+    --green: #39ff8a;
+    --green-dim: #39ff8a55;
+    --amber: #ff2ec4;
+    --amber-dim: #ff2ec444;
+    --red: #ff2050;
+    --cyan: #00f0ff;
+    --text: #f3e8ff;
+    --muted: #a487c9;
+    --muted-2: #6b4a94;
+    --glow-1: #2d0a4a;
+    --glow-2: #3a0a2e;
+    --deep: #12061e;
+    --frame-top: #180a28;
+    --header-top: #1d0e30;
+  }
+
+  body[data-theme="matrix"]{
+    --bg: #000603;
+    --panel: #001a0a;
+    --panel-2: #002611;
+    --line: #00ff4133;
+    --line-strong: #00c73655;
+    --green: #00ff41;
+    --green-dim: #00ff4155;
+    --amber: #baff29;
+    --amber-dim: #baff2944;
+    --red: #ff3b3b;
+    --cyan: #00ffc8;
+    --text: #c3ffd1;
+    --muted: #4d9e63;
+    --muted-2: #2f6b41;
+    --glow-1: #001f0d;
+    --glow-2: #00140a;
+    --deep: #000f06;
+    --frame-top: #001309;
+    --header-top: #00190c;
+  }
+
+  body[data-theme="oled"]{
+    --bg: #000000;
+    --panel: #070707;
+    --panel-2: #0b0b0b;
+    --line: #ffffff14;
+    --line-strong: #ffffff26;
+    --green: #21ffb0;
+    --green-dim: #21ffb055;
+    --amber: #ffb020;
+    --amber-dim: #ffb02044;
+    --red: #ff5d5d;
+    --cyan: #4fd6ff;
+    --text: #f5f5f5;
+    --muted: #888888;
+    --muted-2: #555555;
+    --glow-1: #050505;
+    --glow-2: #050505;
+    --deep: #000000;
+    --frame-top: #050505;
+    --header-top: #080808;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, var(--glow-1) 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, var(--glow-2) 0%, transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    min-height:100vh;
+    padding:22px;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .frame{
+    max-width:1500px;
+    margin:0 auto;
+    border:1px solid var(--line-strong);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow: 0 0 0 1px #ffffff08, 0 30px 80px -30px #000c;
+    background:linear-gradient(180deg, var(--frame-top), var(--bg) 60%);
+  }
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 22px;
+    border-bottom:1px solid var(--line-strong);
+    background:linear-gradient(180deg,var(--header-top),var(--frame-top));
+  }
+  header h1{
+    font-size:15px;
+    letter-spacing:.14em;
+    margin:0;
+    font-weight:700;
+    text-transform:uppercase;
+    color:#dff7f2;
+  }
+  header h1 span{color:var(--green); text-shadow:0 0 12px var(--green-dim);}
+  .subtitle{font-size:11px; color:var(--muted); margin-top:3px; letter-spacing:.04em;}
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sound-toggle-btn {
+    background: var(--green-dim);
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+  .sound-toggle-btn.muted {
+    background: var(--red-dim, #2b0d0d);
+    border-color: #ff5d5d55;
+    color: var(--red);
+  }
+  .theme-select {
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    outline: none;
+  }
+  .theme-select:hover { border-color: var(--cyan); }
+
+  .status-pill{
+    display:flex; align-items:center; gap:8px;
+    font-size:11px; padding:6px 12px; border-radius:20px;
+    border:1px solid var(--line-strong); color:var(--green);
+    background:var(--green-dim);
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green); box-shadow:0 0 8px var(--green);}
+
+  .critical-alarm-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(90deg, #4a0a0a, #6b0f0f);
+    border-bottom: 2px solid var(--red);
+    padding: 10px 22px;
+    animation: criticalPulse 1s infinite;
+  }
+  @keyframes criticalPulse {
+    0%, 100% { background: linear-gradient(90deg, #4a0a0a, #6b0f0f); }
+    50% { background: linear-gradient(90deg, #6b0f0f, #8f1414); }
+  }
+  .critical-alarm-icon { font-size: 16px; }
+  .critical-alarm-text {
+    flex: 1;
+    color: #ffdede;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .critical-alarm-silence {
+    background: #2b0d0d;
+    border: 1px solid var(--red);
+    color: #ffdede;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .critical-alarm-silence:hover { background: #3a1010; }
+
+  .nav-menu {
+    position: relative;
+    background: #081119;
+    border-bottom: 1px solid var(--line-strong);
+    padding: 10px 22px;
+  }
+  .nav-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    max-width: 340px;
+    background: var(--panel, #0b1622);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 11px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .nav-menu-btn:hover { border-color: var(--green); }
+  .nav-menu-btn .nav-menu-badges { display: flex; gap: 6px; margin-left: auto; }
+  .nav-menu-caret {
+    color: var(--muted);
+    font-size: 10px;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .nav-menu.open .nav-menu-caret { transform: rotate(180deg); }
+  .nav-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 22px;
+    right: 22px;
+    max-width: 340px;
+    background: #0b1622;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 80;
+    box-shadow: 0 16px 34px -10px #000c;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .nav-menu.open .nav-menu-dropdown { display: flex; }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 11px 12px;
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    position: relative;
+    text-align: left;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tab-btn:hover { color: var(--text); background: #0f1e2c; }
+  .tab-btn.active { color: var(--green); background: var(--green-dim); }
+  .tab-btn.amber-tab.active { color: var(--amber); background: #2b220d; }
+  .tab-btn.cyan-tab.active { color: var(--cyan); background: #0d2530; }
+
+  .badge-counter {
+    position: static;
+    margin-left: auto;
+    background: var(--amber);
+    color: #000;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 10px;
+    display: none;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .blocks-container{ padding: 16px 22px; }
+  .blocks-toolbar{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;
+  }
+  .blocks-toolbar .title{font-size:11px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; font-weight:600;}
+  .blocks-refresh-hint{font-size:10px; color:var(--muted-2);}
+  .blocks-scroll{
+    display:flex; gap:12px; overflow-x:auto; padding-bottom:10px;
+    scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
+  }
+  .blocks-scroll::-webkit-scrollbar{height:6px;}
+  .blocks-scroll::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:6px;}
+  .block-card{
+    min-width:210px; flex:0 0 auto; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:10px; padding:14px; transition:all .2s ease;
+  }
+  .block-card:hover{border-color:var(--green-dim); transform:translateY(-2px); box-shadow:0 8px 20px -6px #0008;}
+  .block-card:first-child{border-color:var(--green-dim); box-shadow:0 0 0 1px var(--green-dim);}
+  .block-card .bc-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    border-bottom:1px solid var(--line); padding-bottom:9px; margin-bottom:9px;
+  }
+  .block-card .bc-height{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; color:var(--text);}
+  .block-card .bc-time{font-size:10px; color:var(--muted-2);}
+  .block-card .bc-row{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); margin-bottom:7px;}
+  .block-card .bc-row .bc-ico{color:var(--muted); font-size:11px; width:14px; text-align:center;}
+  .block-card .bc-pool{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    border-top:1px solid var(--line); padding-top:9px; margin-top:2px;
+  }
+  .block-card .bc-pool-name{font-size:11px; color:var(--cyan); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .block-card .bc-pool-logo{width:18px; height:18px; border-radius:4px; background:#081119; object-fit:contain; flex:0 0 auto;}
+  .blocks-empty{text-align:center; color:var(--muted); font-size:12px; padding:30px;}
+
+  .body-grid{
+    display:grid;
+    grid-template-columns: 280px 1fr;
+    gap:16px;
+    padding:16px;
+  }
+  @media(max-width:900px){ .body-grid{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line-strong);
+    border-radius:10px;
+    padding:16px;
+  }
+  .panel-title{
+    font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 14px 0; display:flex; justify-content:space-between; align-items:center;
+  }
+
+  .sidebar{display:flex; flex-direction:column; gap:10px;}
+  .gauge{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; border-radius:10px; background:linear-gradient(135deg, var(--panel-2), var(--deep));
+    border:1px solid var(--line); position:relative; overflow:hidden;
+    transition: all 0.2s ease;
+  }
+  .gauge:hover { border-color: var(--line-strong); transform: translateX(2px); }
+  .gauge::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--green);
+  }
+  .gauge.amber-bar::before { background: var(--amber); }
+  .gauge.cyan-bar::before { background: var(--cyan); }
+  
+  .gauge-left { display: flex; flex-direction: column; gap: 3px; }
+  .gauge .label{font-size:9px; color:var(--muted); letter-spacing:.12em; text-transform:uppercase; font-weight: 600;}
+  .gauge .unit{font-size:10px; color:var(--muted-2); font-weight: 500;}
+  
+  .gauge-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+  .gauge .value{font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--green); text-shadow:0 0 12px var(--green-dim); line-height: 1.1;}
+  .gauge .value.amber{color:var(--amber); text-shadow:0 0 12px #ffb02055;}
+  .gauge .value.red{color:var(--red); text-shadow:0 0 12px #ff5d5d66;}
+  .gauge .value.cyan{color:var(--cyan); text-shadow:0 0 12px #4fd6ff55;}
+
+  .main{display:flex; flex-direction:column; gap:16px;}
+
+  .config{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .config input, .config select{
+    background:#081119; border:1px solid var(--line-strong); color:var(--text);
+    font-family:inherit; font-size:11px; padding:6px 9px; border-radius:6px; outline: none;
+  }
+  .config input.ip{width:150px;}
+  .config input.name{width:120px;}
+  .config button{
+    background:#0d2b22; color:var(--green); border:1px solid #21ffb055;
+    font-family:inherit; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer;
+  }
+  .config button:hover{background:#0f3a2c;}
+  .config button.ghost{background:transparent; color:var(--muted); border:1px solid var(--line-strong);}
+  .hint{font-size:10px; color:var(--muted-2);}
+
+  .ai-agent-panel{
+    display:flex; flex-direction:column;
+  }
+  .ai-agent-header{
+    display:flex; align-items:center; gap:8px; margin-bottom:10px;
+  }
+  .ai-agent-title{
+    font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); font-weight:600; display:flex; align-items:center; gap:6px;
+  }
+  .ai-agent-dot{
+    width:6px; height:6px; border-radius:50%; background:var(--green);
+    box-shadow:0 0 8px var(--green-dim); flex:0 0 auto;
+  }
+  .ai-chat-log{
+    height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
+    padding-right:2px; margin-bottom:10px;
+  }
+  .ai-chat-log::-webkit-scrollbar{ width:5px; }
+  .ai-chat-log::-webkit-scrollbar-thumb{ background:var(--line-strong); border-radius:4px; }
+  .ai-msg{
+    font-size:11px; line-height:1.5; padding:8px 10px; border-radius:8px;
+    max-width:92%; word-wrap:break-word;
+  }
+  .ai-msg.bot{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    align-self:flex-start; border-top-left-radius:2px;
+  }
+  .ai-msg.user{
+    background:#0d2b22; border:1px solid #21ffb033; color:var(--green);
+    align-self:flex-end; border-top-right-radius:2px;
+  }
+  .ai-suggestions{
+    display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;
+  }
+  .ai-chip{
+    background:transparent; border:1px solid var(--line-strong); color:var(--muted);
+    font-family:inherit; font-size:9.5px; padding:5px 9px; border-radius:20px;
+    cursor:pointer; transition:all .15s ease; text-align:left;
+  }
+  .ai-chip:hover{ border-color:var(--cyan); color:var(--cyan); }
+  .ai-input-row{ display:flex; gap:6px; }
+  .ai-input-row input{
+    flex:1; background:#081119; border:1px solid var(--line-strong); color:var(--text);
+    font-family:inherit; font-size:11px; padding:8px 10px; border-radius:6px; outline:none;
+  }
+  .ai-input-row input:focus{ border-color:var(--cyan); }
+  .ai-input-row button{
+    background:#0d2b22; color:var(--green); border:1px solid #21ffb055;
+    font-family:inherit; font-size:12px; padding:8px 12px; border-radius:6px; cursor:pointer; flex:0 0 auto;
+  }
+  .ai-input-row button:hover{ background:#0f3a2c; }
+
+  .machine-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(360px, 1fr));
+    gap:12px;
+  }
+  .machine-card{
+    padding:14px; border-radius:10px; background:var(--panel-2);
+    border:1px solid var(--line); cursor:pointer; transition:all .2s ease; position: relative;
+  }
+  .machine-card:hover{border-color:var(--line-strong); transform: translateY(-2px); box-shadow: 0 8px 20px -6px #0008;}
+  .machine-card.selected{border-color:var(--green); box-shadow:0 0 0 1px var(--green-dim), 0 8px 20px -6px #0008;}
+  .machine-card.offline { border-left: 3px solid var(--red); opacity: 0.85; }
+
+  .machine-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+  .machine-card .name{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; color: var(--text);}
+  .machine-card .ip{font-size:10px; color:var(--muted); margin-top: 2px;}
+  .machine-card .remove{
+    background: #182836; border: 1px solid var(--line-strong); color: var(--muted); 
+    font-size: 11px; width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  }
+  .machine-card .remove:hover{background: #2b0d0d; border-color: #ff5d5d55; color: var(--red);}
+
+  .metrics-table {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: #060d14;
+    border-radius: 6px;
+    border: 1px solid #10222f;
+    font-size: 11px;
+  }
+  .metric-label {
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .metric-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .metric-value.highlight-green { color: var(--green); text-shadow: 0 0 10px var(--green-dim); }
+  .metric-value.highlight-cyan { color: var(--cyan); text-shadow: 0 0 10px #4fd6ff55; }
+  .metric-value.highlight-amber { color: var(--amber); text-shadow: 0 0 10px #ffb02055; }
+
+  .risk-green{color:var(--green) !important; text-shadow:0 0 10px var(--green-dim) !important;}
+  .risk-amber{color:var(--amber) !important; text-shadow:0 0 10px #ffb02055 !important;}
+  .risk-red{color:var(--red) !important; text-shadow:0 0 10px #ff5d5d66 !important;}
+
+  /* --- Monitor de Latência / Ping --- */
+  .ping-summary-row{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:16px;
+  }
+  @media(max-width:900px){ .ping-summary-row{grid-template-columns:repeat(2, 1fr);} }
+  .ping-summary-card{
+    background:linear-gradient(135deg, var(--panel-2), var(--deep));
+    border:1px solid var(--line); border-radius:10px; padding:12px 14px;
+  }
+  .ping-summary-label{font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; margin-bottom:6px;}
+  .ping-summary-value{font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; color:var(--cyan); text-shadow:0 0 12px #4fd6ff55;}
+  .ping-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px;
+  }
+  .ping-card{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:14px; cursor:pointer; transition:all .2s ease; position:relative;
+  }
+  .ping-card:hover{border-color:var(--line-strong); transform:translateY(-2px); box-shadow:0 8px 20px -6px #0008;}
+  .ping-card.selected{border-color:var(--cyan); box-shadow:0 0 0 1px #4fd6ff55, 0 8px 20px -6px #0008;}
+  .ping-card.offline{border-left:3px solid var(--red); opacity:0.85;}
+  .ping-card-head{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    border-bottom:1px solid var(--line); padding-bottom:9px; margin-bottom:10px;
+  }
+  .ping-card .name{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--text);}
+  .ping-card .ip{font-size:10px; color:var(--muted); margin-top:2px;}
+  .ping-status{
+    display:flex; align-items:center; gap:5px; font-size:9px; font-weight:700;
+    letter-spacing:.05em; text-transform:uppercase; padding:3px 8px; border-radius:20px;
+  }
+  .ping-status.up{color:var(--green); background:#0a1e18; border:1px solid #21ffb055;}
+  .ping-status.down{color:var(--red); background:#2b0d0d; border:1px solid #ff5d5d55;}
+  .ping-status .pdot{width:6px; height:6px; border-radius:50%; background:currentColor; box-shadow:0 0 6px currentColor;}
+  .ping-value-row{display:flex; align-items:baseline; gap:5px; margin-bottom:8px;}
+  .ping-value{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; line-height:1;}
+  .ping-unit{font-size:11px; color:var(--muted); font-weight:600;}
+  .ping-sparkline{width:100%; height:36px; display:block;}
+  .ping-stats-mini{display:flex; justify-content:space-between; font-size:9.5px; color:var(--muted-2); margin-top:6px; letter-spacing:.03em;}
+  .ping-detail-panel{margin-top:16px;}
+  .ping-detail-stats{display:flex; gap:22px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap;}
+  .ping-detail-stats b{color:var(--cyan); font-family:'Space Grotesk',sans-serif; font-size:13px;}
+  .ping-empty{text-align:center; color:var(--muted); font-size:12px; padding:30px;}
+
+  .protection-config-row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .protection-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .protection-toggle input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--red); cursor: pointer; }
+  .protection-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .protection-field input[type="number"] {
+    width: 60px;
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 12px;
+  }
+
+  /* --- Perfis de Energia (MQTT / Home Assistant) --- */
+  .power-status-dot {
+    width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+    background: var(--muted-2); margin-right: 5px; box-shadow: 0 0 6px currentColor;
+  }
+  .power-status-dot.connected { background: var(--green); color: var(--green); }
+  .power-status-dot.disconnected { background: var(--red); color: var(--red); }
+  .power-mqtt-form {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px;
+    margin-bottom: 14px;
+  }
+  .power-mqtt-form label {
+    display: flex; flex-direction: column; gap: 5px; font-size: 10px;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
+  }
+  .power-mqtt-form input {
+    background: #081119; border: 1px solid var(--line-strong); color: var(--text);
+    font-family: inherit; font-size: 12px; padding: 7px 9px; border-radius: 6px; outline: none;
+  }
+  .power-mqtt-form input:focus { border-color: var(--cyan); }
+  .power-actions-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .power-save-btn {
+    background: #0d2b22; color: var(--green); border: 1px solid #21ffb055;
+    font-family: inherit; font-size: 11px; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;
+  }
+  .power-save-btn:hover { background: #0f3a2c; }
+  .power-live-row { display: flex; gap: 22px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .power-live-row b { color: var(--cyan); font-family: 'Space Grotesk', sans-serif; font-size: 14px; }
+  .power-live-error { color: var(--amber); font-size: 11px; margin-top: 6px; }
+
+  .power-profiles-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .power-profile-row {
+    display: grid;
+    grid-template-columns: 26px 1.4fr 1fr 1fr 1fr 1fr auto;
+    gap: 8px; align-items: center;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  }
+  @media(max-width: 980px){ .power-profile-row{ grid-template-columns: repeat(2, 1fr); } }
+  .power-profile-row .priority-num {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--muted-2); font-size: 12px; text-align: center;
+  }
+  .power-profile-row input {
+    background: #081119; border: 1px solid var(--line-strong); color: var(--text);
+    font-family: inherit; font-size: 11px; padding: 6px 8px; border-radius: 6px; outline: none; width: 100%;
+  }
+  .power-profile-row .field-label { font-size: 8px; color: var(--muted-2); text-transform: uppercase; letter-spacing: .05em; display:block; margin-bottom:3px; }
+  .power-profile-row-actions { display: flex; gap: 4px; }
+  .power-profile-row-actions button {
+    background: #182836; border: 1px solid var(--line-strong); color: var(--muted);
+    font-size: 11px; width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  }
+  .power-profile-row-actions button:hover { background: #0f2130; color: var(--text); }
+  .power-profile-row-actions button.remove:hover { background: #2b0d0d; border-color: #ff5d5d55; color: var(--red); }
+  .power-add-profile-btn {
+    background: transparent; color: var(--cyan); border: 1px dashed #4fd6ff55;
+    font-family: inherit; font-size: 11px; padding: 8px 14px; border-radius: 6px; cursor: pointer; width: 100%;
+  }
+  .power-add-profile-btn:hover { background: #0a1e26; }
+
+  .power-suggestion-card {
+    background: linear-gradient(135deg, var(--panel-2), var(--deep));
+    border: 1px solid var(--line-strong); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  .power-suggestion-name { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: var(--cyan); text-shadow: 0 0 12px #4fd6ff55; }
+  .power-suggestion-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .power-devices-apply { display: flex; flex-direction: column; gap: 8px; }
+  .power-device-apply-row {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+    background: #060d14; border: 1px solid #10222f; border-radius: 8px; padding: 8px 12px; font-size: 12px;
+  }
+  .power-device-apply-row .dname { color: var(--text); font-weight: 600; }
+  .power-device-apply-row .dcurrent { color: var(--muted); font-size: 10px; }
+  .power-apply-btn {
+    background: #12202b; color: var(--cyan); border: 1px solid #4fd6ff55;
+    font-family: inherit; font-size: 10px; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;
+  }
+  .power-apply-btn:hover { background: #16303e; }
+  .power-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .power-apply-all-btn {
+    background: #0d2b22; color: var(--green); border: 1px solid #21ffb055;
+    font-family: inherit; font-size: 11px; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 4px;
+  }
+  .power-apply-all-btn:hover { background: #0f3a2c; }
+  .power-apply-all-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .thermal-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; margin-top:14px;
+  }
+  .thermal-card{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+    transition:all .15s ease; cursor:pointer;
+  }
+  .thermal-card:hover{border-color:var(--line-strong); transform:translateY(-2px); box-shadow:0 8px 20px -6px #0008;}
+  .thermal-card.selected{border-color:var(--cyan); box-shadow:0 0 0 1px #4fd6ff55, 0 8px 20px -6px #0008;}
+  .thermal-card.offline{border-left:3px solid var(--red); opacity:0.85;}
+  .thermal-card-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:8px;}
+  .thermal-card .name{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--text);}
+  .thermal-card .ip{font-size:10px; color:var(--muted); margin-top:2px;}
+  .thermal-badge{font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; text-transform:uppercase; letter-spacing:.03em;}
+  .thermal-badge.status-collecting{background:#0f2130; color:var(--cyan); border:1px solid #4fd6ff44;}
+  .thermal-badge.status-normal{background:#0a1e18; color:var(--green); border:1px solid #21ffb055;}
+  .thermal-badge.status-warning{background:#2b220d; color:var(--amber); border:1px solid #ffb02055;}
+  .thermal-badge.status-critical{background:#2b0d0d; color:var(--red); border:1px solid #ff5d5d55;}
+  .thermal-value-row{display:flex; align-items:baseline; gap:6px; margin-bottom:8px;}
+  .thermal-value{font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:700; line-height:1; color:var(--text);}
+  .thermal-value.status-normal{color:var(--green);}
+  .thermal-value.status-warning{color:var(--amber);}
+  .thermal-value.status-critical{color:var(--red);}
+  .thermal-value.status-collecting{color:var(--cyan);}
+  .thermal-unit{font-size:10px; color:var(--muted); font-weight:600;}
+  .thermal-stats-mini{display:flex; justify-content:space-between; font-size:9.5px; color:var(--muted-2); margin-top:6px; letter-spacing:.03em;}
+  .thermal-detail-panel{margin-top:16px;}
+
+  /* --- Simulador Preditivo de Desgaste / Forecast --- */
+  .thermal-summary-row{grid-template-columns:repeat(5, 1fr) !important;}
+  @media(max-width:1100px){ .thermal-summary-row{grid-template-columns:repeat(2, 1fr) !important;} }
+  .thermal-forecast-line{
+    display:flex; align-items:center; gap:6px; margin-top:8px; padding-top:8px;
+    border-top:1px dashed var(--line); font-size:10.5px; font-weight:600; letter-spacing:.02em;
+  }
+  .thermal-forecast-line.fc-stable{color:var(--green);}
+  .thermal-forecast-line.fc-warn{color:var(--amber);}
+  .thermal-forecast-line.fc-crit{color:var(--red);}
+  .thermal-forecast-line.fc-collecting{color:var(--muted);}
+  .forecast-panel{margin-top:16px;}
+  .forecast-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:10px;}
+  @media(max-width:700px){ .forecast-grid{grid-template-columns:1fr;} }
+  .forecast-eta-card{
+    background:linear-gradient(135deg, var(--panel-2), var(--deep));
+    border:1px solid var(--line); border-radius:10px; padding:14px;
+  }
+  .forecast-eta-card.fc-warn{border-color:#ffb02055;}
+  .forecast-eta-card.fc-crit{border-color:#ff5d5d55;}
+  .forecast-eta-label{font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; margin-bottom:6px;}
+  .forecast-eta-value{font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--text);}
+  .forecast-eta-card.fc-warn .forecast-eta-value{color:var(--amber);}
+  .forecast-eta-card.fc-crit .forecast-eta-value{color:var(--red);}
+  .forecast-eta-date{font-size:10px; color:var(--muted-2); margin-top:4px;}
+  .forecast-confidence{font-size:10px; color:var(--muted-2); margin-top:10px; letter-spacing:.02em;}
+  .forecast-confidence b{color:var(--text);}
+
+  .charts{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media(max-width:900px){ .charts{grid-template-columns:1fr;} }
+  
+  .chart-box {
+    background: linear-gradient(180deg, var(--panel), var(--deep));
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 18px;
+    position: relative;
+    box-shadow: 0 8px 24px -8px #0008, inset 0 1px 4px #fff00410;
+  }
+  .donut-row {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+    padding: 4px 0 2px;
+  }
+  .donut-empty { color: var(--muted); font-size: 12px; padding: 10px 0; }
+  .donut-svg-wrap { position: relative; flex-shrink: 0; width: 160px; height: 160px; }
+  .donut-svg-wrap svg { width: 100%; height: 100%; }
+  .donut-center-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .donut-center-label .val { font-size: 15px; font-weight: 700; color: var(--text); }
+  .donut-center-label .unit { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; }
+  .donut-legend { display: flex; flex-direction: column; gap: 9px; flex: 1; min-width: 160px; }
+  .donut-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .donut-legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .donut-legend-name { color: var(--text); font-weight: 600; }
+  .donut-legend-sub { color: var(--muted); font-size: 10px; margin-left: auto; text-align: right; white-space: nowrap; }
+  .donut-legend-pct { color: var(--text); font-weight: 700; margin-left: 6px; }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .chart-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chart-title {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text);
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .chart-time-buttons {
+    display: flex;
+    background: #060d14;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .time-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .time-btn.active {
+    background: var(--amber);
+    color: #000;
+  }
+  
+  .chart-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .chart-meta-row span b { color: var(--text); font-family: 'Space Grotesk', sans-serif; }
+
+  .chart-container-svg {
+    position: relative;
+    width: 100%;
+    height: 150px;
+  }
+  svg.chart {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: crosshair;
+    overflow: visible;
+  }
+
+  .chart-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 11px;
+  }
+  .chart-footer-left { color: var(--muted); }
+  .chart-footer-left b { color: var(--amber); font-family: 'Space Grotesk', sans-serif; }
+  .chart-footer-right { color: var(--muted); font-family: 'Space Grotesk', sans-serif; }
+  .chart-footer-right b { color: var(--text); font-size: 12px; }
+
+  .donate-container {
+    max-width: 800px;
+    margin: 40px auto;
+    background: linear-gradient(180deg, var(--panel), var(--deep));
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 40px 24px;
+    text-align: center;
+    box-shadow: 0 10px 30px -10px #000c;
+  }
+  .donate-icons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    font-size: 32px;
+    margin-bottom: 20px;
+  }
+  .donate-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+  .donate-desc {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    max-width: 550px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .donate-label {
+    font-size: 11px;
+    color: var(--muted-2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .donate-input-box {
+    background: #060d14;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: 12px;
+    color: var(--text);
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    user-select: all;
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-all;
+  }
+  .donate-btn {
+    background: var(--amber);
+    color: #000;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .donate-btn:hover {
+    background: #ffc252;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px #ffb02044;
+  }
+  .donate-qr-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 24px auto;
+  }
+  .donate-qr-box {
+    background: #fff;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 8px 24px -8px #000a;
+    display: inline-block;
+  }
+  .donate-qr-box img {
+    display: block;
+    width: 200px;
+    height: 200px;
+  }
+
+  .supporters-container {
+    max-width: 800px;
+    margin: 40px auto;
+    background: linear-gradient(180deg, var(--panel), var(--deep));
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 40px 24px;
+    text-align: center;
+    box-shadow: 0 10px 30px -10px #000c;
+  }
+  .supporters-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+  .supporters-desc {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    max-width: 550px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .channel-card {
+    max-width: 520px;
+    margin: 0 auto;
+    background: #060d14;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    overflow: hidden;
+    text-align: left;
+    transition: all 0.2s ease;
+  }
+  .channel-card:hover {
+    border-color: var(--green-dim);
+    transform: translateY(-2px);
+  }
+  .channel-banner {
+    width: 100%;
+    aspect-ratio: 1623 / 275;
+    background: linear-gradient(135deg, var(--panel-2), var(--bg));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .channel-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .channel-body {
+    padding: 14px 18px 18px;
+  }
+  .channel-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .channel-desc {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .channel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .channel-url {
+    color: var(--muted-2);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .channel-btn {
+    background: var(--green);
+    color: #000;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .channel-btn:hover {
+    background: #6dffd0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--green-dim);
+  }
+
+  .sim-container {
+    max-width: 920px;
+    margin: 30px auto;
+    background: linear-gradient(180deg, var(--panel), var(--deep));
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 32px 28px;
+    box-shadow: 0 10px 30px -10px #000c;
+  }
+  .sim-header { text-align: center; margin-bottom: 26px; }
+  .sim-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+  .sim-desc {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .sim-section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--muted-2);
+    font-weight: 700;
+    margin: 0 0 12px 2px;
+  }
+  .sim-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 900px) {
+    .sim-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .sim-card {
+    background: #060d14;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .sim-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted-2);
+    margin-bottom: 8px;
+  }
+  .sim-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .sim-value.small { font-size: 13px; }
+  .sim-good { color: var(--green); }
+  .sim-bad { color: var(--red); }
+  .sim-progress-wrap { margin: 6px 0 24px; }
+  .sim-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 6px;
+  }
+  .sim-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #060d14;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .sim-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--green));
+    transition: width .4s ease;
+  }
+  .sim-progress-fill-halving {
+    background: linear-gradient(90deg, var(--amber), var(--green));
+  }
+  .sim-divider { height: 1px; background: var(--line); margin: 24px 0; }
+  .sim-hint {
+    font-size: 11px;
+    color: var(--muted-2);
+    text-align: center;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .event-log-panel {
+    background: linear-gradient(180deg, var(--deep), var(--bg));
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: inset 0 1px 4px #0008;
+    margin-top: 16px;
+  }
+  .event-log-container {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    max-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
+  }
+  .event-log-container::-webkit-scrollbar { width: 5px; }
+  .event-log-container::-webkit-scrollbar-track { background: #060d14; border-radius: 4px; }
+  .event-log-container::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+  .event-log-container::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
+
+  .event-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #08121a;
+    border: 1px solid #142836;
+    border-left: 3px solid var(--muted-2);
+    border-radius: 6px;
+    padding: 7px 10px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .event-row:hover { background: #0b1a26; border-color: var(--line-strong); }
+  .event-row.is-new { border-left-color: var(--green); background: #081d16; }
+  .event-row.is-error { border-left-color: var(--red); background: #1d0808; }
+
+  .event-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+  }
+  .event-time {
+    color: var(--muted-2);
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .event-badge {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #0d222b;
+    color: var(--cyan);
+    border: 1px solid #1a3a49;
+    white-space: nowrap;
+  }
+  .event-text {
+    color: var(--text);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .event-row.is-new .event-text { color: var(--green); }
+  .event-row.is-error .event-text { color: var(--red); }
+
+  .logs-container-panel {
+    background: #04080d;
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px;
+    box-shadow: 0 10px 30px -10px #000b;
+  }
+  .logs-toolbar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+    background: #08121a;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+  }
+  .logs-toolbar button {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+  .btn-realtime { background: #0c2b22; color: var(--green); border-color: #21ffb055; }
+  .btn-realtime:hover { background: #0f3a2c; }
+  .btn-hidelogs { background: #182836; color: var(--text); border-color: var(--line-strong); }
+  .btn-hidelogs:hover { background: #203548; }
+  .btn-scroll { background: #241d0c; color: var(--amber); border-color: #ffb02055; }
+  .btn-scroll:hover { background: #33280f; }
+  
+  .logs-toolbar select#logMachineSelect {
+    background: #0d222b;
+    border: 1px solid #4fd6ff55;
+    color: var(--cyan);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .logs-toolbar input {
+    background: #060d14;
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    outline: none;
+    width: 100%;
+  }
+  .logs-toolbar input::placeholder { color: var(--muted-2); }
+  .btn-clear { background: #2b0d0d; color: var(--red); border-color: #ff5d5d55; width: 100%; }
+  .btn-clear:hover { background: #3d1212; }
+  .btn-download { background: #0d222b; color: var(--cyan); border-color: #4fd6ff55; width: 100%; }
+  .btn-download:hover { background: #12313d; }
+
+  .console-screen {
+    background: #020508;
+    border: 1px solid #142836;
+    border-radius: 8px;
+    padding: 16px;
+    height: 540px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: #9cbccb;
+    box-shadow: inset 0 2px 8px #000c;
+  }
+  .console-line { 
+    white-space: pre-wrap; 
+    word-break: break-all; 
+    margin-bottom: 4px; 
+    padding: 3px 6px; 
+    border-radius: 4px; 
+    border-left: 2px solid transparent;
+    transition: background 0.1s;
+  }
+  .console-line:hover { background: #071018; border-left-color: var(--cyan); }
+  .console-line .log-id { color: var(--muted-2); margin-right: 8px; font-size: 10px; }
+  .console-line .log-time { color: #4a6975; margin-right: 8px; font-size: 10px; }
+  .console-line .log-machine { color: var(--cyan); margin-right: 8px; font-weight: 600; }
+  .console-line .log-tag { color: var(--green); font-weight: 600; }
+  .console-line .log-tag-amber { color: var(--amber); font-weight: 600; }
+  .console-line .log-tag-red { color: var(--red); font-weight: 600; }
+
+  .notif-container {
+    padding: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .notif-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    padding: 12px 16px;
+    border-radius: 8px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .notif-item {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--cyan);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+  }
+  .notif-item.type-block {
+    border-left-color: var(--green);
+    background: linear-gradient(90deg, #0a2218, var(--panel-2) 40%);
+  }
+  .notif-item.type-best {
+    border-left-color: var(--amber);
+    background: linear-gradient(90deg, #221c0a, var(--panel-2) 40%);
+  }
+  .notif-item.type-thermal {
+    border-left-color: var(--red);
+    background: linear-gradient(90deg, #2b120a, var(--panel-2) 40%);
+  }
+  .notif-item.type-thermal-warning {
+    border-left-color: var(--amber);
+    background: linear-gradient(90deg, #221c0a, var(--panel-2) 40%);
+  }
+  .notif-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .notif-header-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .notif-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .notif-tag.block { background: #0d2b22; color: var(--green); border: 1px solid #21ffb055; }
+  .notif-tag.best { background: #2b220d; color: var(--amber); border: 1px solid #ffb02055; }
+  .notif-tag.thermal-critical { background: #2b0d0d; color: var(--red); border: 1px solid #ff5d5d55; }
+  .notif-tag.thermal-warning { background: #2b220d; color: var(--amber); border: 1px solid #ffb02055; }
+  .notif-machine { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; color: var(--text); }
+  .notif-text { font-size: 12px; color: var(--muted); }
+  .notif-time { font-size: 10px; color: var(--muted-2); font-family: monospace; }
+
+  .footer-bar{
+    padding:10px 22px; border-top:1px solid var(--line-strong);
+    background:#0a1620; font-size:11px; color:var(--muted);
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <header>
+    <div>
+      <h1>Centro de Comando</h1>
+      <div class="subtitle" id="modeLabel">sistema ativo com alertas sonoros</div>
+    </div>
+    <div class="header-actions">
+      <select class="theme-select" id="themeSelect" onchange="setTheme(this.value)" title="Tema visual">
+        <option value="default">🌘 Padrão</option>
+        <option value="cyberpunk">🌆 Cyberpunk</option>
+        <option value="matrix">🌿 Matrix</option>
+        <option value="oled">⬛ OLED Black</option>
+      </select>
+      <button class="sound-toggle-btn" id="soundToggleBtn" onclick="toggleSound()">
+        🔊 Som Ativo
+      </button>
+      <div class="status-pill"><div class="dot" id="statusDot"></div><span id="statusText">Sistema pronto</span></div>
+    </div>
+  </header>
+
+  <div class="critical-alarm-banner" id="criticalAlarmBanner" style="display:none;">
+    <span class="critical-alarm-icon">🛡️🔥</span>
+    <span class="critical-alarm-text" id="criticalAlarmText">TEMPERATURA CRÍTICA</span>
+    <button class="critical-alarm-silence" onclick="silenceCriticalAlarm()">🔇 Silenciar</button>
+  </div>
+
+  <div class="nav-menu" id="navMenu">
+    <button class="nav-menu-btn" id="navMenuBtn" onclick="toggleNavMenu()">
+      <span id="navMenuLabel">Dashboard Geral</span>
+      <span class="nav-menu-badges">
+        <span class="badge-counter" id="notifBadgeMini">0</span>
+        <span class="badge-counter" id="thermalBadgeMini" style="display:none;">0</span>
+      </span>
+      <span class="nav-menu-caret">▾</span>
+    </button>
+    <div class="nav-menu-dropdown" id="navMenuDropdown">
+      <button class="tab-btn active" onclick="switchTab('dashboard', this)">Dashboard Geral</button>
+      <button class="tab-btn" onclick="switchTab('logs', this)">Logs das Máquinas</button>
+      <button class="tab-btn" onclick="switchTab('notifications', this)">
+        🔔 Notificações (Block / Best Diff)
+        <span class="badge-counter" id="notifBadge">0</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('simulator', this)">⏱️ Simulador</button>
+      <button class="tab-btn" onclick="switchTab('latency', this)">📡 Latência</button>
+      <button class="tab-btn" onclick="switchTab('thermal', this)">
+        🧬 Saúde Térmica
+        <span class="badge-counter" id="thermalBadge" style="display:none;">0</span>
+      </button>
+      <button class="tab-btn cyan-tab" onclick="switchTab('power', this)">
+        <span class="power-status-dot" id="powerStatusDot"></span>☀️ Perfis de Energia
+      </button>
+      <button class="tab-btn amber-tab" onclick="switchTab('donate', this)">⚡ Apoiar / Doar</button>
+      <button class="tab-btn" onclick="switchTab('supporters', this)">🌟 Apoiantes</button>
+    </div>
+  </div>
+
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="blocks-container">
+      <div class="blocks-toolbar">
+        <span class="title">Últimos blocos minerados na rede Bitcoin</span>
+        <span class="blocks-refresh-hint" id="blocksRefreshHint">a atualizar...</span>
+      </div>
+      <div class="blocks-scroll" id="blocksScroll">
+        <div class="blocks-empty">A carregar blocos...</div>
+      </div>
+    </div>
+
+    <div class="body-grid">
+      <div class="sidebar">
+        <div class="gauge">
+          <div class="gauge-left">
+            <div class="label">Hashrate Total</div>
+            <div class="unit" id="sHashrateUnit">GH/s</div>
+          </div>
+          <div class="gauge-right">
+            <div class="value" id="sHashrate">—</div>
+          </div>
+        </div>
+
+        <div class="gauge amber-bar">
+          <div class="gauge-left">
+            <div class="label">Melhor Share</div>
+            <div class="unit" id="sBestUnit">Global</div>
+          </div>
+          <div class="gauge-right">
+            <div class="value amber" id="sBest">—</div>
+          </div>
+        </div>
+
+        <div class="gauge cyan-bar">
+          <div class="gauge-left">
+            <div class="label">Temp. Máxima</div>
+            <div class="unit">°C</div>
+          </div>
+          <div class="gauge-right">
+            <div class="value cyan" id="sTemp">—</div>
+          </div>
+        </div>
+
+        <div class="gauge cyan-bar">
+          <div class="gauge-left">
+            <div class="label">Velocidade Fans</div>
+            <div class="unit">RPM</div>
+          </div>
+          <div class="gauge-right">
+            <div class="value cyan" id="sFan">—</div>
+          </div>
+        </div>
+
+        <div class="gauge">
+          <div class="gauge-left">
+            <div class="label">Potência Total</div>
+            <div class="unit">Watts</div>
+          </div>
+          <div class="gauge-right">
+            <div class="value" id="sPower">—</div>
+          </div>
+        </div>
+
+        <div class="gauge">
+          <div class="gauge-left">
+            <div class="label">Máquinas</div>
+            <div class="unit">Registadas</div>
+          </div>
+          <div class="gauge-right">
+            <div class="value" id="sCount">0</div>
+          </div>
+        </div>
+
+        <div class="panel ai-agent-panel">
+          <div class="ai-agent-header">
+            <span class="ai-agent-title"><span class="ai-agent-dot"></span> 🤖 Assistente</span>
+          </div>
+          <div class="ai-chat-log" id="aiChatLog"></div>
+          <div class="ai-suggestions" id="aiSuggestions"></div>
+          <div class="ai-input-row">
+            <input type="text" id="aiInput" placeholder="Pergunta sobre o painel...">
+            <button id="aiSendBtn">➤</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="panel">
+          <p class="panel-title">Máquinas</p>
+          <div class="config" style="margin-bottom:12px;">
+            <input class="name" id="nameInput" placeholder="Apelido (ex: Máquina 01)">
+            <input class="ip" id="ipInput" placeholder="IP (ex: 192.168.1.38)">
+            <button id="addBtn">Adicionar máquina</button>
+          </div>
+          <div class="hint" style="margin-bottom:12px;">Requer o servidor local (`nerdqaxe_server.py`) a correr em localhost:8765.</div>
+          <div class="machine-grid" id="machineGrid"></div>
+        </div>
+
+        <div class="charts">
+          <div class="chart-box">
+            <div class="chart-header">
+              <div class="chart-title-group">
+                <span style="font-size:12px;">📈</span>
+                <span class="chart-title">Hashrate</span>
+              </div>
+              <div class="chart-time-buttons">
+                <button class="time-btn active">1H</button>
+                <button class="time-btn">3H</button>
+                <button class="time-btn">24H</button>
+              </div>
+            </div>
+            <div class="chart-meta-row">
+              <span>-60 min</span>
+              <span id="valPeakContainer">peak <b id="valPeak">—</b></span>
+            </div>
+            <div class="chart-container-svg">
+              <svg class="chart" id="chartHashrate" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="chart-footer-row">
+              <div class="chart-footer-left">1h avg <b id="valAvg">—</b></div>
+              <div class="chart-footer-right">live <b id="valHashrate">—</b></div>
+            </div>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-header">
+              <div class="chart-title-group">
+                <span style="font-size:12px;">🏆</span>
+                <span class="chart-title">Best Share Histórico</span>
+              </div>
+            </div>
+            <div class="chart-meta-row" style="visibility: hidden;"><span>-60 min</span><span>peak —</span></div>
+            <div class="chart-container-svg">
+              <svg class="chart" id="chartBest" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
+            </div>
+            <div class="chart-footer-row">
+              <div class="chart-footer-left">sessão <b id="valBestMeta">—</b></div>
+              <div class="chart-footer-right">atual <b id="valBest">—</b></div>
+            </div>
+          </div>
+          <div class="chart-box" style="grid-column: 1 / -1;">
+            <div class="chart-header">
+              <div class="chart-title-group">
+                <span style="font-size:12px;">🥧</span>
+                <span class="chart-title">Distribuição de Hashrate</span>
+              </div>
+            </div>
+            <div class="chart-meta-row" style="visibility: hidden;"><span>-60 min</span><span>peak —</span></div>
+            <div class="donut-row" id="hashrateDonutRow">
+              <div class="donut-empty">Sem máquinas online.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="event-log-panel">
+          <div class="chart-header" style="margin-bottom: 10px;">
+            <span class="chart-title">Log de Eventos</span>
+            <button id="clearLogBtn" class="config ghost" style="padding:2px 8px; font-size:9px; border-radius:5px;">limpar</button>
+          </div>
+          <div class="event-log-container" id="eventLog"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-logs" class="tab-content">
+    <div class="logs-container-panel">
+      <div class="logs-toolbar">
+        <button class="btn-realtime" id="toggleRealtimeBtn" onclick="toggleRealtimeLogs()">🟢 Realtime Logs</button>
+        <button class="btn-hidelogs" onclick="clearConsoleView()">🧹 Ocultar Vista</button>
+        <button class="btn-scroll" id="scrollLockBtn" onclick="toggleScrollLock()">📌 Stop Scroll</button>
+        
+        <select id="logMachineSelect" onchange="renderConsoleLogs()">
+          <option value="all">🌐 Todas as Máquinas</option>
+        </select>
+
+        <input type="text" id="filterLogsInput" placeholder="Filtrar texto..." oninput="renderConsoleLogs()">
+        <input type="text" id="filterTagsInput" placeholder="Filtrar tag..." oninput="renderConsoleLogs()">
+        
+        <button class="btn-clear" onclick="wipeConsoleLogs()">🗑 Limpar Filtro</button>
+        <button class="btn-download" onclick="downloadLogs()">⬇ Descarregar TXT</button>
+      </div>
+      <div class="console-screen" id="consoleScreen"></div>
+    </div>
+  </div>
+
+  <div id="tab-notifications" class="tab-content">
+    <div class="notif-container">
+      <div class="notif-toolbar">
+        <span style="font-size: 12px; font-weight: 600; color: var(--text);">Histórico de Alertas (Blocos Encontrados & Recordes de Dificuldade)</span>
+        <div style="display: flex; gap: 8px;">
+          <button class="config" onclick="triggerTestNotifications()" style="padding: 6px 12px; font-size: 10px; background: #0c2b22; color: var(--green); border-color: #21ffb055;">🧪 Testar Alertas</button>
+          <button class="config ghost" onclick="clearNotifications()" style="padding: 6px 12px; font-size: 10px;">Limpar Notificações</button>
+        </div>
+      </div>
+      <div class="notif-list" id="notifList">
+        <div style="text-align:center; color: var(--muted); font-size: 12px; padding: 30px;">Ainda não existem notificações registadas.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-donate" class="tab-content">
+    <div class="donate-container">
+      <div class="donate-icons">⚡ ₿ ☕</div>
+      <div class="donate-title">APOIAR O DESENVOLVIMENTO</div>
+      <div class="donate-desc">Se este software te está a ser útil na monitorização dos teus ASICs, considera deixar um donativo via Lightning Network ou Bitcoin On-Chain!</div>
+      
+      <div class="donate-qr-wrap">
+        <div class="donate-qr-box">
+          <img src="lightning-qrcode.png" alt="QR Code Lightning">
+        </div>
+      </div>
+
+      <div class="donate-label">Endereço Lightning:</div>
+      <div class="donate-input-box" id="lightningAddress">plainpen16@walletofsatoshi.com</div>
+      <button class="donate-btn" onclick="copyLightningAddress()" style="margin-bottom: 24px;">Copiar Endereço Lightning</button>
+
+      <div class="donate-label" style="margin-top: 12px;">Endereço Bitcoin (On-Chain):</div>
+      <div class="donate-input-box" id="btcAddress">bc1qffk82prrxn84e8y9l0z5yflsqclhyc9ptphgmf</div>
+      <button class="donate-btn" onclick="copyBtcAddress()">Copiar Endereço Bitcoin</button>
+    </div>
+  </div>
+
+  <div id="tab-supporters" class="tab-content">
+    <div class="supporters-container">
+      <div class="supporters-title">🌟 CANAIS APOIANTES</div>
+      <div class="supporters-desc">Canais de YouTube e criadores de conteúdo que apoiam este projeto.</div>
+
+      <div class="channel-card">
+        <div class="channel-banner">
+          <img src="bitminer33-banner.png" alt="bitminer33">
+        </div>
+        <div class="channel-body">
+          <div class="channel-name">bitminer33</div>
+          <div class="channel-desc">Tudo sobre mineração doméstica de BTC.</div>
+          <div class="channel-footer">
+            <span class="channel-url">youtube.com/@bitminer33</span>
+            <a class="channel-btn" href="https://youtube.com/@bitminer33" target="_blank" rel="noopener">Ver canal →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-simulator" class="tab-content">
+    <div class="sim-container">
+      <div class="sim-header">
+        <div class="sim-title">⏱️ SIMULADOR DE DIFICULDADE & HALVING</div>
+        <div class="sim-desc">Cruza o hashrate atual das tuas máquinas com os dados em tempo real da rede Bitcoin, para estimar o impacto do próximo ajuste de dificuldade (a cada 2016 blocos) na tua probabilidade teórica de encontrar um bloco a solo.</div>
+      </div>
+
+      <div class="sim-section-label">Rede Bitcoin</div>
+      <div class="sim-grid">
+        <div class="sim-card">
+          <div class="sim-label">Dificuldade Atual</div>
+          <div class="sim-value" id="simDifficulty">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Variação Prevista (Próximo Ajuste)</div>
+          <div class="sim-value" id="simDifficultyChange">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Blocos Até ao Ajuste</div>
+          <div class="sim-value" id="simRemainingBlocks">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Data Estimada do Ajuste</div>
+          <div class="sim-value small" id="simRetargetDate">—</div>
+        </div>
+      </div>
+
+      <div class="sim-progress-wrap">
+        <div class="sim-progress-label">
+          <span>Progresso da Época Atual (2016 blocos)</span>
+          <span id="simProgress">—</span>
+        </div>
+        <div class="sim-progress-bar"><div class="sim-progress-fill" id="simProgressBar" style="width:0%;"></div></div>
+      </div>
+
+      <div class="sim-divider"></div>
+
+      <div class="sim-section-label">Halving</div>
+      <div class="sim-grid">
+        <div class="sim-card">
+          <div class="sim-label">Bloco Atual</div>
+          <div class="sim-value" id="simCurrentHeight">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Recompensa Atual</div>
+          <div class="sim-value" id="simCurrentReward">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Blocos Até ao Halving</div>
+          <div class="sim-value" id="simHalvingBlocks">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Data Estimada do Halving</div>
+          <div class="sim-value small" id="simHalvingDate">—</div>
+        </div>
+      </div>
+
+      <div class="sim-progress-wrap">
+        <div class="sim-progress-label">
+          <span>Progresso da Época de Halving (210.000 blocos)</span>
+          <span id="simHalvingProgress">—</span>
+        </div>
+        <div class="sim-progress-bar"><div class="sim-progress-fill sim-progress-fill-halving" id="simHalvingProgressBar" style="width:0%;"></div></div>
+      </div>
+
+      <div class="sim-divider"></div>
+
+      <div class="sim-section-label">A Tua Rig</div>
+      <div class="sim-grid">
+        <div class="sim-card">
+          <div class="sim-label">O Teu Hashrate Total</div>
+          <div class="sim-value" id="simYourHashrate">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Tempo Esperado p/ Bloco (Agora)</div>
+          <div class="sim-value" id="simTimeNow">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Tempo Esperado p/ Bloco (Após Ajuste)</div>
+          <div class="sim-value" id="simTimeProjected">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Impacto no Tempo Esperado</div>
+          <div class="sim-value" id="simTimeDelta">—</div>
+        </div>
+      </div>
+
+      <div class="sim-hint" id="simHint">Estimativa teórica de mineração a solo à dificuldade atual/projetada da rede. A data do halving é estimada com base no tempo médio de bloco recente. Assume hashrate constante; não tem em conta variações reais do hashrate da rede.</div>
+
+      <div class="sim-divider"></div>
+
+      <div class="sim-section-label">🎯 Probabilidade de Bloco (Solo Mining Odds)</div>
+      <div class="sim-grid">
+        <div class="sim-card">
+          <div class="sim-label">Probabilidade em 24 horas</div>
+          <div class="sim-value" id="simProb1d">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Probabilidade em 7 dias</div>
+          <div class="sim-value" id="simProb7d">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Probabilidade em 30 dias</div>
+          <div class="sim-value" id="simProb30d">—</div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-label">Probabilidade em 1 ano</div>
+          <div class="sim-value" id="simProb1y">—</div>
+        </div>
+      </div>
+      <div class="sim-hint">Probabilidade acumulada (estatística de Poisson) de encontrar pelo menos 1 bloco a solo com o teu hashrate atual, à dificuldade de rede presente. São valores extremamente baixos para hardware doméstico — a mineração a solo é essencialmente uma lotaria; para recompensas regulares e previsíveis, a mineração em pool continua a ser a opção recomendada.</div>
+    </div>
+  </div>
+
+  <div id="tab-latency" class="tab-content">
+    <div class="blocks-container">
+      <div class="blocks-toolbar">
+        <div class="title">📡 Ping ao Pool em Tempo Real (dados reportados pelo dispositivo)</div>
+        <div class="blocks-refresh-hint" id="pingRefreshHint">a atualizar a cada 5s...</div>
+      </div>
+      <div class="hint" style="margin-bottom:14px;">Ping/Perda são os valores reais medidos pelo próprio NerdQAxe até ao servidor do pool (mesmo dado do ecrã do dispositivo). "Rede local" é o tempo de resposta entre este painel e o dispositivo na tua rede — normalmente muito mais baixo.</div>
+
+      <div class="ping-summary-row">
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">Ping Médio ao Pool</div>
+          <div class="ping-summary-value" id="pingAvgAll">—</div>
+        </div>
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">Mais Rápida</div>
+          <div class="ping-summary-value" id="pingBestAll">—</div>
+        </div>
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">Mais Lenta</div>
+          <div class="ping-summary-value" id="pingWorstAll">—</div>
+        </div>
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">Máquinas Online</div>
+          <div class="ping-summary-value" id="pingOnlineCount">—</div>
+        </div>
+      </div>
+
+      <div class="ping-grid" id="pingGrid"></div>
+
+      <div class="panel ping-detail-panel">
+        <div class="panel-title"><span>Histórico de Ping ao Pool — <span id="pingDetailName">—</span></span></div>
+        <svg id="chartPing" viewBox="0 0 300 130" preserveAspectRatio="none" style="width:100%; height:180px;"></svg>
+        <div class="ping-detail-stats">
+          <div>Atual: <b id="valPingNow">—</b></div>
+          <div>Média: <b id="valPingAvg">—</b></div>
+          <div>Mín / Máx: <b id="valPingMinMax">—</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-power" class="tab-content">
+    <div class="blocks-container">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-title">☀️⚡ Gestão Dinâmica de Perfil de Alimentação — MQTT / Home Assistant</div>
+        <div class="hint" style="margin-bottom:12px;">Liga-te ao teu broker MQTT (Home Assistant ou outro) e indica os tópicos que publicam a produção solar (W) e a tarifa dinâmica de eletricidade (€/kWh). O painel cruza esses valores com os perfis de frequência/undervolt que definires abaixo e sugere qual aplicar — a aplicação em si é sempre manual, feita por ti a partir daqui, nunca automática.</div>
+
+        <div class="power-mqtt-form">
+          <label>Broker MQTT (host)
+            <input type="text" id="pwHost" placeholder="ex: 192.168.1.10 ou homeassistant.local">
+          </label>
+          <label>Porta
+            <input type="number" id="pwPort" placeholder="1883">
+          </label>
+          <label>Utilizador (opcional)
+            <input type="text" id="pwUser" placeholder="">
+          </label>
+          <label>Password (opcional)
+            <input type="password" id="pwPass" placeholder="deixa em branco para manter">
+          </label>
+          <label>Tópico — Produção Solar (W)
+            <input type="text" id="pwTopicSolar" placeholder="ex: homeassistant/sensor/solar_power/state">
+          </label>
+          <label>Tópico — Tarifa Elétrica (€/kWh)
+            <input type="text" id="pwTopicTariff" placeholder="ex: homeassistant/sensor/tarifa_atual/state">
+          </label>
+        </div>
+
+        <div class="power-actions-row">
+          <button class="power-save-btn" onclick="savePowerMqttConfig()">💾 Guardar Ligação MQTT</button>
+          <div class="power-live-row">
+            <span><span class="power-status-dot" id="powerStatusDotInline"></span><span id="powerConnLabel">a verificar...</span></span>
+            <span>Solar atual: <b id="powerSolarVal">—</b></span>
+            <span>Tarifa atual: <b id="powerTariffVal">—</b></span>
+            <span>Última leitura: <b id="powerLastUpdate">—</b></span>
+          </div>
+        </div>
+        <div class="power-live-error" id="powerLiveError" style="display:none;"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-title">🎛️ Perfis de Energia</div>
+        <div class="hint" style="margin-bottom:12px;">Cada perfil define uma frequência e um undervolt (coreVoltage) para os ASICs, e as condições de solar/tarifa que o ativam. A ordem importa: o painel percorre a lista de cima para baixo e sugere o <b>primeiro</b> perfil cujas condições sejam cumpridas — por isso deixa os perfis mais restritivos (ex: Turbo, que exige muito solar) no topo, e um perfil sem condições no fim, a funcionar como perfil por omissão (ex: Eco). Deixa um campo em branco para "ignorar essa condição".</div>
+
+        <div class="power-profiles-list" id="powerProfilesList"></div>
+        <button class="power-add-profile-btn" onclick="addPowerProfile()">+ Adicionar Perfil</button>
+        <div class="power-actions-row">
+          <button class="power-save-btn" onclick="savePowerProfiles()">💾 Guardar Perfis</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">💡 Sugestão Atual</div>
+        <div class="power-suggestion-card">
+          <div class="power-suggestion-name" id="powerSuggestedName">Sem sugestão disponível</div>
+          <div class="power-suggestion-meta" id="powerSuggestedMeta">Configura o MQTT e pelo menos um perfil para começar a receber sugestões.</div>
+        </div>
+        <div class="hint" style="margin-bottom:10px;">Aplicar um perfil envia a frequência e o undervolt escolhidos diretamente para a API da máquina (<code>/api/system</code>). Confirma sempre os valores antes de aplicar — frequências ou voltagens desadequadas ao teu hardware podem causar instabilidade.</div>
+        <div class="power-devices-apply" id="powerDevicesApply"></div>
+        <button class="power-apply-all-btn" id="powerApplyAllBtn" onclick="applySuggestedProfileToAll()" disabled>⚡ Aplicar sugestão a todas as máquinas</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-thermal" class="tab-content">
+    <div class="blocks-container">
+      <div class="panel thermal-protection-panel" style="margin-bottom:18px;">
+        <div class="panel-title">🛡️ Proteção Térmica — Alerta Crítico</div>
+        <div class="hint" style="margin-bottom:12px;">Se uma máquina atingir a temperatura crítica de forma contínua (sem descer), o painel dispara um alarme sonoro de emergência contínuo — em qualquer separador — e regista o evento como crítico no Log de Eventos, para saberes exatamente quando e onde o hardware sofreu overheating.</div>
+        <div class="protection-config-row">
+          <label class="protection-toggle">
+            <input type="checkbox" id="thermalProtectionEnabled" checked onchange="saveThermalProtectionSettings()">
+            Ativar proteção térmica
+          </label>
+          <label class="protection-field">
+            Temp. crítica
+            <input type="number" id="thermalProtectionTemp" value="90" min="50" max="120" onchange="saveThermalProtectionSettings()">
+            °C
+          </label>
+          <label class="protection-field">
+            Sustentada por
+            <input type="number" id="thermalProtectionSustain" value="45" min="5" max="600" onchange="saveThermalProtectionSettings()">
+            seg
+          </label>
+        </div>
+      </div>
+
+      <div class="blocks-toolbar">
+        <div class="title">🧬 Impressão Digital Térmica — Manutenção Preditiva</div>
+        <div class="blocks-refresh-hint">amostra a cada ~20 min</div>
+      </div>
+      <div class="hint" style="margin-bottom:14px;">O sistema mede quanta ventoinha (RPM) cada máquina precisa para manter cada TH/s de hashrate, e compara a média das últimas 24h com a média histórica dos dias anteriores. Se uma máquina precisar de cada vez mais ventilação para produzir o mesmo hashrate, isso costuma indicar pasta térmica degradada, pó acumulado no dissipador ou desgaste da ventoinha — muito antes de a máquina entrar em thermal throttling. É preciso algumas horas de funcionamento para começar a ter dados fiáveis, e alguns dias para a comparação ficar robusta.</div>
+
+      <div class="ping-summary-row thermal-summary-row">
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">Máquinas em Risco</div>
+          <div class="ping-summary-value" id="thermalAtRisk">—</div>
+        </div>
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">Pior Variação</div>
+          <div class="ping-summary-value" id="thermalWorst">—</div>
+        </div>
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">Menos Dias de Dados</div>
+          <div class="ping-summary-value" id="thermalMinDays">—</div>
+        </div>
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">Máquinas com Diagnóstico</div>
+          <div class="ping-summary-value" id="thermalTracked">—</div>
+        </div>
+        <div class="ping-summary-card">
+          <div class="ping-summary-label">🔮 Previsão Mais Próxima</div>
+          <div class="ping-summary-value" id="thermalNextEta">—</div>
+        </div>
+      </div>
+
+      <div class="thermal-grid" id="thermalGrid"></div>
+
+      <div class="panel thermal-detail-panel">
+        <div class="panel-title"><span>Assinatura Térmica (ventoinha por TH/s) — <span id="thermalDetailName">—</span></span></div>
+        <svg id="chartThermal" viewBox="0 0 300 130" preserveAspectRatio="none" style="width:100%; height:180px;"></svg>
+        <div class="ping-detail-stats">
+          <div>Atual: <b id="valThermalNow">—</b></div>
+          <div>Baseline histórico: <b id="valThermalBaseline">—</b></div>
+          <div>Variação: <b id="valThermalChange">—</b></div>
+          <div>Dados recolhidos: <b id="valThermalDays">—</b></div>
+        </div>
+      </div>
+
+      <div class="panel forecast-panel">
+        <div class="panel-title">🔮 Simulador Preditivo de Desgaste — Previsão de Thermal Throttle</div>
+        <div class="hint" style="margin-bottom:6px;">Ajusta uma tendência linear à evolução diária do esforço de arrefecimento desta máquina e projeta-a no tempo, para estimar com quantos dias de antecedência é provável que precises de limpar o dissipador/rever a pasta térmica, antes de o ASIC arriscar entrar em thermal throttling. É uma estimativa estatística baseada no histórico recolhido — quanto mais dias de dados, maior a confiança.</div>
+        <div id="forecastBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <span id="footerAlert"></span>
+    <span id="footerStamp">—</span>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEVICES_KEY = 'nerdqaxe:devices';
+const NOTIF_KEY = 'nerdqaxe:notifications';
+const THEME_KEY = 'nerdqaxe:theme';
+const MAX_POINTS = 300;
+
+const THERMAL_KEY = 'nerdqaxe:thermal_history';
+const THERMAL_SNAPSHOT_INTERVAL_MS = 20 * 60 * 1000;   // regista 1 amostra a cada 20 min
+const THERMAL_MAX_SNAPSHOTS = 504;                     // ~7 dias de amostras por máquina
+const THERMAL_MIN_BASELINE_SNAPSHOTS = 36;              // ~12h antes de emitir diagnóstico
+const THERMAL_RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;   // janela "recente": últimas 24h
+const THERMAL_BASELINE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // janela de comparação: até 7 dias
+const THERMAL_WARN_PCT = 15;   // +15% de ventilação necessária vs baseline -> Atenção
+const THERMAL_CRIT_PCT = 30;   // +30% -> Crítico
+
+const THERMAL_FORECAST_MIN_DAYS = 2;      // mínimo de dias civis distintos para tentar uma tendência
+const THERMAL_FORECAST_ALERT_WINDOW = 7;  // avisa quando faltarem <= 7 dias para o risco de throttle
+
+const THERMAL_PROTECTION_KEY = 'nerdqaxe:thermal_protection';
+const CRITICAL_ALARM_INTERVAL_MS = 1200; // intervalo entre "bips" do alarme sonoro contínuo
+
+let devices = [];
+let readings = {};
+let histories = {};
+let selectedId = null;
+
+let thermalHistory = {};
+let thermalAlertState = {};
+let thermalForecastAlertState = {};
+let thermalSelectedId = null;
+
+let thermalProtectionSettings = { enabled: true, criticalTemp: 90, sustainSec: 45 };
+let thermalCriticalState = {};   // por dispositivo: { since, alarmed }
+let criticalAlarmSilenced = false;
+let criticalAlarmIntervalId = null;
+
+let consoleLogs = [];
+let notifications = [];
+let unreadNotifs = 0;
+
+let realtimeActive = true;
+let autoScroll = true;
+let soundEnabled = true;
+
+let audioCtx = null;
+function initAudio() {
+  if(!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function playSound(type) {
+  if(!soundEnabled) return;
+  try {
+    initAudio();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    if(type === 'block') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.setValueAtTime(880, now + 0.1);
+      osc.frequency.setValueAtTime(1174.66, now + 0.2);
+      
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } else if(type === 'best') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.12);
+      
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } else if(type === 'thermal' || type === 'thermal-warning') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(type === 'thermal' ? 300 : 380, now);
+      osc.frequency.setValueAtTime(type === 'thermal' ? 220 : 300, now + 0.15);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+      osc.start(now);
+      osc.stop(now + 0.45);
+    } else if(type === 'critical') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(660, now + 0.15);
+      osc.frequency.setValueAtTime(880, now + 0.3);
+      osc.frequency.setValueAtTime(660, now + 0.45);
+
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.setValueAtTime(0.28, now + 0.55);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+      osc.start(now);
+      osc.stop(now + 0.6);
+    } else {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    }
+  } catch(e) {
+    console.error('Erro ao reproduzir som:', e);
+  }
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  const btn = $('soundToggleBtn');
+  if(soundEnabled) {
+    btn.className = 'sound-toggle-btn';
+    btn.innerHTML = '🔊 Som Ativo';
+    playSound('best');
+  } else {
+    btn.className = 'sound-toggle-btn muted';
+    btn.innerHTML = '🔇 Som Mudo';
+  }
+}
+
+function setTheme(themeName){
+  document.body.dataset.theme = themeName;
+  try { localStorage.setItem(THEME_KEY, themeName); } catch(e){}
+  const sel = $('themeSelect');
+  if(sel && sel.value !== themeName) sel.value = themeName;
+}
+
+function loadTheme(){
+  let theme = 'default';
+  try { theme = localStorage.getItem(THEME_KEY) || 'default'; } catch(e){}
+  document.body.dataset.theme = theme;
+  const sel = $('themeSelect');
+  if(sel) sel.value = theme;
+}
+
+const TAB_LABELS = {
+  dashboard: 'Dashboard Geral',
+  logs: 'Logs das Máquinas',
+  notifications: '🔔 Notificações (Block / Best Diff)',
+  simulator: '⏱️ Simulador',
+  latency: '📡 Latência',
+  thermal: '🧬 Saúde Térmica',
+  donate: '⚡ Apoiar / Doar',
+  supporters: '🌟 Apoiantes'
+};
+
+function toggleNavMenu() {
+  $('navMenu').classList.toggle('open');
+}
+
+function closeNavMenu() {
+  $('navMenu').classList.remove('open');
+}
+
+document.addEventListener('click', (e) => {
+  const menu = $('navMenu');
+  if(menu && !menu.contains(e.target)) closeNavMenu();
+});
+
+function switchTab(tabName, btnEl) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  $(`tab-${tabName}`).classList.add('active');
+  btnEl.classList.add('active');
+  $('navMenuLabel').textContent = TAB_LABELS[tabName] || tabName;
+  closeNavMenu();
+
+  if(tabName === 'logs') {
+    updateLogMachineDropdown();
+    renderConsoleLogs();
+  }
+  if(tabName === 'notifications') {
+    unreadNotifs = 0;
+    updateNotifBadge();
+    renderNotifications();
+  }
+  if(tabName === 'simulator') {
+    fetchDifficultyData();
+    startSimAutoRefresh();
+  } else {
+    stopSimAutoRefresh();
+  }
+  if(tabName === 'latency') {
+    renderPingTab();
+  }
+  if(tabName === 'thermal') {
+    renderThermalTab();
+  }
+}
+
+let blocksRefreshTimer = null;
+function startBlocksAutoRefresh() {
+  stopBlocksAutoRefresh();
+  blocksRefreshTimer = setInterval(fetchRecentBlocks, 60000);
+}
+function stopBlocksAutoRefresh() {
+  if(blocksRefreshTimer) { clearInterval(blocksRefreshTimer); blocksRefreshTimer = null; }
+}
+
+function timeAgoPt(unixSeconds) {
+  const diffSec = Math.max(0, Math.floor(Date.now()/1000) - unixSeconds);
+  if(diffSec < 60) return `${diffSec} seg atrás`;
+  const diffMin = Math.floor(diffSec/60);
+  if(diffMin < 60) return `${diffMin} min atrás`;
+  const diffH = Math.floor(diffMin/60);
+  if(diffH < 24) return `${diffH}h atrás`;
+  return `${Math.floor(diffH/24)}d atrás`;
+}
+
+async function fetchRecentBlocks() {
+  const hint = $('blocksRefreshHint');
+  const container = $('blocksScroll');
+  if(hint) hint.textContent = 'a atualizar...';
+  try {
+    const res = await fetch('https://mempool.space/api/v1/blocks');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const blocks = await res.json();
+    renderRecentBlocks(blocks);
+    if(hint) hint.textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-PT');
+  } catch(e) {
+    console.error('Erro ao obter blocos:', e);
+    if(hint) hint.textContent = 'falha ao atualizar';
+    if(container && container.children.length === 0) {
+      container.innerHTML = '<div class="blocks-empty">Não foi possível carregar os blocos. Verifica a ligação à internet.</div>';
+    }
+  }
+}
+
+function renderRecentBlocks(blocks) {
+  const container = $('blocksScroll');
+  if(!container) return;
+  if(!blocks || !blocks.length) {
+    container.innerHTML = '<div class="blocks-empty">Sem blocos para mostrar.</div>';
+    return;
+  }
+  container.innerHTML = blocks.map(b => {
+    const pool = (b.extras && b.extras.pool) || { name: 'Desconhecida', slug: 'unknown' };
+    const feeRate = b.extras && (b.extras.avgFeeRate ?? b.extras.medianFee);
+    const feeStr = (feeRate !== undefined && feeRate !== null) ? `~${Number(feeRate).toFixed(1)} sat/vB` : '—';
+    const logoUrl = `https://mempool.space/resources/mining-pools/${pool.slug}.svg`;
+    return `
+      <div class="block-card">
+        <div class="bc-head">
+          <span class="bc-height">${b.height}</span>
+          <span class="bc-time">${timeAgoPt(b.timestamp)}</span>
+        </div>
+        <div class="bc-row"><span class="bc-ico">▤</span><span>${b.tx_count} txs</span></div>
+        <div class="bc-row"><span class="bc-ico">₿</span><span>${feeStr}</span></div>
+        <div class="bc-pool">
+          <span class="bc-pool-name" title="${pool.name}">${pool.name}</span>
+          <img class="bc-pool-logo" src="${logoUrl}" alt="" onerror="this.style.display='none'">
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+let difficultyData = null;
+let simRefreshTimer = null;
+
+function startSimAutoRefresh() {
+  stopSimAutoRefresh();
+  simRefreshTimer = setInterval(fetchDifficultyData, 300000);
+}
+function stopSimAutoRefresh() {
+  if(simRefreshTimer) { clearInterval(simRefreshTimer); simRefreshTimer = null; }
+}
+
+async function fetchDifficultyData() {
+  const hint = $('simHint');
+  try {
+    const [adjRes, hrRes, heightRes] = await Promise.all([
+      fetch('https://mempool.space/api/v1/difficulty-adjustment'),
+      fetch('https://mempool.space/api/v1/mining/hashrate/3d'),
+      fetch('https://mempool.space/api/blocks/tip/height')
+    ]);
+    if(!adjRes.ok || !hrRes.ok || !heightRes.ok) throw new Error('HTTP error');
+    const adj = await adjRes.json();
+    const hr = await hrRes.json();
+    const heightText = await heightRes.text();
+
+    difficultyData = {
+      progressPercent: adj.progressPercent,
+      difficultyChange: adj.difficultyChange,
+      remainingBlocks: adj.remainingBlocks,
+      estimatedRetargetDate: adj.estimatedRetargetDate,
+      timeAvg: adj.timeAvg,
+      currentDifficulty: hr.currentDifficulty,
+      currentHeight: parseInt(heightText, 10)
+    };
+    renderSimulator();
+  } catch(e) {
+    console.error('Erro ao obter dados de dificuldade:', e);
+    if(hint) hint.textContent = 'Não foi possível obter os dados da rede. Verifica a ligação à internet.';
+  }
+}
+
+function formatDurationPt(seconds) {
+  if(!isFinite(seconds) || seconds <= 0) return '—';
+  const YEAR = 365.25 * 86400;
+  if(seconds >= YEAR) return `${(seconds / YEAR).toFixed(1)} anos`;
+  const DAY = 86400;
+  if(seconds >= DAY) return `${(seconds / DAY).toFixed(1)} dias`;
+  const HOUR = 3600;
+  if(seconds >= HOUR) return `${(seconds / HOUR).toFixed(1)} horas`;
+  return `${Math.max(1, Math.round(seconds / 60))} min`;
+}
+
+function renderSimulator() {
+  if(!difficultyData) return;
+
+  const active = devices.map(d => readings[d.id]).filter(r => r && r.online);
+  const totalHashGHs = active.reduce((s, r) => s + (r.hashrate || 0), 0);
+  const userHashHs = totalHashGHs * 1e9;
+
+  const diff = difficultyData.currentDifficulty;
+  const change = difficultyData.difficultyChange;
+
+  $('simDifficulty').textContent = diff ? Math.round(diff).toLocaleString('pt-PT') : '—';
+
+  const changeEl = $('simDifficultyChange');
+  changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+  changeEl.className = 'sim-value ' + (change >= 0 ? 'sim-bad' : 'sim-good');
+
+  $('simRemainingBlocks').textContent = difficultyData.remainingBlocks.toLocaleString('pt-PT');
+  $('simRetargetDate').textContent = new Date(difficultyData.estimatedRetargetDate * 1000).toLocaleString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+  $('simProgress').textContent = difficultyData.progressPercent.toFixed(1) + '%';
+  $('simProgressBar').style.width = Math.min(100, Math.max(0, difficultyData.progressPercent)) + '%';
+
+  const HALVING_INTERVAL = 210000;
+  const height = difficultyData.currentHeight;
+  if(height && !isNaN(height)) {
+    const currentEpoch = Math.floor(height / HALVING_INTERVAL);
+    const nextHalvingHeight = (currentEpoch + 1) * HALVING_INTERVAL;
+    const blocksUntilHalving = nextHalvingHeight - height;
+    const currentReward = 50 / Math.pow(2, currentEpoch);
+    const avgBlockTimeSec = difficultyData.timeAvg ? difficultyData.timeAvg / 1000 : 600;
+    const secondsUntilHalving = blocksUntilHalving * avgBlockTimeSec;
+    const halvingDate = new Date(Date.now() + secondsUntilHalving * 1000);
+    const halvingProgressPercent = ((height % HALVING_INTERVAL) / HALVING_INTERVAL) * 100;
+
+    $('simCurrentHeight').textContent = height.toLocaleString('pt-PT');
+    $('simCurrentReward').textContent = `${currentReward} BTC`;
+    $('simHalvingBlocks').textContent = blocksUntilHalving.toLocaleString('pt-PT');
+    $('simHalvingDate').textContent = halvingDate.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
+    $('simHalvingProgress').textContent = halvingProgressPercent.toFixed(2) + '%';
+    $('simHalvingProgressBar').style.width = halvingProgressPercent + '%';
+  }
+
+  const hrFmt = formatHashrate(totalHashGHs);
+  $('simYourHashrate').textContent = totalHashGHs > 0 ? `${hrFmt.value} ${hrFmt.unit}` : 'Sem máquinas online';
+
+  const POW32 = Math.pow(2, 32);
+  const expectedSecondsNow = userHashHs > 0 ? (diff * POW32) / userHashHs : Infinity;
+  const projectedDiff = diff * (1 + change / 100);
+  const expectedSecondsProjected = userHashHs > 0 ? (projectedDiff * POW32) / userHashHs : Infinity;
+
+  $('simTimeNow').textContent = userHashHs > 0 ? formatDurationPt(expectedSecondsNow) : '—';
+  $('simTimeProjected').textContent = userHashHs > 0 ? formatDurationPt(expectedSecondsProjected) : '—';
+
+  const deltaEl = $('simTimeDelta');
+  if(userHashHs > 0 && isFinite(expectedSecondsNow) && isFinite(expectedSecondsProjected)) {
+    const deltaSeconds = expectedSecondsProjected - expectedSecondsNow;
+    const sign = deltaSeconds >= 0 ? '+' : '−';
+    deltaEl.textContent = `${sign}${formatDurationPt(Math.abs(deltaSeconds))}`;
+    deltaEl.className = 'sim-value ' + (deltaSeconds > 0 ? 'sim-bad' : (deltaSeconds < 0 ? 'sim-good' : ''));
+  } else {
+    deltaEl.textContent = '—';
+    deltaEl.className = 'sim-value';
+  }
+
+  const blockProbability = (periodSeconds) => {
+    if(!(userHashHs > 0) || !isFinite(expectedSecondsNow) || expectedSecondsNow <= 0) return null;
+    return 1 - Math.exp(-periodSeconds / expectedSecondsNow);
+  };
+
+  const formatProb = (p) => {
+    if(p == null) return '—';
+    const pct = p * 100;
+    if(pct >= 0.01) return `${pct.toFixed(2)}%`;
+    if(pct === 0) return '0%';
+    return `${pct.toExponential(2)}%`;
+  };
+
+  const DAY_S = 86400;
+  $('simProb1d').textContent = formatProb(blockProbability(1 * DAY_S));
+  $('simProb7d').textContent = formatProb(blockProbability(7 * DAY_S));
+  $('simProb30d').textContent = formatProb(blockProbability(30 * DAY_S));
+  $('simProb1y').textContent = formatProb(blockProbability(365.25 * DAY_S));
+}
+
+function copyLightningAddress() {
+  const address = 'plainpen16@walletofsatoshi.com';
+  navigator.clipboard.writeText(address).then(() => {
+    alert('Endereço Lightning copiado!');
+  }).catch(err => {
+    console.error('Erro ao copiar:', err);
+  });
+}
+
+function copyBtcAddress() {
+  const address = 'bc1qffk82prrxn84e8y9l0z5yflsqclhyc9ptphgmf';
+  navigator.clipboard.writeText(address).then(() => {
+    alert('Endereço Bitcoin On-Chain copiado!');
+  }).catch(err => {
+    console.error('Erro ao copiar:', err);
+  });
+}
+
+function updateNotifBadge() {
+  const badge = $('notifBadge');
+  const mini = $('notifBadgeMini');
+  if(unreadNotifs > 0) {
+    if(badge){ badge.textContent = unreadNotifs; badge.style.display = 'inline-block'; }
+    if(mini){ mini.textContent = unreadNotifs; mini.style.display = 'inline-block'; }
+  } else {
+    if(badge) badge.style.display = 'none';
+    if(mini) mini.style.display = 'none';
+  }
+}
+
+function addNotification(type, title, description, machineName) {
+  const item = {
+    id: 'notif_' + Math.random().toString(36).slice(2, 9),
+    type,
+    title,
+    description,
+    machineName,
+    time: nowStamp(),
+    dateStr: new Date().toLocaleString('pt-BR')
+  };
+  notifications.unshift(item);
+  if(notifications.length > 100) notifications.pop();
+  saveNotifications();
+
+  playSound(type);
+
+  if(!$('tab-notifications').classList.contains('active')) {
+    unreadNotifs++;
+    updateNotifBadge();
+  } else {
+    renderNotifications();
+  }
+}
+
+function triggerTestNotifications() {
+  const sampleMachines = devices.length > 0 ? devices : [{ name: 'Máquina Teste 01', id: 'test_m1' }];
+  const randomMachine = sampleMachines[Math.floor(Math.random() * sampleMachines.length)];
+  
+  addNotification('best', 'Novo Recorde de Dificuldade: 45.2M', 'A máquina alcançou um novo best diff de 45,230,100 na sessão de teste.', randomMachine.name);
+  setTimeout(() => {
+    addNotification('block', 'Bloco Encontrado com Sucesso! (TESTE)', 'Simulação de bloco minerado com sucesso na rede.', randomMachine.name);
+  }, 600);
+  
+  logEvent('Notificações de teste geradas com som.', 'new', randomMachine.name, randomMachine.id || 'sys');
+}
+
+function loadNotifications() {
+  try {
+    const data = localStorage.getItem(NOTIF_KEY);
+    if(data) notifications = JSON.parse(data);
+  } catch(e) { notifications = []; }
+}
+
+function saveNotifications() {
+  try { localStorage.setItem(NOTIF_KEY, JSON.stringify(notifications)); } catch(e){}
+}
+
+function clearNotifications() {
+  notifications = [];
+  saveNotifications();
+  renderNotifications();
+}
+
+function renderNotifications() {
+  const list = $('notifList');
+  if(!list) return;
+  if(notifications.length === 0) {
+    list.innerHTML = '<div style="text-align:center; color: var(--muted); font-size: 12px; padding: 30px;">Ainda não existem notificações registadas.</div>';
+    return;
+  }
+  
+  const NOTIF_STYLES = {
+    block:            { itemClass: 'type-block',            tagClass: 'block',            label: '🚀 Bloco Encontrado!' },
+    best:             { itemClass: 'type-best',              tagClass: 'best',              label: '🏆 Recorde de Dificuldade' },
+    thermal:          { itemClass: 'type-thermal',            tagClass: 'thermal-critical',  label: '🧬 Manutenção Preditiva' },
+    'thermal-warning':{ itemClass: 'type-thermal-warning',    tagClass: 'thermal-warning',   label: '🧬 Manutenção Preditiva' },
+    critical:         { itemClass: 'type-thermal',            tagClass: 'thermal-critical',  label: '🛡️ Overheating Crítico' },
+  };
+
+  list.innerHTML = '';
+  notifications.forEach(n => {
+    const el = document.createElement('div');
+    const style = NOTIF_STYLES[n.type] || NOTIF_STYLES.best;
+    el.className = `notif-item ${style.itemClass}`;
+    el.innerHTML = `
+      <div class="notif-info">
+        <div class="notif-header-line">
+          <span class="notif-tag ${style.tagClass}">${style.label}</span>
+          <span class="notif-machine">[${n.machineName}]</span>
+        </div>
+        <div class="notif-text" style="font-weight: 600; color: var(--text);">${n.title}</div>
+        <div class="notif-text">${n.description}</div>
+      </div>
+      <div class="notif-time">${n.dateStr}</div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function updateLogMachineDropdown() {
+  const select = $('logMachineSelect');
+  if(!select) return;
+  const currentVal = select.value;
+  select.innerHTML = '<option value="all">🌐 Todas as Máquinas</option>';
+  devices.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = `💻 ${d.name} (${d.ip})`;
+    select.appendChild(opt);
+  });
+  select.value = currentVal;
+}
+
+function formatNumber(val, units, base = 1000){
+  if(val == null || isNaN(val)) return {value:'—', unit:''};
+  let v = val;
+  let i = 0;
+  while(v >= base && i < units.length-1){ v /= base; i++; }
+  return { value: v.toFixed(v >= 100 || i === 0 ? 0 : 2), unit: units[i] };
+}
+
+function formatHashrate(val){
+  if(val == null || isNaN(val)) return {value:'—', unit:''};
+  let v = val;
+  let unit = 'GH/s';
+
+  if(v >= 1000) {
+    v = v / 1000;
+    unit = 'TH/s';
+  }
+
+  return { value: v.toFixed(2), unit: unit };
+}
+
+function formatDiff(diff){
+  return formatNumber(diff, ['','K','M','G','T','P'], 1000);
+}
+
+function formatUptime(seconds){
+  if(seconds == null || isNaN(seconds) || seconds < 0) return { text: '—', cls: '' };
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+
+  let text;
+  if(d > 0) text = `${d}d ${h}h ${m}m`;
+  else if(h > 0) text = `${h}h ${m}m`;
+  else text = `${m}m`;
+
+  let cls = 'highlight-green';
+  if(seconds < 600) cls = 'highlight-amber';
+  return { text, cls };
+}
+
+const DONUT_COLORS = ['#21ffb0', '#4fd6ff', '#ffb020', '#ff5d5d', '#9b6bff', '#ff6b9b', '#6bffda', '#ffd166'];
+
+function renderHashrateDonut(devicesList){
+  const row = $('hashrateDonutRow');
+  if(!row) return;
+
+  const slices = devicesList
+    .map(dev => ({ dev, r: readings[dev.id] }))
+    .filter(x => x.r && x.r.online && (x.r.hashrate || 0) > 0);
+
+  if(slices.length === 0){
+    row.innerHTML = '<div class="donut-empty">Sem máquinas online.</div>';
+    return;
+  }
+
+  const total = slices.reduce((s, x) => s + x.r.hashrate, 0);
+  const R = 70, CX = 80, CY = 80, STROKE = 22;
+  const circumference = 2 * Math.PI * R;
+
+  let offset = 0;
+  const arcs = slices.map((x) => {
+    const pct = x.r.hashrate / total;
+    const dash = pct * circumference;
+    const gap = circumference - dash;
+    const rotation = (offset / circumference) * 360 - 90;
+    offset += dash;
+    const colorIdx = devicesList.indexOf(x.dev) % DONUT_COLORS.length;
+    const color = DONUT_COLORS[colorIdx];
+    return `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${color}"
+      stroke-width="${STROKE}" stroke-dasharray="${dash} ${gap}"
+      transform="rotate(${rotation} ${CX} ${CY})" stroke-linecap="butt" />`;
+  }).join('');
+
+  const totalFmt = formatHashrate(total);
+
+  const legend = slices
+    .sort((a, b) => b.r.hashrate - a.r.hashrate)
+    .map(x => {
+      const pct = ((x.r.hashrate / total) * 100).toFixed(1);
+      const colorIdx = devicesList.indexOf(x.dev) % DONUT_COLORS.length;
+      const hf = formatHashrate(x.r.hashrate);
+      return `
+        <div class="donut-legend-item">
+          <span class="donut-legend-swatch" style="background:${DONUT_COLORS[colorIdx]}"></span>
+          <span class="donut-legend-name">${x.dev.name}</span>
+          <span class="donut-legend-sub">${hf.value} ${hf.unit}</span>
+          <span class="donut-legend-pct">${pct}%</span>
+        </div>`;
+    }).join('');
+
+  row.innerHTML = `
+    <div class="donut-svg-wrap">
+      <svg viewBox="0 0 160 160">${arcs}</svg>
+      <div class="donut-center-label">
+        <div class="val">${totalFmt.value}</div>
+        <div class="unit">${totalFmt.unit}</div>
+      </div>
+    </div>
+    <div class="donut-legend">${legend}</div>
+  `;
+}
+
+
+function getTempRiskClass(temp){
+  if(temp == null || isNaN(temp)) return '';
+  if(temp >= 75) return 'risk-red';
+  if(temp >= 65) return 'risk-amber';
+  return 'risk-green';
+}
+
+function getLatencyRiskClass(ms){
+  if(ms == null || isNaN(ms)) return '';
+  if(ms >= 250) return 'risk-red';
+  if(ms >= 100) return 'risk-amber';
+  return 'risk-green';
+}
+
+// ---------- Proteção Térmica / Alerta Crítico Contínuo ----------
+
+function loadThermalProtectionSettings(){
+  try {
+    const res = localStorage.getItem(THERMAL_PROTECTION_KEY);
+    if(res) thermalProtectionSettings = { ...thermalProtectionSettings, ...JSON.parse(res) };
+  } catch(e){}
+  const enabledEl = $('thermalProtectionEnabled');
+  const tempEl = $('thermalProtectionTemp');
+  const sustainEl = $('thermalProtectionSustain');
+  if(enabledEl) enabledEl.checked = thermalProtectionSettings.enabled;
+  if(tempEl) tempEl.value = thermalProtectionSettings.criticalTemp;
+  if(sustainEl) sustainEl.value = thermalProtectionSettings.sustainSec;
+}
+
+function saveThermalProtectionSettings(){
+  thermalProtectionSettings = {
+    enabled: $('thermalProtectionEnabled').checked,
+    criticalTemp: Number($('thermalProtectionTemp').value) || 90,
+    sustainSec: Math.max(5, Number($('thermalProtectionSustain').value) || 45)
+  };
+  try { localStorage.setItem(THERMAL_PROTECTION_KEY, JSON.stringify(thermalProtectionSettings)); } catch(e){}
+  if(!thermalProtectionSettings.enabled){
+    Object.keys(thermalCriticalState).forEach(id => { thermalCriticalState[id] = { since: null, alarmed: false }; });
+    updateCriticalAlarmUI();
+  }
+}
+
+function evaluateThermalProtection(dev, reading){
+  if(!thermalCriticalState[dev.id]) thermalCriticalState[dev.id] = { since: null, alarmed: false };
+  const state = thermalCriticalState[dev.id];
+  const temp = reading.temp;
+
+  if(!thermalProtectionSettings.enabled || temp == null || isNaN(temp)){
+    state.since = null;
+    if(state.alarmed){ state.alarmed = false; updateCriticalAlarmUI(); }
+    return;
+  }
+
+  if(temp >= thermalProtectionSettings.criticalTemp){
+    if(state.since == null) state.since = Date.now();
+    const elapsedSec = (Date.now() - state.since) / 1000;
+    if(elapsedSec >= thermalProtectionSettings.sustainSec && !state.alarmed){
+      state.alarmed = true;
+      criticalAlarmSilenced = false;
+      logEvent(`🛡️🔥 CRÍTICO: temperatura sustentada em ${temp.toFixed(1)}°C durante ${Math.round(elapsedSec)}s — possível overheating.`, 'error', dev.name, dev.id);
+      addNotification('critical', 'Overheating Crítico Detetado', `${dev.name} manteve-se a ${temp.toFixed(1)}°C (limite: ${thermalProtectionSettings.criticalTemp}°C) durante mais de ${thermalProtectionSettings.sustainSec}s. Verifica ventilação, pasta térmica e fluxo de ar.`, dev.name);
+      updateCriticalAlarmUI();
+    }
+  } else {
+    state.since = null;
+    if(state.alarmed){
+      state.alarmed = false;
+      logEvent(`Temperatura normalizada (${temp.toFixed(1)}°C) — alerta crítico resolvido.`, 'new', dev.name, dev.id);
+      updateCriticalAlarmUI();
+    }
+  }
+}
+
+function getActiveCriticalDevices(){
+  return devices.filter(d => thermalCriticalState[d.id]?.alarmed);
+}
+
+function updateCriticalAlarmUI(){
+  const active = getActiveCriticalDevices();
+  const banner = $('criticalAlarmBanner');
+  if(!banner) return;
+
+  if(active.length === 0){
+    banner.style.display = 'none';
+    stopCriticalAlarmLoop();
+    return;
+  }
+
+  const names = active.map(d => d.name).join(', ');
+  $('criticalAlarmText').textContent =
+    `TEMPERATURA CRÍTICA — ${names} acima de ${thermalProtectionSettings.criticalTemp}°C de forma contínua. Possível overheating.`;
+  banner.style.display = 'flex';
+
+  if(!criticalAlarmSilenced) startCriticalAlarmLoop();
+}
+
+function startCriticalAlarmLoop(){
+  if(criticalAlarmIntervalId) return;
+  playSound('critical');
+  criticalAlarmIntervalId = setInterval(() => playSound('critical'), CRITICAL_ALARM_INTERVAL_MS);
+}
+
+function stopCriticalAlarmLoop(){
+  if(criticalAlarmIntervalId){
+    clearInterval(criticalAlarmIntervalId);
+    criticalAlarmIntervalId = null;
+  }
+}
+
+function silenceCriticalAlarm(){
+  criticalAlarmSilenced = true;
+  stopCriticalAlarmLoop();
+}
+
+// ---------- Impressão Digital Térmica / Manutenção Preditiva ----------
+
+function loadThermalHistory(){
+  try {
+    const res = localStorage.getItem(THERMAL_KEY);
+    if(res) thermalHistory = JSON.parse(res);
+  } catch(e) { thermalHistory = {}; }
+}
+
+function saveThermalHistory(){
+  try { localStorage.setItem(THERMAL_KEY, JSON.stringify(thermalHistory)); } catch(e){}
+}
+
+// Regista periodicamente uma amostra de quanto "esforço" de ventilação (RPM por TH/s)
+// a máquina precisou para manter o hashrate atual. É esta série ao longo de vários dias
+// que permite detetar degradação de pasta térmica, pó nos dissipadores ou desgaste da ventoinha.
+function recordThermalSnapshot(dev, reading){
+  const hashTH = (reading.hashrate || 0) / 1000;
+  if(hashTH <= 0 || reading.temp == null || isNaN(reading.temp)) return;
+
+  const arr = thermalHistory[dev.id] || (thermalHistory[dev.id] = []);
+  const now = Date.now();
+  const last = arr[arr.length - 1];
+  if(last && (now - last.t) < THERMAL_SNAPSHOT_INTERVAL_MS) return;
+
+  const fanVal = reading.fanSpeed || 0;
+  const effort = fanVal / hashTH; // "esforço de arrefecimento": ventoinha necessária por TH/s
+
+  arr.push({ t: now, temp: reading.temp, fan: fanVal, hash: reading.hashrate, effort });
+  if(arr.length > THERMAL_MAX_SNAPSHOTS) arr.splice(0, arr.length - THERMAL_MAX_SNAPSHOTS);
+  saveThermalHistory();
+
+  evaluateThermalHealth(dev);
+  evaluateThermalForecast(dev, computeThermalForecast(dev.id));
+}
+
+// Compara o esforço de arrefecimento recente (últimas 24h) com a média histórica
+// registada nos dias anteriores, para o mesmo dispositivo.
+function computeThermalHealth(devId){
+  const arr = (thermalHistory[devId] || []).filter(s => s.effort > 0 && isFinite(s.effort));
+
+  if(arr.length < THERMAL_MIN_BASELINE_SNAPSHOTS){
+    return {
+      status: 'collecting', changePct: null, baselineEffort: null, recentEffort: null,
+      daysRecorded: arr.length ? (Date.now() - arr[0].t) / 86400000 : 0, points: arr
+    };
+  }
+
+  const now = Date.now();
+  const recent = arr.filter(s => (now - s.t) <= THERMAL_RECENT_WINDOW_MS);
+  const baseline = arr.filter(s => (now - s.t) > THERMAL_RECENT_WINDOW_MS && (now - s.t) <= THERMAL_BASELINE_WINDOW_MS);
+
+  // Se ainda não há histórico com mais de 24h, usa a 1ª metade das amostras como baseline
+  // e a 2ª metade como "recente" (para começar a dar sinal mesmo no primeiro dia).
+  const baseSet = baseline.length >= 8 ? baseline : arr.slice(0, Math.floor(arr.length / 2));
+  const recentSet = recent.length >= 4 ? recent : arr.slice(Math.floor(arr.length / 2));
+
+  const avg = list => list.reduce((s, x) => s + x.effort, 0) / list.length;
+  const baselineEffort = avg(baseSet);
+  const recentEffort = avg(recentSet);
+  const changePct = ((recentEffort - baselineEffort) / baselineEffort) * 100;
+
+  let status = 'normal';
+  if(changePct >= THERMAL_CRIT_PCT) status = 'critical';
+  else if(changePct >= THERMAL_WARN_PCT) status = 'warning';
+
+  return { status, changePct, baselineEffort, recentEffort, daysRecorded: (now - arr[0].t) / 86400000, points: arr };
+}
+
+// Dispara notificação/alerta de manutenção preditiva apenas quando o estado piora
+// (evita spam repetido a cada amostra enquanto o estado se mantém).
+function evaluateThermalHealth(dev){
+  const health = computeThermalHealth(dev.id);
+  const prevStatus = thermalAlertState[dev.id] || 'normal';
+
+  if(health.status !== prevStatus && (health.status === 'warning' || health.status === 'critical')){
+    const pct = health.changePct.toFixed(0);
+    const isCritical = health.status === 'critical';
+    addNotification(
+      isCritical ? 'thermal' : 'thermal-warning',
+      `Manutenção Preditiva${isCritical ? ' — CRÍTICO' : ''}: possível degradação térmica`,
+      `A ventilação necessária para manter o hashrate desta máquina subiu ${pct}% face à média histórica registada. Isto costuma indicar pasta térmica degradada, acumulação de pó no dissipador ou desgaste da ventoinha. Recomenda-se inspeção física antes de a máquina entrar em thermal throttling.`,
+      dev.name
+    );
+    logEvent(`Alerta térmico preditivo${isCritical ? ' (crítico)' : ''}: ventilação +${pct}% vs histórico.`, isCritical ? 'error' : 'amber', dev.name, dev.id);
+  }
+  thermalAlertState[dev.id] = health.status;
+  updateThermalBadge();
+  return health;
+}
+
+// --- Simulador Preditivo de Desgaste e Thermal Throttle ---
+// Ajusta uma reta de tendência (regressão linear pelos mínimos quadrados) à média
+// diária do "esforço de arrefecimento" (ventoinha por TH/s) e projeta-a no tempo,
+// para estimar com quantos dias de antecedência a máquina deverá atingir os limiares
+// de "Atenção" e "Crítico" já usados no diagnóstico em tempo real, permitindo agendar
+// limpeza/manutenção antes de o ASIC entrar em thermal throttling inesperado.
+function computeThermalForecast(devId){
+  const arr = (thermalHistory[devId] || []).filter(s => s.effort > 0 && isFinite(s.effort));
+  if(arr.length < THERMAL_MIN_BASELINE_SNAPSHOTS){
+    return { status: 'collecting' };
+  }
+
+  // Agrupa por dia civil para suavizar o ciclo diário de temperatura ambiente/carga
+  // e não deixar que o ruído de uma amostra isolada distorça a tendência.
+  const dayMap = {};
+  arr.forEach(s => {
+    const dayKey = new Date(s.t).toDateString();
+    (dayMap[dayKey] || (dayMap[dayKey] = [])).push(s.effort);
+  });
+  const dayKeys = Object.keys(dayMap).sort((a, b) => new Date(a) - new Date(b));
+  if(dayKeys.length < THERMAL_FORECAST_MIN_DAYS){
+    return { status: 'insufficient', daysRecorded: (Date.now() - arr[0].t) / 86400000 };
+  }
+
+  const firstDayTime = new Date(dayKeys[0]).getTime();
+  const daily = dayKeys.map(k => {
+    const vals = dayMap[k];
+    return {
+      dayIndex: (new Date(k).getTime() - firstDayTime) / 86400000,
+      avg: vals.reduce((s, v) => s + v, 0) / vals.length
+    };
+  });
+
+  const n = daily.length;
+  const sumX = daily.reduce((s, d) => s + d.dayIndex, 0);
+  const sumY = daily.reduce((s, d) => s + d.avg, 0);
+  const sumXY = daily.reduce((s, d) => s + d.dayIndex * d.avg, 0);
+  const sumXX = daily.reduce((s, d) => s + d.dayIndex * d.dayIndex, 0);
+  const denom = (n * sumXX - sumX * sumX);
+  const slope = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;   // variação de esforço por dia
+  const intercept = (sumY - slope * sumX) / n;
+
+  // R² como medida de o quão bem a reta explica os dados diários (confiança da previsão).
+  const meanY = sumY / n;
+  let ssTot = 0, ssRes = 0;
+  daily.forEach(d => {
+    const predicted = slope * d.dayIndex + intercept;
+    ssTot += (d.avg - meanY) ** 2;
+    ssRes += (d.avg - predicted) ** 2;
+  });
+  const rSquared = ssTot > 0 ? Math.max(0, 1 - (ssRes / ssTot)) : 0;
+
+  const health = computeThermalHealth(devId);
+  const baseline = health.baselineEffort || daily[0].avg;
+  const warnThreshold = baseline * (1 + THERMAL_WARN_PCT / 100);
+  const critThreshold = baseline * (1 + THERMAL_CRIT_PCT / 100);
+
+  const lastDayIndex = daily[daily.length - 1].dayIndex;
+  const currentProjected = slope * lastDayIndex + intercept;
+
+  let confidence = 'baixa';
+  if(n >= 10 && rSquared >= 0.4) confidence = 'alta';
+  else if(n >= 5) confidence = 'moderada';
+
+  const daysUntil = (threshold) => {
+    if(slope <= 0.0001) return null;               // sem tendência de degradação -> sem ETA
+    if(currentProjected >= threshold) return 0;      // já ultrapassado
+    return (threshold - currentProjected) / slope;
+  };
+
+  return {
+    status: 'ok',
+    slope, rSquared, confidence, daysRecorded: n, spanDays: lastDayIndex,
+    baseline, warnThreshold, critThreshold, currentProjected,
+    daysToWarn: daysUntil(warnThreshold),
+    daysToCrit: daysUntil(critThreshold)
+  };
+}
+
+function formatForecastEta(days){
+  if(days == null) return null;
+  const date = new Date(Date.now() + days * 86400000);
+  return { days, label: days <= 0 ? 'agora' : `~${Math.ceil(days)} dias`, date: date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' }) };
+}
+
+// Dispara (uma única vez por transição) uma notificação preditiva quando a janela
+// de risco de throttle entra em THERMAL_FORECAST_ALERT_WINDOW dias, dando tempo
+// para agendar a limpeza/manutenção com antecedência.
+function evaluateThermalForecast(dev, forecast){
+  const prev = thermalForecastAlertState[dev.id] || 'none';
+  let level = 'none';
+  if(forecast.status === 'ok'){
+    if(forecast.daysToCrit != null && forecast.daysToCrit <= THERMAL_FORECAST_ALERT_WINDOW) level = 'crit';
+    else if(forecast.daysToWarn != null && forecast.daysToWarn <= THERMAL_FORECAST_ALERT_WINDOW) level = 'warn';
+  }
+
+  if(level !== 'none' && level !== prev){
+    const isCrit = level === 'crit';
+    const eta = formatForecastEta(isCrit ? forecast.daysToCrit : forecast.daysToWarn);
+    addNotification(
+      isCrit ? 'thermal' : 'thermal-warning',
+      `🔮 Previsão de Desgaste${isCrit ? ' — RISCO DE THROTTLE' : ''}`,
+      `Ao ritmo atual de degradação térmica, esta máquina deverá atingir o limiar ${isCrit ? 'crítico (risco de thermal throttle)' : 'de atenção (recomenda-se limpeza)'} dentro de ${eta.label} (previsto para ${eta.date}). Considera agendar limpeza do dissipador/renovação da pasta térmica antes dessa data.`,
+      dev.name
+    );
+    logEvent(`Previsão de desgaste: risco de ${isCrit ? 'throttle' : 'manutenção'} em ${eta.label} (${eta.date}).`, isCrit ? 'error' : 'amber', dev.name, dev.id);
+  }
+  thermalForecastAlertState[dev.id] = level;
+}
+
+function updateThermalBadge(){
+  const badge = $('thermalBadge');
+  const mini = $('thermalBadgeMini');
+  const atRisk = devices.filter(d => {
+    const s = thermalAlertState[d.id];
+    return s === 'warning' || s === 'critical';
+  }).length;
+  if(atRisk > 0){
+    if(badge){ badge.textContent = atRisk; badge.style.display = 'inline-block'; }
+    if(mini){ mini.textContent = atRisk; mini.style.display = 'inline-block'; }
+  } else {
+    if(badge) badge.style.display = 'none';
+    if(mini) mini.style.display = 'none';
+  }
+}
+
+function miniSparklineSVG(vals){
+  vals = (vals || []).filter(v => v != null);
+  if(vals.length < 2){
+    return '<svg class="ping-sparkline" viewBox="0 0 260 36"><text x="130" y="21" fill="#4a6975" font-size="9" text-anchor="middle">a recolher dados...</text></svg>';
+  }
+  const w = 260, h = 36, pad = 4;
+  const min = Math.min(...vals), max = Math.max(...vals), range = (max - min) || 1;
+  const pts = vals.map((v, i) => {
+    const x = pad + i * ((w - pad*2) / (vals.length - 1));
+    const y = h - pad - ((v - min) / range) * (h - pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const last = pts[pts.length - 1].split(',');
+  return `<svg class="ping-sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${pts.join(' ')}" fill="none" stroke="#4fd6ff" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="#4fd6ff" stroke="#0d1a26" stroke-width="1.5"/>
+  </svg>`;
+}
+
+function renderPingTab(){
+  const grid = $('pingGrid');
+  if(!grid) return;
+
+  if(!devices.length){
+    grid.innerHTML = '<div class="ping-empty">Nenhuma máquina registada. Adiciona uma máquina no separador "Dashboard Geral".</div>';
+    $('pingAvgAll').textContent = '—';
+    $('pingBestAll').textContent = '—';
+    $('pingWorstAll').textContent = '—';
+    $('pingOnlineCount').textContent = '—';
+    $('pingDetailName').textContent = '—';
+    $('chartPing').innerHTML = '';
+    $('valPingNow').textContent = '—';
+    $('valPingAvg').textContent = '—';
+    $('valPingMinMax').textContent = '—';
+    return;
+  }
+
+  const livePings = [];
+  grid.innerHTML = '';
+
+  devices.forEach(dev => {
+    const r = readings[dev.id];
+    const online = !!(r && r.online);
+    const poolPing = online ? r.poolPing : null;
+    const poolLoss = online ? r.poolLoss : null;
+    const localLat = online ? r.localLatency : null;
+    if(online && poolPing != null) livePings.push(poolPing);
+
+    const card = document.createElement('div');
+    card.className = 'ping-card' + (dev.id === selectedId ? ' selected' : '') + (!online ? ' offline' : '');
+
+    const riskClass = online && poolPing != null ? getLatencyRiskClass(poolPing) : (online ? '' : 'risk-red');
+    const valueHtml = online && poolPing != null ? poolPing.toFixed(2) : (online ? 'N/D' : '—');
+    const spark = miniSparklineSVG((histories[dev.id] || []).map(x => x?.poolPing));
+
+    card.innerHTML = `
+      <div class="ping-card-head">
+        <div>
+          <div class="name">${dev.name}</div>
+          <div class="ip">${dev.ip}</div>
+        </div>
+        <div class="ping-status ${online ? 'up' : 'down'}">
+          <span class="pdot"></span>${online ? 'Online' : 'Offline'}
+        </div>
+      </div>
+      <div class="ping-value-row">
+        <span class="ping-value ${riskClass}">${valueHtml}</span>
+        <span class="ping-unit">${online && poolPing != null ? 'ms (ping ao pool)' : ''}</span>
+      </div>
+      ${spark}
+      <div class="ping-stats-mini">
+        <span>${online && poolLoss != null ? `Perda: ${poolLoss.toFixed(2)}%` : 'Perda: —'}</span>
+        <span>${online && localLat != null ? `Rede local: ${localLat} ms` : 'Rede local: —'}</span>
+      </div>
+    `;
+    card.onclick = () => { selectedId = dev.id; renderPingTab(); renderAll(); };
+    grid.appendChild(card);
+  });
+
+  if(livePings.length){
+    const avg = livePings.reduce((a,b) => a+b, 0) / livePings.length;
+    $('pingAvgAll').textContent = `${avg.toFixed(2)} ms`;
+    $('pingBestAll').textContent = `${Math.min(...livePings).toFixed(2)} ms`;
+    $('pingWorstAll').textContent = `${Math.max(...livePings).toFixed(2)} ms`;
+  } else {
+    $('pingAvgAll').textContent = '—';
+    $('pingBestAll').textContent = '—';
+    $('pingWorstAll').textContent = '—';
+  }
+  $('pingOnlineCount').textContent = `${devices.filter(d => readings[d.id]?.online).length} / ${devices.length}`;
+
+  const selDev = devices.find(d => d.id === selectedId) || devices[0];
+  if(selDev){
+    $('pingDetailName').textContent = `${selDev.name} (${selDev.ip})`;
+    drawPingChart('chartPing', (histories[selDev.id] || []).map(x => x?.poolPing));
+  } else {
+    $('pingDetailName').textContent = '—';
+    $('chartPing').innerHTML = '';
+  }
+}
+
+function drawPingChart(svgId, vals){
+  const svg = $(svgId);
+  vals = (vals || []).filter(v => v != null);
+
+  if(vals.length < 2){
+    svg.innerHTML = '<text x="50%" y="50%" fill="#4a6975" font-size="11" text-anchor="middle">A aguardar dados em tempo real (ou este pool não reporta ping)...</text>';
+    $('valPingNow').textContent = '—';
+    $('valPingAvg').textContent = '—';
+    $('valPingMinMax').textContent = '—';
+    return;
+  }
+
+  let min = Math.min(...vals), max = Math.max(...vals), range = (max-min) || 1;
+  const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
+  const latest = vals[vals.length - 1];
+
+  $('valPingNow').textContent = `${latest.toFixed(2)} ms`;
+  $('valPingAvg').textContent = `${avg.toFixed(2)} ms`;
+  $('valPingMinMax').textContent = `${min.toFixed(2)} / ${max.toFixed(2)} ms`;
+
+  const paddingY = 16;
+  const w = 300, h = 130;
+  const usableH = h - (paddingY * 2);
+
+  const pts = vals.map((v, i) => {
+    const x = 10 + i * ((w - 20) / (vals.length - 1));
+    const y = h - paddingY - ((v - min) / range) * usableH;
+    return {x, y, val: v};
+  });
+
+  const ptsString = pts.map(p => `${p.x},${p.y}`).join(' L');
+  const avgY = h - paddingY - ((avg - min) / range) * usableH;
+  const lastPt = pts[pts.length - 1];
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="cyan_grad_${svgId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#4fd6ff" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#4fd6ff" stop-opacity="0.0"/>
+      </linearGradient>
+      <filter id="glow_${svgId}" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2" result="glow" />
+        <feComposite in="SourceGraphic" in2="glow" operator="over" />
+      </filter>
+    </defs>
+
+    <line x1="10" y1="${avgY}" x2="290" y2="${avgY}" stroke="#4fd6ff66" stroke-dasharray="4,4" stroke-width="1"/>
+    <path d="M${pts[0].x},${h} L${ptsString} L${pts[pts.length-1].x},${h} Z" fill="url(#cyan_grad_${svgId})"></path>
+    <path fill="none" stroke="#4fd6ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow_${svgId})" d="M${ptsString}"></path>
+    <circle cx="${lastPt.x}" cy="${lastPt.y}" r="4.5" fill="#4fd6ff" stroke="#0d1a26" stroke-width="2"/>
+
+    <g id="tooltip_${svgId}" style="display:none;">
+      <line x1="0" y1="0" x2="0" y2="${h}" stroke="#4fd6ff88" stroke-dasharray="3,3" stroke-width="1"></line>
+      <circle r="4" fill="#4fd6ff" stroke="#060d14" stroke-width="2"></circle>
+    </g>
+  `;
+
+  svg.onmousemove = (e) => {
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+
+    let closest = pts[0];
+    let minDist = Infinity;
+    for(const p of pts){
+      const dist = Math.abs(p.x - mouseX);
+      if(dist < minDist){ minDist = dist; closest = p; }
+    }
+
+    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    if(tip){
+      tip.style.display = 'block';
+      tip.setAttribute('transform', `translate(${closest.x}, 0)`);
+      tip.querySelector('circle').setAttribute('cy', closest.y);
+      const res = closest.val;
+      $('valPingNow').textContent = `${res.toFixed(2)} ms`;
+    }
+  };
+
+  svg.onmouseleave = () => {
+    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    if(tip) tip.style.display = 'none';
+    $('valPingNow').textContent = `${vals[vals.length - 1].toFixed(2)} ms`;
+  };
+}
+
+function renderThermalTab(){
+  const grid = $('thermalGrid');
+  if(!grid) return;
+
+  if(!devices.length){
+    grid.innerHTML = '<div class="ping-empty">Nenhuma máquina registada. Adiciona uma máquina no separador "Dashboard Geral".</div>';
+    $('thermalAtRisk').textContent = '—';
+    $('thermalWorst').textContent = '—';
+    $('thermalMinDays').textContent = '—';
+    $('thermalTracked').textContent = '—';
+    $('thermalDetailName').textContent = '—';
+    $('chartThermal').innerHTML = '';
+    $('valThermalNow').textContent = '—';
+    $('valThermalBaseline').textContent = '—';
+    $('valThermalChange').textContent = '—';
+    $('valThermalDays').textContent = '—';
+    return;
+  }
+
+  grid.innerHTML = '';
+  let atRisk = 0, worstPct = null, minDays = null, tracked = 0, soonestEta = null;
+
+  devices.forEach(dev => {
+    const health = computeThermalHealth(dev.id);
+    const forecast = computeThermalForecast(dev.id);
+    const r = readings[dev.id];
+    const online = !!(r && r.online);
+
+    if(health.status !== 'collecting'){
+      tracked++;
+      if(health.status === 'warning' || health.status === 'critical') atRisk++;
+      if(worstPct === null || health.changePct > worstPct) worstPct = health.changePct;
+    }
+    if(health.points.length){
+      if(minDays === null || health.daysRecorded < minDays) minDays = health.daysRecorded;
+    }
+    if(forecast.status === 'ok'){
+      const eta = forecast.daysToCrit != null ? forecast.daysToCrit : forecast.daysToWarn;
+      if(eta != null && (soonestEta === null || eta < soonestEta.days)){
+        soonestEta = { days: eta, dev, critical: forecast.daysToCrit != null };
+      }
+    }
+
+    let badgeClass = 'status-collecting', badgeLabel = '🧬 A recolher dados';
+    if(health.status === 'normal'){ badgeClass = 'status-normal'; badgeLabel = '✅ Normal'; }
+    else if(health.status === 'warning'){ badgeClass = 'status-warning'; badgeLabel = '⚠️ Atenção'; }
+    else if(health.status === 'critical'){ badgeClass = 'status-critical'; badgeLabel = '🔴 Crítico'; }
+
+    const changeLabel = health.changePct != null ? `${health.changePct >= 0 ? '+' : ''}${health.changePct.toFixed(1)}%` : '—';
+    const spark = miniSparklineSVG(health.points.map(p => p.effort));
+
+    // Linha de previsão (ETA para limiar de atenção/crítico) mostrada em cada cartão.
+    let fcClass = 'fc-collecting', fcText = '🔮 A recolher dados para previsão...';
+    if(forecast.status === 'insufficient'){
+      fcText = '🔮 Ainda sem dias suficientes para tendência';
+    } else if(forecast.status === 'ok'){
+      if(forecast.daysToCrit != null){
+        fcClass = 'fc-crit';
+        const eta = formatForecastEta(forecast.daysToCrit);
+        fcText = `🔮 Risco de throttle em ${eta.label} (${eta.date})`;
+      } else if(forecast.daysToWarn != null){
+        fcClass = 'fc-warn';
+        const eta = formatForecastEta(forecast.daysToWarn);
+        fcText = `🔮 Limpeza recomendada em ${eta.label} (${eta.date})`;
+      } else {
+        fcClass = 'fc-stable';
+        fcText = '🔮 Sem degradação — sem manutenção prevista';
+      }
+    }
+
+    const card = document.createElement('div');
+    card.className = 'thermal-card' + (dev.id === thermalSelectedId ? ' selected' : '') + (!online ? ' offline' : '');
+    card.innerHTML = `
+      <div class="thermal-card-head">
+        <div>
+          <div class="name">${dev.name}</div>
+          <div class="ip">${dev.ip}</div>
+        </div>
+        <div class="thermal-badge ${badgeClass}">${badgeLabel}</div>
+      </div>
+      <div class="thermal-value-row">
+        <span class="thermal-value ${badgeClass}">${changeLabel}</span>
+        <span class="thermal-unit">vs baseline histórico</span>
+      </div>
+      ${spark}
+      <div class="thermal-stats-mini">
+        <span>${online && r.temp != null ? `Temp: ${r.temp.toFixed(1)}°C` : 'Temp: —'}</span>
+        <span>${online ? `Ventoinha: ${(r.fanSpeed || 0).toFixed(0)}` : 'Ventoinha: —'}</span>
+      </div>
+      <div class="thermal-forecast-line ${fcClass}">${fcText}</div>
+    `;
+    card.onclick = () => { thermalSelectedId = dev.id; renderThermalTab(); };
+    grid.appendChild(card);
+  });
+
+  $('thermalAtRisk').textContent = tracked ? `${atRisk} / ${tracked}` : '—';
+  $('thermalWorst').textContent = worstPct !== null ? `${worstPct >= 0 ? '+' : ''}${worstPct.toFixed(1)}%` : '—';
+  $('thermalMinDays').textContent = minDays !== null ? `${minDays.toFixed(1)} dias` : '—';
+  $('thermalTracked').textContent = `${tracked} / ${devices.length}`;
+  $('thermalNextEta').textContent = soonestEta
+    ? `${Math.ceil(soonestEta.days)}d — ${soonestEta.dev.name}`
+    : '—';
+
+  if(!thermalSelectedId || !devices.find(d => d.id === thermalSelectedId)){
+    thermalSelectedId = devices[0]?.id || null;
+  }
+  const selDev = devices.find(d => d.id === thermalSelectedId);
+  if(selDev){
+    const health = computeThermalHealth(selDev.id);
+    $('thermalDetailName').textContent = `${selDev.name} (${selDev.ip})`;
+    drawThermalChart('chartThermal', health.points, health.status);
+    $('valThermalBaseline').textContent = health.baselineEffort != null ? health.baselineEffort.toFixed(2) : '—';
+    $('valThermalChange').textContent = health.changePct != null ? `${health.changePct >= 0 ? '+' : ''}${health.changePct.toFixed(1)}%` : '—';
+    $('valThermalDays').textContent = health.points.length ? `${health.daysRecorded.toFixed(1)} dias (${health.points.length} amostras)` : '—';
+  } else {
+    $('thermalDetailName').textContent = '—';
+    $('chartThermal').innerHTML = '';
+    $('valThermalNow').textContent = '—';
+    $('valThermalBaseline').textContent = '—';
+    $('valThermalChange').textContent = '—';
+    $('valThermalDays').textContent = '—';
+  }
+
+  renderForecastBody(selDev);
+}
+
+function renderForecastBody(selDev){
+  const body = $('forecastBody');
+  if(!body) return;
+
+  if(!selDev){
+    body.innerHTML = '<div class="ping-empty">Sem máquina selecionada.</div>';
+    return;
+  }
+
+  const forecast = computeThermalForecast(selDev.id);
+
+  if(forecast.status === 'collecting'){
+    body.innerHTML = `<div class="ping-empty">🔮 A recolher amostras de ${selDev.name}... a previsão fica disponível assim que houver dados suficientes para um diagnóstico inicial (~12h de funcionamento).</div>`;
+    return;
+  }
+  if(forecast.status === 'insufficient'){
+    body.innerHTML = `<div class="ping-empty">🔮 ${selDev.name} tem ${forecast.daysRecorded.toFixed(1)} dia(s) de dados. São precisos pelo menos ${THERMAL_FORECAST_MIN_DAYS} dias civis distintos para ajustar uma tendência fiável.</div>`;
+    return;
+  }
+
+  const warnEta = formatForecastEta(forecast.daysToWarn);
+  const critEta = formatForecastEta(forecast.daysToCrit);
+  const trendLabel = forecast.slope > 0.0001
+    ? `+${forecast.slope.toFixed(3)} / dia (a degradar)`
+    : (forecast.slope < -0.0001 ? `${forecast.slope.toFixed(3)} / dia (a melhorar)` : 'estável');
+
+  body.innerHTML = `
+    <div class="forecast-grid">
+      <div class="forecast-eta-card ${warnEta ? 'fc-warn' : ''}">
+        <div class="forecast-eta-label">⚠️ Previsão — Limpeza Recomendada</div>
+        <div class="forecast-eta-value">${warnEta ? warnEta.label : (forecast.daysToWarn === 0 ? 'já atingido' : 'sem previsão')}</div>
+        <div class="forecast-eta-date">${warnEta ? `por volta de ${warnEta.date}` : 'sem tendência de degradação detetada'}</div>
+      </div>
+      <div class="forecast-eta-card ${critEta ? 'fc-crit' : ''}">
+        <div class="forecast-eta-label">🔴 Previsão — Risco de Thermal Throttle</div>
+        <div class="forecast-eta-value">${critEta ? critEta.label : (forecast.daysToCrit === 0 ? 'já atingido' : 'sem previsão')}</div>
+        <div class="forecast-eta-date">${critEta ? `por volta de ${critEta.date}` : 'sem tendência de degradação detetada'}</div>
+      </div>
+    </div>
+    <div class="forecast-confidence">
+      Tendência: <b>${trendLabel}</b> · Confiança: <b>${forecast.confidence}</b>
+      (${forecast.daysRecorded} dias de dados, ajuste R²=${forecast.rSquared.toFixed(2)}) ·
+      Baseline: <b>${forecast.baseline.toFixed(2)}</b> · Atual projetado: <b>${forecast.currentProjected.toFixed(2)}</b>
+    </div>
+  `;
+}
+
+function drawThermalChart(svgId, points, status){
+  const svg = $(svgId);
+  const vals = (points || []).map(p => p.effort).filter(v => v != null && isFinite(v));
+
+  if(vals.length < 2){
+    svg.innerHTML = `
+      <text x="150" y="58" fill="#4a6975" font-size="11" text-anchor="middle">A recolher dados térmicos...</text>
+      <text x="150" y="76" fill="#4a6975" font-size="9.5" text-anchor="middle">são precisas algumas horas de funcionamento</text>
+    `;
+    $('valThermalNow').textContent = '—';
+    return;
+  }
+
+  const colorMap = { normal: '#21ffb0', warning: '#ffb020', critical: '#ff5d5d', collecting: '#4fd6ff' };
+  const color = colorMap[status] || '#4fd6ff';
+
+  let min = Math.min(...vals), max = Math.max(...vals), range = (max-min) || 1;
+  const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
+  const latest = vals[vals.length - 1];
+
+  $('valThermalNow').textContent = latest.toFixed(2);
+
+  const paddingY = 16;
+  const w = 300, h = 130;
+  const usableH = h - (paddingY * 2);
+
+  const pts = vals.map((v, i) => {
+    const x = 10 + i * ((w - 20) / (vals.length - 1));
+    const y = h - paddingY - ((v - min) / range) * usableH;
+    return {x, y, val: v};
+  });
+
+  const ptsString = pts.map(p => `${p.x},${p.y}`).join(' L');
+  const avgY = h - paddingY - ((avg - min) / range) * usableH;
+  const lastPt = pts[pts.length - 1];
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="thermal_grad_${svgId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.0"/>
+      </linearGradient>
+      <filter id="thermal_glow_${svgId}" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2" result="glow" />
+        <feComposite in="SourceGraphic" in2="glow" operator="over" />
+      </filter>
+    </defs>
+
+    <line x1="10" y1="${avgY}" x2="290" y2="${avgY}" stroke="${color}66" stroke-dasharray="4,4" stroke-width="1"/>
+    <path d="M${pts[0].x},${h} L${ptsString} L${pts[pts.length-1].x},${h} Z" fill="url(#thermal_grad_${svgId})"></path>
+    <path fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#thermal_glow_${svgId})" d="M${ptsString}"></path>
+    <circle cx="${lastPt.x}" cy="${lastPt.y}" r="4.5" fill="${color}" stroke="#0d1a26" stroke-width="2"/>
+
+    <g id="tooltip_${svgId}" style="display:none;">
+      <line x1="0" y1="0" x2="0" y2="${h}" stroke="${color}88" stroke-dasharray="3,3" stroke-width="1"></line>
+      <circle r="4" fill="${color}" stroke="#060d14" stroke-width="2"></circle>
+    </g>
+  `;
+
+  svg.onmousemove = (e) => {
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+
+    let closest = pts[0];
+    let minDist = Infinity;
+    for(const p of pts){
+      const dist = Math.abs(p.x - mouseX);
+      if(dist < minDist){ minDist = dist; closest = p; }
+    }
+
+    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    if(tip){
+      tip.style.display = 'block';
+      tip.setAttribute('transform', `translate(${closest.x}, 0)`);
+      tip.querySelector('circle').setAttribute('cy', closest.y);
+      $('valThermalNow').textContent = closest.val.toFixed(2);
+    }
+  };
+
+  svg.onmouseleave = () => {
+    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    if(tip) tip.style.display = 'none';
+    $('valThermalNow').textContent = vals[vals.length - 1].toFixed(2);
+  };
+}
+
+function nowStamp(){ return new Date().toLocaleTimeString('pt-BR', {hour12:false}); }
+
+function addConsoleLine(machineId, machineName, tag, text, isAmber = false, isRed = false) {
+  const frameId = Math.floor(Math.random() * 9000000) + 1000000;
+  const lineObj = { machineId, machineName, frame: frameId, tag, text, isAmber, isRed, time: nowStamp() };
+  consoleLogs.push(lineObj);
+  if(consoleLogs.length > 600) consoleLogs.shift();
+  
+  if(realtimeActive) {
+    appendLineToDOM(lineObj);
+  }
+}
+
+function matchesFilters(item) {
+  const selectedMachine = $('logMachineSelect')?.value || 'all';
+  const filterText = ($('filterLogsInput')?.value || '').toLowerCase();
+  const filterTag = ($('filterTagsInput')?.value || '').toLowerCase();
+
+  if(selectedMachine !== 'all' && item.machineId !== selectedMachine) return false;
+  if(filterText && !item.text.toLowerCase().includes(filterText) && !item.tag.toLowerCase().includes(filterText) && !item.machineName.toLowerCase().includes(filterText)) return false;
+  if(filterTag && !item.tag.toLowerCase().includes(filterTag)) return false;
+  return true;
+}
+
+function appendLineToDOM(item) {
+  const screen = $('consoleScreen');
+  if(!screen) return;
+  if(!matchesFilters(item)) return;
+
+  const div = document.createElement('div');
+  div.className = 'console-line';
+  let tagClass = 'log-tag';
+  if(item.isRed) tagClass = 'log-tag-red';
+  else if(item.isAmber) tagClass = 'log-tag-amber';
+
+  div.innerHTML = `<span class="log-id">[#${item.frame}]</span><span class="log-time">${item.time}</span><span class="log-machine">[${item.machineName}]</span><span class="${tagClass}">${item.tag}:</span> ${item.text}`;
+  screen.appendChild(div);
+  
+  if(autoScroll) {
+    screen.scrollTop = screen.scrollHeight;
+  }
+}
+
+function renderConsoleLogs() {
+  const screen = $('consoleScreen');
+  if(!screen) return;
+  screen.innerHTML = '';
+  
+  consoleLogs.forEach(item => {
+    if(!matchesFilters(item)) return;
+    
+    const div = document.createElement('div');
+    div.className = 'console-line';
+    let tagClass = 'log-tag';
+    if(item.isRed) tagClass = 'log-tag-red';
+    else if(item.isAmber) tagClass = 'log-tag-amber';
+
+    div.innerHTML = `<span class="log-id">[#${item.frame}]</span><span class="log-time">${item.time}</span><span class="log-machine">[${item.machineName}]</span><span class="${tagClass}">${item.tag}:</span> ${item.text}`;
+    screen.appendChild(div);
+  });
+  
+  if(autoScroll) {
+    screen.scrollTop = screen.scrollHeight;
+  }
+}
+
+function toggleRealtimeLogs() {
+  realtimeActive = !realtimeActive;
+  const btn = $('toggleRealtimeBtn');
+  if(realtimeActive) {
+    btn.textContent = '🟢 Realtime Logs';
+    btn.style.borderColor = '#21ffb055';
+    btn.style.color = 'var(--green)';
+  } else {
+    btn.textContent = '⏸ Paused Logs';
+    btn.style.borderColor = '#ffb02055';
+    btn.style.color = 'var(--amber)';
+  }
+}
+
+function toggleScrollLock() {
+  autoScroll = !autoScroll;
+  const btn = $('scrollLockBtn');
+  if(autoScroll) {
+    btn.textContent = '📌 Stop Scroll';
+    btn.style.color = 'var(--amber)';
+  } else {
+    btn.textContent = '📍 Resume Scroll';
+    btn.style.color = 'var(--green)';
+  }
+}
+
+function clearConsoleView() {
+  const screen = $('consoleScreen');
+  if(screen) screen.innerHTML = '';
+}
+
+function wipeConsoleLogs() {
+  consoleLogs = [];
+  $('filterLogsInput').value = '';
+  $('filterTagsInput').value = '';
+  clearConsoleView();
+}
+
+function downloadLogs() {
+  const selectedMachine = $('logMachineSelect')?.value || 'all';
+  const filtered = consoleLogs.filter(l => selectedMachine === 'all' || l.machineId === selectedMachine);
+  const content = filtered.map(l => `[#${l.frame}] [${l.time}] [${l.machineName}] ${l.tag}: ${l.text}`).join('\n');
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `centro_comando_logs_${selectedMachine}_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function logEvent(msg, cls='', devName='', devId='sys'){
+  const logContainer = $('eventLog');
+  if(logContainer) {
+    const el = document.createElement('div');
+    let rowClass = 'event-row';
+    if(cls === 'new') rowClass += ' is-new';
+    if(cls === 'error' || cls === 'red') rowClass += ' is-error';
+
+    el.className = rowClass;
+    el.innerHTML = `
+      <div class="event-left">
+        <span class="event-time">${nowStamp()}</span>
+        ${devName ? `<span class="event-badge">${devName}</span>` : ''}
+        <span class="event-text">${msg}</span>
+      </div>
+    `;
+    logContainer.prepend(el);
+    while(logContainer.children.length > 50) {
+      logContainer.removeChild(logContainer.lastChild);
+    }
+  }
+  addConsoleLine(devId, devName || 'Sistema', 'system', msg, cls === 'amber', cls === 'error');
+}
+
+function loadDevices(){ 
+  try {
+    const res = localStorage.getItem(DEVICES_KEY); 
+    if(res) {
+      devices = JSON.parse(res);
+      devices.forEach(d => { if(!histories[d.id]) histories[d.id] = []; });
+    }
+  } catch(e) { devices = []; }
+}
+function saveDevices(){ 
+  try { localStorage.setItem(DEVICES_KEY, JSON.stringify(devices)); } catch(e){} 
+}
+
+function addDevice(name, ip){
+  const id = 'm_' + Math.random().toString(36).slice(2,9);
+  const devName = name || `Máquina ${devices.length+1}`;
+  devices.push({id, name: devName, ip: ip});
+  histories[id] = [];
+  thermalHistory[id] = [];
+  saveDevices();
+  if(!selectedId) selectedId = id;
+  logEvent(`Máquina "${devName}" adicionada com sucesso.`, 'new', devName, id);
+  updateLogMachineDropdown();
+  renderAll();
+  pollAll();
+}
+
+function removeDevice(id){
+  const dev = devices.find(d => d.id === id);
+  devices = devices.filter(d => d.id !== id);
+  delete readings[id]; delete histories[id];
+  delete thermalHistory[id]; delete thermalAlertState[id];
+  saveDevices();
+  saveThermalHistory();
+  if(selectedId === id) selectedId = devices[0]?.id || null;
+  if(thermalSelectedId === id) thermalSelectedId = devices[0]?.id || null;
+  updateThermalBadge();
+  if(dev) logEvent(`Máquina "${dev.name}" removida.`, '', dev.name, id);
+  updateLogMachineDropdown();
+  renderAll();
+}
+
+let pollInProgress = false;
+async function pollAll(){
+  if(pollInProgress) return;
+  pollInProgress = true;
+  try {
+    await Promise.all(devices.map(dev => pollOneDevice(dev)));
+    renderAll();
+  } finally {
+    pollInProgress = false;
+  }
+}
+
+function extractPoolPingLoss(d){
+  // Nomes de campo conhecidos usados por diferentes versões do firmware ESP-Miner-NerdQAxePlus / AxeOS
+  const pingKeys = ['responseTime','poolPing','pingAvg','avgPing','pingTimeAvg','stratumPing','pingMs','ping'];
+  const lossKeys  = ['poolLoss','pingLoss','pingLossPercent','stratumLoss','loss'];
+
+  const readFrom = (obj) => {
+    let ping = null, loss = null;
+    for(const k of pingKeys){ if(obj[k] != null && !isNaN(Number(obj[k]))){ ping = Number(obj[k]); break; } }
+    for(const k of lossKeys){ if(obj[k] != null && !isNaN(Number(obj[k]))){ loss = Number(obj[k]); break; } }
+    // Deteção defensiva por padrão de nome, caso o firmware use outra grafia
+    if(ping == null){
+      for(const k of Object.keys(obj)){
+        if(/ping/i.test(k) && typeof obj[k] !== 'object' && !isNaN(Number(obj[k]))){ ping = Number(obj[k]); break; }
+      }
+    }
+    if(loss == null){
+      for(const k of Object.keys(obj)){
+        if(/loss/i.test(k) && typeof obj[k] !== 'object' && !isNaN(Number(obj[k]))){ loss = Number(obj[k]); break; }
+      }
+    }
+    return { ping, loss };
+  };
+
+  let result = readFrom(d);
+  // Modo dual pool: os campos podem vir dentro de um array "pools"
+  if((result.ping == null || result.loss == null) && Array.isArray(d.pools) && d.pools.length){
+    const primary = d.pools.find(p => p && p.isUsingFallback === false) || d.pools[0];
+    if(primary){
+      const nested = readFrom(primary);
+      result.ping = result.ping ?? nested.ping;
+      result.loss = result.loss ?? nested.loss;
+    }
+  }
+  return result;
+}
+
+async function pollOneDevice(dev){
+  const pingStart = performance.now();
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch(`http://localhost:8765/api/proxy?ip=${encodeURIComponent(dev.ip)}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if(!res.ok) throw new Error();
+    const d = await res.json();
+    const localLatencyMs = Math.round(performance.now() - pingStart);
+    const { ping: poolPingVal, loss: poolLossVal } = extractPoolPingLoss(d);
+
+    addConsoleLine(dev.id, dev.name, 'API_JSON', JSON.stringify(d));
+
+    const fanVal = d.fanrpm ?? d.fanSpeed ?? d.fanspeed ?? 0;
+    const acceptedVal = d.sharesAccepted ?? d.accepted ?? 0;
+    const rejectedVal = d.sharesRejected ?? d.rejected ?? 0;
+    const powerVal = d.power ?? 0;
+
+    const hashrateVal = d.hashRate ?? d.hashrate ?? 0;
+
+    let efficiencyVal = 0;
+    if (powerVal > 0 && hashrateVal > 0) {
+      const hashrateTH = hashrateVal / 1000;
+      if(hashrateTH > 0) efficiencyVal = powerVal / hashrateTH;
+    }
+
+    const poolUrlVal = d.stratumURL ?? d.poolUrl ?? '—';
+    const currentBest = Number(d.bestSessionDiff ?? d.bestDiff ?? 0);
+    const blocksFoundVal = Number(d.blockFound ?? d.blocksFound ?? 0);
+    const uptimeVal = d.uptimeSeconds ?? d.uptime ?? null;
+
+    const reading = {
+      hashrate: hashrateVal,
+      best: currentBest,
+      temp: d.temp ?? d.temperature,
+      fanSpeed: Number(fanVal) || 0,
+      power: Number(powerVal) || 0,
+      frequency: d.frequency ?? 0,
+      accepted: Number(acceptedVal) || 0,
+      rejected: Number(rejectedVal) || 0,
+      efficiency: Number(efficiencyVal) || 0,
+      pool: poolUrlVal,
+      blocksFound: blocksFoundVal,
+      poolPing: poolPingVal,
+      poolLoss: poolLossVal,
+      localLatency: localLatencyMs,
+      uptime: uptimeVal != null ? Number(uptimeVal) : null,
+      online: true
+    };
+
+    const oldReading = readings[dev.id];
+    const oldBest = oldReading?.best || 0;
+    const oldBlocks = oldReading?.blocksFound || 0;
+    const oldPoolPing = oldReading?.poolPing;
+
+    if(oldReading?.uptime != null && reading.uptime != null && reading.uptime < oldReading.uptime - 30) {
+      logEvent(`Reinício detetado — uptime voltou a zero.`, 'error', dev.name, dev.id);
+    }
+
+
+    if(oldPoolPing != null && poolPingVal != null && poolPingVal > 400 && poolPingVal > oldPoolPing * 2) {
+      logEvent(`Ping ao pool elevado: ${poolPingVal.toFixed(0)} ms.`, 'error', dev.name, dev.id);
+    }
+
+    if(currentBest > oldBest && oldBest > 0) {
+      const fmt = formatDiff(currentBest);
+      logEvent(`Novo recorde de dificuldade! ${fmt.value} ${fmt.unit}`, 'new', dev.name, dev.id);
+      addNotification('best', `Novo Recorde de Dificuldade: ${fmt.value} ${fmt.unit}`, `A máquina alcançou um novo best diff de ${currentBest.toLocaleString()} na sessão.`, dev.name);
+    }
+
+    if(blocksFoundVal > oldBlocks && oldBlocks >= 0) {
+      logEvent(`Bloco encontrado com sucesso! 🎉`, 'new', dev.name, dev.id);
+      addNotification('block', `Bloco Encontrado com Sucesso!`, `Total de blocos encontrados por esta máquina atualizado para ${blocksFoundVal}.`, dev.name);
+    }
+
+    readings[dev.id] = reading;
+    histories[dev.id] = (histories[dev.id] || []).concat(reading).slice(-MAX_POINTS);
+    recordThermalSnapshot(dev, reading);
+    evaluateThermalProtection(dev, reading);
+
+  } catch(e) {
+    const wasOnline = readings[dev.id]?.online;
+    readings[dev.id] = { ...(readings[dev.id] || {}), online: false };
+    if(wasOnline !== false) {
+      logEvent(`Falha de comunicação com o dispositivo.`, 'error', dev.name, dev.id);
+    }
+    if(thermalCriticalState[dev.id]){
+      thermalCriticalState[dev.id] = { since: null, alarmed: false };
+      updateCriticalAlarmUI();
+    }
+  }
+}
+
+function renderAll(){
+  const active = devices.map(d => readings[d.id]).filter(r => r && r.online);
+  const totalHash = active.reduce((s,r) => s + (r.hashrate||0), 0);
+  const bestAll = Math.max(0, ...devices.map(d => readings[d.id]?.best || 0));
+  
+  const hr = formatHashrate(active.length ? totalHash : null);
+  $('sHashrate').textContent = hr.value; $('sHashrateUnit').textContent = hr.unit;
+  
+  const df = formatDiff(bestAll);
+  $('sBest').textContent = df.value; $('sBestUnit').textContent = df.unit + ' Global';
+  
+  const maxTemp = active.length ? Math.max(...active.map(r=>r.temp)) : null;
+  const tempElem = $('sTemp');
+  tempElem.textContent = maxTemp != null ? maxTemp.toFixed(1) : '—';
+  tempElem.className = 'value ' + getTempRiskClass(maxTemp);
+
+  const avgFan = active.length ? Math.round(active.reduce((s,r) => s + (r.fanSpeed || 0), 0) / active.length) : null;
+  $('sFan').textContent = avgFan != null ? avgFan : '—';
+
+  $('sPower').textContent = active.length ? active.reduce((s,r) => s + r.power, 0).toFixed(1) : '—';
+  $('sCount').textContent = devices.length;
+
+  renderHashrateDonut(devices);
+  renderSimulator();
+
+  const grid = $('machineGrid'); grid.innerHTML = '';
+  devices.forEach(dev => {
+    const r = readings[dev.id];
+    const online = r && r.online;
+    const card = document.createElement('div');
+    card.className = 'machine-card' + (dev.id === selectedId ? ' selected' : '') + (!online && r ? ' offline' : '');
+    
+    const freqVal = online ? `${r.frequency} MHz` : '—';
+    const tempVal = online && r.temp != null ? `${r.temp.toFixed(1)} °C` : '<span style="color:var(--red);">Offline</span>';
+    const hashrateVal = online ? `${formatHashrate(r.hashrate).value} ${formatHashrate(r.hashrate).unit}` : '<span style="color:var(--red);">Desligada / Sem Sinal</span>';
+    const bestDiffVal = online ? `${formatDiff(r.best).value}${formatDiff(r.best).unit}` : '—';
+    const accRejVal = online ? `${r.accepted} / ${r.rejected}` : '—';
+    const effVal = online ? `${Number(r.efficiency).toFixed(2)} J/Th` : '—';
+    const poolVal = online ? r.pool.replace(/^https?:\/\//, '') : '—';
+    const poolPingVal = online && r.poolPing != null ? `${r.poolPing.toFixed(2)} ms${r.poolLoss != null ? ` (${r.poolLoss.toFixed(2)}% perda)` : ''}` : (online ? 'N/D pelo pool' : '—');
+    const localLatencyVal = online && r.localLatency != null ? `${r.localLatency} ms` : '—';
+    const uptimeFmt = online ? formatUptime(r.uptime) : { text: '—', cls: '' };
+    
+    card.innerHTML = `
+      <div class="machine-header">
+        <div>
+          <div class="name">${dev.name}</div>
+          <div class="ip">${dev.ip}</div>
+        </div>
+        <button class="remove" data-id="${dev.id}" title="Remover máquina">✕</button>
+      </div>
+
+      <div class="metrics-table">
+        <div class="metric-row">
+          <span class="metric-label">⚡ Hashrate</span>
+          <span class="metric-value highlight-green">${hashrateVal}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">⏱️ Uptime</span>
+          <span class="metric-value ${uptimeFmt.cls}">${uptimeFmt.text}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">🌡️ Temperatura</span>
+          <span class="metric-value ${online ? getTempRiskClass(r.temp) : ''}">${tempVal}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">🏆 Melhor Dif.</span>
+          <span class="metric-value highlight-amber">${bestDiffVal}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">⚙️ Frequência</span>
+          <span class="metric-value">${freqVal}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">✅ Aceites / Rejeitadas</span>
+          <span class="metric-value">${accRejVal}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">🔋 Eficiência</span>
+          <span class="metric-value highlight-cyan">${effVal}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">🌐 Pool</span>
+          <span class="metric-value" style="font-size: 10px; color: var(--muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${poolVal}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">📡 Ping ao Pool</span>
+          <span class="metric-value ${online ? getLatencyRiskClass(r.poolPing) : ''}">${poolPingVal}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">🖧 Latência Local</span>
+          <span class="metric-value">${localLatencyVal}</span>
+        </div>
+      </div>
+    `;
+
+    card.onclick = (e) => { if(!e.target.closest('.remove')){ selectedId = dev.id; renderAll(); } };
+    grid.appendChild(card);
+  });
+  
+  grid.querySelectorAll('.remove').forEach(b => b.onclick = (e) => { e.stopPropagation(); removeDevice(b.dataset.id); });
+  
+  const selDev = devices.find(d => d.id === selectedId);
+  if(selDev){
+    drawAmberChart('chartHashrate', (histories[selDev.id]||[]).map(x=>x?.hashrate), (val) => formatHashrate(val), true);
+    drawAmberChart('chartBest', (histories[selDev.id]||[]).map(x=>x?.best), (val) => formatDiff(val), false);
+  } else {
+    $('chartHashrate').innerHTML = '';
+    $('chartBest').innerHTML = '';
+    $('valHashrate').textContent = '—';
+    $('valPeak').textContent = '—';
+    $('valAvg').textContent = '—';
+    $('valBest').textContent = '—';
+    $('valBestMeta').textContent = '—';
+  }
+
+  const latTab = $('tab-latency');
+  if(latTab && latTab.classList.contains('active')) renderPingTab();
+
+  const thermalTab = $('tab-thermal');
+  if(thermalTab && thermalTab.classList.contains('active')) renderThermalTab();
+}
+
+function drawAmberChart(svgId, vals, formatter, isHashrate = true){
+  const svg = $(svgId);
+  vals = (vals || []).filter(v => v != null);
+  
+  if(vals.length < 2){ 
+    svg.innerHTML = '<text x="50%" y="50%" fill="#4a6975" font-size="11" text-anchor="middle">A aguardar dados em tempo real...</text>'; 
+    return; 
+  }
+  
+  let min = Math.min(...vals), max = Math.max(...vals), range = (max-min)||1;
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const latest = vals[vals.length - 1];
+  
+  if(isHashrate) {
+    const latFmt = formatter(latest);
+    const peakFmt = formatter(max);
+    const avgFmt = formatter(avg);
+    
+    $('valHashrate').textContent = `${latFmt.value} ${latFmt.unit}`;
+    $('valPeak').textContent = `${peakFmt.value} ${peakFmt.unit}`;
+    $('valAvg').textContent = `${avgFmt.value} ${avgFmt.unit}`;
+  } else {
+    const latFmt = formatter(latest);
+    const peakFmt = formatter(max);
+    $('valBest').textContent = `${latFmt.value}${latFmt.unit}`;
+    $('valBestMeta').textContent = `${peakFmt.value}${peakFmt.unit}`;
+  }
+  
+  const paddingY = 16;
+  const w = 300, h = 130;
+  const usableH = h - (paddingY * 2);
+  
+  const pts = vals.map((v, i) => {
+    const x = 10 + i * ((w - 20) / (vals.length - 1));
+    const y = h - paddingY - ((v - min) / range) * usableH;
+    return {x, y, val: v};
+  });
+  
+  const ptsString = pts.map(p => `${p.x},${p.y}`).join(' L');
+  const avgY = h - paddingY - ((avg - min) / range) * usableH;
+  const lastPt = pts[pts.length - 1];
+  
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="amber_grad_${svgId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffb020" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#ffb020" stop-opacity="0.0"/>
+      </linearGradient>
+      <filter id="glow_${svgId}" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2" result="glow" />
+        <feComposite in="SourceGraphic" in2="glow" operator="over" />
+      </filter>
+    </defs>
+    
+    <line x1="10" y1="${avgY}" x2="290" y2="${avgY}" stroke="#ffb02066" stroke-dasharray="4,4" stroke-width="1"/>
+    <path d="M${pts[0].x},${h} L${ptsString} L${pts[pts.length-1].x},${h} Z" fill="url(#amber_grad_${svgId})"></path>
+    <path fill="none" stroke="#ffb020" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow_${svgId})" d="M${ptsString}"></path>
+    <circle cx="${lastPt.x}" cy="${lastPt.y}" r="4.5" fill="#ffb020" stroke="#0d1a26" stroke-width="2"/>
+
+    <g id="tooltip_${svgId}" style="display:none;">
+      <line x1="0" y1="0" x2="0" y2="${h}" stroke="#ffb02088" stroke-dasharray="3,3" stroke-width="1"></line>
+      <circle r="4" fill="#ffb020" stroke="#060d14" stroke-width="2"></circle>
+    </g>
+  `;
+  
+  svg.onmousemove = (e) => {
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+    
+    let closest = pts[0];
+    let minDist = Infinity;
+    for(const p of pts){
+      const dist = Math.abs(p.x - mouseX);
+      if(dist < minDist){ minDist = dist; closest = p; }
+    }
+    
+    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    if(tip){
+      tip.style.display = 'block';
+      tip.setAttribute('transform', `translate(${closest.x}, 0)`);
+      tip.querySelector('circle').setAttribute('cy', closest.y);
+      
+      const res = formatter(closest.val);
+      if(isHashrate) {
+        $('valHashrate').textContent = `${res.value} ${res.unit}`;
+      } else {
+        $('valBest').textContent = `${res.value}${res.unit}`;
+      }
+    }
+  };
+  
+  svg.onmouseleave = () => {
+    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    if(tip) tip.style.display = 'none';
+    const res = formatter(vals[vals.length - 1]);
+    if(isHashrate) {
+      $('valHashrate').textContent = `${res.value} ${res.unit}`;
+    } else {
+      $('valBest').textContent = `${res.value}${res.unit}`;
+    }
+  };
+}
+
+// --- Perfis de Energia (MQTT / Home Assistant) ---------------------------
+let powerProfiles = [];
+let powerConfigLoaded = false;
+
+function emptyPowerProfile(){
+  return { name: '', min_solar: '', max_tariff: '', frequency: '', coreVoltage: '' };
+}
+
+async function loadPowerConfig(){
+  try {
+    const res = await fetch('http://localhost:8765/api/power/config');
+    const cfg = await res.json();
+    $('pwHost').value = cfg.mqtt.host || '';
+    $('pwPort').value = cfg.mqtt.port || 1883;
+    $('pwUser').value = cfg.mqtt.username || '';
+    $('pwPass').placeholder = cfg.mqtt.password_set ? '•••••••• (já definida — deixa em branco para manter)' : 'deixa em branco para manter';
+    $('pwTopicSolar').value = cfg.mqtt.topic_solar || '';
+    $('pwTopicTariff').value = cfg.mqtt.topic_tariff || '';
+    powerProfiles = Array.isArray(cfg.profiles) && cfg.profiles.length ? cfg.profiles : [];
+    renderPowerProfilesForm();
+    powerConfigLoaded = true;
+  } catch(e) {
+    $('powerLiveError').style.display = 'block';
+    $('powerLiveError').textContent = 'Não foi possível carregar a configuração de energia do servidor local.';
+  }
+}
+
+function renderPowerProfilesForm(){
+  const el = $('powerProfilesList');
+  if(!powerProfiles.length){
+    el.innerHTML = `<div class="hint">Ainda não tens perfis definidos. Clica em "+ Adicionar Perfil".</div>`;
+    return;
+  }
+  el.innerHTML = powerProfiles.map((p, i) => `
+    <div class="power-profile-row">
+      <div class="priority-num">#${i+1}</div>
+      <label><span class="field-label">Nome</span><input type="text" value="${p.name ?? ''}" placeholder="ex: Turbo" oninput="powerProfiles[${i}].name=this.value"></label>
+      <label><span class="field-label">Solar mín. (W)</span><input type="number" value="${p.min_solar ?? ''}" placeholder="sem mínimo" oninput="powerProfiles[${i}].min_solar=this.value"></label>
+      <label><span class="field-label">Tarifa máx. (€/kWh)</span><input type="number" step="0.01" value="${p.max_tariff ?? ''}" placeholder="sem máximo" oninput="powerProfiles[${i}].max_tariff=this.value"></label>
+      <label><span class="field-label">Frequência (MHz)</span><input type="number" value="${p.frequency ?? ''}" placeholder="ex: 550" oninput="powerProfiles[${i}].frequency=this.value"></label>
+      <label><span class="field-label">CoreVoltage (mV)</span><input type="number" value="${p.coreVoltage ?? ''}" placeholder="ex: 1150" oninput="powerProfiles[${i}].coreVoltage=this.value"></label>
+      <div class="power-profile-row-actions">
+        <button title="Subir prioridade" onclick="movePowerProfile(${i}, -1)" ${i===0 ? 'disabled' : ''}>↑</button>
+        <button title="Descer prioridade" onclick="movePowerProfile(${i}, 1)" ${i===powerProfiles.length-1 ? 'disabled' : ''}>↓</button>
+        <button class="remove" title="Remover" onclick="removePowerProfile(${i})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addPowerProfile(){
+  powerProfiles.push(emptyPowerProfile());
+  renderPowerProfilesForm();
+}
+
+function removePowerProfile(i){
+  powerProfiles.splice(i, 1);
+  renderPowerProfilesForm();
+}
+
+function movePowerProfile(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= powerProfiles.length) return;
+  [powerProfiles[i], powerProfiles[j]] = [powerProfiles[j], powerProfiles[i]];
+  renderPowerProfilesForm();
+}
+
+function sanitizedPowerProfiles(){
+  return powerProfiles
+    .filter(p => (p.name || '').trim())
+    .map(p => {
+      const out = { name: p.name.trim() };
+      if(p.min_solar !== '' && p.min_solar != null) out.min_solar = Number(p.min_solar);
+      if(p.max_tariff !== '' && p.max_tariff != null) out.max_tariff = Number(p.max_tariff);
+      if(p.frequency !== '' && p.frequency != null) out.frequency = Number(p.frequency);
+      if(p.coreVoltage !== '' && p.coreVoltage != null) out.coreVoltage = Number(p.coreVoltage);
+      return out;
+    });
+}
+
+async function savePowerMqttConfig(){
+  const body = {
+    mqtt: {
+      host: $('pwHost').value.trim(),
+      port: Number($('pwPort').value) || 1883,
+      username: $('pwUser').value.trim(),
+      topic_solar: $('pwTopicSolar').value.trim(),
+      topic_tariff: $('pwTopicTariff').value.trim(),
+    }
+  };
+  if($('pwPass').value) body.mqtt.password = $('pwPass').value;
+  try {
+    const res = await fetch('http://localhost:8765/api/power/config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(data.ok){
+      $('pwPass').value = '';
+      logEvent('Configuração MQTT de energia guardada.', 'new', 'Sistema', 'sys');
+    }
+  } catch(e) {
+    $('powerLiveError').style.display = 'block';
+    $('powerLiveError').textContent = 'Falha ao guardar a configuração MQTT.';
+  }
+  pollPowerStatus();
+}
+
+async function savePowerProfiles(){
+  try {
+    const res = await fetch('http://localhost:8765/api/power/config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ profiles: sanitizedPowerProfiles() })
+    });
+    const data = await res.json();
+    if(data.ok) logEvent('Perfis de energia guardados.', 'new', 'Sistema', 'sys');
+  } catch(e) {
+    $('powerLiveError').style.display = 'block';
+    $('powerLiveError').textContent = 'Falha ao guardar os perfis de energia.';
+  }
+  pollPowerStatus();
+}
+
+let lastSuggestedProfile = null;
+
+async function pollPowerStatus(){
+  try {
+    const res = await fetch('http://localhost:8765/api/power/status');
+    const st = await res.json();
+
+    const dots = [$('powerStatusDot'), $('powerStatusDotInline')];
+    dots.forEach(d => { if(d) d.classList.remove('connected', 'disconnected'); d?.classList.add(st.connected ? 'connected' : 'disconnected'); });
+    $('powerConnLabel').textContent = st.connected ? 'MQTT ligado' : 'MQTT desligado';
+
+    $('powerSolarVal').textContent = st.solar != null ? `${st.solar.toFixed(0)} W` : '—';
+    $('powerTariffVal').textContent = st.tariff != null ? `${st.tariff.toFixed(3)} €/kWh` : '—';
+    $('powerLastUpdate').textContent = st.last_update ? new Date(st.last_update * 1000).toLocaleTimeString('pt-PT') : '—';
+
+    const errEl = $('powerLiveError');
+    if(st.error && !st.connected){
+      errEl.style.display = 'block';
+      errEl.textContent = st.mqtt_available === false
+        ? 'A biblioteca paho-mqtt não está instalada no ambiente que corre o app.py — instala-a com "pip install paho-mqtt" e reinicia o Centro de Comando.'
+        : st.error;
+    } else {
+      errEl.style.display = 'none';
+    }
+
+    lastSuggestedProfile = st.suggested_profile || null;
+    if(lastSuggestedProfile){
+      $('powerSuggestedName').textContent = lastSuggestedProfile.name;
+      const parts = [];
+      if(lastSuggestedProfile.frequency != null) parts.push(`${lastSuggestedProfile.frequency} MHz`);
+      if(lastSuggestedProfile.coreVoltage != null) parts.push(`${lastSuggestedProfile.coreVoltage} mV`);
+      parts.push(`solar: ${st.solar != null ? st.solar.toFixed(0)+' W' : '—'}`, `tarifa: ${st.tariff != null ? st.tariff.toFixed(3)+' €/kWh' : '—'}`);
+      $('powerSuggestedMeta').textContent = parts.join(' · ');
+    } else {
+      $('powerSuggestedName').textContent = 'Sem sugestão disponível';
+      $('powerSuggestedMeta').textContent = 'Configura o MQTT e pelo menos um perfil para começar a receber sugestões.';
+    }
+    renderPowerDevicesApply();
+  } catch(e) {
+    // servidor local indisponível - ignora silenciosamente neste ciclo
+  }
+}
+
+function renderPowerDevicesApply(){
+  const el = $('powerDevicesApply');
+  const allBtn = $('powerApplyAllBtn');
+  if(!devices.length){
+    el.innerHTML = `<div class="hint">Adiciona máquinas no separador "Dashboard Geral" para poderes aplicar perfis.</div>`;
+    allBtn.disabled = true;
+    return;
+  }
+  allBtn.disabled = !lastSuggestedProfile;
+  el.innerHTML = devices.map(d => {
+    const r = readings[d.id];
+    const current = r ? `atual: ${r.frequency || '—'} MHz` : 'sem leitura';
+    return `
+      <div class="power-device-apply-row">
+        <div>
+          <div class="dname">${d.name}</div>
+          <div class="dcurrent">${d.ip} · ${current}</div>
+        </div>
+        <button class="power-apply-btn" ${lastSuggestedProfile ? '' : 'disabled'} onclick="applySuggestedProfileToDevice('${d.id}')">Aplicar "${lastSuggestedProfile ? lastSuggestedProfile.name : '—'}"</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function applySuggestedProfileToDevice(devId){
+  if(!lastSuggestedProfile) return;
+  const dev = devices.find(d => d.id === devId);
+  if(!dev) return;
+  const payload = { ip: dev.ip };
+  if(lastSuggestedProfile.frequency != null) payload.frequency = lastSuggestedProfile.frequency;
+  if(lastSuggestedProfile.coreVoltage != null) payload.coreVoltage = lastSuggestedProfile.coreVoltage;
+  try {
+    const res = await fetch('http://localhost:8765/api/apply-profile', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(data.ok){
+      logEvent(`Perfil "${lastSuggestedProfile.name}" aplicado com sucesso.`, 'new', dev.name, dev.id);
+    } else {
+      logEvent(`Falha ao aplicar perfil: ${data.error || 'erro desconhecido'}`, 'error', dev.name, dev.id);
+    }
+  } catch(e) {
+    logEvent(`Falha ao aplicar perfil "${lastSuggestedProfile.name}".`, 'error', dev.name, dev.id);
+  }
+}
+
+async function applySuggestedProfileToAll(){
+  for(const d of devices){
+    await applySuggestedProfileToDevice(d.id);
+  }
+}
+
+// --- Assistente (agente IA local, sem chave/API) -------------------------
+// Responde a perguntas frequentes sobre as funcionalidades do painel a
+// partir de uma base de conhecimento local, com correspondência simples
+// por palavras-chave. Não faz chamadas externas nem precisa de ligação
+// à internet.
+
+const AI_KB = [
+  { q: 'O que é o Best Diff / Melhor Dif.?', kw: ['best diff','melhor dif','bestdiff','dificuldade'],
+    a: 'O "Melhor Dif." (Best Diff) é a maior dificuldade de share que a tua máquina já encontrou. Quanto mais alto, mais perto (em termos de sorte) estiveste de encontrar um bloco a solo. É um recorde acumulado desde que o ASIC arrancou.' },
+  { q: 'O que significa Eficiência (J/Th)?', kw: ['eficiencia','eficiência','j/th','joules'],
+    a: 'A eficiência em J/Th indica quantos Joules de energia a máquina gasta por cada Terahash de poder de processamento. Quanto MENOR o valor, mais eficiente é o ASIC (menos energia gasta pelo mesmo hashrate).' },
+  { q: 'O que é o Hashrate?', kw: ['hashrate','hash rate','th/s'],
+    a: 'O Hashrate mede quantos cálculos (hashes) o ASIC faz por segundo, normalmente em TH/s (terahashes por segundo). Quanto mais alto, maior a tua parte do poder computacional da rede.' },
+  { q: 'Como funciona a Frequência e o Undervolt?', kw: ['frequencia','frequência','undervolt','corevoltage','mhz','voltagem'],
+    a: 'A Frequência (MHz) e a Voltagem do núcleo (coreVoltage) controlam o desempenho do chip ASIC: mais frequência = mais hashrate mas mais calor e consumo. O undervolt reduz a voltagem para poupar energia e baixar temperatura, geralmente à custa de algum hashrate.' },
+  { q: 'O que são os Perfis de Energia?', kw: ['perfil de energia','perfis de energia','mqtt','home assistant','solar','tarifa'],
+    a: 'Os Perfis de Energia (separador "☀️ Perfis de Energia") ligam-se ao teu broker MQTT (ex: Home Assistant) para ler produção solar e tarifa elétrica. Com base nesses valores, o painel SUGERE um perfil de frequência/undervolt mais adequado — mas a aplicação é sempre manual, nunca automática.' },
+  { q: 'Como adiciono uma máquina?', kw: ['adicionar maquina','adicionar máquina','registar maquina','novo asic','ip'],
+    a: 'No painel "Dashboard Geral", usa os campos "Apelido" e "IP" no topo do painel de Máquinas e clica em "Adicionar máquina". É preciso o servidor local (app.py / nerdqaxe_server.py) estar a correr em localhost:8765.' },
+  { q: 'O que são Aceites/Rejeitadas?', kw: ['aceites','rejeitadas','shares'],
+    a: 'São o número de shares (unidades de trabalho) que a tua pool aceitou vs. rejeitou. Uma taxa de rejeição alta pode indicar problemas de rede, latência ou instabilidade na ligação à pool.' },
+  { q: 'O que é a Distribuição de Hashrate?', kw: ['distribuicao','distribuição','donut'],
+    a: 'É um gráfico que mostra a fatia de hashrate total que cada máquina está a contribuir, para veres rapidamente se alguma está com desempenho abaixo do esperado.' },
+  { q: 'O que é a Latência / Ping ao Pool?', kw: ['latencia','latência','ping','perda'],
+    a: '"Ping ao Pool" mede o tempo de resposta entre a tua máquina e o servidor da pool de mineração — valores altos ou perda de pacotes podem causar mais shares rejeitadas. "Latência Local" mede a resposta do próprio ASIC na tua rede.' },
+  { q: 'O que faz a saúde térmica preditiva?', kw: ['termica','térmica','temperatura','saude','saúde','sobreaquecimento'],
+    a: 'A funcionalidade de saúde térmica acompanha o histórico de temperatura de cada máquina e tenta prever tendências de sobreaquecimento antes que aconteçam, permitindo agir com antecedência (ex: aplicar undervolt).' },
+  { q: 'Como funciona o simulador de bloco?', kw: ['simulador','bloco','probabilidade','ajuste de dificuldade'],
+    a: 'O simulador cruza o teu hashrate atual com os dados em tempo real da rede Bitcoin para estimar o impacto do próximo ajuste de dificuldade (a cada 2016 blocos) na tua probabilidade teórica de encontrar um bloco a solo.' },
+  { q: 'Onde fica guardada a configuração?', kw: ['configuracao','configuração','ficheiro','power_profiles','gravar','guardar'],
+    a: 'A configuração dos Perfis de Energia fica em power_profiles.json, ao lado do executável ou do app.py. As máquinas registadas e outras preferências ficam guardadas no localStorage do teu browser.' },
+];
+
+const AI_GREETING = 'Olá! Eu sou o assistente do Centro de Comando. Pergunta-me sobre hashrate, eficiência, perfis de energia, MQTT ou qualquer outra funcionalidade do painel.';
+const AI_FALLBACK = 'Ainda não sei responder a isso. Tenta perguntar sobre: hashrate, eficiência, best diff, perfis de energia, undervolt/frequência, ou como adicionar uma máquina.';
+
+function aiNormalize(str){
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function aiFindAnswer(question){
+  const norm = aiNormalize(question);
+  let best = null, bestScore = 0;
+  for(const entry of AI_KB){
+    let score = 0;
+    for(const kw of entry.kw){
+      if(norm.includes(aiNormalize(kw))) score += kw.length;
+    }
+    if(score > bestScore){ bestScore = score; best = entry; }
+  }
+  return best ? best.a : AI_FALLBACK;
+}
+
+function aiAppendMsg(text, who){
+  const log = $('aiChatLog');
+  const div = document.createElement('div');
+  div.className = `ai-msg ${who}`;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function aiAsk(question){
+  const q = (question || '').trim();
+  if(!q) return;
+  aiAppendMsg(q, 'user');
+  const answer = aiFindAnswer(q);
+  setTimeout(() => aiAppendMsg(answer, 'bot'), 250);
+}
+
+function aiRenderSuggestions(){
+  const box = $('aiSuggestions');
+  box.innerHTML = '';
+  const sample = AI_KB.slice(0, 4);
+  sample.forEach(entry => {
+    const btn = document.createElement('button');
+    btn.className = 'ai-chip';
+    btn.textContent = entry.q;
+    btn.onclick = () => aiAsk(entry.q);
+    box.appendChild(btn);
+  });
+}
+
+function initAiAgent(){
+  aiAppendMsg(AI_GREETING, 'bot');
+  aiRenderSuggestions();
+  $('aiSendBtn').onclick = () => {
+    const input = $('aiInput');
+    aiAsk(input.value);
+    input.value = '';
+  };
+  $('aiInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      const input = $('aiInput');
+      aiAsk(input.value);
+      input.value = '';
+    }
+  });
+}
+
+$('addBtn').onclick = () => { 
+  const ip = $('ipInput').value.trim();
+  if(ip) {
+    addDevice($('nameInput').value.trim(), ip);
+    $('ipInput').value = '';
+    $('nameInput').value = '';
+  }
+};
+
+$('clearLogBtn').onclick = () => { 
+  $('eventLog').innerHTML = ''; 
+  logEvent('Log limpo.', '', 'Sistema', 'sys');
+};
+
+loadTheme();
+loadDevices();
+loadNotifications();
+loadThermalHistory();
+loadThermalProtectionSettings();
+devices.forEach(d => { thermalAlertState[d.id] = computeThermalHealth(d.id).status; });
+updateThermalBadge();
+updateNotifBadge();
+updateLogMachineDropdown();
+renderAll();
+logEvent('Painel iniciado com alertas sonoros.', 'new', 'Sistema', 'sys');
+setInterval(pollAll, 5000);
+pollAll();
+fetchRecentBlocks();
+startBlocksAutoRefresh();
+
+loadPowerConfig();
+setInterval(pollPowerStatus, 5000);
+pollPowerStatus();
+
+initAiAgent();
+</script>
+</body>
+</html>

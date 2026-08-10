@@ -1,0 +1,51 @@
+============================================
+ CENTRO DE COMANDO - Como gerar o ficheiro .EXE
+============================================
+
+Esta pasta já tem tudo o que é preciso para gerares um único
+ficheiro .exe do teu Dashboard, pronto a partilhar com o pessoal.
+
+PASSO A PASSO (fazer num PC com Windows):
+
+1. Garante que tens Python instalado.
+   - Se não tiveres, descarrega em: https://www.python.org/downloads/
+   - Durante a instalação, marca a caixa "Add Python to PATH".
+
+2. Dá duplo-clique no ficheiro:
+      build_exe.bat
+
+   Isto vai:
+   - Instalar o PyInstaller automaticamente
+   - Compilar tudo (servidor + painel + imagens + ícone) num
+     único executável
+   - Demora cerca de 1 a 2 minutos
+
+3. Quando terminar, o teu .exe vai estar dentro da pasta "dist":
+      dist\CentroDeComando.exe
+
+4. Basta copiares SÓ esse ficheiro .exe e enviares ao pessoal.
+   Não precisam de ter Python instalado - o .exe já leva tudo
+   incluído (servidor, painel, imagens e ícone).
+
+------------------------------------------------
+COMO FUNCIONA PARA QUEM RECEBE O .EXE
+------------------------------------------------
+- Duplo-clique no CentroDeComando.exe
+- Arranca automaticamente um servidor local (porta 8765)
+- Abre o painel no browser predefinido
+- Não é preciso instalar nada
+
+Nota: o Windows Defender / SmartScreen pode mostrar um aviso
+"Windows protegeu o seu PC" por o ficheiro não ter uma assinatura
+digital paga. É normal em .exe feitos por PyInstaller - basta
+clicar em "Mais informações" -> "Executar mesmo assim".
+
+------------------------------------------------
+FICHEIROS DESTA PASTA
+------------------------------------------------
+app.py                     - código principal (servidor + launcher)
+nerdqaxe-dashboard.html    - o painel/dashboard
+bitminer33-banner.png      - banner usado no separador "Apoiantes"
+lightning-qrcode.png       - QR code Lightning (Wallet of Satoshi)
+app_icon.ico                - ícone do executável
+build_exe.bat               - script que gera o .exe (corre este!)
