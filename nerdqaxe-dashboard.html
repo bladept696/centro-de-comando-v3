@@ -4717,11 +4717,42 @@ initAiAgent();
 // --- Fecho total automático -------------------------------------------
 // Avisa o servidor local (app.py) de que este separador/janela continua
 // aberto. Se isto parar de chegar (X premido, browser fechado, etc.), o
-// backend desliga-se por completo ao fim de alguns segundos.
+// backend desliga-se por completo ao fim de algum tempo.
+//
+// IMPORTANTE: os browsers "atrasam" (throttle) de propósito os
+// setInterval() de uma página quando a janela é minimizada, quando outra
+// aba fica em foco, ou quando o browser descarta/congela abas em segundo
+// plano para poupar bateria/memória ("Memory Saver"/"Efficiency mode").
+// Isto fazia o heartbeat parar de chegar mesmo com o painel só minimizado
+// (não fechado), levando o servidor a desligar-se por engano. Um Web
+// Worker corre num thread à parte e não sofre este throttling da mesma
+// forma, por isso o heartbeat é enviado a partir dele em vez do thread
+// principal da página.
 function sendHeartbeat() {
   fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
 }
-const _heartbeatInterval = setInterval(sendHeartbeat, 3000);
+
+let _heartbeatWorker = null;
+try {
+  const workerCode = `
+    setInterval(() => { postMessage('tick'); }, 3000);
+  `;
+  const blob = new Blob([workerCode], { type: 'application/javascript' });
+  _heartbeatWorker = new Worker(URL.createObjectURL(blob));
+  _heartbeatWorker.onmessage = sendHeartbeat;
+} catch (e) {
+  // Fallback (browsers muito antigos/sem suporte a Worker): pelo menos o
+  // heartbeat normal continua a funcionar enquanto a aba estiver em
+  // primeiro plano.
+  setInterval(sendHeartbeat, 3000);
+}
+
+// Também manda logo um heartbeat sempre que a aba volta a ficar visível,
+// para "recuperar" imediatamente sem esperar pelo próximo tick do worker.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) sendHeartbeat();
+});
+
 sendHeartbeat();
 
 // Ao fechar mesmo o separador/janela (não apenas minimizar ou trocar de
@@ -4751,7 +4782,7 @@ window.addEventListener('pagehide', (event) => {
 // chama /api/close diretamente, sem depender do evento pagehide.
 function shutdownServer() {
   if (!confirm('Desligar o Centro de Comando por completo?\n\nO servidor local e a monitorização em segundo plano vão parar. Só precisas de o voltar a abrir para retomar.')) return;
-  clearInterval(_heartbeatInterval); // para não cancelar o próprio pedido de fecho
+  if (_heartbeatWorker) _heartbeatWorker.terminate(); // para não cancelar o próprio pedido de fecho
   fetch('/api/close', { method: 'POST' }).catch(() => {});
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:JetBrains Mono,monospace;color:var(--muted);font-size:14px;">Centro de Comando desligado. Podes fechar esta janela.</div>';
 }
