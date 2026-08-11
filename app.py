@@ -931,6 +931,24 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
             return
 
+        if path == '/api/close':
+            # Avisado pelo painel (evento pagehide/beforeunload) quando o
+            # separador é mesmo fechado - ao contrário da falta de
+            # heartbeat, isto é um sinal explícito e imediato, por isso
+            # desligamos logo, sem esperar pelo HEARTBEAT_TIMEOUT (que
+            # existe só para aguentar a janela minimizada/em segundo
+            # plano, não para detetar um fecho real).
+            try:
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
+            except Exception:
+                pass
+            threading.Timer(0.2, lambda: os._exit(0)).start()
+            return
+
         if path == '/api/power/config':
             with POWER_CONFIG_LOCK:
                 new_cfg = copy.deepcopy(power_config)
