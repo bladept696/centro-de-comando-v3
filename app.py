@@ -74,6 +74,7 @@ def watchdog_loop():
             # o browser.
             continue
         if time.time() - ts > HEARTBEAT_TIMEOUT:
+            print("[watchdog] sem heartbeat há mais de", HEARTBEAT_TIMEOUT, "segundos - a fechar.", flush=True)
             os._exit(0)
 
 NERDQAXE_SIGNATURE_FIELDS = {
@@ -932,6 +933,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/api/close':
+            print("[api/close] pedido de fecho recebido - a desligar já.", flush=True)
             # Avisado pelo painel (evento pagehide/beforeunload) quando o
             # separador é mesmo fechado - ao contrário da falta de
             # heartbeat, isto é um sinal explícito e imediato, por isso
