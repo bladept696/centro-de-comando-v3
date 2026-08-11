@@ -45,7 +45,29 @@ FICHEIROS DESTA PASTA
 ------------------------------------------------
 app.py                     - código principal (servidor + launcher)
 nerdqaxe-dashboard.html    - o painel/dashboard
+overlay-obs.html            - overlay para usar como Browser Source no OBS
+rainmeter-skin/             - widget de desktop para o Rainmeter (ver o
+                               LEIA-ME.txt lá dentro para instalar)
 bitminer33-banner.png      - banner usado no separador "Apoiantes"
 lightning-qrcode.png       - QR code Lightning (Wallet of Satoshi)
 app_icon.ico                - ícone do executável
 build_exe.bat               - script que gera o .exe (corre este!)
+
+------------------------------------------------
+INTEGRAÇÕES EXTERNAS (OBS / Rainmeter)
+------------------------------------------------
+Com o Centro de Comando a correr (localhost:8765), tens dois dados
+extra:
+
+- OBS (overlay de stream): no OBS, adiciona uma fonte "Navegador"
+  (Browser Source) a apontar para:
+      http://localhost:8765/overlay-obs.html
+  Fundo transparente, mostra o resumo da farm + lista de máquinas.
+
+- Rainmeter (widget de desktop): segue as instruções em
+  rainmeter-skin/LEIA-ME.txt
+
+Ambos leem os dados automaticamente das máquinas que tiveres
+registadas no painel principal (as mesmas que ficam guardadas no
+servidor via /api/devices) - não é preciso configurar nada
+manualmente nesses ficheiros.

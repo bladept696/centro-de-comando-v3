@@ -50,8 +50,14 @@ _update_cache_lock = threading.Lock()
 # a este servidor. Se o heartbeat parar de chegar (separador/janela fechado,
 # browser fechado, PC a desligar, etc.) durante mais de HEARTBEAT_TIMEOUT
 # segundos, o watchdog abaixo desliga o processo por completo.
+#
+# NOTA: quando a janela/separador é minimizado ou fica em segundo plano, os
+# browsers atrasam (throttle) ou pausam os setInterval() da página para
+# poupar energia — isto pode facilmente ultrapassar poucos segundos. Por
+# isso o timeout tem de ser generoso, ou o watchdog mata o servidor por
+# engano mesmo com o painel só minimizado (não fechado).
 LAST_HEARTBEAT = {"ts": None}
-HEARTBEAT_TIMEOUT = 8       # segs sem heartbeat até se considerar "fechado"
+HEARTBEAT_TIMEOUT = 90      # segs sem heartbeat até se considerar "fechado"
 HEARTBEAT_GRACE = 20        # segs de tolerância no arranque antes de vigiar
 
 
@@ -412,6 +418,96 @@ def save_power_config(cfg):
 power_config = load_power_config()
 
 
+# --- Integrações externas (Rainmeter / OBS) --------------------------------
+# A lista de máquinas já vive em power_config["devices"] (ver /api/devices).
+# Para servir um "resumo" pronto a consumir por ferramentas externas
+# (Rainmeter, overlay do OBS), cruzamos essa lista com a última leitura
+# conhecida de cada IP, guardada em memória sempre que /api/proxy é usado.
+LATEST_READINGS = {}          # ip -> {"data": dict, "ts": float}
+LATEST_READINGS_LOCK = threading.Lock()
+READING_MAX_AGE = 20  # segs - acima disto consideramos a leitura desatualizada (offline)
+
+
+def cache_reading(ip, data):
+    with LATEST_READINGS_LOCK:
+        LATEST_READINGS[ip] = {"data": data, "ts": time.time()}
+
+
+def build_overlay_snapshot():
+    """Junta a lista de máquinas registadas (power_config["devices"]) com a
+    última leitura conhecida de cada uma, calculando também os totais da
+    'farm' inteira. Usado por /api/overlay e /api/overlay/rainmeter."""
+    with POWER_CONFIG_LOCK:
+        registry = copy.deepcopy(power_config.get("devices", []))
+    with LATEST_READINGS_LOCK:
+        readings_snapshot = dict(LATEST_READINGS)
+
+    now = time.time()
+    machines = []
+    total_hashrate_ghs = 0.0
+    total_power_w = 0.0
+    have_power = False
+    temps = []
+    best_all = 0.0
+    blocks_total = 0
+    online_count = 0
+
+    for dev in registry:
+        ip = dev.get('ip')
+        name = dev.get('name') or ip
+        cached = readings_snapshot.get(ip)
+        online = bool(cached and (now - cached['ts']) <= READING_MAX_AGE)
+        d = cached['data'] if cached else {}
+
+        hashrate_ghs = float(d.get('hashRate') or d.get('hashrate') or 0) if online else 0.0
+        temp = d.get('temp') if online else None
+        power = d.get('power') if online else None
+        best = float(d.get('bestSessionDiff') or d.get('bestDiff') or 0)
+        blocks = int(d.get('blockFound') or d.get('blocksFound') or 0)
+
+        efficiency = None
+        if online and power and hashrate_ghs > 0:
+            efficiency = power / (hashrate_ghs / 1000)
+
+        machines.append({
+            "name": name,
+            "ip": ip,
+            "online": online,
+            "hashrate_ghs": round(hashrate_ghs, 2),
+            "temp_c": round(temp, 1) if isinstance(temp, (int, float)) else None,
+            "power_w": round(power, 1) if isinstance(power, (int, float)) else None,
+            "efficiency_j_th": round(efficiency, 2) if efficiency is not None else None,
+            "best_diff": best,
+            "blocks_found": blocks,
+        })
+
+        if online:
+            online_count += 1
+            total_hashrate_ghs += hashrate_ghs
+            if isinstance(temp, (int, float)):
+                temps.append(temp)
+            if isinstance(power, (int, float)) and power > 0:
+                have_power = True
+                total_power_w += power
+        best_all = max(best_all, best)
+        blocks_total += blocks
+
+    farm_efficiency = (total_power_w / (total_hashrate_ghs / 1000)) if (have_power and total_hashrate_ghs > 0) else None
+
+    farm = {
+        "total_hashrate_ghs": round(total_hashrate_ghs, 2),
+        "total_hashrate_ths": round(total_hashrate_ghs / 1000, 3),
+        "total_power_w": round(total_power_w, 1) if have_power else None,
+        "avg_temp_c": round(sum(temps) / len(temps), 1) if temps else None,
+        "efficiency_j_th": round(farm_efficiency, 2) if farm_efficiency is not None else None,
+        "best_diff": best_all,
+        "blocks_found": blocks_total,
+        "online_count": online_count,
+        "total_count": len(registry),
+    }
+    return farm, machines
+
+
 def parse_numeric_payload(payload):
     """Extrai um número de uma mensagem MQTT, aceitando tanto um valor
     simples (ex: "3.42") como um JSON do Home Assistant (ex: {"state": 3.42})."""
@@ -603,6 +699,20 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # silencia o log no terminal
 
+    def handle_error(self, request, client_address):
+        """Chamado pelo socketserver quando uma exceção não tratada ocorre
+        a processar um pedido. Ligações abortadas pelo cliente (browser
+        fechou o separador, deu F5 a meio de um pedido, página em segundo
+        plano cancelou o fetch, etc.) são normais e inofensivas - o
+        servidor continua a correr na mesma. Silenciamo-las para não
+        encher o terminal de tracebacks; qualquer outro erro continua a
+        ser impresso normalmente para se poder diagnosticar.
+        """
+        exc_type = sys.exc_info()[0]
+        if exc_type in (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            return
+        super().handle_error(request, client_address)
+
     def do_GET(self):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
@@ -637,6 +747,11 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     else:
                         data = raw_data
 
+                    try:
+                        cache_reading(target_ip, json.loads(data.decode('utf-8')))
+                    except Exception:
+                        pass
+
                     self.send_response(200)
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -656,6 +771,11 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                         else:
                             data_alt = raw_alt
 
+                        try:
+                            cache_reading(target_ip, json.loads(data_alt.decode('utf-8')))
+                        except Exception:
+                            pass
+
                         self.send_response(200)
                         self.send_header('Access-Control-Allow-Origin', '*')
                         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -668,6 +788,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     # antes de reportar a máquina como offline.
                     cgminer_data = fetch_cgminer_full(target_ip)
                     if cgminer_data is not None:
+                        cache_reading(target_ip, cgminer_data)
                         self.send_response(200)
                         self.send_header('Access-Control-Allow-Origin', '*')
                         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -681,6 +802,46 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(json.dumps({"error": str(e2), "online": False}).encode('utf-8'))
                     return
+
+        if path == '/api/overlay':
+            farm, machines = build_overlay_snapshot()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"farm": farm, "machines": machines}, ensure_ascii=False).encode('utf-8'))
+            return
+
+        if path == '/api/overlay/rainmeter':
+            # Versão "achatada" (sem objetos/arrays aninhados) pensada para
+            # o plugin WebParser do Rainmeter, que só sabe extrair valores
+            # com expressões regulares simples sobre o texto recebido.
+            farm, machines = build_overlay_snapshot()
+            flat = {f"farm_{k}": v for k, v in farm.items()}
+            MAX_SLOTS = 8
+            for i in range(MAX_SLOTS):
+                prefix = f"m{i + 1}_"
+                if i < len(machines):
+                    m = machines[i]
+                    flat[prefix + "name"] = m["name"]
+                    flat[prefix + "online"] = "1" if m["online"] else "0"
+                    flat[prefix + "hashrate_ths"] = round(m["hashrate_ghs"] / 1000, 3)
+                    flat[prefix + "temp_c"] = m["temp_c"] if m["temp_c"] is not None else ""
+                    flat[prefix + "power_w"] = m["power_w"] if m["power_w"] is not None else ""
+                    flat[prefix + "efficiency_j_th"] = m["efficiency_j_th"] if m["efficiency_j_th"] is not None else ""
+                else:
+                    flat[prefix + "name"] = ""
+                    flat[prefix + "online"] = ""
+                    flat[prefix + "hashrate_ths"] = ""
+                    flat[prefix + "temp_c"] = ""
+                    flat[prefix + "power_w"] = ""
+                    flat[prefix + "efficiency_j_th"] = ""
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(flat, ensure_ascii=False).encode('utf-8'))
+            return
 
         if path == '/api/scan':
             subnet_param = query_params.get('subnet')
