@@ -1,0 +1,23 @@
+{
+  "mqtt": {
+    "host": "",
+    "port": 1883,
+    "username": "",
+    "password": "",
+    "topic_solar": "",
+    "topic_tariff": ""
+  },
+  "profiles": [],
+  "devices": [
+    {
+      "id": "m_ukyvp3t",
+      "name": "bitaxe",
+      "ip": "192.168.1.38"
+    },
+    {
+      "id": "m_v26mjsi",
+      "name": "nerqaxe6th",
+      "ip": "192.168.1.163"
+    }
+  ]
+}
