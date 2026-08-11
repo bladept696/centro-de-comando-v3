@@ -57,7 +57,7 @@ _update_cache_lock = threading.Lock()
 # isso o timeout tem de ser generoso, ou o watchdog mata o servidor por
 # engano mesmo com o painel só minimizado (não fechado).
 LAST_HEARTBEAT = {"ts": None}
-HEARTBEAT_TIMEOUT = 90      # segs sem heartbeat até se considerar "fechado"
+HEARTBEAT_TIMEOUT = 180     # segs sem heartbeat até se considerar "fechado"
 HEARTBEAT_GRACE = 20        # segs de tolerância no arranque antes de vigiar
 
 # Temporizador de fecho pendente, criado por /api/close. Fica cancelável
@@ -84,10 +84,39 @@ def cancel_pending_close():
 
 
 def watchdog_loop():
-    """Fecha o processo por completo assim que o painel deixar de responder."""
-    started = time.time()
+    """Fecha o processo por completo assim que o painel deixar de responder.
+
+    NOTA IMPORTANTE: quando o PC entra em suspensão/hibernação, ou quando o
+    browser descarta/congela a aba por poupança de memória, o loop abaixo
+    também fica "congelado" junto com o resto do sistema. Ao acordar, o
+    time.time() dá um salto grande de uma só vez (ex.: passaram 2 horas
+    "de repente"), o que fazia o watchdog concluir erradamente que o painel
+    tinha sido fechado há muito tempo, e desligava a app assim que o PC
+    acordava - mesmo que o utilizador nunca tivesse fechado nada. Por isso
+    detetamos esse salto (via monotonic, que também pausa durante a
+    suspensão) e, se o loop "saltou" mais tempo do que o esperado, tratamos
+    isso como sinal de suspensão do sistema e damos ao painel uma nova
+    janela de graça para voltar a mandar heartbeat, em vez de matar o
+    processo de imediato.
+    """
+    last_tick_monotonic = time.monotonic()
     while True:
         time.sleep(1)
+        now_monotonic = time.monotonic()
+        gap = now_monotonic - last_tick_monotonic
+        last_tick_monotonic = now_monotonic
+
+        if gap > 10:
+            # O próprio loop do watchdog saltou mais de 10s entre iterações
+            # de 1s - isto só acontece se o processo/SO esteve suspenso
+            # (sleep/hibernate) ou a aba foi completamente congelada. Não é
+            # o utilizador a fechar o painel, por isso reiniciamos a
+            # contagem do heartbeat e damos-lhe tempo para retomar.
+            print(f"[watchdog] salto de {gap:.1f}s detetado (provável suspensão do PC) - "
+                  f"a ignorar e a dar nova janela de graça.", flush=True)
+            LAST_HEARTBEAT["ts"] = time.time()
+            continue
+
         ts = LAST_HEARTBEAT["ts"]
         if ts is None:
             # o painel ainda não enviou nenhum heartbeat - só força fecho
