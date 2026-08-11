@@ -1599,7 +1599,7 @@
   <header>
     <div>
       <h1>Centro de Comando</h1>
-      <div class="subtitle" id="modeLabel">sistema ativo com alertas sonoros</div>
+      <div class="subtitle" id="modeLabel">sistema ativo com alertas sonoros <span id="versionTag" style="opacity:0.6; margin-left:6px;"></span></div>
     </div>
     <div class="header-actions">
       <select class="theme-select" id="themeSelect" onchange="setTheme(this.value)" title="Tema visual">
@@ -1611,6 +1611,7 @@
       <button class="sound-toggle-btn" id="soundToggleBtn" onclick="toggleSound()">
         🔊 Som Ativo
       </button>
+      <button class="config ghost" id="shutdownBtn" onclick="shutdownServer()" title="Desliga o servidor local por completo, de forma garantida (não depende do browser)" style="padding: 6px 12px; font-size: 10px; border-color:#ff5d5d55; color:var(--red);">⏻ Fechar Tudo</button>
       <div class="status-pill"><div class="dot" id="statusDot"></div><span id="statusText">Sistema pronto</span></div>
     </div>
   </header>
@@ -4720,8 +4721,8 @@ initAiAgent();
 function sendHeartbeat() {
   fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
 }
+const _heartbeatInterval = setInterval(sendHeartbeat, 3000);
 sendHeartbeat();
-setInterval(sendHeartbeat, 3000);
 
 // Ao fechar mesmo o separador/janela (não apenas minimizar ou trocar de
 // separador), avisa o servidor de imediato para ele se desligar logo,
@@ -4732,6 +4733,28 @@ window.addEventListener('pagehide', (event) => {
   if (event.persisted) return; // página só foi para bfcache, não fechou
   try { navigator.sendBeacon('/api/close'); } catch (e) {}
 });
+
+// Mostra a versão instalada (independente de internet, ao contrário da
+// verificação de atualizações que consulta o GitHub).
+(async () => {
+  try {
+    const res = await fetch('/api/version');
+    const data = await res.json();
+    const tag = $('versionTag');
+    if (tag && data.version) tag.textContent = `· v${data.version}`;
+  } catch (e) {}
+})();
+
+// Fecho garantido e imediato, independente de qualquer comportamento do
+// browser ao fechar separador/janela (que por vezes não dispara a tempo,
+// deixando o servidor a correr até 90s em segundo plano). Este botão
+// chama /api/close diretamente, sem depender do evento pagehide.
+function shutdownServer() {
+  if (!confirm('Desligar o Centro de Comando por completo?\n\nO servidor local e a monitorização em segundo plano vão parar. Só precisas de o voltar a abrir para retomar.')) return;
+  clearInterval(_heartbeatInterval); // para não cancelar o próprio pedido de fecho
+  fetch('/api/close', { method: 'POST' }).catch(() => {});
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:JetBrains Mono,monospace;color:var(--muted);font-size:14px;">Centro de Comando desligado. Podes fechar esta janela.</div>';
+}
 </script>
 </body>
 </html>
