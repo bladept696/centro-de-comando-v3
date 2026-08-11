@@ -923,6 +923,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(result).encode('utf-8'))
             return
 
+        if path == '/api/version':
+            # Endpoint simples e sem dependência de internet, só para o
+            # frontend mostrar a versão instalada (ao contrário de
+            # /api/update/check, que consulta o GitHub).
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"version": APP_VERSION}).encode('utf-8'))
+            return
+
         if path == '/api/devices':
             with POWER_CONFIG_LOCK:
                 devices = copy.deepcopy(power_config.get("devices", []))
