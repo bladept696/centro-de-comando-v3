@@ -4586,6 +4586,16 @@ function sendHeartbeat() {
 }
 sendHeartbeat();
 setInterval(sendHeartbeat, 3000);
+
+// Ao fechar mesmo o separador/janela (não apenas minimizar ou trocar de
+// separador), avisa o servidor de imediato para ele se desligar logo,
+// em vez de esperar até 90s sem heartbeat. sendBeacon é usado porque
+// continua a funcionar mesmo durante o descarregamento da página
+// (um fetch normal seria cancelado nesse momento).
+window.addEventListener('pagehide', (event) => {
+  if (event.persisted) return; // página só foi para bfcache, não fechou
+  try { navigator.sendBeacon('/api/close'); } catch (e) {}
+});
 </script>
 </body>
 </html>
