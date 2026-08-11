@@ -60,6 +60,28 @@ LAST_HEARTBEAT = {"ts": None}
 HEARTBEAT_TIMEOUT = 90      # segs sem heartbeat até se considerar "fechado"
 HEARTBEAT_GRACE = 20        # segs de tolerância no arranque antes de vigiar
 
+# Temporizador de fecho pendente, criado por /api/close. Fica cancelável
+# durante CLOSE_GRACE_SECONDS: se chegar um heartbeat novo nesse intervalo
+# (ex: o "fecho" foi só um F5/recarregar, que dispara o mesmo evento
+# pagehide que um fecho real de separador), o fecho é abortado e o
+# servidor continua a correr normalmente.
+CLOSE_GRACE_SECONDS = 2.5
+_pending_close_timer = {"timer": None}
+_pending_close_lock = threading.Lock()
+
+
+def _do_close_now():
+    print("[api/close] sem heartbeat novo dentro da janela de graça - a desligar.", flush=True)
+    os._exit(0)
+
+
+def cancel_pending_close():
+    with _pending_close_lock:
+        t = _pending_close_timer["timer"]
+        if t is not None:
+            t.cancel()
+            _pending_close_timer["timer"] = None
+
 
 def watchdog_loop():
     """Fecha o processo por completo assim que o painel deixar de responder."""
@@ -925,6 +947,12 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/heartbeat':
             LAST_HEARTBEAT["ts"] = time.time()
+            # Um heartbeat novo cancela qualquer fecho pendente - isto é o
+            # que trata o caso de F5/recarregar: a página antiga pede para
+            # fechar (pagehide), mas a página nova já carregou e voltou a
+            # mandar heartbeat dentro da janela de graça, por isso o fecho
+            # é abortado e o servidor continua vivo.
+            cancel_pending_close()
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -933,13 +961,12 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/api/close':
-            print("[api/close] pedido de fecho recebido - a desligar já.", flush=True)
-            # Avisado pelo painel (evento pagehide/beforeunload) quando o
-            # separador é mesmo fechado - ao contrário da falta de
-            # heartbeat, isto é um sinal explícito e imediato, por isso
-            # desligamos logo, sem esperar pelo HEARTBEAT_TIMEOUT (que
-            # existe só para aguentar a janela minimizada/em segundo
-            # plano, não para detetar um fecho real).
+            print(f"[api/close] pedido de fecho recebido - a aguardar {CLOSE_GRACE_SECONDS}s por um heartbeat novo (pode ser só um F5).", flush=True)
+            # Avisado pelo painel (evento pagehide/beforeunload). Isto
+            # dispara tanto num fecho real do separador como num simples
+            # F5/recarregar, por isso não desligamos já - agenda-se o fecho
+            # e dá-se uma pequena janela de graça para a página seguinte
+            # (se for só um reload) voltar a mandar heartbeat e cancelar.
             try:
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')
@@ -948,7 +975,14 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
             except Exception:
                 pass
-            threading.Timer(0.2, lambda: os._exit(0)).start()
+            with _pending_close_lock:
+                old_timer = _pending_close_timer["timer"]
+                if old_timer is not None:
+                    old_timer.cancel()
+                t = threading.Timer(CLOSE_GRACE_SECONDS, _do_close_now)
+                t.daemon = True
+                _pending_close_timer["timer"] = t
+                t.start()
             return
 
         if path == '/api/power/config':
