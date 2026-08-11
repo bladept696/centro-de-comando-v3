@@ -1495,10 +1495,100 @@
     background:#0a1620; font-size:11px; color:var(--muted);
     display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
   }
+
+  /* --- Celebração de Bloco Encontrado --------------------------------- */
+  .block-celebration{
+    position:fixed; inset:0; z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+    opacity:0;
+    background:radial-gradient(900px 600px at 50% 40%, #ffd60033, transparent 65%);
+  }
+  .block-celebration.active{
+    animation: blockCelebFade 4.2s ease forwards;
+  }
+  @keyframes blockCelebFade{
+    0%{ opacity:0; }
+    8%{ opacity:1; }
+    78%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  .block-celebration-confetti{
+    position:absolute; inset:0; overflow:hidden;
+  }
+  .confetti-piece{
+    position:absolute; top:-40px;
+    width:9px; height:16px;
+    opacity:0.95;
+    animation-name: confettiFall;
+    animation-timing-function: cubic-bezier(.35,.4,.6,1);
+    animation-fill-mode: forwards;
+    border-radius:2px;
+  }
+  @keyframes confettiFall{
+    0%{ transform:translateY(-5vh) translateX(0) rotate(0deg); opacity:1; }
+    100%{ transform:translateY(105vh) translateX(var(--drift,0px)) rotate(var(--spin,540deg)); opacity:0.9; }
+  }
+  .block-celebration-card{
+    position:relative;
+    text-align:center;
+    padding:34px 54px;
+    border-radius:16px;
+    background:linear-gradient(180deg, #0d1a26f2, #060d14f2);
+    border:1px solid var(--amber);
+    box-shadow:0 0 60px 8px #ffb02055, 0 0 0 1px #ffb02033 inset;
+    transform:scale(0.85);
+    animation: blockCardPop 4.2s ease forwards;
+  }
+  @keyframes blockCardPop{
+    0%{ transform:scale(0.7); }
+    10%{ transform:scale(1.06); }
+    16%{ transform:scale(1); }
+    85%{ transform:scale(1); }
+    100%{ transform:scale(0.96); }
+  }
+  .block-celebration-emoji{
+    font-size:64px;
+    line-height:1;
+    filter:drop-shadow(0 0 18px #ffb020aa);
+    animation: blockEmojiBounce 1.1s ease-in-out infinite;
+  }
+  @keyframes blockEmojiBounce{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-10px); }
+  }
+  .block-celebration-title{
+    margin-top:14px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:34px;
+    letter-spacing:1px;
+    color:var(--amber);
+    text-shadow:0 0 20px #ffb02088;
+  }
+  .block-celebration-sub{
+    margin-top:8px;
+    font-size:14px;
+    color:var(--text);
+    opacity:0.85;
+  }
+  @media (max-width:600px){
+    .block-celebration-card{ padding:26px 30px; }
+    .block-celebration-title{ font-size:24px; }
+    .block-celebration-emoji{ font-size:46px; }
+  }
 </style>
 </head>
 <body>
 <div class="toast-stack" id="toastStack"></div>
+<div class="block-celebration" id="blockCelebration">
+  <div class="block-celebration-confetti" id="blockConfettiLayer"></div>
+  <div class="block-celebration-card">
+    <div class="block-celebration-emoji">🚀</div>
+    <div class="block-celebration-title">BLOCO ENCONTRADO!</div>
+    <div class="block-celebration-sub" id="blockCelebrationMachine"></div>
+  </div>
+</div>
 <div class="update-banner" id="updateBanner">
   <span class="dot"></span>
   <span id="updateBannerText"></span>
@@ -2549,6 +2639,50 @@ function updateNotifBadge() {
   }
 }
 
+// --- Celebração especial: bloco encontrado ----------------------------
+const BLOCK_CONFETTI_COLORS = ['#ffb020', '#21ffb0', '#4fd6ff', '#ff5d5d', '#ffffff'];
+
+function celebrateBlockFound(machineName) {
+  const overlay = $('blockCelebration');
+  const layer = $('blockConfettiLayer');
+  const machineLabel = $('blockCelebrationMachine');
+  if(!overlay || !layer) return;
+
+  if(machineLabel) machineLabel.textContent = machineName ? `${machineName} — bloco minerado com sucesso!` : 'Bloco minerado com sucesso!';
+
+  layer.innerHTML = '';
+  const pieceCount = 130;
+  for(let i = 0; i < pieceCount; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const left = Math.random() * 100;
+    const delay = Math.random() * 0.9;
+    const duration = 2.6 + Math.random() * 1.8;
+    const drift = (Math.random() * 220 - 110) + 'px';
+    const spin = (360 + Math.random() * 720) + 'deg';
+    const color = BLOCK_CONFETTI_COLORS[Math.floor(Math.random() * BLOCK_CONFETTI_COLORS.length)];
+    piece.style.left = left + 'vw';
+    piece.style.background = color;
+    piece.style.setProperty('--drift', drift);
+    piece.style.setProperty('--spin', spin);
+    piece.style.animationDelay = delay + 's';
+    piece.style.animationDuration = duration + 's';
+    if(Math.random() > 0.5) piece.style.borderRadius = '50%';
+    layer.appendChild(piece);
+  }
+
+  overlay.classList.remove('active');
+  // força reflow para poder reiniciar a animação em disparos consecutivos
+  void overlay.offsetWidth;
+  overlay.classList.add('active');
+
+  clearTimeout(overlay._celebTimer);
+  overlay._celebTimer = setTimeout(() => {
+    overlay.classList.remove('active');
+    layer.innerHTML = '';
+  }, 4300);
+}
+
 function addNotification(type, title, description, machineName) {
   const item = {
     id: 'notif_' + Math.random().toString(36).slice(2, 9),
@@ -2655,6 +2789,7 @@ function triggerTestNotifications() {
   addNotification('best', 'Novo Recorde de Dificuldade: 45.2M', 'A máquina alcançou um novo best diff de 45,230,100 na sessão de teste.', randomMachine.name);
   setTimeout(() => {
     addNotification('block', 'Bloco Encontrado com Sucesso! (TESTE)', 'Simulação de bloco minerado com sucesso na rede.', randomMachine.name);
+    celebrateBlockFound(randomMachine.name);
   }, 600);
   
   logEvent('Notificações de teste geradas com som.', 'new', randomMachine.name, randomMachine.id || 'sys');
@@ -3974,6 +4109,7 @@ async function pollOneDevice(dev){
     if(hasBaseline && blocksFoundVal > oldBlocks) {
       logEvent(`Bloco encontrado com sucesso! 🎉`, 'new', dev.name, dev.id);
       addNotification('block', `Bloco Encontrado com Sucesso!`, `Total de blocos encontrados por esta máquina atualizado para ${blocksFoundVal}.`, dev.name);
+      celebrateBlockFound(dev.name);
     }
 
     baselineSeen[dev.id] = true;
