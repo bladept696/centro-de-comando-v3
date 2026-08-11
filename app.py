@@ -57,7 +57,14 @@ _update_cache_lock = threading.Lock()
 # isso o timeout tem de ser generoso, ou o watchdog mata o servidor por
 # engano mesmo com o painel só minimizado (não fechado).
 LAST_HEARTBEAT = {"ts": None}
-HEARTBEAT_TIMEOUT = 180     # segs sem heartbeat até se considerar "fechado"
+# Agora que o heartbeat corre num Web Worker (ver nerdqaxe-dashboard.html),
+# deixa de estar sujeito ao throttling normal de abas em segundo plano, por
+# isso este timeout deixa de precisar de ser "generoso para tolerar
+# throttling" e passa a ser só uma rede de segurança para o caso raro do
+# browser crashar sem disparar o evento pagehide (que teria avisado logo
+# via /api/close). 15 minutos é mais do que suficiente para isso sem
+# arriscar desligar a app enquanto está só minimizada/em segundo plano.
+HEARTBEAT_TIMEOUT = 900     # segs sem heartbeat até se considerar "fechado"
 HEARTBEAT_GRACE = 20        # segs de tolerância no arranque antes de vigiar
 
 # Temporizador de fecho pendente, criado por /api/close. Fica cancelável
