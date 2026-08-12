@@ -72,7 +72,7 @@ HEARTBEAT_GRACE = 20        # segs de tolerância no arranque antes de vigiar
 # (ex: o "fecho" foi só um F5/recarregar, que dispara o mesmo evento
 # pagehide que um fecho real de separador), o fecho é abortado e o
 # servidor continua a correr normalmente.
-CLOSE_GRACE_SECONDS = 2.5
+CLOSE_GRACE_SECONDS = 9.5
 _pending_close_timer = {"timer": None}
 _pending_close_lock = threading.Lock()
 
