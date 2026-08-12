@@ -4703,13 +4703,14 @@ loadTheme();
   checkForUpdate();
 })();
 logEvent('Painel iniciado com alertas sonoros.', 'new', 'Sistema', 'sys');
-setInterval(pollAll, 5000);
+// pollAll() e pollPowerStatus() já não têm setInterval próprio aqui - são
+// despoletados pelo Web Worker do heartbeat (ver abaixo), para não
+// sofrerem o throttling de abas em segundo plano.
 pollAll();
 fetchRecentBlocks();
 startBlocksAutoRefresh();
 
 loadPowerConfig();
-setInterval(pollPowerStatus, 5000);
 pollPowerStatus();
 
 initAiAgent();
@@ -4732,19 +4733,36 @@ function sendHeartbeat() {
   fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
 }
 
+// IMPORTANTE (continuação): o mesmo throttling que afetava o heartbeat
+// também afeta QUALQUER setInterval() no thread principal da página -
+// incluindo o pollAll() que atualiza os dados das máquinas. Descobrimos
+// isto pelos logs: mesmo com o heartbeat a salvo no worker, o polling das
+// máquinas continuava a saltar para ~60s de intervalo (throttling
+// "intensivo" do Chrome) sempre que a janela ficava em segundo plano
+// durante uns minutos, e a certa altura parava por completo durante
+// dezenas de minutos até a aba "acordar". Por isso o pollAll() (e o
+// pollPowerStatus()) passam também a ser despoletados a partir do worker,
+// tal como o heartbeat - só assim as máquinas continuam a atualizar-se
+// mesmo com o painel minimizado ou noutro separador.
 let _heartbeatWorker = null;
 try {
   const workerCode = `
-    setInterval(() => { postMessage('tick'); }, 3000);
+    setInterval(() => { postMessage('heartbeat'); }, 3000);
+    setInterval(() => { postMessage('poll'); }, 5000);
   `;
   const blob = new Blob([workerCode], { type: 'application/javascript' });
   _heartbeatWorker = new Worker(URL.createObjectURL(blob));
-  _heartbeatWorker.onmessage = sendHeartbeat;
+  _heartbeatWorker.onmessage = (e) => {
+    if (e.data === 'heartbeat') sendHeartbeat();
+    else if (e.data === 'poll') { pollAll(); pollPowerStatus(); }
+  };
 } catch (e) {
   // Fallback (browsers muito antigos/sem suporte a Worker): pelo menos o
-  // heartbeat normal continua a funcionar enquanto a aba estiver em
-  // primeiro plano.
+  // heartbeat, pollAll e pollPowerStatus normais continuam a funcionar
+  // enquanto a aba estiver em primeiro plano.
   setInterval(sendHeartbeat, 3000);
+  setInterval(pollAll, 5000);
+  setInterval(pollPowerStatus, 5000);
 }
 
 // Também manda logo um heartbeat sempre que a aba volta a ficar visível,
