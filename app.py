@@ -37,7 +37,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.0.2"
+APP_VERSION = "3.0.4"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -47,32 +47,40 @@ _update_cache_lock = threading.Lock()
 # O painel corre no browser predefinido (não é uma janela nativa), por isso
 # o Python não sabe diretamente quando o utilizador fecha o separador/janela
 # com o "X". Para resolver isto, o painel (JS) envia um "heartbeat" periódico
-# a este servidor. Se o heartbeat parar de chegar (separador/janela fechado,
-# browser fechado, PC a desligar, etc.) durante mais de HEARTBEAT_TIMEOUT
-# segundos, o watchdog abaixo desliga o processo por completo.
+# a este servidor, e o fecho real acontece via /api/close (evento pagehide)
+# ou pelo botão "Desligar" do painel.
 #
-# NOTA: quando a janela/separador é minimizado ou fica em segundo plano, os
-# browsers atrasam (throttle) ou pausam os setInterval() da página para
-# poupar energia — isto pode facilmente ultrapassar poucos segundos. Por
-# isso o timeout tem de ser generoso, ou o watchdog mata o servidor por
-# engano mesmo com o painel só minimizado (não fechado).
+# O antigo watchdog por timeout (matar o processo se não chegasse heartbeat
+# há muito tempo) foi DESATIVADO a pedido do utilizador - causou demasiados
+# falsos positivos (poupança de energia do browser/Windows a suspender o
+# Worker mesmo com a página em primeiro plano, corridas com o F5, etc.),
+# desligando o servidor sem o utilizador ter fechado nada. Sem esse
+# watchdog, o único risco é ficar um processo "zombie" em segundo plano se
+# o browser crashar sem disparar pagehide (raro) - nesse caso, fecha-se
+# manualmente pelo Gestor de Tarefas ou pelo botão "Desligar" antes de
+# fechar o browser.
 LAST_HEARTBEAT = {"ts": None}
-# Agora que o heartbeat corre num Web Worker (ver nerdqaxe-dashboard.html),
-# deixa de estar sujeito ao throttling normal de abas em segundo plano, por
-# isso este timeout deixa de precisar de ser "generoso para tolerar
-# throttling" e passa a ser só uma rede de segurança para o caso raro do
-# browser crashar sem disparar o evento pagehide (que teria avisado logo
-# via /api/close). 15 minutos é mais do que suficiente para isso sem
-# arriscar desligar a app enquanto está só minimizada/em segundo plano.
-HEARTBEAT_TIMEOUT = 900     # segs sem heartbeat até se considerar "fechado"
-HEARTBEAT_GRACE = 20        # segs de tolerância no arranque antes de vigiar
+HEARTBEAT_TIMEOUT = None    # desativado - nunca fecha por falta de heartbeat
+HEARTBEAT_GRACE = 20        # (sem efeito enquanto HEARTBEAT_TIMEOUT = None)
 
 # Temporizador de fecho pendente, criado por /api/close. Fica cancelável
 # durante CLOSE_GRACE_SECONDS: se chegar um heartbeat novo nesse intervalo
 # (ex: o "fecho" foi só um F5/recarregar, que dispara o mesmo evento
 # pagehide que um fecho real de separador), o fecho é abortado e o
 # servidor continua a correr normalmente.
-CLOSE_GRACE_SECONDS = 9.5
+#
+# IMPORTANTE: este valor tem de ser MAIOR do que o intervalo do heartbeat
+# do Web Worker (3s). O sendBeacon('/api/close') da página antiga (disparado
+# no pagehide) não tem ordem garantida em relação ao primeiro heartbeat da
+# página nova - por vezes o beacon "antigo" só chega ao servidor DEPOIS
+# desse primeiro heartbeat já ter sido processado. Nesse caso, o próximo
+# heartbeat capaz de cancelar o fecho só chega ~3s depois (o intervalo do
+# Worker). Com CLOSE_GRACE_SECONDS a 2.5s isso fazia o F5 matar o servidor
+# sempre que essa ordem "trocada" acontecia - mesmo com a página nova a
+# correr normalmente. Por isso a margem tem de cobrir pelo menos um ciclo
+# completo do heartbeat, com folga extra para máquinas mais lentas a
+# recarregar a página.
+CLOSE_GRACE_SECONDS = 8
 _pending_close_timer = {"timer": None}
 _pending_close_lock = threading.Lock()
 
@@ -91,49 +99,16 @@ def cancel_pending_close():
 
 
 def watchdog_loop():
-    """Fecha o processo por completo assim que o painel deixar de responder.
+    """Antigo watchdog por timeout de heartbeat - DESATIVADO.
 
-    NOTA IMPORTANTE: quando o PC entra em suspensão/hibernação, ou quando o
-    browser descarta/congela a aba por poupança de memória, o loop abaixo
-    também fica "congelado" junto com o resto do sistema. Ao acordar, o
-    time.time() dá um salto grande de uma só vez (ex.: passaram 2 horas
-    "de repente"), o que fazia o watchdog concluir erradamente que o painel
-    tinha sido fechado há muito tempo, e desligava a app assim que o PC
-    acordava - mesmo que o utilizador nunca tivesse fechado nada. Por isso
-    detetamos esse salto (via monotonic, que também pausa durante a
-    suspensão) e, se o loop "saltou" mais tempo do que o esperado, tratamos
-    isso como sinal de suspensão do sistema e damos ao painel uma nova
-    janela de graça para voltar a mandar heartbeat, em vez de matar o
-    processo de imediato.
+    Mantido como no-op (não faz nada) só para não ter de alterar o
+    start_watchdog()/threading.Thread() mais abaixo. O fecho do processo
+    passa a acontecer exclusivamente via /api/close (pagehide) ou pelo
+    botão "Desligar" do painel - nunca por inatividade ou heartbeat em
+    falta.
     """
-    last_tick_monotonic = time.monotonic()
     while True:
-        time.sleep(1)
-        now_monotonic = time.monotonic()
-        gap = now_monotonic - last_tick_monotonic
-        last_tick_monotonic = now_monotonic
-
-        if gap > 10:
-            # O próprio loop do watchdog saltou mais de 10s entre iterações
-            # de 1s - isto só acontece se o processo/SO esteve suspenso
-            # (sleep/hibernate) ou a aba foi completamente congelada. Não é
-            # o utilizador a fechar o painel, por isso reiniciamos a
-            # contagem do heartbeat e damos-lhe tempo para retomar.
-            print(f"[watchdog] salto de {gap:.1f}s detetado (provável suspensão do PC) - "
-                  f"a ignorar e a dar nova janela de graça.", flush=True)
-            LAST_HEARTBEAT["ts"] = time.time()
-            continue
-
-        ts = LAST_HEARTBEAT["ts"]
-        if ts is None:
-            # o painel ainda não enviou nenhum heartbeat - só força fecho
-            # se isto se arrastar demasiado tempo logo no arranque, para não
-            # matar a app por engano se o utilizador ainda estiver a abrir
-            # o browser.
-            continue
-        if time.time() - ts > HEARTBEAT_TIMEOUT:
-            print("[watchdog] sem heartbeat há mais de", HEARTBEAT_TIMEOUT, "segundos - a fechar.", flush=True)
-            os._exit(0)
+        time.sleep(60)
 
 NERDQAXE_SIGNATURE_FIELDS = {
     'ASICModel', 'hashRate', 'bestDiff', 'bestSessionDiff',
@@ -1007,6 +982,19 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/api/close':
+            # Se já chegou um heartbeat muito recente (ex: a página nova de
+            # um F5 já mandou o seu primeiro heartbeat antes deste beacon
+            # "antigo" ter chegado), isso já prova que há uma página viva
+            # agora mesmo - nem vale a pena agendar o fecho.
+            ts = LAST_HEARTBEAT["ts"]
+            if ts is not None and (time.time() - ts) < 1.5:
+                print("[api/close] heartbeat muito recente já recebido (provável F5) - a ignorar pedido de fecho.", flush=True)
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "ignored": True}).encode('utf-8'))
+                return
             print(f"[api/close] pedido de fecho recebido - a aguardar {CLOSE_GRACE_SECONDS}s por um heartbeat novo (pode ser só um F5).", flush=True)
             # Avisado pelo painel (evento pagehide/beforeunload). Isto
             # dispara tanto num fecho real do separador como num simples
