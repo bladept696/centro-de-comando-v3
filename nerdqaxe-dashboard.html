@@ -1045,6 +1045,122 @@
     box-shadow: 0 4px 12px var(--green-dim);
   }
 
+  .support-container {
+    max-width: 900px;
+    margin: 40px auto;
+    text-align: center;
+  }
+  .support-icons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    font-size: 32px;
+    margin-bottom: 20px;
+  }
+  .support-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+  .support-desc {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .support-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .support-card {
+    background: linear-gradient(180deg, var(--panel), var(--deep));
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    padding: 22px 18px;
+    text-align: left;
+    box-shadow: 0 10px 30px -10px #000c;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.2s ease;
+  }
+  .support-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+  }
+  .support-card-icon { font-size: 22px; }
+  .support-card-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .support-card-desc {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.55;
+    flex: 1;
+  }
+  .support-card-btn {
+    background: var(--cyan);
+    color: #000;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s ease;
+  }
+  .support-card-btn:hover {
+    background: #8ae6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px #4fd6ff44;
+  }
+  .support-card-btn.ghost-btn {
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+  }
+  .support-card-btn.ghost-btn:hover {
+    background: var(--panel-2);
+    box-shadow: none;
+  }
+  .support-diag-box {
+    max-width: 700px;
+    margin: 0 auto;
+    background: #060d14;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .support-diag-label {
+    font-size: 11px;
+    color: var(--muted-2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
   .sim-container {
     max-width: 920px;
     margin: 30px auto;
@@ -1585,7 +1701,7 @@
   <div class="block-celebration-confetti" id="blockConfettiLayer"></div>
   <div class="block-celebration-card">
     <div class="block-celebration-emoji">🚀</div>
-    <div class="block-celebration-title">BLOCO ENCONTRADO!</div>
+    <div class="block-celebration-title"><span data-i18n="bloco_encontrado">BLOCO ENCONTRADO!</span></div>
     <div class="block-celebration-sub" id="blockCelebrationMachine"></div>
   </div>
 </div>
@@ -1598,33 +1714,39 @@
 
   <header>
     <div>
-      <h1>Centro de Comando</h1>
-      <div class="subtitle" id="modeLabel">sistema ativo com alertas sonoros <span id="versionTag" style="opacity:0.6; margin-left:6px;"></span></div>
+      <h1><span data-i18n="centro_de_comando">Centro de Comando</span></h1>
+      <div class="subtitle" id="modeLabel"><span data-i18n="sistema_ativo_com_alertas_sonoros">sistema ativo com alertas sonoros</span> <span id="versionTag" style="opacity:0.6; margin-left:6px;"></span></div>
     </div>
     <div class="header-actions">
+      <select class="theme-select" id="langSelect" onchange="setLanguage(this.value)" title="Language / Idioma / Langue">
+        <option value="pt">🇵🇹 PT</option>
+        <option value="en">🇬🇧 EN</option>
+        <option value="es">🇪🇸 ES</option>
+        <option value="fr">🇫🇷 FR</option>
+      </select>
       <select class="theme-select" id="themeSelect" onchange="setTheme(this.value)" title="Tema visual">
-        <option value="default">🌘 Padrão</option>
-        <option value="cyberpunk">🌆 Cyberpunk</option>
-        <option value="matrix">🌿 Matrix</option>
-        <option value="oled">⬛ OLED Black</option>
+        <option value="default" data-i18n="padrao">🌘 Padrão</option>
+        <option value="cyberpunk" data-i18n="cyberpunk">🌆 Cyberpunk</option>
+        <option value="matrix" data-i18n="matrix">🌿 Matrix</option>
+        <option value="oled" data-i18n="oled_black">⬛ OLED Black</option>
       </select>
       <button class="sound-toggle-btn" id="soundToggleBtn" onclick="toggleSound()">
-        🔊 Som Ativo
+        <span data-i18n="som_ativo">🔊 Som Ativo</span>
       </button>
-      <button class="config ghost" id="shutdownBtn" onclick="shutdownServer()" title="Desliga o servidor local por completo, de forma garantida (não depende do browser)" style="padding: 6px 12px; font-size: 10px; border-color:#ff5d5d55; color:var(--red);">⏻ Fechar Tudo</button>
-      <div class="status-pill"><div class="dot" id="statusDot"></div><span id="statusText">Sistema pronto</span></div>
+      <button class="config ghost" id="shutdownBtn" onclick="shutdownServer()" title="Desliga o servidor local por completo, de forma garantida (não depende do browser)" style="padding: 6px 12px; font-size: 10px; border-color:#ff5d5d55; color:var(--red);"><span data-i18n="fechar_tudo">⏻ Fechar Tudo</span></button>
+      <div class="status-pill"><div class="dot" id="statusDot"></div><span id="statusText"><span data-i18n="sistema_pronto">Sistema pronto</span></span></div>
     </div>
   </header>
 
   <div class="critical-alarm-banner" id="criticalAlarmBanner" style="display:none;">
     <span class="critical-alarm-icon">🛡️🔥</span>
-    <span class="critical-alarm-text" id="criticalAlarmText">TEMPERATURA CRÍTICA</span>
-    <button class="critical-alarm-silence" onclick="silenceCriticalAlarm()">🔇 Silenciar</button>
+    <span class="critical-alarm-text" id="criticalAlarmText"><span data-i18n="temperatura_critica">TEMPERATURA CRÍTICA</span></span>
+    <button class="critical-alarm-silence" onclick="silenceCriticalAlarm()"><span data-i18n="silenciar">🔇 Silenciar</span></button>
   </div>
 
   <div class="nav-menu" id="navMenu">
     <button class="nav-menu-btn" id="navMenuBtn" onclick="toggleNavMenu()">
-      <span id="navMenuLabel">Dashboard Geral</span>
+      <span id="navMenuLabel"><span data-i18n="dashboard_geral">Dashboard Geral</span></span>
       <span class="nav-menu-badges">
         <span class="badge-counter" id="notifBadgeMini">0</span>
         <span class="badge-counter" id="thermalBadgeMini" style="display:none;">0</span>
@@ -1632,34 +1754,35 @@
       <span class="nav-menu-caret">▾</span>
     </button>
     <div class="nav-menu-dropdown" id="navMenuDropdown">
-      <button class="tab-btn active" onclick="switchTab('dashboard', this)">Dashboard Geral</button>
-      <button class="tab-btn" onclick="switchTab('logs', this)">Logs das Máquinas</button>
+      <button class="tab-btn active" onclick="switchTab('dashboard', this)"><span data-i18n="dashboard_geral">Dashboard Geral</span></button>
+      <button class="tab-btn" onclick="switchTab('logs', this)"><span data-i18n="logs_das_maquinas">Logs das Máquinas</span></button>
       <button class="tab-btn" onclick="switchTab('notifications', this)">
-        🔔 Notificações (Block / Best Diff)
+        <span data-i18n="notificacoes_block_best_diff">🔔 Notificações (Block / Best Diff)</span>
         <span class="badge-counter" id="notifBadge">0</span>
       </button>
-      <button class="tab-btn" onclick="switchTab('simulator', this)">⏱️ Simulador</button>
-      <button class="tab-btn" onclick="switchTab('latency', this)">📡 Latência</button>
+      <button class="tab-btn" onclick="switchTab('simulator', this)"><span data-i18n="simulador">⏱️ Simulador</span></button>
+      <button class="tab-btn" onclick="switchTab('latency', this)"><span data-i18n="latencia">📡 Latência</span></button>
       <button class="tab-btn" onclick="switchTab('thermal', this)">
-        🧬 Saúde Térmica
+        <span data-i18n="saude_termica">🧬 Saúde Térmica</span>
         <span class="badge-counter" id="thermalBadge" style="display:none;">0</span>
       </button>
       <button class="tab-btn cyan-tab" onclick="switchTab('power', this)">
-        <span class="power-status-dot" id="powerStatusDot"></span>☀️ Perfis de Energia
+        <span class="power-status-dot" id="powerStatusDot"></span><span data-i18n="perfis_de_energia">☀️ Perfis de Energia</span>
       </button>
-      <button class="tab-btn amber-tab" onclick="switchTab('donate', this)">⚡ Apoiar / Doar</button>
-      <button class="tab-btn" onclick="switchTab('supporters', this)">🌟 Apoiantes</button>
+      <button class="tab-btn amber-tab" onclick="switchTab('donate', this)"><span data-i18n="apoiar_doar">⚡ Apoiar / Doar</span></button>
+      <button class="tab-btn" onclick="switchTab('supporters', this)"><span data-i18n="apoiantes">🌟 Apoiantes</span></button>
+      <button class="tab-btn" onclick="switchTab('support', this)"><span data-i18n="suporte">🛟 Suporte</span></button>
     </div>
   </div>
 
   <div id="tab-dashboard" class="tab-content active">
     <div class="blocks-container">
       <div class="blocks-toolbar">
-        <span class="title">Últimos blocos minerados na rede Bitcoin</span>
-        <span class="blocks-refresh-hint" id="blocksRefreshHint">a atualizar...</span>
+        <span class="title"><span data-i18n="ultimos_blocos_minerados_na_rede_bitcoin">Últimos blocos minerados na rede Bitcoin</span></span>
+        <span class="blocks-refresh-hint" id="blocksRefreshHint"><span data-i18n="a_atualizar">a atualizar...</span></span>
       </div>
       <div class="blocks-scroll" id="blocksScroll">
-        <div class="blocks-empty">A carregar blocos...</div>
+        <div class="blocks-empty"><span data-i18n="a_carregar_blocos">A carregar blocos...</span></div>
       </div>
     </div>
 
@@ -1667,7 +1790,7 @@
       <div class="sidebar">
         <div class="gauge">
           <div class="gauge-left">
-            <div class="label">Hashrate Total</div>
+            <div class="label"><span data-i18n="hashrate_total">Hashrate Total</span></div>
             <div class="unit" id="sHashrateUnit">GH/s</div>
           </div>
           <div class="gauge-right">
@@ -1677,8 +1800,8 @@
 
         <div class="gauge amber-bar">
           <div class="gauge-left">
-            <div class="label">Melhor Share</div>
-            <div class="unit" id="sBestUnit">Global</div>
+            <div class="label"><span data-i18n="melhor_share">Melhor Share</span></div>
+            <div class="unit" id="sBestUnit"><span data-i18n="global">Global</span></div>
           </div>
           <div class="gauge-right">
             <div class="value amber" id="sBest">—</div>
@@ -1687,7 +1810,7 @@
 
         <div class="gauge cyan-bar">
           <div class="gauge-left">
-            <div class="label">Temp. Máxima</div>
+            <div class="label"><span data-i18n="temp_maxima">Temp. Máxima</span></div>
             <div class="unit">°C</div>
           </div>
           <div class="gauge-right">
@@ -1697,7 +1820,7 @@
 
         <div class="gauge cyan-bar">
           <div class="gauge-left">
-            <div class="label">Velocidade Fans</div>
+            <div class="label"><span data-i18n="velocidade_fans">Velocidade Fans</span></div>
             <div class="unit">RPM</div>
           </div>
           <div class="gauge-right">
@@ -1707,7 +1830,7 @@
 
         <div class="gauge">
           <div class="gauge-left">
-            <div class="label">Potência Total</div>
+            <div class="label"><span data-i18n="potencia_total">Potência Total</span></div>
             <div class="unit">Watts</div>
           </div>
           <div class="gauge-right">
@@ -1717,8 +1840,8 @@
 
         <div class="gauge">
           <div class="gauge-left">
-            <div class="label">Máquinas</div>
-            <div class="unit">Registadas</div>
+            <div class="label"><span data-i18n="maquinas">Máquinas</span></div>
+            <div class="unit"><span data-i18n="registadas">Registadas</span></div>
           </div>
           <div class="gauge-right">
             <div class="value" id="sCount">0</div>
@@ -1727,12 +1850,12 @@
 
         <div class="panel ai-agent-panel">
           <div class="ai-agent-header">
-            <span class="ai-agent-title"><span class="ai-agent-dot"></span> 🤖 Assistente</span>
+            <span class="ai-agent-title"><span class="ai-agent-dot"></span> <span data-i18n="assistente">🤖 Assistente</span></span>
           </div>
           <div class="ai-chat-log" id="aiChatLog"></div>
           <div class="ai-suggestions" id="aiSuggestions"></div>
           <div class="ai-input-row">
-            <input type="text" id="aiInput" placeholder="Pergunta sobre o painel...">
+            <input type="text" id="aiInput" placeholder="Pergunta sobre o painel..." data-i18n-placeholder="ph_pergunta_sobre_o_painel">
             <button id="aiSendBtn">➤</button>
           </div>
         </div>
@@ -1740,13 +1863,13 @@
 
       <div class="main">
         <div class="panel">
-          <p class="panel-title">Máquinas</p>
+          <p class="panel-title"><span data-i18n="maquinas">Máquinas</span></p>
           <div class="config" style="margin-bottom:12px;">
-            <input class="name" id="nameInput" placeholder="Apelido (ex: Máquina 01)">
+            <input class="name" id="nameInput" placeholder="Apelido (ex: Máquina 01)" data-i18n-placeholder="ph_apelido_ex_maquina_01">
             <input class="ip" id="ipInput" placeholder="IP (ex: 192.168.1.38)">
-            <button id="addBtn">Adicionar máquina</button>
+            <button id="addBtn"><span data-i18n="adicionar_maquina">Adicionar máquina</span></button>
           </div>
-          <div class="hint" style="margin-bottom:12px;">Requer o servidor local (`nerdqaxe_server.py`) a correr em localhost:8765.</div>
+          <div class="hint" style="margin-bottom:12px;"><span data-i18n="requer_o_servidor_local_nerdqaxe_server_">Requer o servidor local (`nerdqaxe_server.py`) a correr em localhost:8765.</span></div>
           <div class="machine-grid" id="machineGrid"></div>
         </div>
 
@@ -1755,7 +1878,7 @@
             <div class="chart-header">
               <div class="chart-title-group">
                 <span style="font-size:12px;">📈</span>
-                <span class="chart-title">Hashrate</span>
+                <span class="chart-title"><span data-i18n="hashrate">Hashrate</span></span>
               </div>
               <div class="chart-time-buttons">
                 <button class="time-btn active">1H</button>
@@ -1764,15 +1887,15 @@
               </div>
             </div>
             <div class="chart-meta-row">
-              <span>-60 min</span>
-              <span id="valPeakContainer">peak <b id="valPeak">—</b></span>
+              <span><span data-i18n="60_min">-60 min</span></span>
+              <span id="valPeakContainer"><span data-i18n="peak">peak</span> <b id="valPeak">—</b></span>
             </div>
             <div class="chart-container-svg">
               <svg class="chart" id="chartHashrate" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
             </div>
             <div class="chart-footer-row">
-              <div class="chart-footer-left">1h avg <b id="valAvg">—</b></div>
-              <div class="chart-footer-right">live <b id="valHashrate">—</b></div>
+              <div class="chart-footer-left"><span data-i18n="1h_avg">1h avg</span> <b id="valAvg">—</b></div>
+              <div class="chart-footer-right"><span data-i18n="live">live</span> <b id="valHashrate">—</b></div>
             </div>
           </div>
 
@@ -1780,28 +1903,28 @@
             <div class="chart-header">
               <div class="chart-title-group">
                 <span style="font-size:12px;">🏆</span>
-                <span class="chart-title">Best Share Histórico</span>
+                <span class="chart-title"><span data-i18n="best_share_historico">Best Share Histórico</span></span>
               </div>
             </div>
-            <div class="chart-meta-row" style="visibility: hidden;"><span>-60 min</span><span>peak —</span></div>
+            <div class="chart-meta-row" style="visibility: hidden;"><span><span data-i18n="60_min">-60 min</span></span><span><span data-i18n="peak_2">peak —</span></span></div>
             <div class="chart-container-svg">
               <svg class="chart" id="chartBest" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
             </div>
             <div class="chart-footer-row">
-              <div class="chart-footer-left">sessão <b id="valBestMeta">—</b></div>
-              <div class="chart-footer-right">atual <b id="valBest">—</b></div>
+              <div class="chart-footer-left"><span data-i18n="sessao">sessão</span> <b id="valBestMeta">—</b></div>
+              <div class="chart-footer-right"><span data-i18n="atual_2">atual</span> <b id="valBest">—</b></div>
             </div>
           </div>
           <div class="chart-box" style="grid-column: 1 / -1;">
             <div class="chart-header">
               <div class="chart-title-group">
                 <span style="font-size:12px;">🥧</span>
-                <span class="chart-title">Distribuição de Hashrate</span>
+                <span class="chart-title"><span data-i18n="distribuicao_de_hashrate">Distribuição de Hashrate</span></span>
               </div>
             </div>
-            <div class="chart-meta-row" style="visibility: hidden;"><span>-60 min</span><span>peak —</span></div>
+            <div class="chart-meta-row" style="visibility: hidden;"><span><span data-i18n="60_min">-60 min</span></span><span><span data-i18n="peak_2">peak —</span></span></div>
             <div class="donut-row" id="hashrateDonutRow">
-              <div class="donut-empty">Sem máquinas online.</div>
+              <div class="donut-empty"><span data-i18n="sem_maquinas_online">Sem máquinas online.</span></div>
             </div>
           </div>
 
@@ -1809,8 +1932,8 @@
 
         <div class="event-log-panel">
           <div class="chart-header" style="margin-bottom: 10px;">
-            <span class="chart-title">Log de Eventos</span>
-            <button id="clearLogBtn" class="config ghost" style="padding:2px 8px; font-size:9px; border-radius:5px;">limpar</button>
+            <span class="chart-title"><span data-i18n="log_de_eventos">Log de Eventos</span></span>
+            <button id="clearLogBtn" class="config ghost" style="padding:2px 8px; font-size:9px; border-radius:5px;"><span data-i18n="limpar">limpar</span></button>
           </div>
           <div class="event-log-container" id="eventLog"></div>
         </div>
@@ -1822,19 +1945,19 @@
   <div id="tab-logs" class="tab-content">
     <div class="logs-container-panel">
       <div class="logs-toolbar">
-        <button class="btn-realtime" id="toggleRealtimeBtn" onclick="toggleRealtimeLogs()">🟢 Realtime Logs</button>
-        <button class="btn-hidelogs" onclick="clearConsoleView()">🧹 Ocultar Vista</button>
-        <button class="btn-scroll" id="scrollLockBtn" onclick="toggleScrollLock()">📌 Stop Scroll</button>
+        <button class="btn-realtime" id="toggleRealtimeBtn" onclick="toggleRealtimeLogs()"><span data-i18n="realtime_logs">🟢 Realtime Logs</span></button>
+        <button class="btn-hidelogs" onclick="clearConsoleView()"><span data-i18n="ocultar_vista">🧹 Ocultar Vista</span></button>
+        <button class="btn-scroll" id="scrollLockBtn" onclick="toggleScrollLock()"><span data-i18n="stop_scroll">📌 Stop Scroll</span></button>
         
         <select id="logMachineSelect" onchange="renderConsoleLogs()">
-          <option value="all">🌐 Todas as Máquinas</option>
+          <option value="all" data-i18n="todas_as_maquinas">🌐 Todas as Máquinas</option>
         </select>
 
-        <input type="text" id="filterLogsInput" placeholder="Filtrar texto..." oninput="renderConsoleLogs()">
-        <input type="text" id="filterTagsInput" placeholder="Filtrar tag..." oninput="renderConsoleLogs()">
+        <input type="text" id="filterLogsInput" placeholder="Filtrar texto..." data-i18n-placeholder="ph_filtrar_texto" oninput="renderConsoleLogs()">
+        <input type="text" id="filterTagsInput" placeholder="Filtrar tag..." data-i18n-placeholder="ph_filtrar_tag" oninput="renderConsoleLogs()">
         
-        <button class="btn-clear" onclick="wipeConsoleLogs()">🗑 Limpar Filtro</button>
-        <button class="btn-download" onclick="downloadLogs()">⬇ Descarregar TXT</button>
+        <button class="btn-clear" onclick="wipeConsoleLogs()"><span data-i18n="limpar_filtro">🗑 Limpar Filtro</span></button>
+        <button class="btn-download" onclick="downloadLogs()"><span data-i18n="descarregar_txt">⬇ Descarregar TXT</span></button>
       </div>
       <div class="console-screen" id="consoleScreen"></div>
     </div>
@@ -1843,15 +1966,15 @@
   <div id="tab-notifications" class="tab-content">
     <div class="notif-container">
       <div class="notif-toolbar">
-        <span style="font-size: 12px; font-weight: 600; color: var(--text);">Histórico de Alertas (Blocos Encontrados & Recordes de Dificuldade)</span>
+        <span style="font-size: 12px; font-weight: 600; color: var(--text);"><span data-i18n="historico_de_alertas_blocos_encontrados_">Histórico de Alertas (Blocos Encontrados & Recordes de Dificuldade)</span></span>
         <div style="display: flex; gap: 8px;">
-          <button class="config ghost" id="toastToggleBtn" onclick="toggleToastSetting()" style="padding: 6px 12px; font-size: 10px;">🔔 Pop-ups: ON</button>
-          <button class="config" onclick="triggerTestNotifications()" style="padding: 6px 12px; font-size: 10px; background: #0c2b22; color: var(--green); border-color: #21ffb055;">🧪 Testar Alertas</button>
-          <button class="config ghost" onclick="clearNotifications()" style="padding: 6px 12px; font-size: 10px;">Limpar Notificações</button>
+          <button class="config ghost" id="toastToggleBtn" onclick="toggleToastSetting()" style="padding: 6px 12px; font-size: 10px;"><span data-i18n="pop_ups_on">🔔 Pop-ups: ON</span></button>
+          <button class="config" onclick="triggerTestNotifications()" style="padding: 6px 12px; font-size: 10px; background: #0c2b22; color: var(--green); border-color: #21ffb055;"><span data-i18n="testar_alertas">🧪 Testar Alertas</span></button>
+          <button class="config ghost" onclick="clearNotifications()" style="padding: 6px 12px; font-size: 10px;"><span data-i18n="limpar_notificacoes">Limpar Notificações</span></button>
         </div>
       </div>
       <div class="notif-list" id="notifList">
-        <div style="text-align:center; color: var(--muted); font-size: 12px; padding: 30px;">Ainda não existem notificações registadas.</div>
+        <div style="text-align:center; color: var(--muted); font-size: 12px; padding: 30px;"><span data-i18n="ainda_nao_existem_notificacoes_registada">Ainda não existem notificações registadas.</span></div>
       </div>
     </div>
   </div>
@@ -1859,7 +1982,7 @@
   <div id="tab-donate" class="tab-content">
     <div class="donate-container">
       <div class="donate-icons">⚡ ₿ ☕</div>
-      <div class="donate-title">APOIAR O DESENVOLVIMENTO</div>
+      <div class="donate-title"><span data-i18n="apoiar_o_desenvolvimento">APOIAR O DESENVOLVIMENTO</span></div>
       <div class="donate-desc">Se este software te está a ser útil na monitorização dos teus ASICs, considera deixar um donativo via Lightning Network ou Bitcoin On-Chain!</div>
       
       <div class="donate-qr-wrap">
@@ -1868,20 +1991,20 @@
         </div>
       </div>
 
-      <div class="donate-label">Endereço Lightning:</div>
+      <div class="donate-label"><span data-i18n="endereco_lightning">Endereço Lightning:</span></div>
       <div class="donate-input-box" id="lightningAddress">plainpen16@walletofsatoshi.com</div>
-      <button class="donate-btn" onclick="copyLightningAddress()" style="margin-bottom: 24px;">Copiar Endereço Lightning</button>
+      <button class="donate-btn" onclick="copyLightningAddress()" style="margin-bottom: 24px;"><span data-i18n="copiar_endereco_lightning">Copiar Endereço Lightning</span></button>
 
-      <div class="donate-label" style="margin-top: 12px;">Endereço Bitcoin (On-Chain):</div>
+      <div class="donate-label" style="margin-top: 12px;"><span data-i18n="endereco_bitcoin_on_chain">Endereço Bitcoin (On-Chain):</span></div>
       <div class="donate-input-box" id="btcAddress">bc1qffk82prrxn84e8y9l0z5yflsqclhyc9ptphgmf</div>
-      <button class="donate-btn" onclick="copyBtcAddress()">Copiar Endereço Bitcoin</button>
+      <button class="donate-btn" onclick="copyBtcAddress()"><span data-i18n="copiar_endereco_bitcoin">Copiar Endereço Bitcoin</span></button>
     </div>
   </div>
 
   <div id="tab-supporters" class="tab-content">
     <div class="supporters-container">
-      <div class="supporters-title">🌟 CANAIS APOIANTES</div>
-      <div class="supporters-desc">Canais de YouTube e criadores de conteúdo que apoiam este projeto.</div>
+      <div class="supporters-title"><span data-i18n="canais_apoiantes">🌟 CANAIS APOIANTES</span></div>
+      <div class="supporters-desc"><span data-i18n="canais_de_youtube_e_criadores_de_conteud">Canais de YouTube e criadores de conteúdo que apoiam este projeto.</span></div>
 
       <div class="channel-card">
         <div class="channel-banner">
@@ -1889,12 +2012,56 @@
         </div>
         <div class="channel-body">
           <div class="channel-name">bitminer33</div>
-          <div class="channel-desc">Tudo sobre mineração doméstica de BTC.</div>
+          <div class="channel-desc"><span data-i18n="tudo_sobre_mineracao_domestica_de_btc">Tudo sobre mineração doméstica de BTC.</span></div>
           <div class="channel-footer">
             <span class="channel-url">youtube.com/@bitminer33</span>
-            <a class="channel-btn" href="https://youtube.com/@bitminer33" target="_blank" rel="noopener">Ver canal →</a>
+            <a class="channel-btn" href="https://youtube.com/@bitminer33" target="_blank" rel="noopener"><span data-i18n="ver_canal">Ver canal →</span></a>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-support" class="tab-content">
+    <div class="support-container">
+      <div class="support-icons">🛟 🐛 💬</div>
+      <div class="support-title"><span data-i18n="suporte_titulo">SUPORTE</span></div>
+      <div class="support-desc"><span data-i18n="suporte_desc">Encontraste um bug, tens uma sugestão, ou precisas de ajuda? Usa uma das opções abaixo.</span></div>
+
+      <div class="support-grid">
+        <div class="support-card">
+          <div class="support-card-icon">🐛</div>
+          <div class="support-card-title"><span data-i18n="reportar_bug_titulo">Reportar um Bug</span></div>
+          <div class="support-card-desc"><span data-i18n="reportar_bug_desc">Encontraste algo que não está a funcionar bem? Abre um novo issue no GitHub com os detalhes já pré-preenchidos.</span></div>
+          <a class="support-card-btn" href="#" onclick="reportBugOnGithub(); return false;"><span data-i18n="reportar_bug_btn">Reportar Bug →</span></a>
+        </div>
+
+        <div class="support-card">
+          <div class="support-card-icon">💡</div>
+          <div class="support-card-title"><span data-i18n="sugestao_titulo">Sugerir uma Funcionalidade</span></div>
+          <div class="support-card-desc"><span data-i18n="sugestao_desc">Tens uma ideia para melhorar o painel? Partilha-a com a comunidade no GitHub.</span></div>
+          <a class="support-card-btn" href="#" onclick="suggestFeatureOnGithub(); return false;"><span data-i18n="sugestao_btn">Sugerir Funcionalidade →</span></a>
+        </div>
+
+        <div class="support-card">
+          <div class="support-card-icon">🤖</div>
+          <div class="support-card-title"><span data-i18n="assistente_titulo">Perguntar ao Assistente</span></div>
+          <div class="support-card-desc"><span data-i18n="assistente_card_desc">Muitas dúvidas comuns já têm resposta imediata no assistente da Dashboard Geral.</span></div>
+          <a class="support-card-btn ghost-btn" href="#" onclick="goToAssistant(); return false;"><span data-i18n="assistente_btn">Abrir Assistente →</span></a>
+        </div>
+
+        <div class="support-card">
+          <div class="support-card-icon">📂</div>
+          <div class="support-card-title"><span data-i18n="ver_issues_titulo">Ver Issues Existentes</span></div>
+          <div class="support-card-desc"><span data-i18n="ver_issues_desc">Confere se o teu problema já foi reportado ou está a ser resolvido.</span></div>
+          <a class="support-card-btn ghost-btn" href="https://github.com/bladept696/centro-de-comando-v3/issues" target="_blank" rel="noopener"><span data-i18n="ver_issues_btn">Ver no GitHub →</span></a>
+        </div>
+      </div>
+
+      <div class="support-diag-label"><span data-i18n="info_diagnostico_titulo">Informação de Diagnóstico</span></div>
+      <div class="support-diag-box" id="supportDiagBox"></div>
+      <div style="margin-top:14px;">
+        <button class="support-card-btn ghost-btn" style="display:inline-block; padding:10px 20px;" onclick="copyDiagnosticInfo()"><span data-i18n="copiar_diagnostico_btn">📋 Copiar Informação de Diagnóstico</span></button>
       </div>
     </div>
   </div>
@@ -1902,33 +2069,33 @@
   <div id="tab-simulator" class="tab-content">
     <div class="sim-container">
       <div class="sim-header">
-        <div class="sim-title">⏱️ SIMULADOR DE DIFICULDADE & HALVING</div>
+        <div class="sim-title"><span data-i18n="simulador_de_dificuldade_halving">⏱️ SIMULADOR DE DIFICULDADE & HALVING</span></div>
         <div class="sim-desc">Cruza o hashrate atual das tuas máquinas com os dados em tempo real da rede Bitcoin, para estimar o impacto do próximo ajuste de dificuldade (a cada 2016 blocos) na tua probabilidade teórica de encontrar um bloco a solo.</div>
       </div>
 
-      <div class="sim-section-label">Rede Bitcoin</div>
+      <div class="sim-section-label"><span data-i18n="rede_bitcoin">Rede Bitcoin</span></div>
       <div class="sim-grid">
         <div class="sim-card">
-          <div class="sim-label">Dificuldade Atual</div>
+          <div class="sim-label"><span data-i18n="dificuldade_atual">Dificuldade Atual</span></div>
           <div class="sim-value" id="simDifficulty">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Variação Prevista (Próximo Ajuste)</div>
+          <div class="sim-label"><span data-i18n="variacao_prevista_proximo_ajuste">Variação Prevista (Próximo Ajuste)</span></div>
           <div class="sim-value" id="simDifficultyChange">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Blocos Até ao Ajuste</div>
+          <div class="sim-label"><span data-i18n="blocos_ate_ao_ajuste">Blocos Até ao Ajuste</span></div>
           <div class="sim-value" id="simRemainingBlocks">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Data Estimada do Ajuste</div>
+          <div class="sim-label"><span data-i18n="data_estimada_do_ajuste">Data Estimada do Ajuste</span></div>
           <div class="sim-value small" id="simRetargetDate">—</div>
         </div>
       </div>
 
       <div class="sim-progress-wrap">
         <div class="sim-progress-label">
-          <span>Progresso da Época Atual (2016 blocos)</span>
+          <span><span data-i18n="progresso_da_epoca_atual_2016_blocos">Progresso da Época Atual (2016 blocos)</span></span>
           <span id="simProgress">—</span>
         </div>
         <div class="sim-progress-bar"><div class="sim-progress-fill" id="simProgressBar" style="width:0%;"></div></div>
@@ -1936,29 +2103,29 @@
 
       <div class="sim-divider"></div>
 
-      <div class="sim-section-label">Halving</div>
+      <div class="sim-section-label"><span data-i18n="halving">Halving</span></div>
       <div class="sim-grid">
         <div class="sim-card">
-          <div class="sim-label">Bloco Atual</div>
+          <div class="sim-label"><span data-i18n="bloco_atual">Bloco Atual</span></div>
           <div class="sim-value" id="simCurrentHeight">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Recompensa Atual</div>
+          <div class="sim-label"><span data-i18n="recompensa_atual">Recompensa Atual</span></div>
           <div class="sim-value" id="simCurrentReward">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Blocos Até ao Halving</div>
+          <div class="sim-label"><span data-i18n="blocos_ate_ao_halving">Blocos Até ao Halving</span></div>
           <div class="sim-value" id="simHalvingBlocks">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Data Estimada do Halving</div>
+          <div class="sim-label"><span data-i18n="data_estimada_do_halving">Data Estimada do Halving</span></div>
           <div class="sim-value small" id="simHalvingDate">—</div>
         </div>
       </div>
 
       <div class="sim-progress-wrap">
         <div class="sim-progress-label">
-          <span>Progresso da Época de Halving (210.000 blocos)</span>
+          <span><span data-i18n="progresso_da_epoca_de_halving_210_000_bl">Progresso da Época de Halving (210.000 blocos)</span></span>
           <span id="simHalvingProgress">—</span>
         </div>
         <div class="sim-progress-bar"><div class="sim-progress-fill sim-progress-fill-halving" id="simHalvingProgressBar" style="width:0%;"></div></div>
@@ -1966,22 +2133,22 @@
 
       <div class="sim-divider"></div>
 
-      <div class="sim-section-label">A Tua Rig</div>
+      <div class="sim-section-label"><span data-i18n="a_tua_rig">A Tua Rig</span></div>
       <div class="sim-grid">
         <div class="sim-card">
-          <div class="sim-label">O Teu Hashrate Total</div>
+          <div class="sim-label"><span data-i18n="o_teu_hashrate_total">O Teu Hashrate Total</span></div>
           <div class="sim-value" id="simYourHashrate">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Tempo Esperado p/ Bloco (Agora)</div>
+          <div class="sim-label"><span data-i18n="tempo_esperado_p_bloco_agora">Tempo Esperado p/ Bloco (Agora)</span></div>
           <div class="sim-value" id="simTimeNow">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Tempo Esperado p/ Bloco (Após Ajuste)</div>
+          <div class="sim-label"><span data-i18n="tempo_esperado_p_bloco_apos_ajuste">Tempo Esperado p/ Bloco (Após Ajuste)</span></div>
           <div class="sim-value" id="simTimeProjected">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Impacto no Tempo Esperado</div>
+          <div class="sim-label"><span data-i18n="impacto_no_tempo_esperado">Impacto no Tempo Esperado</span></div>
           <div class="sim-value" id="simTimeDelta">—</div>
         </div>
       </div>
@@ -1990,22 +2157,22 @@
 
       <div class="sim-divider"></div>
 
-      <div class="sim-section-label">🎯 Probabilidade de Bloco (Solo Mining Odds)</div>
+      <div class="sim-section-label"><span data-i18n="probabilidade_de_bloco_solo_mining_odds">🎯 Probabilidade de Bloco (Solo Mining Odds)</span></div>
       <div class="sim-grid">
         <div class="sim-card">
-          <div class="sim-label">Probabilidade em 24 horas</div>
+          <div class="sim-label"><span data-i18n="probabilidade_em_24_horas">Probabilidade em 24 horas</span></div>
           <div class="sim-value" id="simProb1d">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Probabilidade em 7 dias</div>
+          <div class="sim-label"><span data-i18n="probabilidade_em_7_dias">Probabilidade em 7 dias</span></div>
           <div class="sim-value" id="simProb7d">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Probabilidade em 30 dias</div>
+          <div class="sim-label"><span data-i18n="probabilidade_em_30_dias">Probabilidade em 30 dias</span></div>
           <div class="sim-value" id="simProb30d">—</div>
         </div>
         <div class="sim-card">
-          <div class="sim-label">Probabilidade em 1 ano</div>
+          <div class="sim-label"><span data-i18n="probabilidade_em_1_ano">Probabilidade em 1 ano</span></div>
           <div class="sim-value" id="simProb1y">—</div>
         </div>
       </div>
@@ -2016,26 +2183,26 @@
   <div id="tab-latency" class="tab-content">
     <div class="blocks-container">
       <div class="blocks-toolbar">
-        <div class="title">📡 Ping ao Pool em Tempo Real (dados reportados pelo dispositivo)</div>
-        <div class="blocks-refresh-hint" id="pingRefreshHint">a atualizar a cada 5s...</div>
+        <div class="title"><span data-i18n="ping_ao_pool_em_tempo_real_dados_reporta">📡 Ping ao Pool em Tempo Real (dados reportados pelo dispositivo)</span></div>
+        <div class="blocks-refresh-hint" id="pingRefreshHint"><span data-i18n="a_atualizar_a_cada_5s">a atualizar a cada 5s...</span></div>
       </div>
       <div class="hint" style="margin-bottom:14px;">Ping/Perda são os valores reais medidos pelo próprio NerdQAxe até ao servidor do pool (mesmo dado do ecrã do dispositivo). "Rede local" é o tempo de resposta entre este painel e o dispositivo na tua rede — normalmente muito mais baixo.</div>
 
       <div class="ping-summary-row">
         <div class="ping-summary-card">
-          <div class="ping-summary-label">Ping Médio ao Pool</div>
+          <div class="ping-summary-label"><span data-i18n="ping_medio_ao_pool">Ping Médio ao Pool</span></div>
           <div class="ping-summary-value" id="pingAvgAll">—</div>
         </div>
         <div class="ping-summary-card">
-          <div class="ping-summary-label">Mais Rápida</div>
+          <div class="ping-summary-label"><span data-i18n="mais_rapida">Mais Rápida</span></div>
           <div class="ping-summary-value" id="pingBestAll">—</div>
         </div>
         <div class="ping-summary-card">
-          <div class="ping-summary-label">Mais Lenta</div>
+          <div class="ping-summary-label"><span data-i18n="mais_lenta">Mais Lenta</span></div>
           <div class="ping-summary-value" id="pingWorstAll">—</div>
         </div>
         <div class="ping-summary-card">
-          <div class="ping-summary-label">Máquinas Online</div>
+          <div class="ping-summary-label"><span data-i18n="maquinas_online">Máquinas Online</span></div>
           <div class="ping-summary-value" id="pingOnlineCount">—</div>
         </div>
       </div>
@@ -2043,12 +2210,12 @@
       <div class="ping-grid" id="pingGrid"></div>
 
       <div class="panel ping-detail-panel">
-        <div class="panel-title"><span>Histórico de Ping ao Pool — <span id="pingDetailName">—</span></span></div>
+        <div class="panel-title"><span><span data-i18n="historico_de_ping_ao_pool">Histórico de Ping ao Pool —</span> <span id="pingDetailName">—</span></span></div>
         <svg id="chartPing" viewBox="0 0 300 130" preserveAspectRatio="none" style="width:100%; height:180px;"></svg>
         <div class="ping-detail-stats">
-          <div>Atual: <b id="valPingNow">—</b></div>
-          <div>Média: <b id="valPingAvg">—</b></div>
-          <div>Mín / Máx: <b id="valPingMinMax">—</b></div>
+          <div><span data-i18n="atual">Atual:</span> <b id="valPingNow">—</b></div>
+          <div><span data-i18n="media">Média:</span> <b id="valPingAvg">—</b></div>
+          <div><span data-i18n="min_max">Mín / Máx:</span> <b id="valPingMinMax">—</b></div>
         </div>
       </div>
     </div>
@@ -2057,7 +2224,7 @@
   <div id="tab-power" class="tab-content">
     <div class="blocks-container">
       <div class="panel" style="margin-bottom:18px;">
-        <div class="panel-title">☀️⚡ Gestão Dinâmica de Perfil de Alimentação — MQTT / Home Assistant</div>
+        <div class="panel-title"><span data-i18n="gestao_dinamica_de_perfil_de_alimentacao">☀️⚡ Gestão Dinâmica de Perfil de Alimentação — MQTT / Home Assistant</span></div>
         <div class="hint" style="margin-bottom:12px;">Liga-te ao teu broker MQTT (Home Assistant ou outro) e indica os tópicos que publicam a produção solar (W) e a tarifa dinâmica de eletricidade (€/kWh). O painel cruza esses valores com os perfis de frequência/undervolt que definires abaixo e sugere qual aplicar — a aplicação em si é sempre manual, feita por ti a partir daqui, nunca automática.</div>
 
         <div class="power-mqtt-form">
@@ -2071,7 +2238,7 @@
             <input type="text" id="pwUser" placeholder="">
           </label>
           <label>Password (opcional)
-            <input type="password" id="pwPass" placeholder="deixa em branco para manter">
+            <input type="password" id="pwPass" placeholder="deixa em branco para manter" data-i18n-placeholder="ph_deixa_em_branco_para_manter">
           </label>
           <label>Tópico — Produção Solar (W)
             <input type="text" id="pwTopicSolar" placeholder="ex: homeassistant/sensor/solar_power/state">
@@ -2082,37 +2249,37 @@
         </div>
 
         <div class="power-actions-row">
-          <button class="power-save-btn" onclick="savePowerMqttConfig()">💾 Guardar Ligação MQTT</button>
+          <button class="power-save-btn" onclick="savePowerMqttConfig()"><span data-i18n="guardar_ligacao_mqtt">💾 Guardar Ligação MQTT</span></button>
           <div class="power-live-row">
-            <span><span class="power-status-dot" id="powerStatusDotInline"></span><span id="powerConnLabel">a verificar...</span></span>
-            <span>Solar atual: <b id="powerSolarVal">—</b></span>
-            <span>Tarifa atual: <b id="powerTariffVal">—</b></span>
-            <span>Última leitura: <b id="powerLastUpdate">—</b></span>
+            <span><span class="power-status-dot" id="powerStatusDotInline"></span><span id="powerConnLabel"><span data-i18n="a_verificar">a verificar...</span></span></span>
+            <span><span data-i18n="solar_atual">Solar atual:</span> <b id="powerSolarVal">—</b></span>
+            <span><span data-i18n="tarifa_atual">Tarifa atual:</span> <b id="powerTariffVal">—</b></span>
+            <span><span data-i18n="ultima_leitura">Última leitura:</span> <b id="powerLastUpdate">—</b></span>
           </div>
         </div>
         <div class="power-live-error" id="powerLiveError" style="display:none;"></div>
       </div>
 
       <div class="panel" style="margin-bottom:18px;">
-        <div class="panel-title">🎛️ Perfis de Energia</div>
-        <div class="hint" style="margin-bottom:12px;">Cada perfil define uma frequência e um undervolt (coreVoltage) para os ASICs, e as condições de solar/tarifa que o ativam. A ordem importa: o painel percorre a lista de cima para baixo e sugere o <b>primeiro</b> perfil cujas condições sejam cumpridas — por isso deixa os perfis mais restritivos (ex: Turbo, que exige muito solar) no topo, e um perfil sem condições no fim, a funcionar como perfil por omissão (ex: Eco). Deixa um campo em branco para "ignorar essa condição".</div>
+        <div class="panel-title"><span data-i18n="perfis_de_energia">🎛️ Perfis de Energia</span></div>
+        <div class="hint" style="margin-bottom:12px;">Cada perfil define uma frequência e um undervolt (coreVoltage) para os ASICs, e as condições de solar/tarifa que o ativam. A ordem importa: o painel percorre a lista de cima para baixo e sugere o <b><span data-i18n="primeiro">primeiro</span></b> perfil cujas condições sejam cumpridas — por isso deixa os perfis mais restritivos (ex: Turbo, que exige muito solar) no topo, e um perfil sem condições no fim, a funcionar como perfil por omissão (ex: Eco). Deixa um campo em branco para "ignorar essa condição".</div>
 
         <div class="power-profiles-list" id="powerProfilesList"></div>
-        <button class="power-add-profile-btn" onclick="addPowerProfile()">+ Adicionar Perfil</button>
+        <button class="power-add-profile-btn" onclick="addPowerProfile()"><span data-i18n="adicionar_perfil">+ Adicionar Perfil</span></button>
         <div class="power-actions-row">
-          <button class="power-save-btn" onclick="savePowerProfiles()">💾 Guardar Perfis</button>
+          <button class="power-save-btn" onclick="savePowerProfiles()"><span data-i18n="guardar_perfis">💾 Guardar Perfis</span></button>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-title">💡 Sugestão Atual</div>
+        <div class="panel-title"><span data-i18n="sugestao_atual">💡 Sugestão Atual</span></div>
         <div class="power-suggestion-card">
-          <div class="power-suggestion-name" id="powerSuggestedName">Sem sugestão disponível</div>
-          <div class="power-suggestion-meta" id="powerSuggestedMeta">Configura o MQTT e pelo menos um perfil para começar a receber sugestões.</div>
+          <div class="power-suggestion-name" id="powerSuggestedName"><span data-i18n="sem_sugestao_disponivel">Sem sugestão disponível</span></div>
+          <div class="power-suggestion-meta" id="powerSuggestedMeta"><span data-i18n="configura_o_mqtt_e_pelo_menos_um_perfil_">Configura o MQTT e pelo menos um perfil para começar a receber sugestões.</span></div>
         </div>
         <div class="hint" style="margin-bottom:10px;">Aplicar um perfil envia a frequência e o undervolt escolhidos diretamente para a API da máquina (<code>/api/system</code>). Confirma sempre os valores antes de aplicar — frequências ou voltagens desadequadas ao teu hardware podem causar instabilidade.</div>
         <div class="power-devices-apply" id="powerDevicesApply"></div>
-        <button class="power-apply-all-btn" id="powerApplyAllBtn" onclick="applySuggestedProfileToAll()" disabled>⚡ Aplicar sugestão a todas as máquinas</button>
+        <button class="power-apply-all-btn" id="powerApplyAllBtn" onclick="applySuggestedProfileToAll()" disabled><span data-i18n="aplicar_sugestao_a_todas_as_maquinas">⚡ Aplicar sugestão a todas as máquinas</span></button>
       </div>
     </div>
   </div>
@@ -2120,7 +2287,7 @@
   <div id="tab-thermal" class="tab-content">
     <div class="blocks-container">
       <div class="panel thermal-protection-panel" style="margin-bottom:18px;">
-        <div class="panel-title">🛡️ Proteção Térmica — Alerta Crítico</div>
+        <div class="panel-title"><span data-i18n="protecao_termica_alerta_critico">🛡️ Proteção Térmica — Alerta Crítico</span></div>
         <div class="hint" style="margin-bottom:12px;">Se uma máquina atingir a temperatura crítica de forma contínua (sem descer), o painel dispara um alarme sonoro de emergência contínuo — em qualquer separador — e regista o evento como crítico no Log de Eventos, para saberes exatamente quando e onde o hardware sofreu overheating.</div>
         <div class="protection-config-row">
           <label class="protection-toggle">
@@ -2141,30 +2308,30 @@
       </div>
 
       <div class="blocks-toolbar">
-        <div class="title">🧬 Impressão Digital Térmica — Manutenção Preditiva</div>
-        <div class="blocks-refresh-hint">amostra a cada ~20 min</div>
+        <div class="title"><span data-i18n="impressao_digital_termica_manutencao_pre">🧬 Impressão Digital Térmica — Manutenção Preditiva</span></div>
+        <div class="blocks-refresh-hint"><span data-i18n="amostra_a_cada_20_min">amostra a cada ~20 min</span></div>
       </div>
       <div class="hint" style="margin-bottom:14px;">O sistema mede quanta ventoinha (RPM) cada máquina precisa para manter cada TH/s de hashrate, e compara a média das últimas 24h com a média histórica dos dias anteriores. Se uma máquina precisar de cada vez mais ventilação para produzir o mesmo hashrate, isso costuma indicar pasta térmica degradada, pó acumulado no dissipador ou desgaste da ventoinha — muito antes de a máquina entrar em thermal throttling. É preciso algumas horas de funcionamento para começar a ter dados fiáveis, e alguns dias para a comparação ficar robusta.</div>
 
       <div class="ping-summary-row thermal-summary-row">
         <div class="ping-summary-card">
-          <div class="ping-summary-label">Máquinas em Risco</div>
+          <div class="ping-summary-label"><span data-i18n="maquinas_em_risco">Máquinas em Risco</span></div>
           <div class="ping-summary-value" id="thermalAtRisk">—</div>
         </div>
         <div class="ping-summary-card">
-          <div class="ping-summary-label">Pior Variação</div>
+          <div class="ping-summary-label"><span data-i18n="pior_variacao">Pior Variação</span></div>
           <div class="ping-summary-value" id="thermalWorst">—</div>
         </div>
         <div class="ping-summary-card">
-          <div class="ping-summary-label">Menos Dias de Dados</div>
+          <div class="ping-summary-label"><span data-i18n="menos_dias_de_dados">Menos Dias de Dados</span></div>
           <div class="ping-summary-value" id="thermalMinDays">—</div>
         </div>
         <div class="ping-summary-card">
-          <div class="ping-summary-label">Máquinas com Diagnóstico</div>
+          <div class="ping-summary-label"><span data-i18n="maquinas_com_diagnostico">Máquinas com Diagnóstico</span></div>
           <div class="ping-summary-value" id="thermalTracked">—</div>
         </div>
         <div class="ping-summary-card">
-          <div class="ping-summary-label">🔮 Previsão Mais Próxima</div>
+          <div class="ping-summary-label"><span data-i18n="previsao_mais_proxima">🔮 Previsão Mais Próxima</span></div>
           <div class="ping-summary-value" id="thermalNextEta">—</div>
         </div>
       </div>
@@ -2172,18 +2339,18 @@
       <div class="thermal-grid" id="thermalGrid"></div>
 
       <div class="panel thermal-detail-panel">
-        <div class="panel-title"><span>Assinatura Térmica (ventoinha por TH/s) — <span id="thermalDetailName">—</span></span></div>
+        <div class="panel-title"><span><span data-i18n="assinatura_termica_ventoinha_por_th_s">Assinatura Térmica (ventoinha por TH/s) —</span> <span id="thermalDetailName">—</span></span></div>
         <svg id="chartThermal" viewBox="0 0 300 130" preserveAspectRatio="none" style="width:100%; height:180px;"></svg>
         <div class="ping-detail-stats">
-          <div>Atual: <b id="valThermalNow">—</b></div>
-          <div>Baseline histórico: <b id="valThermalBaseline">—</b></div>
-          <div>Variação: <b id="valThermalChange">—</b></div>
-          <div>Dados recolhidos: <b id="valThermalDays">—</b></div>
+          <div><span data-i18n="atual">Atual:</span> <b id="valThermalNow">—</b></div>
+          <div><span data-i18n="baseline_historico">Baseline histórico:</span> <b id="valThermalBaseline">—</b></div>
+          <div><span data-i18n="variacao">Variação:</span> <b id="valThermalChange">—</b></div>
+          <div><span data-i18n="dados_recolhidos">Dados recolhidos:</span> <b id="valThermalDays">—</b></div>
         </div>
       </div>
 
       <div class="panel forecast-panel">
-        <div class="panel-title">🔮 Simulador Preditivo de Desgaste — Previsão de Thermal Throttle</div>
+        <div class="panel-title"><span data-i18n="simulador_preditivo_de_desgaste_previsao">🔮 Simulador Preditivo de Desgaste — Previsão de Thermal Throttle</span></div>
         <div class="hint" style="margin-bottom:6px;">Ajusta uma tendência linear à evolução diária do esforço de arrefecimento desta máquina e projeta-a no tempo, para estimar com quantos dias de antecedência é provável que precises de limpar o dissipador/rever a pasta térmica, antes de o ASIC arriscar entrar em thermal throttling. É uma estimativa estatística baseada no histórico recolhido — quanto mais dias de dados, maior a confiança.</div>
         <div id="forecastBody"></div>
       </div>
@@ -2197,6 +2364,190 @@
 </div>
 
 <script>
+// --- Dicionário de traduções (PT/EN/ES/FR) ---
+const I18N_DICT = {
+  "adicionar_perfil": { pt: `+ Adicionar Perfil`, en: `+ Add Profile`, es: `+ Añadir Perfil`, fr: `+ Ajouter un Profil` },
+  "60_min": { pt: `-60 min`, en: `-60 min`, es: `-60 min`, fr: `-60 min` },
+  "1h_avg": { pt: `1h avg`, en: `1h avg`, es: `media 1h`, fr: `moy. 1h` },
+  "a_tua_rig": { pt: `A Tua Rig`, en: `Your Rig`, es: `Tu Rig`, fr: `Ton Rig` },
+  "a_carregar_blocos": { pt: `A carregar blocos...`, en: `Loading blocks...`, es: `Cargando bloques...`, fr: `Chargement des blocs...` },
+  "apoiar_o_desenvolvimento": { pt: `APOIAR O DESENVOLVIMENTO`, en: `SUPPORT DEVELOPMENT`, es: `APOYAR EL DESARROLLO`, fr: `SOUTENIR LE DÉVELOPPEMENT` },
+  "adicionar_maquina": { pt: `Adicionar máquina`, en: `Add machine`, es: `Añadir máquina`, fr: `Ajouter une machine` },
+  "ainda_nao_existem_notificacoes_registada": { pt: `Ainda não existem notificações registadas.`, en: `No notifications recorded yet.`, es: `Aún no hay notificaciones registradas.`, fr: `Aucune notification enregistrée pour l'instant.` },
+  "assinatura_termica_ventoinha_por_th_s": { pt: `Assinatura Térmica (ventoinha por TH/s) —`, en: `Thermal Signature (fan per TH/s) —`, es: `Firma Térmica (ventilador por TH/s) —`, fr: `Signature Thermique (ventilateur par TH/s) —` },
+  "atual": { pt: `Atual:`, en: `Current:`, es: `Actual:`, fr: `Actuel :` },
+  "bloco_encontrado": { pt: `BLOCO ENCONTRADO!`, en: `BLOCK FOUND!`, es: `¡BLOQUE ENCONTRADO!`, fr: `BLOC TROUVÉ !` },
+  "baseline_historico": { pt: `Baseline histórico:`, en: `Historical baseline:`, es: `Línea base histórica:`, fr: `Référence historique :` },
+  "best_share_historico": { pt: `Best Share Histórico`, en: `Historical Best Share`, es: `Mejor Share Histórico`, fr: `Meilleur Share Historique` },
+  "bloco_atual": { pt: `Bloco Atual`, en: `Current Block`, es: `Bloque Actual`, fr: `Bloc Actuel` },
+  "blocos_ate_ao_ajuste": { pt: `Blocos Até ao Ajuste`, en: `Blocks Until Adjustment`, es: `Bloques Hasta el Ajuste`, fr: `Blocs Avant l'Ajustement` },
+  "blocos_ate_ao_halving": { pt: `Blocos Até ao Halving`, en: `Blocks Until Halving`, es: `Bloques Hasta el Halving`, fr: `Blocs Avant le Halving` },
+  "canais_de_youtube_e_criadores_de_conteud": { pt: `Canais de YouTube e criadores de conteúdo que apoiam este projeto.`, en: `YouTube channels and content creators who support this project.`, es: `Canales de YouTube y creadores de contenido que apoyan este proyecto.`, fr: `Chaînes YouTube et créateurs de contenu qui soutiennent ce projet.` },
+  "centro_de_comando": { pt: `Centro de Comando`, en: `Command Center`, es: `Centro de Comando`, fr: `Centre de Commande` },
+  "configura_o_mqtt_e_pelo_menos_um_perfil_": { pt: `Configura o MQTT e pelo menos um perfil para começar a receber sugestões.`, en: `Set up MQTT and at least one profile to start receiving suggestions.`, es: `Configura el MQTT y al menos un perfil para empezar a recibir sugerencias.`, fr: `Configure le MQTT et au moins un profil pour commencer à recevoir des suggestions.` },
+  "copiar_endereco_bitcoin": { pt: `Copiar Endereço Bitcoin`, en: `Copy Bitcoin Address`, es: `Copiar Dirección Bitcoin`, fr: `Copier l'Adresse Bitcoin` },
+  "copiar_endereco_lightning": { pt: `Copiar Endereço Lightning`, en: `Copy Lightning Address`, es: `Copiar Dirección Lightning`, fr: `Copier l'Adresse Lightning` },
+  "dados_recolhidos": { pt: `Dados recolhidos:`, en: `Data collected:`, es: `Datos recopilados:`, fr: `Données collectées :` },
+  "dashboard_geral": { pt: `Dashboard Geral`, en: `General Dashboard`, es: `Panel General`, fr: `Tableau de Bord Général` },
+  "data_estimada_do_ajuste": { pt: `Data Estimada do Ajuste`, en: `Estimated Adjustment Date`, es: `Fecha Estimada del Ajuste`, fr: `Date Estimée de l'Ajustement` },
+  "data_estimada_do_halving": { pt: `Data Estimada do Halving`, en: `Estimated Halving Date`, es: `Fecha Estimada del Halving`, fr: `Date Estimée du Halving` },
+  "dificuldade_atual": { pt: `Dificuldade Atual`, en: `Current Difficulty`, es: `Dificultad Actual`, fr: `Difficulté Actuelle` },
+  "distribuicao_de_hashrate": { pt: `Distribuição de Hashrate`, en: `Hashrate Distribution`, es: `Distribución de Hashrate`, fr: `Répartition du Hashrate` },
+  "endereco_bitcoin_on_chain": { pt: `Endereço Bitcoin (On-Chain):`, en: `Bitcoin Address (On-Chain):`, es: `Dirección Bitcoin (On-Chain):`, fr: `Adresse Bitcoin (On-Chain) :` },
+  "endereco_lightning": { pt: `Endereço Lightning:`, en: `Lightning Address:`, es: `Dirección Lightning:`, fr: `Adresse Lightning :` },
+  "global": { pt: `Global`, en: `Global`, es: `Global`, fr: `Global` },
+  "halving": { pt: `Halving`, en: `Halving`, es: `Halving`, fr: `Halving` },
+  "hashrate": { pt: `Hashrate`, en: `Hashrate`, es: `Hashrate`, fr: `Hashrate` },
+  "hashrate_total": { pt: `Hashrate Total`, en: `Total Hashrate`, es: `Hashrate Total`, fr: `Hashrate Total` },
+  "historico_de_alertas_blocos_encontrados_": { pt: `Histórico de Alertas (Blocos Encontrados & Recordes de Dificuldade)`, en: `Alert History (Blocks Found & Difficulty Records)`, es: `Historial de Alertas (Bloques Encontrados y Récords de Dificultad)`, fr: `Historique des Alertes (Blocs Trouvés et Records de Difficulté)` },
+  "historico_de_ping_ao_pool": { pt: `Histórico de Ping ao Pool —`, en: `Pool Ping History —`, es: `Historial de Ping al Pool —`, fr: `Historique du Ping au Pool —` },
+  "impacto_no_tempo_esperado": { pt: `Impacto no Tempo Esperado`, en: `Impact on Expected Time`, es: `Impacto en el Tiempo Esperado`, fr: `Impact sur le Temps Attendu` },
+  "limpar_notificacoes": { pt: `Limpar Notificações`, en: `Clear Notifications`, es: `Borrar Notificaciones`, fr: `Effacer les Notifications` },
+  "log_de_eventos": { pt: `Log de Eventos`, en: `Event Log`, es: `Registro de Eventos`, fr: `Journal des Événements` },
+  "logs_das_maquinas": { pt: `Logs das Máquinas`, en: `Machine Logs`, es: `Registros de las Máquinas`, fr: `Journaux des Machines` },
+  "mais_lenta": { pt: `Mais Lenta`, en: `Slowest`, es: `Más Lenta`, fr: `La Plus Lente` },
+  "mais_rapida": { pt: `Mais Rápida`, en: `Fastest`, es: `Más Rápida`, fr: `La Plus Rapide` },
+  "melhor_share": { pt: `Melhor Share`, en: `Best Share`, es: `Mejor Share`, fr: `Meilleur Share` },
+  "menos_dias_de_dados": { pt: `Menos Dias de Dados`, en: `Fewer Days of Data`, es: `Menos Días de Datos`, fr: `Moins de Jours de Données` },
+  "maquinas": { pt: `Máquinas`, en: `Machines`, es: `Máquinas`, fr: `Machines` },
+  "maquinas_online": { pt: `Máquinas Online`, en: `Machines Online`, es: `Máquinas Online`, fr: `Machines en Ligne` },
+  "maquinas_com_diagnostico": { pt: `Máquinas com Diagnóstico`, en: `Machines with Diagnostics`, es: `Máquinas con Diagnóstico`, fr: `Machines avec Diagnostic` },
+  "maquinas_em_risco": { pt: `Máquinas em Risco`, en: `Machines at Risk`, es: `Máquinas en Riesgo`, fr: `Machines à Risque` },
+  "media": { pt: `Média:`, en: `Average:`, es: `Media:`, fr: `Moyenne :` },
+  "min_max": { pt: `Mín / Máx:`, en: `Min / Max:`, es: `Mín / Máx:`, fr: `Min / Max :` },
+  "o_teu_hashrate_total": { pt: `O Teu Hashrate Total`, en: `Your Total Hashrate`, es: `Tu Hashrate Total`, fr: `Ton Hashrate Total` },
+  "ping_medio_ao_pool": { pt: `Ping Médio ao Pool`, en: `Average Pool Ping`, es: `Ping Medio al Pool`, fr: `Ping Moyen au Pool` },
+  "pior_variacao": { pt: `Pior Variação`, en: `Worst Variation`, es: `Peor Variación`, fr: `Pire Variation` },
+  "potencia_total": { pt: `Potência Total`, en: `Total Power`, es: `Potencia Total`, fr: `Puissance Totale` },
+  "probabilidade_em_1_ano": { pt: `Probabilidade em 1 ano`, en: `Probability in 1 year`, es: `Probabilidad en 1 año`, fr: `Probabilité en 1 an` },
+  "probabilidade_em_24_horas": { pt: `Probabilidade em 24 horas`, en: `Probability in 24 hours`, es: `Probabilidad en 24 horas`, fr: `Probabilité en 24 heures` },
+  "probabilidade_em_30_dias": { pt: `Probabilidade em 30 dias`, en: `Probability in 30 days`, es: `Probabilidad en 30 días`, fr: `Probabilité en 30 jours` },
+  "probabilidade_em_7_dias": { pt: `Probabilidade em 7 dias`, en: `Probability in 7 days`, es: `Probabilidad en 7 días`, fr: `Probabilité en 7 jours` },
+  "progresso_da_epoca_atual_2016_blocos": { pt: `Progresso da Época Atual (2016 blocos)`, en: `Current Epoch Progress (2016 blocks)`, es: `Progreso de la Época Actual (2016 bloques)`, fr: `Progression de l'Époque Actuelle (2016 blocs)` },
+  "progresso_da_epoca_de_halving_210_000_bl": { pt: `Progresso da Época de Halving (210.000 blocos)`, en: `Halving Epoch Progress (210,000 blocks)`, es: `Progreso de la Época de Halving (210.000 bloques)`, fr: `Progression de l'Époque du Halving (210 000 blocs)` },
+  "recompensa_atual": { pt: `Recompensa Atual`, en: `Current Reward`, es: `Recompensa Actual`, fr: `Récompense Actuelle` },
+  "rede_bitcoin": { pt: `Rede Bitcoin`, en: `Bitcoin Network`, es: `Red Bitcoin`, fr: `Réseau Bitcoin` },
+  "registadas": { pt: `Registadas`, en: `Recorded`, es: `Registradas`, fr: `Enregistrées` },
+  "requer_o_servidor_local_nerdqaxe_server_": { pt: `Requer o servidor local (\`nerdqaxe_server.py\`) a correr em localhost:8765.`, en: `Requires the local server (\`nerdqaxe_server.py\`) running on localhost:8765.`, es: `Requiere el servidor local (\`nerdqaxe_server.py\`) ejecutándose en localhost:8765.`, fr: `Nécessite le serveur local (\`nerdqaxe_server.py\`) actif sur localhost:8765.` },
+  "sem_maquinas_online": { pt: `Sem máquinas online.`, en: `No machines online.`, es: `Sin máquinas online.`, fr: `Aucune machine en ligne.` },
+  "sem_sugestao_disponivel": { pt: `Sem sugestão disponível`, en: `No suggestion available`, es: `Sin sugerencia disponible`, fr: `Aucune suggestion disponible` },
+  "sistema_pronto": { pt: `Sistema pronto`, en: `System ready`, es: `Sistema listo`, fr: `Système prêt` },
+  "solar_atual": { pt: `Solar atual:`, en: `Current solar:`, es: `Solar actual:`, fr: `Solaire actuel :` },
+  "suporte": { pt: `🛟 Suporte`, en: `🛟 Support`, es: `🛟 Soporte`, fr: `🛟 Assistance` },
+  "suporte_titulo": { pt: `SUPORTE`, en: `SUPPORT`, es: `SOPORTE`, fr: `ASSISTANCE` },
+  "suporte_desc": { pt: `Encontraste um bug, tens uma sugestão, ou precisas de ajuda? Usa uma das opções abaixo.`, en: `Found a bug, have a suggestion, or need help? Use one of the options below.`, es: `¿Encontraste un error, tienes una sugerencia o necesitas ayuda? Usa una de las opciones de abajo.`, fr: `Tu as trouvé un bug, une suggestion, ou besoin d'aide ? Utilise l'une des options ci-dessous.` },
+  "reportar_bug_titulo": { pt: `Reportar um Bug`, en: `Report a Bug`, es: `Reportar un Error`, fr: `Signaler un Bug` },
+  "reportar_bug_desc": { pt: `Encontraste algo que não está a funcionar bem? Abre um novo issue no GitHub com os detalhes já pré-preenchidos.`, en: `Found something that isn't working right? Open a new GitHub issue with the details already pre-filled.`, es: `¿Encontraste algo que no funciona bien? Abre un nuevo issue en GitHub con los detalles ya rellenados.`, fr: `Tu as trouvé quelque chose qui ne fonctionne pas bien ? Ouvre un nouveau ticket GitHub avec les détails déjà pré-remplis.` },
+  "reportar_bug_btn": { pt: `Reportar Bug →`, en: `Report Bug →`, es: `Reportar Error →`, fr: `Signaler un Bug →` },
+  "sugestao_titulo": { pt: `Sugerir uma Funcionalidade`, en: `Suggest a Feature`, es: `Sugerir una Función`, fr: `Suggérer une Fonctionnalité` },
+  "sugestao_desc": { pt: `Tens uma ideia para melhorar o painel? Partilha-a com a comunidade no GitHub.`, en: `Have an idea to improve the dashboard? Share it with the community on GitHub.`, es: `¿Tienes una idea para mejorar el panel? Compártela con la comunidad en GitHub.`, fr: `Tu as une idée pour améliorer le tableau de bord ? Partage-la avec la communauté sur GitHub.` },
+  "sugestao_btn": { pt: `Sugerir Funcionalidade →`, en: `Suggest Feature →`, es: `Sugerir Función →`, fr: `Suggérer une Fonctionnalité →` },
+  "assistente_titulo": { pt: `Perguntar ao Assistente`, en: `Ask the Assistant`, es: `Preguntar al Asistente`, fr: `Demander à l'Assistant` },
+  "assistente_card_desc": { pt: `Muitas dúvidas comuns já têm resposta imediata no assistente da Dashboard Geral.`, en: `Many common questions already have an instant answer in the assistant on the General Dashboard.`, es: `Muchas dudas comunes ya tienen respuesta inmediata en el asistente del Panel General.`, fr: `De nombreuses questions courantes ont déjà une réponse immédiate dans l'assistant du Tableau de Bord Général.` },
+  "assistente_btn": { pt: `Abrir Assistente →`, en: `Open Assistant →`, es: `Abrir Asistente →`, fr: `Ouvrir l'Assistant →` },
+  "ver_issues_titulo": { pt: `Ver Issues Existentes`, en: `View Existing Issues`, es: `Ver Issues Existentes`, fr: `Voir les Tickets Existants` },
+  "ver_issues_desc": { pt: `Confere se o teu problema já foi reportado ou está a ser resolvido.`, en: `Check if your issue has already been reported or is being worked on.`, es: `Comprueba si tu problema ya ha sido reportado o está siendo resuelto.`, fr: `Vérifie si ton problème a déjà été signalé ou est en cours de résolution.` },
+  "ver_issues_btn": { pt: `Ver no GitHub →`, en: `View on GitHub →`, es: `Ver en GitHub →`, fr: `Voir sur GitHub →` },
+  "info_diagnostico_titulo": { pt: `Informação de Diagnóstico`, en: `Diagnostic Information`, es: `Información de Diagnóstico`, fr: `Informations de Diagnostic` },
+  "copiar_diagnostico_btn": { pt: `📋 Copiar Informação de Diagnóstico`, en: `📋 Copy Diagnostic Information`, es: `📋 Copiar Información de Diagnóstico`, fr: `📋 Copier les Informations de Diagnostic` },
+  "diagnostico_copiado": { pt: `Informação de diagnóstico copiada!`, en: `Diagnostic information copied!`, es: `¡Información de diagnóstico copiada!`, fr: `Informations de diagnostic copiées !` },
+  "temperatura_critica": { pt: `TEMPERATURA CRÍTICA`, en: `CRITICAL TEMPERATURE`, es: `TEMPERATURA CRÍTICA`, fr: `TEMPÉRATURE CRITIQUE` },
+  "tarifa_atual": { pt: `Tarifa atual:`, en: `Current rate:`, es: `Tarifa actual:`, fr: `Tarif actuel :` },
+  "temp_maxima": { pt: `Temp. Máxima`, en: `Max Temp.`, es: `Temp. Máxima`, fr: `Temp. Maximale` },
+  "tempo_esperado_p_bloco_agora": { pt: `Tempo Esperado p/ Bloco (Agora)`, en: `Expected Time to Block (Now)`, es: `Tiempo Esperado para Bloque (Ahora)`, fr: `Temps Attendu pour un Bloc (Maintenant)` },
+  "tempo_esperado_p_bloco_apos_ajuste": { pt: `Tempo Esperado p/ Bloco (Após Ajuste)`, en: `Expected Time to Block (After Adjustment)`, es: `Tiempo Esperado para Bloque (Tras el Ajuste)`, fr: `Temps Attendu pour un Bloc (Après Ajustement)` },
+  "tudo_sobre_mineracao_domestica_de_btc": { pt: `Tudo sobre mineração doméstica de BTC.`, en: `Everything about home BTC mining.`, es: `Todo sobre minería doméstica de BTC.`, fr: `Tout sur le minage domestique de BTC.` },
+  "variacao_prevista_proximo_ajuste": { pt: `Variação Prevista (Próximo Ajuste)`, en: `Predicted Variation (Next Adjustment)`, es: `Variación Prevista (Próximo Ajuste)`, fr: `Variation Prévue (Prochain Ajustement)` },
+  "variacao": { pt: `Variação:`, en: `Variation:`, es: `Variación:`, fr: `Variation :` },
+  "velocidade_fans": { pt: `Velocidade Fans`, en: `Fan Speed`, es: `Velocidad de Ventiladores`, fr: `Vitesse des Ventilateurs` },
+  "ver_canal": { pt: `Ver canal →`, en: `View channel →`, es: `Ver canal →`, fr: `Voir la chaîne →` },
+  "a_atualizar_a_cada_5s": { pt: `a atualizar a cada 5s...`, en: `updating every 5s...`, es: `actualizando cada 5s...`, fr: `mise à jour toutes les 5s...` },
+  "a_atualizar": { pt: `a atualizar...`, en: `updating...`, es: `actualizando...`, fr: `mise à jour...` },
+  "a_verificar": { pt: `a verificar...`, en: `checking...`, es: `comprobando...`, fr: `vérification...` },
+  "amostra_a_cada_20_min": { pt: `amostra a cada ~20 min`, en: `sampled every ~20 min`, es: `muestra cada ~20 min`, fr: `échantillon toutes les ~20 min` },
+  "atual_2": { pt: `atual`, en: `current`, es: `actual`, fr: `actuel` },
+  "limpar": { pt: `limpar`, en: `clear`, es: `limpiar`, fr: `effacer` },
+  "live": { pt: `live`, en: `live`, es: `en vivo`, fr: `en direct` },
+  "peak": { pt: `peak`, en: `peak`, es: `pico`, fr: `pic` },
+  "peak_2": { pt: `peak —`, en: `peak —`, es: `pico —`, fr: `pic —` },
+  "primeiro": { pt: `primeiro`, en: `first`, es: `primero`, fr: `premier` },
+  "sessao": { pt: `sessão`, en: `session`, es: `sesión`, fr: `session` },
+  "sistema_ativo_com_alertas_sonoros": { pt: `sistema ativo com alertas sonoros`, en: `system active with sound alerts`, es: `sistema activo con alertas sonoras`, fr: `système actif avec alertes sonores` },
+  "ultima_leitura": { pt: `Última leitura:`, en: `Last reading:`, es: `Última lectura:`, fr: `Dernière lecture :` },
+  "ultimos_blocos_minerados_na_rede_bitcoin": { pt: `Últimos blocos minerados na rede Bitcoin`, en: `Latest blocks mined on the Bitcoin network`, es: `Últimos bloques minados en la red Bitcoin`, fr: `Derniers blocs minés sur le réseau Bitcoin` },
+  "simulador_de_dificuldade_halving": { pt: `⏱️ SIMULADOR DE DIFICULDADE & HALVING`, en: `⏱️ DIFFICULTY & HALVING SIMULATOR`, es: `⏱️ SIMULADOR DE DIFICULTAD Y HALVING`, fr: `⏱️ SIMULATEUR DE DIFFICULTÉ ET DE HALVING` },
+  "simulador": { pt: `⏱️ Simulador`, en: `⏱️ Simulator`, es: `⏱️ Simulador`, fr: `⏱️ Simulateur` },
+  "fechar_tudo": { pt: `⏻ Fechar Tudo`, en: `⏻ Close Everything`, es: `⏻ Cerrar Todo`, fr: `⏻ Tout Fermer` },
+  "gestao_dinamica_de_perfil_de_alimentacao": { pt: `☀️⚡ Gestão Dinâmica de Perfil de Alimentação — MQTT / Home Assistant`, en: `☀️⚡ Dynamic Power Profile Management — MQTT / Home Assistant`, es: `☀️⚡ Gestión Dinámica de Perfil de Alimentación — MQTT / Home Assistant`, fr: `☀️⚡ Gestion Dynamique du Profil d'Alimentation — MQTT / Home Assistant` },
+  "aplicar_sugestao_a_todas_as_maquinas": { pt: `⚡ Aplicar sugestão a todas as máquinas`, en: `⚡ Apply suggestion to all machines`, es: `⚡ Aplicar sugerencia a todas las máquinas`, fr: `⚡ Appliquer la suggestion à toutes les machines` },
+  "apoiar_doar": { pt: `⚡ Apoiar / Doar`, en: `⚡ Support / Donate`, es: `⚡ Apoyar / Donar`, fr: `⚡ Soutenir / Faire un Don` },
+  "descarregar_txt": { pt: `⬇ Descarregar TXT`, en: `⬇ Download TXT`, es: `⬇ Descargar TXT`, fr: `⬇ Télécharger TXT` },
+  "oled_black": { pt: `⬛ OLED Black`, en: `⬛ OLED Black`, es: `⬛ OLED Negro`, fr: `⬛ OLED Noir` },
+  "cyberpunk": { pt: `🌆 Cyberpunk`, en: `🌆 Cyberpunk`, es: `🌆 Cyberpunk`, fr: `🌆 Cyberpunk` },
+  "todas_as_maquinas": { pt: `🌐 Todas as Máquinas`, en: `🌐 All Machines`, es: `🌐 Todas las Máquinas`, fr: `🌐 Toutes les Machines` },
+  "padrao": { pt: `🌘 Padrão`, en: `🌘 Default`, es: `🌘 Predeterminado`, fr: `🌘 Par Défaut` },
+  "apoiantes": { pt: `🌟 Apoiantes`, en: `🌟 Supporters`, es: `🌟 Colaboradores`, fr: `🌟 Soutiens` },
+  "canais_apoiantes": { pt: `🌟 CANAIS APOIANTES`, en: `🌟 SUPPORTING CHANNELS`, es: `🌟 CANALES COLABORADORES`, fr: `🌟 CHAÎNES PARTENAIRES` },
+  "matrix": { pt: `🌿 Matrix`, en: `🌿 Matrix`, es: `🌿 Matrix`, fr: `🌿 Matrix` },
+  "perfis_de_energia": { pt: `🎛️ Perfis de Energia`, en: `🎛️ Power Profiles`, es: `🎛️ Perfiles de Energía`, fr: `🎛️ Profils d'Énergie` },
+  "probabilidade_de_bloco_solo_mining_odds": { pt: `🎯 Probabilidade de Bloco (Solo Mining Odds)`, en: `🎯 Block Probability (Solo Mining Odds)`, es: `🎯 Probabilidad de Bloque (Solo Mining Odds)`, fr: `🎯 Probabilité de Bloc (Solo Mining Odds)` },
+  "sugestao_atual": { pt: `💡 Sugestão Atual`, en: `💡 Current Suggestion`, es: `💡 Sugerencia Actual`, fr: `💡 Suggestion Actuelle` },
+  "guardar_ligacao_mqtt": { pt: `💾 Guardar Ligação MQTT`, en: `💾 Save MQTT Connection`, es: `💾 Guardar Conexión MQTT`, fr: `💾 Enregistrer la Connexion MQTT` },
+  "guardar_perfis": { pt: `💾 Guardar Perfis`, en: `💾 Save Profiles`, es: `💾 Guardar Perfiles`, fr: `💾 Enregistrer les Profils` },
+  "stop_scroll": { pt: `📌 Stop Scroll`, en: `📌 Stop Scroll`, es: `📌 Detener Scroll`, fr: `📌 Arrêter le Défilement` },
+  "latencia": { pt: `📡 Latência`, en: `📡 Latency`, es: `📡 Latencia`, fr: `📡 Latence` },
+  "ping_ao_pool_em_tempo_real_dados_reporta": { pt: `📡 Ping ao Pool em Tempo Real (dados reportados pelo dispositivo)`, en: `📡 Real-Time Pool Ping (data reported by the device)`, es: `📡 Ping al Pool en Tiempo Real (datos reportados por el dispositivo)`, fr: `📡 Ping au Pool en Temps Réel (données rapportées par l'appareil)` },
+  "silenciar": { pt: `🔇 Silenciar`, en: `🔇 Mute`, es: `🔇 Silenciar`, fr: `🔇 Couper le Son` },
+  "pop_ups_on": { pt: `🔔 Pop-ups: ON`, en: `🔔 Pop-ups: ON`, es: `🔔 Pop-ups: ON`, fr: `🔔 Pop-ups : ON` },
+  "previsao_mais_proxima": { pt: `🔮 Previsão Mais Próxima`, en: `🔮 Closest Forecast`, es: `🔮 Predicción Más Cercana`, fr: `🔮 Prévision la Plus Proche` },
+  "simulador_preditivo_de_desgaste_previsao": { pt: `🔮 Simulador Preditivo de Desgaste — Previsão de Thermal Throttle`, en: `🔮 Predictive Wear Simulator — Thermal Throttle Forecast`, es: `🔮 Simulador Predictivo de Desgaste — Previsión de Thermal Throttle`, fr: `🔮 Simulateur Prédictif d'Usure — Prévision de Thermal Throttle` },
+  "limpar_filtro": { pt: `🗑 Limpar Filtro`, en: `🗑 Clear Filter`, es: `🗑 Borrar Filtro`, fr: `🗑 Effacer le Filtre` },
+  "protecao_termica_alerta_critico": { pt: `🛡️ Proteção Térmica — Alerta Crítico`, en: `🛡️ Thermal Protection — Critical Alert`, es: `🛡️ Protección Térmica — Alerta Crítica`, fr: `🛡️ Protection Thermique — Alerte Critique` },
+  "realtime_logs": { pt: `🟢 Realtime Logs`, en: `🟢 Realtime Logs`, es: `🟢 Logs en Tiempo Real`, fr: `🟢 Journaux en Temps Réel` },
+  "assistente": { pt: `🤖 Assistente`, en: `🤖 Assistant`, es: `🤖 Asistente`, fr: `🤖 Assistant` },
+  "testar_alertas": { pt: `🧪 Testar Alertas`, en: `🧪 Test Alerts`, es: `🧪 Probar Alertas`, fr: `🧪 Tester les Alertes` },
+  "impressao_digital_termica_manutencao_pre": { pt: `🧬 Impressão Digital Térmica — Manutenção Preditiva`, en: `🧬 Thermal Fingerprint — Predictive Maintenance`, es: `🧬 Huella Térmica — Mantenimiento Predictivo`, fr: `🧬 Empreinte Thermique — Maintenance Prédictive` },
+  "ocultar_vista": { pt: `🧹 Ocultar Vista`, en: `🧹 Hide View`, es: `🧹 Ocultar Vista`, fr: `🧹 Masquer la Vue` },
+  "ph_pergunta_sobre_o_painel": { pt: `Pergunta sobre o painel...`, en: `Ask about the dashboard...`, es: `Pregunta sobre el panel...`, fr: `Question sur le tableau de bord...` },
+  "ph_apelido_ex_maquina_01": { pt: `Apelido (ex: Máquina 01)`, en: `Nickname (e.g. Machine 01)`, es: `Apodo (ej: Máquina 01)`, fr: `Surnom (ex : Machine 01)` },
+  "ph_filtrar_texto": { pt: `Filtrar texto...`, en: `Filter text...`, es: `Filtrar texto...`, fr: `Filtrer le texte...` },
+  "ph_filtrar_tag": { pt: `Filtrar tag...`, en: `Filter tag...`, es: `Filtrar etiqueta...`, fr: `Filtrer par tag...` },
+  "ph_deixa_em_branco_para_manter": { pt: `deixa em branco para manter`, en: `leave blank to keep`, es: `déjalo en blanco para mantener`, fr: `laisser vide pour conserver` },
+  "notificacoes_block_best_diff": { pt: `🔔 Notificações (Block / Best Diff)`, en: `🔔 Notifications (Block / Best Diff)`, es: `🔔 Notificaciones (Block / Best Diff)`, fr: `🔔 Notifications (Block / Best Diff)` },
+  "saude_termica": { pt: `🧬 Saúde Térmica`, en: `🧬 Thermal Health`, es: `🧬 Salud Térmica`, fr: `🧬 Santé Thermique` },
+  "tempo_seg_atras": { pt: `{n} seg atrás`, en: `{n} sec ago`, es: `hace {n} seg`, fr: `il y a {n} sec` },
+  "tempo_min_atras": { pt: `{n} min atrás`, en: `{n} min ago`, es: `hace {n} min`, fr: `il y a {n} min` },
+  "tempo_h_atras": { pt: `{n}h atrás`, en: `{n}h ago`, es: `hace {n}h`, fr: `il y a {n}h` },
+  "tempo_d_atras": { pt: `{n}d atrás`, en: `{n}d ago`, es: `hace {n}d`, fr: `il y a {n}j` },
+  "blocos_a_atualizar": { pt: `a atualizar...`, en: `updating...`, es: `actualizando...`, fr: `mise à jour...` },
+  "blocos_atualizado_em": { pt: `atualizado`, en: `updated`, es: `actualizado`, fr: `mis à jour` },
+  "blocos_falha_atualizar": { pt: `falha ao atualizar`, en: `update failed`, es: `error al actualizar`, fr: `échec de la mise à jour` },
+  "blocos_erro_carregar": { pt: `Não foi possível carregar os blocos. Verifica a ligação à internet.`, en: `Could not load blocks. Check your internet connection.`, es: `No se pudieron cargar los bloques. Verifica tu conexión a internet.`, fr: `Impossible de charger les blocs. Vérifiez votre connexion internet.` },
+  "blocos_sem_blocos": { pt: `Sem blocos para mostrar.`, en: `No blocks to show.`, es: `Sin bloques para mostrar.`, fr: `Aucun bloc à afficher.` },
+  "pool_desconhecida": { pt: `Desconhecida`, en: `Unknown`, es: `Desconocida`, fr: `Inconnue` },
+  "uptime": { pt: `Uptime`, en: `Uptime`, es: `Tiempo Activo`, fr: `Uptime` },
+  "temperatura": { pt: `Temperatura`, en: `Temperature`, es: `Temperatura`, fr: `Température` },
+  "melhor_dif": { pt: `Melhor Dif.`, en: `Best Diff.`, es: `Mejor Dif.`, fr: `Meilleure Diff.` },
+  "frequencia": { pt: `Frequência`, en: `Frequency`, es: `Frecuencia`, fr: `Fréquence` },
+  "aceites_rejeitadas": { pt: `Aceites / Rejeitadas`, en: `Accepted / Rejected`, es: `Aceptadas / Rechazadas`, fr: `Acceptées / Rejetées` },
+  "eficiencia": { pt: `Eficiência`, en: `Efficiency`, es: `Eficiencia`, fr: `Efficacité` },
+  "pool": { pt: `Pool`, en: `Pool`, es: `Pool`, fr: `Pool` },
+  "ping_ao_pool": { pt: `Ping ao Pool`, en: `Pool Ping`, es: `Ping al Pool`, fr: `Ping au Pool` },
+  "latencia_local": { pt: `Latência Local`, en: `Local Latency`, es: `Latencia Local`, fr: `Latence Locale` },
+  "offline": { pt: `Offline`, en: `Offline`, es: `Desconectado`, fr: `Hors ligne` },
+  "desligada_sem_sinal": { pt: `Desligada / Sem Sinal`, en: `Off / No Signal`, es: `Apagada / Sin Señal`, fr: `Éteinte / Sans Signal` },
+  "perda": { pt: `perda`, en: `loss`, es: `pérdida`, fr: `perte` },
+  "nd_pelo_pool": { pt: `N/D pelo pool`, en: `N/A from pool`, es: `N/D por el pool`, fr: `N/D par le pool` },
+  "remover_maquina": { pt: `Remover máquina`, en: `Remove machine`, es: `Eliminar máquina`, fr: `Supprimer la machine` },
+  "som_ativo": { pt: `🔊 Som Ativo`, en: `🔊 Sound On`, es: `🔊 Sonido Activo`, fr: `🔊 Son Activé` },
+  "som_mudo": { pt: `🔇 Som Mudo`, en: `🔇 Sound Muted`, es: `🔇 Sonido Silenciado`, fr: `🔇 Son Coupé` },
+  "painel_iniciado_com_alertas": { pt: `Painel iniciado com alertas sonoros.`, en: `Panel started with sound alerts.`, es: `Panel iniciado con alertas sonoras.`, fr: `Panneau démarré avec alertes sonores.` },
+  "confirm_desligar_servidor": { pt: `Desligar o Centro de Comando por completo?\\n\\nO servidor local e a monitorização em segundo plano vão parar. Só precisas de o voltar a abrir para retomar.`, en: `Shut down Command Center completely?\\n\\nThe local server and background monitoring will stop. You just need to reopen it to resume.`, es: `¿Apagar el Centro de Comando por completo?\\n\\nEl servidor local y la monitorización en segundo plano se detendrán. Solo tienes que volver a abrirlo para reanudar.`, fr: `Éteindre complètement le Centre de Commande ?\\n\\nLe serveur local et la surveillance en arrière-plan vont s'arrêter. Il suffit de le rouvrir pour reprendre.` },
+  "servidor_desligado_msg": { pt: `Centro de Comando desligado. Podes fechar esta janela.`, en: `Command Center shut down. You can close this window.`, es: `Centro de Comando apagado. Puedes cerrar esta ventana.`, fr: `Centre de Commande éteint. Vous pouvez fermer cette fenêtre.` },
+  "ai_greeting": { pt: `Olá! Eu sou o assistente do Centro de Comando. Pergunta-me sobre hashrate, eficiência, perfis de energia, MQTT ou qualquer outra funcionalidade do painel.`, en: `Hi! I'm the Command Center assistant. Ask me about hashrate, efficiency, power profiles, MQTT, or any other feature of the dashboard.`, es: `¡Hola! Soy el asistente del Centro de Comando. Pregúntame sobre hashrate, eficiencia, perfiles de energía, MQTT o cualquier otra función del panel.`, fr: `Bonjour ! Je suis l'assistant du Centre de Commande. Demande-moi n'importe quoi sur le hashrate, l'efficacité, les profils d'énergie, le MQTT ou toute autre fonctionnalité du panneau.` },
+  "ai_fallback": { pt: `Ainda não sei responder a isso. Tenta perguntar sobre: hashrate, eficiência, best diff, perfis de energia, undervolt/frequência, ou como adicionar uma máquina.`, en: `I don't know how to answer that yet. Try asking about: hashrate, efficiency, best diff, power profiles, undervolt/frequency, or how to add a machine.`, es: `Todavía no sé responder a eso. Intenta preguntar sobre: hashrate, eficiencia, best diff, perfiles de energía, undervolt/frecuencia, o cómo añadir una máquina.`, fr: `Je ne sais pas encore répondre à ça. Essaie de demander : hashrate, efficacité, best diff, profils d'énergie, undervolt/fréquence, ou comment ajouter une machine.` },
+};
+
 const $ = id => document.getElementById(id);
 const DEVICES_KEY = 'nerdqaxe:devices';
 const NOTIF_KEY = 'nerdqaxe:notifications';
@@ -2219,6 +2570,7 @@ const THERMAL_PROTECTION_KEY = 'nerdqaxe:thermal_protection';
 const CRITICAL_ALARM_INTERVAL_MS = 1200; // intervalo entre "bips" do alarme sonoro contínuo
 
 let devices = [];
+let appVersion = '';
 let readings = {};
 let histories = {};
 let selectedId = null;
@@ -2330,11 +2682,11 @@ function toggleSound() {
   const btn = $('soundToggleBtn');
   if(soundEnabled) {
     btn.className = 'sound-toggle-btn';
-    btn.innerHTML = '🔊 Som Ativo';
+    btn.innerHTML = t('som_ativo');
     playSound('best');
   } else {
     btn.className = 'sound-toggle-btn muted';
-    btn.innerHTML = '🔇 Som Mudo';
+    btn.innerHTML = t('som_mudo');
   }
 }
 
@@ -2353,16 +2705,86 @@ function loadTheme(){
   if(sel) sel.value = theme;
 }
 
-const TAB_LABELS = {
-  dashboard: 'Dashboard Geral',
-  logs: 'Logs das Máquinas',
-  notifications: '🔔 Notificações (Block / Best Diff)',
-  simulator: '⏱️ Simulador',
-  latency: '📡 Latência',
-  thermal: '🧬 Saúde Térmica',
-  donate: '⚡ Apoiar / Doar',
-  supporters: '🌟 Apoiantes'
+// --- Idioma / i18n ------------------------------------------------------
+// Dicionário completo em /home/claude/i18n/i18n_dict.js (INSERIDO ABAIXO).
+// t(key) devolve o texto no idioma atual - usar sempre que uma string for
+// gerada dinamicamente em JS (logEvent, alert, toasts, etc.) para além do
+// que já é tratado automaticamente pelos atributos data-i18n no HTML.
+const LANG_KEY = 'centro_comando_lang';
+let currentLang = 'pt';
+
+function t(key) {
+  const entry = I18N_DICT[key];
+  if (!entry) return key; // chave desconhecida - mostra a própria chave para ser fácil de detetar
+  return entry[currentLang] || entry.pt || key;
+}
+
+function applyTranslations() {
+  document.documentElement.lang = currentLang === 'pt' ? 'pt-PT' : currentLang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.placeholder = t(key);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    el.title = t(key);
+  });
+  // Reaplica textos gerados dinamicamente que não usam data-i18n (dependem
+  // do estado atual, não só de uma troca de idioma simples).
+  const activeTabBtn = document.querySelector('.tab-btn.active');
+  if (activeTabBtn) {
+    const activeTab = document.querySelector('.tab-content.active');
+    if (activeTab) {
+      const tabName = activeTab.id.replace('tab-', '');
+      const label = $('navMenuLabel');
+      if (label) label.textContent = getTabLabel(tabName);
+    }
+  }
+  // Chips de sugestão do assistente de IA (perguntas rápidas) - regenera-os
+  // no novo idioma. As mensagens já escritas no histórico do chat ficam
+  // como estavam (não traduzimos conversas passadas).
+  if (typeof aiRenderSuggestions === 'function') aiRenderSuggestions();
+  if (lastFetchedBlocks) renderRecentBlocks(lastFetchedBlocks);
+  if (typeof renderAll === 'function') renderAll();
+}
+
+function setLanguage(lang) {
+  if (!['pt', 'en', 'es', 'fr'].includes(lang)) lang = 'pt';
+  currentLang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch(e){}
+  const sel = $('langSelect');
+  if (sel && sel.value !== lang) sel.value = lang;
+  applyTranslations();
+}
+
+function loadLanguage(){
+  let lang = 'pt';
+  try { lang = localStorage.getItem(LANG_KEY) || 'pt'; } catch(e){}
+  currentLang = lang;
+  const sel = $('langSelect');
+  if (sel) sel.value = lang;
+  applyTranslations();
+}
+
+const TAB_LABEL_KEYS = {
+  dashboard: 'dashboard_geral',
+  logs: 'logs_das_maquinas',
+  notifications: 'notificacoes_block_best_diff',
+  simulator: 'simulador',
+  latency: 'latencia',
+  thermal: 'saude_termica',
+  donate: 'apoiar_doar',
+  supporters: 'apoiantes',
+  support: 'suporte'
 };
+function getTabLabel(tabName) {
+  const key = TAB_LABEL_KEYS[tabName];
+  return key ? t(key) : tabName;
+}
 
 function toggleNavMenu() {
   $('navMenu').classList.toggle('open');
@@ -2382,7 +2804,7 @@ function switchTab(tabName, btnEl) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   $(`tab-${tabName}`).classList.add('active');
   btnEl.classList.add('active');
-  $('navMenuLabel').textContent = TAB_LABELS[tabName] || tabName;
+  $('navMenuLabel').textContent = getTabLabel(tabName);
   closeNavMenu();
 
   if(tabName === 'logs') {
@@ -2406,6 +2828,9 @@ function switchTab(tabName, btnEl) {
   if(tabName === 'thermal') {
     renderThermalTab();
   }
+  if(tabName === 'support') {
+    renderSupportDiagBox();
+  }
 }
 
 let blocksRefreshTimer = null;
@@ -2419,29 +2844,32 @@ function stopBlocksAutoRefresh() {
 
 function timeAgoPt(unixSeconds) {
   const diffSec = Math.max(0, Math.floor(Date.now()/1000) - unixSeconds);
-  if(diffSec < 60) return `${diffSec} seg atrás`;
+  if(diffSec < 60) return t('tempo_seg_atras').replace('{n}', diffSec);
   const diffMin = Math.floor(diffSec/60);
-  if(diffMin < 60) return `${diffMin} min atrás`;
+  if(diffMin < 60) return t('tempo_min_atras').replace('{n}', diffMin);
   const diffH = Math.floor(diffMin/60);
-  if(diffH < 24) return `${diffH}h atrás`;
-  return `${Math.floor(diffH/24)}d atrás`;
+  if(diffH < 24) return t('tempo_h_atras').replace('{n}', diffH);
+  return t('tempo_d_atras').replace('{n}', Math.floor(diffH/24));
 }
 
+let lastFetchedBlocks = null;
 async function fetchRecentBlocks() {
   const hint = $('blocksRefreshHint');
   const container = $('blocksScroll');
-  if(hint) hint.textContent = 'a atualizar...';
+  if(hint) hint.textContent = t('blocos_a_atualizar');
   try {
     const res = await fetch('https://mempool.space/api/v1/blocks');
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const blocks = await res.json();
+    lastFetchedBlocks = blocks;
     renderRecentBlocks(blocks);
-    if(hint) hint.textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-PT');
+    const localeMap = { pt: 'pt-PT', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+    if(hint) hint.textContent = t('blocos_atualizado_em') + ' ' + new Date().toLocaleTimeString(localeMap[currentLang] || 'pt-PT');
   } catch(e) {
     console.error('Erro ao obter blocos:', e);
-    if(hint) hint.textContent = 'falha ao atualizar';
+    if(hint) hint.textContent = t('blocos_falha_atualizar');
     if(container && container.children.length === 0) {
-      container.innerHTML = '<div class="blocks-empty">Não foi possível carregar os blocos. Verifica a ligação à internet.</div>';
+      container.innerHTML = `<div class="blocks-empty">${t('blocos_erro_carregar')}</div>`;
     }
   }
 }
@@ -2450,11 +2878,11 @@ function renderRecentBlocks(blocks) {
   const container = $('blocksScroll');
   if(!container) return;
   if(!blocks || !blocks.length) {
-    container.innerHTML = '<div class="blocks-empty">Sem blocos para mostrar.</div>';
+    container.innerHTML = `<div class="blocks-empty">${t('blocos_sem_blocos')}</div>`;
     return;
   }
   container.innerHTML = blocks.map(b => {
-    const pool = (b.extras && b.extras.pool) || { name: 'Desconhecida', slug: 'unknown' };
+    const pool = (b.extras && b.extras.pool) || { name: t('pool_desconhecida'), slug: 'unknown' };
     const feeRate = b.extras && (b.extras.avgFeeRate ?? b.extras.medianFee);
     const feeStr = (feeRate !== undefined && feeRate !== null) ? `~${Number(feeRate).toFixed(1)} sat/vB` : '—';
     const logoUrl = `https://mempool.space/resources/mining-pools/${pool.slug}.svg`;
@@ -2626,6 +3054,62 @@ function copyBtcAddress() {
   }).catch(err => {
     console.error('Erro ao copiar:', err);
   });
+}
+
+// --- Aba de Suporte -----------------------------------------------------
+const GITHUB_REPO_URL = 'https://github.com/bladept696/centro-de-comando-v3';
+
+function buildDiagnosticInfo() {
+  const lines = [
+    `Versão: v${appVersion || '—'}`,
+    `Idioma: ${currentLang}`,
+    `Tema: ${document.body.dataset.theme || 'default'}`,
+    `Máquinas registadas: ${devices.length}`,
+    `Navegador: ${navigator.userAgent}`,
+    `Plataforma: ${navigator.platform || '—'}`,
+    `Resolução: ${window.screen.width}x${window.screen.height}`,
+    `URL: ${window.location.href}`,
+  ];
+  return lines.join('\n');
+}
+
+function renderSupportDiagBox() {
+  const box = $('supportDiagBox');
+  if(box) box.textContent = buildDiagnosticInfo();
+}
+
+function copyDiagnosticInfo() {
+  const info = buildDiagnosticInfo();
+  navigator.clipboard.writeText(info).then(() => {
+    alert(t('diagnostico_copiado'));
+  }).catch(err => {
+    console.error('Erro ao copiar:', err);
+  });
+}
+
+function reportBugOnGithub() {
+  const title = encodeURIComponent('[Bug] ');
+  const body = encodeURIComponent(
+    `**Descrição do problema:**\n\n\n**Passos para reproduzir:**\n1. \n2. \n3. \n\n**Comportamento esperado:**\n\n\n**Informação de diagnóstico:**\n\`\`\`\n${buildDiagnosticInfo()}\n\`\`\`\n`
+  );
+  window.open(`${GITHUB_REPO_URL}/issues/new?labels=bug&title=${title}&body=${body}`, '_blank', 'noopener');
+}
+
+function suggestFeatureOnGithub() {
+  const title = encodeURIComponent('[Sugestão] ');
+  const body = encodeURIComponent(
+    `**Descrição da funcionalidade:**\n\n\n**Porque seria útil:**\n\n\n**Informação de diagnóstico:**\n\`\`\`\n${buildDiagnosticInfo()}\n\`\`\`\n`
+  );
+  window.open(`${GITHUB_REPO_URL}/issues/new?labels=enhancement&title=${title}&body=${body}`, '_blank', 'noopener');
+}
+
+function goToAssistant() {
+  const dashBtn = document.querySelector('.tab-btn[onclick*="dashboard"]');
+  if(dashBtn) switchTab('dashboard', dashBtn);
+  setTimeout(() => {
+    const input = $('aiInput');
+    if(input) input.focus();
+  }, 100);
 }
 
 function updateNotifBadge() {
@@ -4165,13 +4649,13 @@ function renderAll(){
     card.className = 'machine-card' + (dev.id === selectedId ? ' selected' : '') + (!online && r ? ' offline' : '');
     
     const freqVal = online ? `${r.frequency} MHz` : '—';
-    const tempVal = online && r.temp != null ? `${r.temp.toFixed(1)} °C` : '<span style="color:var(--red);">Offline</span>';
-    const hashrateVal = online ? `${formatHashrate(r.hashrate).value} ${formatHashrate(r.hashrate).unit}` : '<span style="color:var(--red);">Desligada / Sem Sinal</span>';
+    const tempVal = online && r.temp != null ? `${r.temp.toFixed(1)} °C` : `<span style="color:var(--red);">${t('offline')}</span>`;
+    const hashrateVal = online ? `${formatHashrate(r.hashrate).value} ${formatHashrate(r.hashrate).unit}` : `<span style="color:var(--red);">${t('desligada_sem_sinal')}</span>`;
     const bestDiffVal = online ? `${formatDiff(r.best).value}${formatDiff(r.best).unit}` : '—';
     const accRejVal = online ? `${r.accepted} / ${r.rejected}` : '—';
     const effVal = online ? `${Number(r.efficiency).toFixed(2)} J/Th` : '—';
     const poolVal = online ? r.pool.replace(/^https?:\/\//, '') : '—';
-    const poolPingVal = online && r.poolPing != null ? `${r.poolPing.toFixed(2)} ms${r.poolLoss != null ? ` (${r.poolLoss.toFixed(2)}% perda)` : ''}` : (online ? 'N/D pelo pool' : '—');
+    const poolPingVal = online && r.poolPing != null ? `${r.poolPing.toFixed(2)} ms${r.poolLoss != null ? ` (${r.poolLoss.toFixed(2)}% ${t('perda')})` : ''}` : (online ? t('nd_pelo_pool') : '—');
     const localLatencyVal = online && r.localLatency != null ? `${r.localLatency} ms` : '—';
     const uptimeFmt = online ? formatUptime(r.uptime) : { text: '—', cls: '' };
     
@@ -4181,48 +4665,48 @@ function renderAll(){
           <div class="name">${dev.name}</div>
           <div class="ip">${dev.ip}</div>
         </div>
-        <button class="remove" data-id="${dev.id}" title="Remover máquina">✕</button>
+        <button class="remove" data-id="${dev.id}" title="${t('remover_maquina')}">✕</button>
       </div>
 
       <div class="metrics-table">
         <div class="metric-row">
-          <span class="metric-label">⚡ Hashrate</span>
+          <span class="metric-label">⚡ ${t('hashrate')}</span>
           <span class="metric-value highlight-green">${hashrateVal}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">⏱️ Uptime</span>
+          <span class="metric-label">⏱️ ${t('uptime')}</span>
           <span class="metric-value ${uptimeFmt.cls}">${uptimeFmt.text}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">🌡️ Temperatura</span>
+          <span class="metric-label">🌡️ ${t('temperatura')}</span>
           <span class="metric-value ${online ? getTempRiskClass(r.temp) : ''}">${tempVal}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">🏆 Melhor Dif.</span>
+          <span class="metric-label">🏆 ${t('melhor_dif')}</span>
           <span class="metric-value highlight-amber">${bestDiffVal}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">⚙️ Frequência</span>
+          <span class="metric-label">⚙️ ${t('frequencia')}</span>
           <span class="metric-value">${freqVal}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">✅ Aceites / Rejeitadas</span>
+          <span class="metric-label">✅ ${t('aceites_rejeitadas')}</span>
           <span class="metric-value">${accRejVal}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">🔋 Eficiência</span>
+          <span class="metric-label">🔋 ${t('eficiencia')}</span>
           <span class="metric-value highlight-cyan">${effVal}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">🌐 Pool</span>
+          <span class="metric-label">🌐 ${t('pool')}</span>
           <span class="metric-value" style="font-size: 10px; color: var(--muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${poolVal}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">📡 Ping ao Pool</span>
+          <span class="metric-label">📡 ${t('ping_ao_pool')}</span>
           <span class="metric-value ${online ? getLatencyRiskClass(r.poolPing) : ''}">${poolPingVal}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">🖧 Latência Local</span>
+          <span class="metric-label">🖧 ${t('latencia_local')}</span>
           <span class="metric-value">${localLatencyVal}</span>
         </div>
       </div>
@@ -4581,34 +5065,82 @@ async function applySuggestedProfileToAll(){
 // à internet.
 
 const AI_KB = [
-  { q: 'O que é o Best Diff / Melhor Dif.?', kw: ['best diff','melhor dif','bestdiff','dificuldade'],
-    a: 'O "Melhor Dif." (Best Diff) é a maior dificuldade de share que a tua máquina já encontrou. Quanto mais alto, mais perto (em termos de sorte) estiveste de encontrar um bloco a solo. É um recorde acumulado desde que o ASIC arrancou.' },
-  { q: 'O que significa Eficiência (J/Th)?', kw: ['eficiencia','eficiência','j/th','joules'],
-    a: 'A eficiência em J/Th indica quantos Joules de energia a máquina gasta por cada Terahash de poder de processamento. Quanto MENOR o valor, mais eficiente é o ASIC (menos energia gasta pelo mesmo hashrate).' },
-  { q: 'O que é o Hashrate?', kw: ['hashrate','hash rate','th/s'],
-    a: 'O Hashrate mede quantos cálculos (hashes) o ASIC faz por segundo, normalmente em TH/s (terahashes por segundo). Quanto mais alto, maior a tua parte do poder computacional da rede.' },
-  { q: 'Como funciona a Frequência e o Undervolt?', kw: ['frequencia','frequência','undervolt','corevoltage','mhz','voltagem'],
-    a: 'A Frequência (MHz) e a Voltagem do núcleo (coreVoltage) controlam o desempenho do chip ASIC: mais frequência = mais hashrate mas mais calor e consumo. O undervolt reduz a voltagem para poupar energia e baixar temperatura, geralmente à custa de algum hashrate.' },
-  { q: 'O que são os Perfis de Energia?', kw: ['perfil de energia','perfis de energia','mqtt','home assistant','solar','tarifa'],
-    a: 'Os Perfis de Energia (separador "☀️ Perfis de Energia") ligam-se ao teu broker MQTT (ex: Home Assistant) para ler produção solar e tarifa elétrica. Com base nesses valores, o painel SUGERE um perfil de frequência/undervolt mais adequado — mas a aplicação é sempre manual, nunca automática.' },
-  { q: 'Como adiciono uma máquina?', kw: ['adicionar maquina','adicionar máquina','registar maquina','novo asic','ip'],
-    a: 'No painel "Dashboard Geral", usa os campos "Apelido" e "IP" no topo do painel de Máquinas e clica em "Adicionar máquina". É preciso o servidor local (app.py / nerdqaxe_server.py) estar a correr em localhost:8765.' },
-  { q: 'O que são Aceites/Rejeitadas?', kw: ['aceites','rejeitadas','shares'],
-    a: 'São o número de shares (unidades de trabalho) que a tua pool aceitou vs. rejeitou. Uma taxa de rejeição alta pode indicar problemas de rede, latência ou instabilidade na ligação à pool.' },
-  { q: 'O que é a Distribuição de Hashrate?', kw: ['distribuicao','distribuição','donut'],
-    a: 'É um gráfico que mostra a fatia de hashrate total que cada máquina está a contribuir, para veres rapidamente se alguma está com desempenho abaixo do esperado.' },
-  { q: 'O que é a Latência / Ping ao Pool?', kw: ['latencia','latência','ping','perda'],
-    a: '"Ping ao Pool" mede o tempo de resposta entre a tua máquina e o servidor da pool de mineração — valores altos ou perda de pacotes podem causar mais shares rejeitadas. "Latência Local" mede a resposta do próprio ASIC na tua rede.' },
-  { q: 'O que faz a saúde térmica preditiva?', kw: ['termica','térmica','temperatura','saude','saúde','sobreaquecimento'],
-    a: 'A funcionalidade de saúde térmica acompanha o histórico de temperatura de cada máquina e tenta prever tendências de sobreaquecimento antes que aconteçam, permitindo agir com antecedência (ex: aplicar undervolt).' },
-  { q: 'Como funciona o simulador de bloco?', kw: ['simulador','bloco','probabilidade','ajuste de dificuldade'],
-    a: 'O simulador cruza o teu hashrate atual com os dados em tempo real da rede Bitcoin para estimar o impacto do próximo ajuste de dificuldade (a cada 2016 blocos) na tua probabilidade teórica de encontrar um bloco a solo.' },
-  { q: 'Onde fica guardada a configuração?', kw: ['configuracao','configuração','ficheiro','power_profiles','gravar','guardar'],
-    a: 'A configuração dos Perfis de Energia fica em power_profiles.json, ao lado do executável ou do app.py. As máquinas registadas e outras preferências ficam guardadas no localStorage do teu browser.' },
+  { key: 'best_diff', kw: ['best diff','melhor dif','bestdiff','dificuldade','best share','best difficulty','efficiency record'],
+    q: { pt: `O que é o Best Diff / Melhor Dif.?`, en: `What is Best Diff?`, es: `¿Qué es el Best Diff / Mejor Dif.?`, fr: `Qu'est-ce que le Best Diff ?` },
+    a: { pt: `O "Melhor Dif." (Best Diff) é a maior dificuldade de share que a tua máquina já encontrou. Quanto mais alto, mais perto (em termos de sorte) estiveste de encontrar um bloco a solo. É um recorde acumulado desde que o ASIC arrancou.`,
+         en: `"Best Diff" is the highest share difficulty your machine has ever found. The higher it is, the closer (in terms of luck) you have been to finding a solo block. It is a record that accumulates since the ASIC started.`,
+         es: `El "Mejor Dif." (Best Diff) es la mayor dificultad de share que tu máquina ha encontrado. Cuanto más alto, más cerca (en términos de suerte) has estado de encontrar un bloque en solitario. Es un récord acumulado desde que el ASIC arrancó.`,
+         fr: `Le « Best Diff » est la plus grande difficulté de share que ta machine ait jamais trouvée. Plus il est élevé, plus tu as été proche (en termes de chance) de trouver un bloc en solo. C'est un record cumulé depuis le démarrage de l'ASIC.` } },
+  { key: 'eficiencia', kw: ['eficiencia','eficiência','j/th','joules','efficiency'],
+    q: { pt: `O que significa Eficiência (J/Th)?`, en: `What does Efficiency (J/Th) mean?`, es: `¿Qué significa Eficiencia (J/Th)?`, fr: `Que signifie l'Efficacité (J/Th) ?` },
+    a: { pt: `A eficiência em J/Th indica quantos Joules de energia a máquina gasta por cada Terahash de poder de processamento. Quanto MENOR o valor, mais eficiente é o ASIC (menos energia gasta pelo mesmo hashrate).`,
+         en: `Efficiency in J/Th indicates how many Joules of energy the machine spends per Terahash of processing power. The LOWER the value, the more efficient the ASIC is (less energy spent for the same hashrate).`,
+         es: `La eficiencia en J/Th indica cuántos Julios de energía gasta la máquina por cada Terahash de potencia de procesamiento. Cuanto MENOR sea el valor, más eficiente es el ASIC (menos energía gastada por el mismo hashrate).`,
+         fr: `L'efficacité en J/Th indique combien de Joules d'énergie la machine consomme par Terahash de puissance de traitement. Plus la valeur est BASSE, plus l'ASIC est efficace (moins d'énergie dépensée pour le même hashrate).` } },
+  { key: 'hashrate', kw: ['hashrate','hash rate','th/s'],
+    q: { pt: `O que é o Hashrate?`, en: `What is Hashrate?`, es: `¿Qué es el Hashrate?`, fr: `Qu'est-ce que le Hashrate ?` },
+    a: { pt: `O Hashrate mede quantos cálculos (hashes) o ASIC faz por segundo, normalmente em TH/s (terahashes por segundo). Quanto mais alto, maior a tua parte do poder computacional da rede.`,
+         en: `Hashrate measures how many calculations (hashes) the ASIC performs per second, usually in TH/s (terahashes per second). The higher it is, the bigger your share of the network's computing power.`,
+         es: `El Hashrate mide cuántos cálculos (hashes) realiza el ASIC por segundo, normalmente en TH/s (terahashes por segundo). Cuanto más alto, mayor es tu parte del poder computacional de la red.`,
+         fr: `Le Hashrate mesure combien de calculs (hashes) l'ASIC effectue par seconde, généralement en TH/s (térahashes par seconde). Plus il est élevé, plus grande est ta part de puissance de calcul du réseau.` } },
+  { key: 'frequencia_undervolt', kw: ['frequencia','frequência','undervolt','corevoltage','mhz','voltagem','voltage','frequency'],
+    q: { pt: `Como funciona a Frequência e o Undervolt?`, en: `How do Frequency and Undervolt work?`, es: `¿Cómo funcionan la Frecuencia y el Undervolt?`, fr: `Comment fonctionnent la Fréquence et l'Undervolt ?` },
+    a: { pt: `A Frequência (MHz) e a Voltagem do núcleo (coreVoltage) controlam o desempenho do chip ASIC: mais frequência = mais hashrate mas mais calor e consumo. O undervolt reduz a voltagem para poupar energia e baixar temperatura, geralmente à custa de algum hashrate.`,
+         en: `Frequency (MHz) and core voltage (coreVoltage) control the ASIC chip's performance: more frequency means more hashrate but more heat and consumption. Undervolting lowers the voltage to save energy and reduce temperature, usually at the cost of some hashrate.`,
+         es: `La Frecuencia (MHz) y el Voltaje del núcleo (coreVoltage) controlan el rendimiento del chip ASIC: más frecuencia significa más hashrate pero más calor y consumo. El undervolt reduce el voltaje para ahorrar energía y bajar la temperatura, normalmente a costa de algo de hashrate.`,
+         fr: `La Fréquence (MHz) et la Tension du cœur (coreVoltage) contrôlent la performance de la puce ASIC : plus de fréquence signifie plus de hashrate mais plus de chaleur et de consommation. L'undervolt réduit la tension pour économiser l'énergie et baisser la température, généralement au prix d'un peu de hashrate.` } },
+  { key: 'perfis_energia', kw: ['perfil de energia','perfis de energia','mqtt','home assistant','solar','tarifa','power profile'],
+    q: { pt: `O que são os Perfis de Energia?`, en: `What are Power Profiles?`, es: `¿Qué son los Perfiles de Energía?`, fr: `Que sont les Profils d'Énergie ?` },
+    a: { pt: `Os Perfis de Energia (separador "☀️ Perfis de Energia") ligam-se ao teu broker MQTT (ex: Home Assistant) para ler produção solar e tarifa elétrica. Com base nesses valores, o painel SUGERE um perfil de frequência/undervolt mais adequado — mas a aplicação é sempre manual, nunca automática.`,
+         en: `Power Profiles (the "Power Profiles" tab) connect to your MQTT broker (e.g. Home Assistant) to read solar production and electricity rate. Based on those values, the dashboard SUGGESTS a more suitable frequency/undervolt profile - but applying it is always manual, never automatic.`,
+         es: `Los Perfiles de Energía (pestaña "Perfiles de Energía") se conectan a tu broker MQTT (ej: Home Assistant) para leer la producción solar y la tarifa eléctrica. Según esos valores, el panel SUGIERE un perfil de frecuencia/undervolt más adecuado - pero la aplicación siempre es manual, nunca automática.`,
+         fr: `Les Profils d'Énergie (onglet « Profils d'Énergie ») se connectent à ton broker MQTT (ex : Home Assistant) pour lire la production solaire et le tarif électrique. En fonction de ces valeurs, le panneau SUGGÈRE un profil de fréquence/undervolt plus adapté - mais l'application est toujours manuelle, jamais automatique.` } },
+  { key: 'adicionar_maquina_faq', kw: ['adicionar maquina','adicionar máquina','registar maquina','novo asic','ip','add machine'],
+    q: { pt: `Como adiciono uma máquina?`, en: `How do I add a machine?`, es: `¿Cómo añado una máquina?`, fr: `Comment ajouter une machine ?` },
+    a: { pt: `No painel "Dashboard Geral", usa os campos "Apelido" e "IP" no topo do painel de Máquinas e clica em "Adicionar máquina". É preciso o servidor local (app.py / nerdqaxe_server.py) estar a correr em localhost:8765.`,
+         en: `In the "General Dashboard" panel, use the "Nickname" and "IP" fields at the top of the Machines panel and click "Add machine". The local server (app.py / nerdqaxe_server.py) needs to be running on localhost:8765.`,
+         es: `En el panel "Panel General", usa los campos "Apodo" e "IP" en la parte superior del panel de Máquinas y haz clic en "Añadir máquina". Es necesario que el servidor local (app.py / nerdqaxe_server.py) esté ejecutándose en localhost:8765.`,
+         fr: `Dans le panneau « Tableau de Bord Général », utilise les champs « Surnom » et « IP » en haut du panneau des Machines et clique sur « Ajouter une machine ». Le serveur local (app.py / nerdqaxe_server.py) doit être actif sur localhost:8765.` } },
+  { key: 'aceites_rejeitadas', kw: ['aceites','rejeitadas','shares','accepted','rejected'],
+    q: { pt: `O que são Aceites/Rejeitadas?`, en: `What are Accepted/Rejected shares?`, es: `¿Qué son Aceptadas/Rechazadas?`, fr: `Que sont les shares Acceptées/Rejetées ?` },
+    a: { pt: `São o número de shares (unidades de trabalho) que a tua pool aceitou vs. rejeitou. Uma taxa de rejeição alta pode indicar problemas de rede, latência ou instabilidade na ligação à pool.`,
+         en: `These are the number of shares (units of work) your pool has accepted vs. rejected. A high rejection rate can indicate network problems, latency, or instability in the pool connection.`,
+         es: `Son el número de shares (unidades de trabajo) que tu pool ha aceptado frente a las que ha rechazado. Una tasa de rechazo alta puede indicar problemas de red, latencia o inestabilidad en la conexión al pool.`,
+         fr: `C'est le nombre de shares (unités de travail) que ton pool a acceptées vs rejetées. Un taux de rejet élevé peut indiquer des problèmes réseau, de latence ou une instabilité de la connexion au pool.` } },
+  { key: 'distribuicao_hashrate_faq', kw: ['distribuicao','distribuição','donut','distribution'],
+    q: { pt: `O que é a Distribuição de Hashrate?`, en: `What is the Hashrate Distribution?`, es: `¿Qué es la Distribución de Hashrate?`, fr: `Qu'est-ce que la Répartition du Hashrate ?` },
+    a: { pt: `É um gráfico que mostra a fatia de hashrate total que cada máquina está a contribuir, para veres rapidamente se alguma está com desempenho abaixo do esperado.`,
+         en: `It is a chart that shows the slice of total hashrate each machine is contributing, so you can quickly see if any of them is underperforming.`,
+         es: `Es un gráfico que muestra la parte del hashrate total que aporta cada máquina, para que veas rápidamente si alguna tiene un rendimiento por debajo de lo esperado.`,
+         fr: `C'est un graphique qui montre la part du hashrate total que chaque machine apporte, pour repérer rapidement si l'une d'elles est sous-performante.` } },
+  { key: 'latencia_faq', kw: ['latencia','latência','ping','perda','latency'],
+    q: { pt: `O que é a Latência / Ping ao Pool?`, en: `What is Latency / Pool Ping?`, es: `¿Qué es la Latencia / Ping al Pool?`, fr: `Qu'est-ce que la Latence / le Ping au Pool ?` },
+    a: { pt: `"Ping ao Pool" mede o tempo de resposta entre a tua máquina e o servidor da pool de mineração — valores altos ou perda de pacotes podem causar mais shares rejeitadas. "Latência Local" mede a resposta do próprio ASIC na tua rede.`,
+         en: `"Pool Ping" measures the response time between your machine and the mining pool server - high values or packet loss can cause more rejected shares. "Local Latency" measures the response of the ASIC itself on your network.`,
+         es: `"Ping al Pool" mide el tiempo de respuesta entre tu máquina y el servidor del pool de minería - valores altos o pérdida de paquetes pueden causar más shares rechazadas. "Latencia Local" mide la respuesta del propio ASIC en tu red.`,
+         fr: `« Ping au Pool » mesure le temps de réponse entre ta machine et le serveur du pool de minage - des valeurs élevées ou une perte de paquets peuvent causer plus de shares rejetées. « Latence Locale » mesure la réponse de l'ASIC lui-même sur ton réseau.` } },
+  { key: 'saude_termica_faq', kw: ['termica','térmica','temperatura','saude','saúde','sobreaquecimento','thermal'],
+    q: { pt: `O que faz a saúde térmica preditiva?`, en: `What does predictive thermal health do?`, es: `¿Qué hace la salud térmica predictiva?`, fr: `À quoi sert la santé thermique prédictive ?` },
+    a: { pt: `A funcionalidade de saúde térmica acompanha o histórico de temperatura de cada máquina e tenta prever tendências de sobreaquecimento antes que aconteçam, permitindo agir com antecedência (ex: aplicar undervolt).`,
+         en: `The thermal health feature tracks each machine's temperature history and tries to predict overheating trends before they happen, letting you act ahead of time (e.g. applying undervolt).`,
+         es: `La función de salud térmica sigue el historial de temperatura de cada máquina e intenta predecir tendencias de sobrecalentamiento antes de que ocurran, permitiéndote actuar con antelación (ej: aplicar undervolt).`,
+         fr: `La fonctionnalité de santé thermique suit l'historique de température de chaque machine et essaie de prédire les tendances de surchauffe avant qu'elles ne surviennent, te permettant d'agir à l'avance (ex : appliquer un undervolt).` } },
+  { key: 'simulador_faq', kw: ['simulador','bloco','probabilidade','ajuste de dificuldade','simulator'],
+    q: { pt: `Como funciona o simulador de bloco?`, en: `How does the block simulator work?`, es: `¿Cómo funciona el simulador de bloque?`, fr: `Comment fonctionne le simulateur de bloc ?` },
+    a: { pt: `O simulador cruza o teu hashrate atual com os dados em tempo real da rede Bitcoin para estimar o impacto do próximo ajuste de dificuldade (a cada 2016 blocos) na tua probabilidade teórica de encontrar um bloco a solo.`,
+         en: `The simulator combines your current hashrate with real-time Bitcoin network data to estimate the impact of the next difficulty adjustment (every 2016 blocks) on your theoretical probability of finding a solo block.`,
+         es: `El simulador cruza tu hashrate actual con los datos en tiempo real de la red Bitcoin para estimar el impacto del próximo ajuste de dificultad (cada 2016 bloques) en tu probabilidad teórica de encontrar un bloque en solitario.`,
+         fr: `Le simulateur croise ton hashrate actuel avec les données en temps réel du réseau Bitcoin pour estimer l'impact du prochain ajustement de difficulté (tous les 2016 blocs) sur ta probabilité théorique de trouver un bloc en solo.` } },
+  { key: 'configuracao_faq', kw: ['configuracao','configuração','ficheiro','power_profiles','gravar','guardar','config file'],
+    q: { pt: `Onde fica guardada a configuração?`, en: `Where is the configuration stored?`, es: `¿Dónde se guarda la configuración?`, fr: `Où est stockée la configuration ?` },
+    a: { pt: `A configuração dos Perfis de Energia fica em power_profiles.json, ao lado do executável ou do app.py. As máquinas registadas e outras preferências ficam guardadas no localStorage do teu browser.`,
+         en: `The Power Profiles configuration is stored in power_profiles.json, next to the executable or app.py. Registered machines and other preferences are stored in your browser's localStorage.`,
+         es: `La configuración de los Perfiles de Energía se guarda en power_profiles.json, junto al ejecutable o a app.py. Las máquinas registradas y otras preferencias se guardan en el localStorage de tu navegador.`,
+         fr: `La configuration des Profils d'Énergie est stockée dans power_profiles.json, à côté de l'exécutable ou de app.py. Les machines enregistrées et les autres préférences sont stockées dans le localStorage de ton navigateur.` } },
 ];
 
-const AI_GREETING = 'Olá! Eu sou o assistente do Centro de Comando. Pergunta-me sobre hashrate, eficiência, perfis de energia, MQTT ou qualquer outra funcionalidade do painel.';
-const AI_FALLBACK = 'Ainda não sei responder a isso. Tenta perguntar sobre: hashrate, eficiência, best diff, perfis de energia, undervolt/frequência, ou como adicionar uma máquina.';
+function getAiGreeting() { return t('ai_greeting'); }
+function getAiFallback() { return t('ai_fallback'); }
 
 function aiNormalize(str){
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -4624,7 +5156,7 @@ function aiFindAnswer(question){
     }
     if(score > bestScore){ bestScore = score; best = entry; }
   }
-  return best ? best.a : AI_FALLBACK;
+  return best ? (best.a[currentLang] || best.a.pt) : getAiFallback();
 }
 
 function aiAppendMsg(text, who){
@@ -4646,19 +5178,21 @@ function aiAsk(question){
 
 function aiRenderSuggestions(){
   const box = $('aiSuggestions');
+  if(!box) return;
   box.innerHTML = '';
   const sample = AI_KB.slice(0, 4);
   sample.forEach(entry => {
     const btn = document.createElement('button');
     btn.className = 'ai-chip';
-    btn.textContent = entry.q;
-    btn.onclick = () => aiAsk(entry.q);
+    const question = entry.q[currentLang] || entry.q.pt;
+    btn.textContent = question;
+    btn.onclick = () => aiAsk(question);
     box.appendChild(btn);
   });
 }
 
 function initAiAgent(){
-  aiAppendMsg(AI_GREETING, 'bot');
+  aiAppendMsg(getAiGreeting(), 'bot');
   aiRenderSuggestions();
   $('aiSendBtn').onclick = () => {
     const input = $('aiInput');
@@ -4689,6 +5223,7 @@ $('clearLogBtn').onclick = () => {
 };
 
 loadTheme();
+loadLanguage();
 (async () => {
   await loadDevices();
   loadNotifications();
@@ -4702,7 +5237,7 @@ loadTheme();
   renderAll();
   checkForUpdate();
 })();
-logEvent('Painel iniciado com alertas sonoros.', 'new', 'Sistema', 'sys');
+logEvent(t('painel_iniciado_com_alertas'), 'new', 'Sistema', 'sys');
 // pollAll() e pollPowerStatus() já não têm setInterval próprio aqui - são
 // despoletados pelo Web Worker do heartbeat (ver abaixo), para não
 // sofrerem o throttling de abas em segundo plano.
@@ -4790,6 +5325,7 @@ window.addEventListener('pagehide', (event) => {
     const res = await fetch('/api/version');
     const data = await res.json();
     const tag = $('versionTag');
+    if (data.version) appVersion = data.version;
     if (tag && data.version) tag.textContent = `· v${data.version}`;
   } catch (e) {}
 })();
@@ -4799,10 +5335,10 @@ window.addEventListener('pagehide', (event) => {
 // deixando o servidor a correr até 90s em segundo plano). Este botão
 // chama /api/close diretamente, sem depender do evento pagehide.
 function shutdownServer() {
-  if (!confirm('Desligar o Centro de Comando por completo?\n\nO servidor local e a monitorização em segundo plano vão parar. Só precisas de o voltar a abrir para retomar.')) return;
+  if (!confirm(t('confirm_desligar_servidor'))) return;
   if (_heartbeatWorker) _heartbeatWorker.terminate(); // para não cancelar o próprio pedido de fecho
   fetch('/api/close', { method: 'POST' }).catch(() => {});
-  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:JetBrains Mono,monospace;color:var(--muted);font-size:14px;">Centro de Comando desligado. Podes fechar esta janela.</div>';
+  document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:JetBrains Mono,monospace;color:var(--muted);font-size:14px;">${t('servidor_desligado_msg')}</div>`;
 }
 </script>
 </body>
