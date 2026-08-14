@@ -37,7 +37,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.0.4"
+APP_VERSION = "3.1.0"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -1105,7 +1105,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     f"http://{target_ip}/api/system",
                     data=json.dumps(payload).encode('utf-8'),
                     headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Content-Type': 'application/json'},
-                    method='POST'
+                    method='PATCH'
                 )
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     resp.read()
@@ -1120,6 +1120,41 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+            return
+
+        if path == '/api/restart-machine':
+            target_ip = (body.get("ip") or "").strip()
+            if not target_ip:
+                self.send_response(400)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "IP em falta"}).encode('utf-8'))
+                return
+
+            try:
+                req = urllib.request.Request(
+                    f"http://{target_ip}/api/system/restart",
+                    data=b'',
+                    headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Content-Type': 'application/json'},
+                    method='POST'
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    resp.read()
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
+            except Exception as e:
+                # A máquina reinicia mesmo assim assim que recebe o pedido;
+                # timeouts/conexão cortada a meio da resposta são normais
+                # (o dispositivo desliga o Wi-Fi antes de conseguir responder).
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "note": str(e)}).encode('utf-8'))
             return
 
         self.send_response(404)
