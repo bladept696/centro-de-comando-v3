@@ -397,7 +397,65 @@
   }
   .config button:hover{background:#0f3a2c;}
   .config button.ghost{background:transparent; color:var(--muted); border:1px solid var(--line-strong);}
+  .config button.cyan-outline{background:transparent; color:var(--cyan); border:1px solid #4fd6ff55;}
+  .config button.cyan-outline:hover{background:#0d2530;}
+  .config button:disabled{opacity:.5; cursor:not-allowed;}
   .hint{font-size:10px; color:var(--muted-2);}
+
+  .scan-modal-overlay{
+    position:fixed; inset:0; z-index:10000; background:#020608cc;
+    display:none; align-items:center; justify-content:center; padding:20px;
+    backdrop-filter: blur(2px);
+  }
+  .scan-modal-overlay.open{display:flex;}
+  .scan-modal{
+    background:var(--panel); border:1px solid var(--line-strong); border-radius:12px;
+    width:100%; max-width:520px; max-height:80vh; display:flex; flex-direction:column;
+    box-shadow:0 20px 60px #000a;
+  }
+  .scan-modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; border-bottom:1px solid var(--line);
+  }
+  .scan-modal-header .title{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--text); font-weight:600;}
+  .scan-modal-close{
+    background:transparent; border:none; color:var(--muted); font-size:18px; cursor:pointer; line-height:1;
+    padding:2px 6px; border-radius:6px;
+  }
+  .scan-modal-close:hover{color:var(--text); background:var(--panel-2);}
+  .scan-modal-body{padding:14px 18px; overflow-y:auto; flex:1;}
+  .scan-modal-footer{
+    padding:12px 18px; border-top:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .scan-status{font-size:11px; color:var(--muted);}
+  .scan-spinner{
+    display:inline-block; width:12px; height:12px; border-radius:50%;
+    border:2px solid var(--line-strong); border-top-color:var(--cyan);
+    animation: scan-spin 0.8s linear infinite; vertical-align:middle; margin-right:6px;
+  }
+  @keyframes scan-spin{ to { transform:rotate(360deg); } }
+  .scan-device-list{display:flex; flex-direction:column; gap:8px;}
+  .scan-device-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+  }
+  .scan-device-info{display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .scan-device-name{font-size:12px; color:var(--text); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .scan-device-meta{font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .scan-device-added{font-size:10px; color:var(--green); border:1px solid var(--green-dim); border-radius:6px; padding:5px 10px; white-space:nowrap;}
+  .scan-empty, .scan-error{font-size:11px; color:var(--muted); text-align:center; padding:24px 8px;}
+  .scan-error{color:var(--red);}
+  .scan-addall-btn{
+    background:#0d2b22; color:var(--green); border:1px solid #21ffb055;
+    font-family:inherit; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer;
+  }
+  .scan-addall-btn:hover{background:#0f3a2c;}
+  .scan-device-add-btn{
+    background:transparent; color:var(--cyan); border:1px solid #4fd6ff55;
+    font-family:inherit; font-size:10px; padding:5px 10px; border-radius:6px; cursor:pointer; white-space:nowrap;
+  }
+  .scan-device-add-btn:hover{background:#0d2530;}
 
   .ai-agent-panel{
     display:flex; flex-direction:column;
@@ -562,6 +620,47 @@
   .ping-detail-stats{display:flex; gap:22px; margin-top:10px; font-size:11px; color:var(--muted); flex-wrap:wrap;}
   .ping-detail-stats b{color:var(--cyan); font-family:'Space Grotesk',sans-serif; font-size:13px;}
   .ping-empty{text-align:center; color:var(--muted); font-size:12px; padding:30px;}
+
+  .oc-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px;
+  }
+  .oc-card{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:14px; transition:border-color .2s ease;
+  }
+  .oc-card.offline{border-left:3px solid var(--red); opacity:0.85;}
+  .oc-card-head{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    border-bottom:1px solid var(--line); padding-bottom:9px; margin-bottom:12px;
+  }
+  .oc-card .name{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--text);}
+  .oc-card .ip{font-size:10px; color:var(--muted); margin-top:2px;}
+  .oc-card-current{font-size:10px; color:var(--muted); text-align:right;}
+  .oc-card-current b{color:var(--cyan); font-family:'Space Grotesk',sans-serif;}
+  .oc-field-row{display:flex; gap:10px; margin-bottom:10px;}
+  .oc-field{flex:1; display:flex; flex-direction:column; gap:4px;}
+  .oc-field label{font-size:9px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase;}
+  .oc-field input{
+    background:#081119; border:1px solid var(--line-strong); color:var(--text);
+    font-family:inherit; font-size:12px; padding:7px 9px; border-radius:6px; outline:none; width:100%;
+  }
+  .oc-field input:focus{border-color:var(--cyan);}
+  .oc-card-actions{display:flex; gap:8px; margin-top:4px;}
+  .oc-btn-save{
+    flex:1; background:#0d2b22; color:var(--green); border:1px solid #21ffb055;
+    font-family:inherit; font-size:11px; padding:8px 10px; border-radius:6px; cursor:pointer;
+  }
+  .oc-btn-save:hover{background:#0f3a2c;}
+  .oc-btn-restart{
+    flex:1; background:#2b1a0d; color:var(--amber); border:1px solid #ffb02055;
+    font-family:inherit; font-size:11px; padding:8px 10px; border-radius:6px; cursor:pointer;
+  }
+  .oc-btn-restart:hover{background:#3a250f;}
+  .oc-btn-save:disabled, .oc-btn-restart:disabled{opacity:.5; cursor:not-allowed;}
+  .oc-card-status{font-size:10px; margin-top:8px; min-height:14px;}
+  .oc-card-status.ok{color:var(--green);}
+  .oc-card-status.err{color:var(--red);}
+  .oc-empty{text-align:center; color:var(--muted); font-size:12px; padding:30px;}
 
   .protection-config-row {
     display: flex;
@@ -1762,6 +1861,7 @@
       </button>
       <button class="tab-btn" onclick="switchTab('simulator', this)"><span data-i18n="simulador">⏱️ Simulador</span></button>
       <button class="tab-btn" onclick="switchTab('latency', this)"><span data-i18n="latencia">📡 Latência</span></button>
+      <button class="tab-btn" onclick="switchTab('oc', this)"><span data-i18n="overclock">🔧 OC</span></button>
       <button class="tab-btn" onclick="switchTab('thermal', this)">
         <span data-i18n="saude_termica">🧬 Saúde Térmica</span>
         <span class="badge-counter" id="thermalBadge" style="display:none;">0</span>
@@ -1868,6 +1968,7 @@
             <input class="name" id="nameInput" placeholder="Apelido (ex: Máquina 01)" data-i18n-placeholder="ph_apelido_ex_maquina_01">
             <input class="ip" id="ipInput" placeholder="IP (ex: 192.168.1.38)">
             <button id="addBtn"><span data-i18n="adicionar_maquina">Adicionar máquina</span></button>
+            <button id="scanBtn" class="cyan-outline">🔍 <span data-i18n="localizar_maquinas_na_rede">Localizar máquinas na rede</span></button>
           </div>
           <div class="hint" style="margin-bottom:12px;"><span data-i18n="requer_o_servidor_local_nerdqaxe_server_">Requer o servidor local (`nerdqaxe_server.py`) a correr em localhost:8765.</span></div>
           <div class="machine-grid" id="machineGrid"></div>
@@ -2221,6 +2322,16 @@
     </div>
   </div>
 
+  <div id="tab-oc" class="tab-content">
+    <div class="blocks-container">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-title"><span data-i18n="overclock_undervolt">🔧 Overclock / Undervolt das Máquinas</span></div>
+        <div class="hint" style="margin-bottom:12px;" data-i18n="oc_hint">Ajusta a frequência (MHz) e a voltagem do núcleo (mV) de cada máquina diretamente a partir daqui. "Guardar" aplica as novas definições; "Reiniciar" reinicia a máquina para garantir que ficam ativas. Valores muito agressivos podem causar instabilidade ou sobreaquecimento — ajusta com cuidado e observa a temperatura depois de aplicar.</div>
+      </div>
+      <div class="oc-grid" id="ocGrid"></div>
+    </div>
+  </div>
+
   <div id="tab-power" class="tab-content">
     <div class="blocks-container">
       <div class="panel" style="margin-bottom:18px;">
@@ -2363,6 +2474,22 @@
   </div>
 </div>
 
+<div class="scan-modal-overlay" id="scanModalOverlay">
+  <div class="scan-modal">
+    <div class="scan-modal-header">
+      <span class="title" data-i18n="localizar_maquinas_na_rede">Localizar máquinas na rede</span>
+      <button class="scan-modal-close" id="scanModalCloseBtn">✕</button>
+    </div>
+    <div class="scan-modal-body" id="scanModalBody">
+      <div class="scan-empty" data-i18n="a_iniciar_scan">A iniciar scan...</div>
+    </div>
+    <div class="scan-modal-footer">
+      <span class="scan-status" id="scanStatus"></span>
+      <button id="scanAddAllBtn" class="scan-addall-btn" style="display:none;"><span data-i18n="adicionar_todas">Adicionar todas</span></button>
+    </div>
+  </div>
+</div>
+
 <script>
 // --- Dicionário de traduções (PT/EN/ES/FR) ---
 const I18N_DICT = {
@@ -2373,6 +2500,29 @@ const I18N_DICT = {
   "a_carregar_blocos": { pt: `A carregar blocos...`, en: `Loading blocks...`, es: `Cargando bloques...`, fr: `Chargement des blocs...` },
   "apoiar_o_desenvolvimento": { pt: `APOIAR O DESENVOLVIMENTO`, en: `SUPPORT DEVELOPMENT`, es: `APOYAR EL DESARROLLO`, fr: `SOUTENIR LE DÉVELOPPEMENT` },
   "adicionar_maquina": { pt: `Adicionar máquina`, en: `Add machine`, es: `Añadir máquina`, fr: `Ajouter une machine` },
+  "localizar_maquinas_na_rede": { pt: `Localizar máquinas na rede`, en: `Find machines on network`, es: `Buscar máquinas en la red`, fr: `Trouver des machines sur le réseau` },
+  "a_iniciar_scan": { pt: `A iniciar scan...`, en: `Starting scan...`, es: `Iniciando escaneo...`, fr: `Démarrage du scan...` },
+  "a_procurar_maquinas_na_rede": { pt: `A procurar máquinas na rede local...`, en: `Searching for machines on the local network...`, es: `Buscando máquinas en la red local...`, fr: `Recherche de machines sur le réseau local...` },
+  "erro_ao_procurar_maquinas_na_rede": { pt: `Não foi possível concluir o scan da rede. Confirma que o servidor local está a correr.`, en: `Could not complete the network scan. Make sure the local server is running.`, es: `No se pudo completar el escaneo de la red. Confirma que el servidor local está en ejecución.`, fr: `Impossible de terminer le scan réseau. Vérifie que le serveur local est en cours d'exécution.` },
+  "nenhuma_maquina_encontrada_na_rede": { pt: `Nenhuma máquina encontrada na rede local.`, en: `No machines found on the local network.`, es: `No se encontraron máquinas en la red local.`, fr: `Aucune machine trouvée sur le réseau local.` },
+  "adicionar_todas": { pt: `Adicionar todas`, en: `Add all`, es: `Añadir todas`, fr: `Tout ajouter` },
+  "overclock": { pt: `🔧 OC`, en: `🔧 OC`, es: `🔧 OC`, fr: `🔧 OC` },
+  "overclock_undervolt": { pt: `🔧 Overclock / Undervolt das Máquinas`, en: `🔧 Machine Overclock / Undervolt`, es: `🔧 Overclock / Undervolt de las Máquinas`, fr: `🔧 Overclock / Undervolt des Machines` },
+  "oc_hint": { pt: `Ajusta a frequência (MHz) e a voltagem do núcleo (mV) de cada máquina diretamente a partir daqui. "Guardar" aplica as novas definições; "Reiniciar" reinicia a máquina para garantir que ficam ativas. Valores muito agressivos podem causar instabilidade ou sobreaquecimento — ajusta com cuidado e observa a temperatura depois de aplicar.`, en: `Adjust each machine's frequency (MHz) and core voltage (mV) directly from here. "Save" applies the new settings; "Restart" reboots the machine to make sure they take effect. Overly aggressive values can cause instability or overheating — adjust carefully and watch the temperature afterwards.`, es: `Ajusta la frecuencia (MHz) y el voltaje del núcleo (mV) de cada máquina directamente desde aquí. "Guardar" aplica los nuevos ajustes; "Reiniciar" reinicia la máquina para asegurar que se activen. Valores muy agresivos pueden causar inestabilidad o sobrecalentamiento — ajusta con cuidado y observa la temperatura después.`, fr: `Ajuste la fréquence (MHz) et la tension du cœur (mV) de chaque machine directement ici. "Enregistrer" applique les nouveaux réglages ; "Redémarrer" relance la machine pour qu'ils prennent effet. Des valeurs trop agressives peuvent causer instabilité ou surchauffe — ajuste avec précaution et surveille la température ensuite.` },
+  "atual_freq": { pt: `atual:`, en: `current:`, es: `actual:`, fr: `actuel :` },
+  "atual_volt": { pt: `atual:`, en: `current:`, es: `actual:`, fr: `actuel :` },
+  "frequencia_mhz": { pt: `Frequência (MHz)`, en: `Frequency (MHz)`, es: `Frecuencia (MHz)`, fr: `Fréquence (MHz)` },
+  "corevoltage_mv": { pt: `CoreVoltage (mV)`, en: `Core Voltage (mV)`, es: `Voltaje de núcleo (mV)`, fr: `Tension du cœur (mV)` },
+  "guardar": { pt: `Guardar`, en: `Save`, es: `Guardar`, fr: `Enregistrer` },
+  "reiniciar": { pt: `Reiniciar`, en: `Restart`, es: `Reiniciar`, fr: `Redémarrer` },
+  "indica_pelo_menos_um_valor": { pt: `Indica pelo menos um valor (frequência ou coreVoltage).`, en: `Enter at least one value (frequency or core voltage).`, es: `Indica al menos un valor (frecuencia o voltaje de núcleo).`, fr: `Indique au moins une valeur (fréquence ou tension du cœur).` },
+  "a_guardar": { pt: `A guardar`, en: `Saving`, es: `Guardando`, fr: `Enregistrement` },
+  "definicoes_aplicadas": { pt: `✓ Definições aplicadas.`, en: `✓ Settings applied.`, es: `✓ Ajustes aplicados.`, fr: `✓ Réglages appliqués.` },
+  "erro_ao_aplicar_definicoes": { pt: `✕ Erro ao aplicar definições. Confirma o IP e se a máquina está online.`, en: `✕ Error applying settings. Check the IP and whether the machine is online.`, es: `✕ Error al aplicar los ajustes. Confirma el IP y si la máquina está en línea.`, fr: `✕ Erreur lors de l'application des réglages. Vérifie l'IP et si la machine est en ligne.` },
+  "a_reiniciar": { pt: `A reiniciar`, en: `Restarting`, es: `Reiniciando`, fr: `Redémarrage` },
+  "maquina_a_reiniciar": { pt: `✓ Máquina a reiniciar...`, en: `✓ Machine restarting...`, es: `✓ Máquina reiniciándose...`, fr: `✓ Machine en redémarrage...` },
+  "erro_ao_reiniciar": { pt: `✕ Erro ao reiniciar. Confirma o IP e se a máquina está online.`, en: `✕ Error restarting. Check the IP and whether the machine is online.`, es: `✕ Error al reiniciar. Confirma el IP y si la máquina está en línea.`, fr: `✕ Erreur lors du redémarrage. Vérifie l'IP et si la machine est en ligne.` },
+  "nenhuma_maquina_registada_dashboard": { pt: `Nenhuma máquina registada. Adiciona uma máquina no separador "Dashboard Geral".`, en: `No machine registered. Add a machine in the "General Dashboard" tab.`, es: `No hay ninguna máquina registrada. Añade una máquina en la pestaña "Panel General".`, fr: `Aucune machine enregistrée. Ajoute une machine dans l'onglet "Tableau de Bord Général".` },
   "ainda_nao_existem_notificacoes_registada": { pt: `Ainda não existem notificações registadas.`, en: `No notifications recorded yet.`, es: `Aún no hay notificaciones registradas.`, fr: `Aucune notification enregistrée pour l'instant.` },
   "assinatura_termica_ventoinha_por_th_s": { pt: `Assinatura Térmica (ventoinha por TH/s) —`, en: `Thermal Signature (fan per TH/s) —`, es: `Firma Térmica (ventilador por TH/s) —`, fr: `Signature Thermique (ventilateur par TH/s) —` },
   "atual": { pt: `Atual:`, en: `Current:`, es: `Actual:`, fr: `Actuel :` },
@@ -2777,6 +2927,7 @@ const TAB_LABEL_KEYS = {
   simulator: 'simulador',
   latency: 'latencia',
   thermal: 'saude_termica',
+  oc: 'overclock',
   donate: 'apoiar_doar',
   supporters: 'apoiantes',
   support: 'suporte'
@@ -2827,6 +2978,9 @@ function switchTab(tabName, btnEl) {
   }
   if(tabName === 'thermal') {
     renderThermalTab();
+  }
+  if(tabName === 'oc') {
+    renderOcTab();
   }
   if(tabName === 'support') {
     renderSupportDiagBox();
@@ -3968,6 +4122,121 @@ function drawPingChart(svgId, vals){
   };
 }
 
+function renderOcTab(){
+  const grid = $('ocGrid');
+  if(!grid) return;
+
+  if(!devices.length){
+    grid.innerHTML = '<div class="oc-empty" data-i18n="nenhuma_maquina_registada_dashboard">Nenhuma máquina registada. Adiciona uma máquina no separador "Dashboard Geral".</div>';
+    if(typeof applyTranslations === 'function') applyTranslations();
+    return;
+  }
+
+  grid.innerHTML = '';
+  devices.forEach(dev => {
+    const r = readings[dev.id];
+    const online = !!(r && r.online);
+    const curFreq = r?.frequency ? `${r.frequency} MHz` : '—';
+    const curVolt = r?.coreVoltage != null ? `${r.coreVoltage} mV` : '—';
+
+    const card = document.createElement('div');
+    card.className = 'oc-card' + (online ? '' : ' offline');
+    card.innerHTML = `
+      <div class="oc-card-head">
+        <div>
+          <div class="name">${escapeHtml(dev.name)}</div>
+          <div class="ip">${escapeHtml(dev.ip)}</div>
+        </div>
+        <div class="oc-card-current">
+          <div><span data-i18n="atual_freq">atual:</span> <b>${curFreq}</b></div>
+          <div><span data-i18n="atual_volt">atual:</span> <b>${curVolt}</b></div>
+        </div>
+      </div>
+      <div class="oc-field-row">
+        <div class="oc-field">
+          <label data-i18n="frequencia_mhz">Frequência (MHz)</label>
+          <input type="number" class="oc-freq-input" placeholder="ex: 550" value="${r?.frequency ? r.frequency : ''}">
+        </div>
+        <div class="oc-field">
+          <label data-i18n="corevoltage_mv">CoreVoltage (mV)</label>
+          <input type="number" class="oc-volt-input" placeholder="ex: 1150" value="${r?.coreVoltage != null ? r.coreVoltage : ''}">
+        </div>
+      </div>
+      <div class="oc-card-actions">
+        <button class="oc-btn-save" data-i18n="guardar">Guardar</button>
+        <button class="oc-btn-restart" data-i18n="reiniciar">Reiniciar</button>
+      </div>
+      <div class="oc-card-status"></div>
+    `;
+
+    const freqInput = card.querySelector('.oc-freq-input');
+    const voltInput = card.querySelector('.oc-volt-input');
+    const saveBtn = card.querySelector('.oc-btn-save');
+    const restartBtn = card.querySelector('.oc-btn-restart');
+    const statusEl = card.querySelector('.oc-card-status');
+
+    saveBtn.onclick = async () => {
+      const freq = freqInput.value.trim();
+      const volt = voltInput.value.trim();
+      if(!freq && !volt){
+        statusEl.className = 'oc-card-status err';
+        statusEl.textContent = t('indica_pelo_menos_um_valor');
+        return;
+      }
+      saveBtn.disabled = true; restartBtn.disabled = true;
+      statusEl.className = 'oc-card-status';
+      statusEl.textContent = t('a_guardar') + '...';
+      const payload = { ip: dev.ip };
+      if(freq) payload.frequency = Number(freq);
+      if(volt) payload.coreVoltage = Number(volt);
+      try {
+        const resp = await fetch('/api/apply-profile', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if(!resp.ok || data.error) throw new Error(data.error || 'falha');
+        statusEl.className = 'oc-card-status ok';
+        statusEl.textContent = t('definicoes_aplicadas');
+        logEvent(`Novas definições OC aplicadas em "${dev.name}".`, 'edit', dev.name, dev.id);
+      } catch(e){
+        statusEl.className = 'oc-card-status err';
+        statusEl.textContent = t('erro_ao_aplicar_definicoes') + (e.message ? ` (${e.message})` : '');
+      } finally {
+        saveBtn.disabled = false; restartBtn.disabled = false;
+      }
+    };
+
+    restartBtn.onclick = async () => {
+      saveBtn.disabled = true; restartBtn.disabled = true;
+      statusEl.className = 'oc-card-status';
+      statusEl.textContent = t('a_reiniciar') + '...';
+      try {
+        const resp = await fetch('/api/restart-machine', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ ip: dev.ip })
+        });
+        const data = await resp.json();
+        if(!resp.ok || data.error) throw new Error(data.error || 'falha');
+        statusEl.className = 'oc-card-status ok';
+        statusEl.textContent = t('maquina_a_reiniciar');
+        logEvent(`Reinício enviado para "${dev.name}".`, 'edit', dev.name, dev.id);
+      } catch(e){
+        statusEl.className = 'oc-card-status err';
+        statusEl.textContent = t('erro_ao_reiniciar') + (e.message ? ` (${e.message})` : '');
+      } finally {
+        saveBtn.disabled = false; restartBtn.disabled = false;
+      }
+    };
+
+    grid.appendChild(card);
+  });
+
+  if(typeof applyTranslations === 'function') applyTranslations();
+}
+
 function renderThermalTab(){
   const grid = $('thermalGrid');
   if(!grid) return;
@@ -4558,6 +4827,7 @@ async function pollOneDevice(dev){
       fanSpeed: Number(fanVal) || 0,
       power: Number(powerVal) || 0,
       frequency: d.frequency ?? 0,
+      coreVoltage: d.coreVoltage ?? null,
       accepted: Number(acceptedVal) || 0,
       rejected: Number(rejectedVal) || 0,
       efficiency: Number(efficiencyVal) || 0,
@@ -5216,6 +5486,115 @@ $('addBtn').onclick = () => {
     $('nameInput').value = '';
   }
 };
+
+// --- Localizar máquinas na rede (scan de subrede) ---
+let scanInFlight = false;
+
+function openScanModal(){
+  $('scanModalOverlay').classList.add('open');
+  runNetworkScan();
+}
+
+function closeScanModal(){
+  $('scanModalOverlay').classList.remove('open');
+}
+
+async function runNetworkScan(){
+  if(scanInFlight) return;
+  scanInFlight = true;
+  const body = $('scanModalBody');
+  const status = $('scanStatus');
+  const addAllBtn = $('scanAddAllBtn');
+  addAllBtn.style.display = 'none';
+  body.innerHTML = `<div class="scan-empty"><span class="scan-spinner"></span><span data-i18n="a_procurar_maquinas_na_rede">A procurar máquinas na rede local...</span></div>`;
+  if(typeof applyTranslations === 'function') applyTranslations();
+  status.textContent = '';
+  $('scanBtn').disabled = true;
+
+  try {
+    const resp = await fetch('/api/scan');
+    if(!resp.ok) throw new Error('scan failed');
+    const data = await resp.json();
+    renderScanResults(data.devices || [], data.subnet || '');
+  } catch(e){
+    body.innerHTML = `<div class="scan-error" data-i18n="erro_ao_procurar_maquinas_na_rede">Não foi possível concluir o scan da rede. Confirma que o servidor local está a correr.</div>`;
+    if(typeof applyTranslations === 'function') applyTranslations();
+  } finally {
+    scanInFlight = false;
+    $('scanBtn').disabled = false;
+  }
+}
+
+function renderScanResults(found, subnet){
+  const body = $('scanModalBody');
+  const status = $('scanStatus');
+  const addAllBtn = $('scanAddAllBtn');
+  const existingIps = new Set(devices.map(d => d.ip));
+  const newOnes = found.filter(d => !existingIps.has(d.ip));
+
+  status.textContent = subnet ? `${subnet}.0/24` : '';
+
+  if(found.length === 0){
+    body.innerHTML = `<div class="scan-empty" data-i18n="nenhuma_maquina_encontrada_na_rede">Nenhuma máquina encontrada na rede local.</div>`;
+    if(typeof applyTranslations === 'function') applyTranslations();
+    addAllBtn.style.display = 'none';
+    return;
+  }
+
+  body.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'scan-device-list';
+
+  found.forEach(dev => {
+    const already = existingIps.has(dev.ip);
+    const row = document.createElement('div');
+    row.className = 'scan-device-row';
+    const meta = [dev.model, dev.protocol === 'cgminer' ? 'cgminer/LuxOS' : null].filter(Boolean).join(' · ');
+    row.innerHTML = `
+      <div class="scan-device-info">
+        <div class="scan-device-name">${escapeHtml(dev.hostname || dev.ip)}</div>
+        <div class="scan-device-meta">${escapeHtml(dev.ip)}${meta ? ' · ' + escapeHtml(meta) : ''}</div>
+      </div>
+    `;
+    if(already){
+      const tag = document.createElement('span');
+      tag.className = 'scan-device-added';
+      tag.textContent = '✓ já adicionada';
+      row.appendChild(tag);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'scan-device-add-btn';
+      btn.textContent = 'Adicionar';
+      btn.onclick = () => {
+        addDevice(dev.hostname && dev.hostname !== dev.ip ? dev.hostname : '', dev.ip);
+        existingIps.add(dev.ip);
+        renderScanResults(found, subnet);
+      };
+      row.appendChild(btn);
+    }
+    list.appendChild(row);
+  });
+
+  body.appendChild(list);
+  if(typeof applyTranslations === 'function') applyTranslations();
+  addAllBtn.style.display = newOnes.length > 0 ? 'inline-block' : 'none';
+  addAllBtn.onclick = () => {
+    newOnes.forEach(dev => {
+      addDevice(dev.hostname && dev.hostname !== dev.ip ? dev.hostname : '', dev.ip);
+    });
+    renderScanResults(found, subnet);
+  };
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+$('scanBtn').onclick = openScanModal;
+$('scanModalCloseBtn').onclick = closeScanModal;
+$('scanModalOverlay').addEventListener('click', (e) => {
+  if(e.target === $('scanModalOverlay')) closeScanModal();
+});
 
 $('clearLogBtn').onclick = () => { 
   $('eventLog').innerHTML = ''; 
