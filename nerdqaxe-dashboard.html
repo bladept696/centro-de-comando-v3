@@ -268,6 +268,81 @@
     overflow-y: auto;
   }
   .nav-menu.open .nav-menu-dropdown { display: flex; }
+
+  /* --- Modo Kiosk (ecrã grande / TV dedicada) --------------------------
+     Quando body.kiosk-active está presente: esconde tudo o que serve para
+     editar/navegar (nav, formulário de adicionar máquina, assistente,
+     botões de config) e aumenta o tamanho dos números principais para
+     serem lidos à distância. Um controlo flutuante (kioskFloatBar) fica
+     invisível por omissão e só aparece por breves segundos quando há
+     movimento do rato/toque, para o ecrã ficar limpo o resto do tempo. */
+  body.kiosk-active { padding: 0; }
+  body.kiosk-active .frame { max-width: none; border: none; border-radius: 0; }
+  body.kiosk-active .update-banner { display: none !important; }
+  body.kiosk-active header .header-actions > *:not(#kioskToggleBtn) { display: none !important; }
+  body.kiosk-active header { padding: 14px 26px; }
+  body.kiosk-active header h1 { font-size: 20px; }
+  body.kiosk-active .subtitle { font-size: 13px; }
+  body.kiosk-active .nav-menu { display: none !important; }
+  body.kiosk-active .blocks-toolbar .blocks-refresh-hint { display: none; }
+  body.kiosk-active #tab-dashboard .config,
+  body.kiosk-active #tab-dashboard .hint,
+  body.kiosk-active .ai-agent-panel,
+  body.kiosk-active #clearLogBtn {
+    display: none !important;
+  }
+  body.kiosk-active .gauge .value { font-size: 34px; }
+  body.kiosk-active .gauge .label { font-size: 11px; }
+  body.kiosk-active .gauge .unit { font-size: 12px; }
+  body.kiosk-active .panel-title { font-size: 14px; }
+  body.kiosk-active .machine-grid { gap: 14px; }
+  body.kiosk-active .chart-title { font-size: 14px; }
+
+  .kiosk-float-bar {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #0b1622ee;
+    border: 1px solid var(--line-strong);
+    border-radius: 30px;
+    padding: 8px 10px 8px 16px;
+    box-shadow: 0 14px 34px -10px #000c;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  body.kiosk-active .kiosk-float-bar.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .kiosk-clock { font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: var(--muted); letter-spacing: 0.05em; }
+  .kiosk-rotate-label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); cursor: pointer; user-select: none; }
+  .kiosk-exit-btn {
+    background: var(--green-dim);
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .kiosk-exit-btn:hover { border-color: var(--green); }
+  .kiosk-toggle-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .kiosk-toggle-btn:hover { border-color: var(--cyan); }
   .tab-btn {
     background: transparent;
     border: none;
@@ -1611,6 +1686,10 @@
     border-left-color: var(--amber);
     background: linear-gradient(90deg, #221c0a, var(--panel-2) 40%);
   }
+  .notif-item.type-achievement {
+    border-left-color: var(--cyan);
+    background: linear-gradient(90deg, #0a1f2b, var(--panel-2) 40%);
+  }
   .notif-info {
     display: flex;
     flex-direction: column;
@@ -1632,9 +1711,16 @@
   .notif-tag.best { background: #2b220d; color: var(--amber); border: 1px solid #ffb02055; }
   .notif-tag.thermal-critical { background: #2b0d0d; color: var(--red); border: 1px solid #ff5d5d55; }
   .notif-tag.thermal-warning { background: #2b220d; color: var(--amber); border: 1px solid #ffb02055; }
+  .notif-tag.achievement { background: #0d232b; color: var(--cyan); border: 1px solid #4fd6ff55; }
   .notif-machine { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; color: var(--text); }
   .notif-text { font-size: 12px; color: var(--muted); }
-  .notif-time { font-size: 10px; color: var(--muted-2); font-family: monospace; }
+  .notif-time { font-size: 10px; color: var(--muted-2); font-family: monospace; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .notif-share-btn{
+    border:1px solid var(--line-strong); background:#0d1a26; color:var(--amber);
+    border-radius:6px; padding:3px 7px; font-size:11px; cursor:pointer; line-height:1;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .notif-share-btn:hover{ background:#ffb02022; border-color:var(--amber); }
 
   /* --- Toasts (pop-ups de notificação) --------------------------------- */
   .toast-stack {
@@ -1683,6 +1769,10 @@
   .toast-item.type-thermal-warning {
     border-left-color: var(--amber);
     background: linear-gradient(90deg, #221c0a, var(--panel-2) 45%);
+  }
+  .toast-item.type-achievement {
+    border-left-color: var(--cyan);
+    background: linear-gradient(90deg, #0a1f2b, var(--panel-2) 45%);
   }
   .toast-icon { font-size: 18px; line-height: 1; margin-top: 1px; }
   .toast-body { flex: 1; min-width: 0; }
@@ -1819,10 +1909,87 @@
     color:var(--text);
     opacity:0.85;
   }
+  .block-celebration-share-btn{
+    pointer-events:auto;
+    margin-top:20px;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 20px;
+    border-radius:10px;
+    border:1px solid var(--amber);
+    background:linear-gradient(180deg, #ffb02022, #ffb02008);
+    color:var(--amber);
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600; font-size:13px;
+    cursor:pointer;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .block-celebration-share-btn:hover{ background:#ffb02033; transform:translateY(-1px); }
+  .block-celebration-share-btn:active{ transform:translateY(0); }
+  .block-share-toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background:#0d1a26f2; border:1px solid var(--green-dim); color:var(--text);
+    padding:10px 18px; border-radius:10px; font-size:12px; z-index:10001;
+    box-shadow:0 8px 24px -6px #000a; opacity:0; transition:opacity .25s ease;
+    pointer-events:none;
+  }
+  .block-share-toast.show{ opacity:1; }
   @media (max-width:600px){
     .block-celebration-card{ padding:26px 30px; }
     .block-celebration-title{ font-size:24px; }
     .block-celebration-emoji{ font-size:46px; }
+  }
+
+  /* --- Conquistas / Badges (gamificação cosmética) --------------------- */
+  .achv-summary-bar{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;
+    padding:16px 20px; margin-bottom:18px;
+    background:linear-gradient(90deg, #0a1f2b, var(--panel-2) 60%);
+    border:1px solid var(--line-strong); border-radius:12px;
+  }
+  .achv-summary-stat{ display:flex; flex-direction:column; gap:2px; }
+  .achv-summary-stat .lbl{ font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+  .achv-summary-stat .val{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:20px; color:var(--cyan); }
+  .achv-progress-wrap{ display:flex; align-items:center; gap:10px; min-width:180px; }
+  .achv-progress-track{ flex:1; height:8px; border-radius:5px; background:#0d1a26; border:1px solid var(--line-strong); overflow:hidden; }
+  .achv-progress-fill{ height:100%; background:linear-gradient(90deg, var(--cyan), var(--green)); border-radius:5px; transition:width .4s ease; }
+  .achv-progress-text{ font-size:11px; color:var(--muted); white-space:nowrap; }
+  .achv-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));
+    gap:14px; padding:2px 22px 22px;
+  }
+  .achv-card{
+    position:relative; border-radius:12px; padding:16px 16px 14px;
+    background:var(--panel-2); border:1px solid var(--line);
+    display:flex; flex-direction:column; gap:8px;
+    transition:transform .15s ease, border-color .15s ease;
+    overflow:hidden;
+  }
+  .achv-card.unlocked{ border-color:var(--green-dim); box-shadow:0 0 0 1px var(--green-dim) inset; }
+  .achv-card.unlocked:hover{ transform:translateY(-2px); }
+  .achv-card.locked{ opacity:0.55; filter:grayscale(0.65); }
+  .achv-card .achv-tier{
+    position:absolute; top:0; right:0; font-size:9px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; padding:3px 9px 3px 12px; border-bottom-left-radius:10px;
+  }
+  .achv-card .achv-tier.bronze{ background:#3a2412; color:#e0a566; }
+  .achv-card .achv-tier.silver{ background:#28303a; color:#c9d4dd; }
+  .achv-card .achv-tier.gold{ background:#332707; color:var(--amber); }
+  .achv-card .achv-tier.platinum{ background:#0d232b; color:var(--cyan); }
+  .achv-card-head{ display:flex; align-items:center; gap:10px; }
+  .achv-icon{ font-size:28px; line-height:1; filter:drop-shadow(0 0 6px #0008); }
+  .achv-card.locked .achv-icon{ filter:grayscale(1); }
+  .achv-title{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:13.5px; color:var(--text); }
+  .achv-desc{ font-size:11.5px; color:var(--muted); line-height:1.4; }
+  .achv-bottom{ margin-top:auto; display:flex; flex-direction:column; gap:5px; }
+  .achv-track{ height:6px; border-radius:4px; background:#0d1a26; border:1px solid var(--line-strong); overflow:hidden; }
+  .achv-fill{ height:100%; background:linear-gradient(90deg, var(--cyan), var(--green)); border-radius:4px; transition:width .4s ease; }
+  .achv-card.unlocked .achv-fill{ background:linear-gradient(90deg, var(--green), var(--amber)); }
+  .achv-meta{ font-size:10px; color:var(--muted-2); display:flex; justify-content:space-between; font-family:monospace; }
+  .achv-unlocked-badge{ font-size:10px; color:var(--green); font-weight:700; }
+  .achv-empty{ text-align:center; color:var(--muted); font-size:12px; padding:30px; }
+  @media (max-width:600px){
+    .achv-grid{ grid-template-columns:1fr; padding:2px 14px 20px; }
+    .achv-summary-bar{ padding:14px; }
   }
 </style>
 </head>
@@ -1834,6 +2001,7 @@
     <div class="block-celebration-emoji">🚀</div>
     <div class="block-celebration-title"><span data-i18n="bloco_encontrado">BLOCO ENCONTRADO!</span></div>
     <div class="block-celebration-sub" id="blockCelebrationMachine"></div>
+    <button type="button" class="block-celebration-share-btn" id="blockCelebrationShareBtn" onclick="shareLastBlockImage()">📤 <span data-i18n="partilhar_conquista">Partilhar Conquista</span></button>
   </div>
 </div>
 <div class="update-banner" id="updateBanner">
@@ -1841,6 +2009,16 @@
   <span id="updateBannerText"></span>
   <button class="close-update" id="updateBannerClose" title="Fechar">✕</button>
 </div>
+
+<div class="kiosk-float-bar" id="kioskFloatBar">
+  <span class="kiosk-clock" id="kioskClock"></span>
+  <label class="kiosk-rotate-label">
+    <input type="checkbox" id="kioskRotateCheck" onchange="setKioskAutoRotate(this.checked)">
+    <span data-i18n="rodar_separadores">Rodar separadores</span>
+  </label>
+  <button class="kiosk-exit-btn" onclick="exitKioskMode()"><span data-i18n="sair_do_kiosk">Sair (Esc)</span></button>
+</div>
+
 <div class="frame">
 
   <header>
@@ -1863,6 +2041,9 @@
       </select>
       <button class="sound-toggle-btn" id="soundToggleBtn" onclick="toggleSound()">
         <span data-i18n="som_ativo">🔊 Som Ativo</span>
+      </button>
+      <button class="kiosk-toggle-btn" id="kioskToggleBtn" onclick="toggleKioskMode()" title="Modo ecrã grande, sem menus - ideal para uma TV dedicada">
+        <span data-i18n="modo_kiosk">🖥️ Kiosk</span>
       </button>
       <button class="config ghost" id="shutdownBtn" onclick="shutdownServer()" title="Desliga o servidor local por completo, de forma garantida (não depende do browser)" style="padding: 6px 12px; font-size: 10px; border-color:#ff5d5d55; color:var(--red);"><span data-i18n="fechar_tudo">⏻ Fechar Tudo</span></button>
       <div class="status-pill"><div class="dot" id="statusDot"></div><span id="statusText"><span data-i18n="sistema_pronto">Sistema pronto</span></span></div>
@@ -1898,6 +2079,10 @@
       <button class="tab-btn" onclick="switchTab('thermal', this)">
         <span data-i18n="saude_termica">🧬 Saúde Térmica</span>
         <span class="badge-counter" id="thermalBadge" style="display:none;">0</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('achievements', this)">
+        <span data-i18n="conquistas">🏅 Conquistas</span>
+        <span class="badge-counter" id="achvBadge" style="display:none;">0</span>
       </button>
       <button class="tab-btn cyan-tab" onclick="switchTab('power', this)">
         <span class="power-status-dot" id="powerStatusDot"></span><span data-i18n="perfis_de_energia">☀️ Perfis de Energia</span>
@@ -2550,6 +2735,38 @@
     </div>
   </div>
 
+  <div id="tab-achievements" class="tab-content">
+    <div class="blocks-container">
+      <div class="blocks-toolbar">
+        <div class="title"><span data-i18n="conquistas_titulo">🏅 Conquistas — Centro de Comando</span></div>
+      </div>
+      <div class="hint" style="margin-bottom:14px;">Marcos cosméticos desbloqueados automaticamente pelo funcionamento das tuas máquinas: dias seguidos sem overheating, hash acumulado ao longo da vida do painel, blocos encontrados e recordes de dificuldade. Não afeta a mineração nem exige nenhuma configuração — é só para acompanhares o progresso.</div>
+
+      <div class="achv-summary-bar">
+        <div class="achv-summary-stat">
+          <span class="lbl" data-i18n="conquistas_desbloqueadas">Conquistas Desbloqueadas</span>
+          <span class="val" id="achvUnlockedCount">0 / 0</span>
+        </div>
+        <div class="achv-summary-stat">
+          <span class="lbl" data-i18n="dias_sem_overheating">Dias Sem Overheating</span>
+          <span class="val" id="achvDaysCool">—</span>
+        </div>
+        <div class="achv-summary-stat">
+          <span class="lbl" data-i18n="hash_acumulado_total">Hash Acumulado (Total)</span>
+          <span class="val" id="achvTotalHash">—</span>
+        </div>
+        <div class="achv-progress-wrap">
+          <div class="achv-progress-track"><div class="achv-progress-fill" id="achvOverallFill" style="width:0%"></div></div>
+          <span class="achv-progress-text" id="achvOverallPct">0%</span>
+        </div>
+      </div>
+
+      <div class="achv-grid" id="achvGrid">
+        <div class="achv-empty" data-i18n="a_carregar_conquistas">A carregar conquistas...</div>
+      </div>
+    </div>
+  </div>
+
   <div class="footer-bar">
     <span id="footerAlert"></span>
     <span id="footerStamp">—</span>
@@ -2575,6 +2792,9 @@
 <script>
 // --- Dicionário de traduções (PT/EN/ES/FR) ---
 const I18N_DICT = {
+  "modo_kiosk": { pt: `🖥️ Kiosk`, en: `🖥️ Kiosk`, es: `🖥️ Kiosk`, fr: `🖥️ Kiosk` },
+  "sair_do_kiosk": { pt: `Sair (Esc)`, en: `Exit (Esc)`, es: `Salir (Esc)`, fr: `Quitter (Échap)` },
+  "rodar_separadores": { pt: `Rodar separadores`, en: `Rotate tabs`, es: `Rotar pestañas`, fr: `Faire tourner les onglets` },
   "adicionar_perfil": { pt: `+ Adicionar Perfil`, en: `+ Add Profile`, es: `+ Añadir Perfil`, fr: `+ Ajouter un Profil` },
   "60_min": { pt: `-60 min`, en: `-60 min`, es: `-60 min`, fr: `-60 min` },
   "1h_avg": { pt: `1h avg`, en: `1h avg`, es: `media 1h`, fr: `moy. 1h` },
@@ -2618,6 +2838,13 @@ const I18N_DICT = {
   "assinatura_termica_ventoinha_por_th_s": { pt: `Assinatura Térmica (ventoinha por TH/s) —`, en: `Thermal Signature (fan per TH/s) —`, es: `Firma Térmica (ventilador por TH/s) —`, fr: `Signature Thermique (ventilateur par TH/s) —` },
   "atual": { pt: `Atual:`, en: `Current:`, es: `Actual:`, fr: `Actuel :` },
   "bloco_encontrado": { pt: `BLOCO ENCONTRADO!`, en: `BLOCK FOUND!`, es: `¡BLOQUE ENCONTRADO!`, fr: `BLOC TROUVÉ !` },
+  "partilhar_conquista": { pt: `Partilhar Conquista`, en: `Share Achievement`, es: `Compartir Logro`, fr: `Partager la Réussite` },
+  "conquistas": { pt: `🏅 Conquistas`, en: `🏅 Achievements`, es: `🏅 Logros`, fr: `🏅 Succès` },
+  "conquistas_titulo": { pt: `🏅 Conquistas — Centro de Comando`, en: `🏅 Achievements — Centro de Comando`, es: `🏅 Logros — Centro de Comando`, fr: `🏅 Succès — Centro de Comando` },
+  "conquistas_desbloqueadas": { pt: `Conquistas Desbloqueadas`, en: `Achievements Unlocked`, es: `Logros Desbloqueados`, fr: `Succès Débloqués` },
+  "dias_sem_overheating": { pt: `Dias Sem Overheating`, en: `Days Without Overheating`, es: `Días Sin Sobrecalentamiento`, fr: `Jours Sans Surchauffe` },
+  "hash_acumulado_total": { pt: `Hash Acumulado (Total)`, en: `Accumulated Hash (Total)`, es: `Hash Acumulado (Total)`, fr: `Hash Accumulé (Total)` },
+  "a_carregar_conquistas": { pt: `A carregar conquistas...`, en: `Loading achievements...`, es: `Cargando logros...`, fr: `Chargement des succès...` },
   "baseline_historico": { pt: `Baseline histórico:`, en: `Historical baseline:`, es: `Línea base histórica:`, fr: `Référence historique :` },
   "best_share_historico": { pt: `Best Share Histórico`, en: `Historical Best Share`, es: `Mejor Share Histórico`, fr: `Meilleur Share Historique` },
   "bloco_atual": { pt: `Bloco Atual`, en: `Current Block`, es: `Bloque Actual`, fr: `Bloc Actuel` },
@@ -2836,6 +3063,10 @@ let consoleLogs = [];
 let notifications = [];
 let unreadNotifs = 0;
 
+const ACHIEVEMENTS_KEY = 'nerdqaxe:achievements';
+let achievements = null;   // carregado em loadAchievements()
+let unseenAchievements = 0;
+
 let realtimeActive = true;
 let autoScroll = true;
 let soundEnabled = true;
@@ -2905,6 +3136,18 @@ function playSound(type) {
 
       osc.start(now);
       osc.stop(now + 0.6);
+    } else if(type === 'achievement') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.09);
+      osc.frequency.setValueAtTime(783.99, now + 0.18);
+      osc.frequency.setValueAtTime(1046.5, now + 0.27);
+
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+      osc.start(now);
+      osc.stop(now + 0.5);
     } else {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(523.25, now);
@@ -3011,6 +3254,104 @@ function loadLanguage(){
   applyTranslations();
 }
 
+// --- Modo Kiosk (ecrã grande / TV dedicada) ------------------------------
+// Pensado para um ecrã fixo (TV na sala de mineração): esconde tudo o que
+// serve para editar/navegar e aumenta os números principais. Fica guardado
+// em localStorage para sobreviver a um refresh/reboot do dispositivo, e
+// também pode ser ativado diretamente por URL (?kiosk=1) - útil para um
+// atalho/favorito apontado logo para o modo kiosk num browser dedicado.
+const KIOSK_KEY = 'centro_comando_kiosk';
+const KIOSK_ROTATE_KEY = 'centro_comando_kiosk_rotate';
+const KIOSK_ROTATE_TABS = ['dashboard', 'thermal', 'latency'];
+const KIOSK_ROTATE_INTERVAL_MS = 20000;
+let kioskActive = false;
+let kioskRotateTimer = null;
+let kioskFloatHideTimer = null;
+let kioskRotateIndex = 0;
+let kioskClockTimer = null;
+
+function enterKioskMode(persist) {
+  kioskActive = true;
+  document.body.classList.add('kiosk-active');
+  if (persist !== false) { try { localStorage.setItem(KIOSK_KEY, '1'); } catch(e){} }
+  // Garante que arranca sempre no dashboard, mesmo que o utilizador tivesse
+  // outro separador aberto antes de ativar o kiosk.
+  const dashBtn = document.querySelector('.tab-btn[onclick*="\'dashboard\'"]');
+  if (dashBtn) switchTab('dashboard', dashBtn);
+  let rotateOn = false;
+  try { rotateOn = localStorage.getItem(KIOSK_ROTATE_KEY) === '1'; } catch(e){}
+  const rotateCheck = $('kioskRotateCheck');
+  if (rotateCheck) rotateCheck.checked = rotateOn;
+  setKioskAutoRotate(rotateOn, false);
+  startKioskClock();
+  if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+  showKioskFloatBar();
+}
+
+function exitKioskMode() {
+  kioskActive = false;
+  document.body.classList.remove('kiosk-active');
+  try { localStorage.removeItem(KIOSK_KEY); } catch(e){}
+  setKioskAutoRotate(false, false);
+  stopKioskClock();
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+
+function toggleKioskMode() {
+  if (kioskActive) exitKioskMode(); else enterKioskMode(true);
+}
+
+function setKioskAutoRotate(on, persist) {
+  if (kioskRotateTimer) { clearInterval(kioskRotateTimer); kioskRotateTimer = null; }
+  if (persist !== false) { try { localStorage.setItem(KIOSK_ROTATE_KEY, on ? '1' : '0'); } catch(e){} }
+  if (!on) return;
+  kioskRotateIndex = 0;
+  kioskRotateTimer = setInterval(() => {
+    kioskRotateIndex = (kioskRotateIndex + 1) % KIOSK_ROTATE_TABS.length;
+    const tabName = KIOSK_ROTATE_TABS[kioskRotateIndex];
+    const btn = document.querySelector(`.tab-btn[onclick*="'${tabName}'"]`);
+    if (btn) switchTab(tabName, btn);
+  }, KIOSK_ROTATE_INTERVAL_MS);
+}
+
+function startKioskClock() {
+  const el = $('kioskClock');
+  if (!el) return;
+  const tick = () => { el.textContent = new Date().toLocaleTimeString(currentLang === 'pt' ? 'pt-PT' : currentLang); };
+  tick();
+  if (kioskClockTimer) clearInterval(kioskClockTimer);
+  kioskClockTimer = setInterval(tick, 1000);
+}
+function stopKioskClock() {
+  if (kioskClockTimer) { clearInterval(kioskClockTimer); kioskClockTimer = null; }
+}
+
+function showKioskFloatBar() {
+  const bar = $('kioskFloatBar');
+  if (!bar || !kioskActive) return;
+  bar.classList.add('visible');
+  if (kioskFloatHideTimer) clearTimeout(kioskFloatHideTimer);
+  kioskFloatHideTimer = setTimeout(() => { bar.classList.remove('visible'); }, 4000);
+}
+
+['mousemove', 'touchstart', 'click'].forEach(evt => {
+  document.addEventListener(evt, () => { if (kioskActive) showKioskFloatBar(); }, { passive: true });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && kioskActive) exitKioskMode();
+});
+
+function initKioskMode() {
+  let urlKiosk = false;
+  try { urlKiosk = new URLSearchParams(window.location.search).get('kiosk') === '1'; } catch(e){}
+  let storedKiosk = false;
+  try { storedKiosk = localStorage.getItem(KIOSK_KEY) === '1'; } catch(e){}
+  if (urlKiosk || storedKiosk) enterKioskMode(urlKiosk || storedKiosk);
+}
+
 const TAB_LABEL_KEYS = {
   dashboard: 'dashboard_geral',
   logs: 'logs_das_maquinas',
@@ -3018,6 +3359,7 @@ const TAB_LABEL_KEYS = {
   simulator: 'simulador',
   latency: 'latencia',
   thermal: 'saude_termica',
+  achievements: 'conquistas',
   oc: 'overclock',
   converter: 'conversor',
   donate: 'apoiar_doar',
@@ -3070,6 +3412,11 @@ function switchTab(tabName, btnEl) {
   }
   if(tabName === 'thermal') {
     renderThermalTab();
+  }
+  if(tabName === 'achievements') {
+    unseenAchievements = 0;
+    updateAchvBadge();
+    renderAchievements();
   }
   if(tabName === 'oc') {
     renderOcTab();
@@ -3378,11 +3725,13 @@ function updateNotifBadge() {
 // --- Celebração especial: bloco encontrado ----------------------------
 const BLOCK_CONFETTI_COLORS = ['#ffb020', '#21ffb0', '#4fd6ff', '#ff5d5d', '#ffffff'];
 
-function celebrateBlockFound(machineName) {
+function celebrateBlockFound(machineName, diffVal) {
   const overlay = $('blockCelebration');
   const layer = $('blockConfettiLayer');
   const machineLabel = $('blockCelebrationMachine');
   if(!overlay || !layer) return;
+
+  window._lastBlockShare = { machineName: machineName || 'Máquina', diff: Number(diffVal) || 0, date: new Date() };
 
   if(machineLabel) machineLabel.textContent = machineName ? `${machineName} — bloco minerado com sucesso!` : 'Bloco minerado com sucesso!';
 
@@ -3419,7 +3768,393 @@ function celebrateBlockFound(machineName) {
   }, 4300);
 }
 
-function addNotification(type, title, description, machineName) {
+// --- Imagem de partilha (bloco encontrado) -----------------------------
+function _blockShareToast(msg) {
+  let t = document.querySelector('.block-share-toast');
+  if(!t) {
+    t = document.createElement('div');
+    t.className = 'block-share-toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.remove('show');
+  void t.offsetWidth;
+  t.classList.add('show');
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function _wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = String(text).split(' ');
+  let line = '';
+  const lines = [];
+  for(let i = 0; i < words.length; i++) {
+    const test = line + words[i] + ' ';
+    if(ctx.measureText(test).width > maxWidth && line !== '') {
+      lines.push(line.trim());
+      line = words[i] + ' ';
+    } else {
+      line = test;
+    }
+  }
+  lines.push(line.trim());
+  lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
+  return lines.length;
+}
+
+function generateBlockShareCanvas(machineName, diffVal, dateObj) {
+  const W = 1200, H = 675;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // fundo
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#060d14');
+  bg.addColorStop(1, '#0a1620');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // brilho radial
+  const glow = ctx.createRadialGradient(W/2, H*0.38, 40, W/2, H*0.38, 620);
+  glow.addColorStop(0, 'rgba(255,176,32,0.22)');
+  glow.addColorStop(1, 'rgba(255,176,32,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // confetti decorativo
+  const confColors = ['#ffb020', '#21ffb0', '#4fd6ff', '#ff5d5d', '#ffffff'];
+  for(let i = 0; i < 60; i++) {
+    ctx.save();
+    const cx = Math.random() * W;
+    const cy = Math.random() * H;
+    ctx.globalAlpha = 0.15 + Math.random() * 0.25;
+    ctx.fillStyle = confColors[Math.floor(Math.random() * confColors.length)];
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.random() * Math.PI);
+    ctx.fillRect(-4, -7, 8, 14);
+    ctx.restore();
+  }
+
+  // moldura
+  ctx.strokeStyle = 'rgba(255,176,32,0.7)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(24, 24, W - 48, H - 48);
+
+  // emoji / foguete
+  ctx.textAlign = 'center';
+  ctx.font = '80px sans-serif';
+  ctx.fillText('🚀', W/2, 160);
+
+  // titulo
+  ctx.fillStyle = '#ffb020';
+  ctx.font = "700 56px 'Space Grotesk', sans-serif";
+  ctx.shadowColor = 'rgba(255,176,32,0.6)';
+  ctx.shadowBlur = 22;
+  ctx.fillText('BLOCO ENCONTRADO!', W/2, 245);
+  ctx.shadowBlur = 0;
+
+  // nome da máquina
+  ctx.fillStyle = '#eaf6f7';
+  ctx.font = "600 30px 'Space Grotesk', sans-serif";
+  _wrapCanvasText(ctx, machineName || 'Máquina', W/2, 305, W - 160, 38);
+
+  // caixa best diff
+  const boxY = 370, boxH = 150, boxW = 640, boxX = (W - boxW) / 2;
+  ctx.fillStyle = 'rgba(13,26,38,0.9)';
+  ctx.strokeStyle = 'rgba(33,255,176,0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(boxX, boxY, boxW, boxH, 16) : ctx.rect(boxX, boxY, boxW, boxH);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#6f95a3';
+  ctx.font = "600 14px 'Space Grotesk', sans-serif";
+  ctx.textAlign = 'center';
+  ctx.fillText('BEST DIFF DA SESSÃO', W/2, boxY + 34);
+
+  const fmt = (typeof formatDiff === 'function') ? formatDiff(diffVal) : { value: diffVal, unit: '' };
+  ctx.fillStyle = '#21ffb0';
+  ctx.font = "700 52px 'Space Grotesk', sans-serif";
+  ctx.shadowColor = 'rgba(33,255,176,0.5)';
+  ctx.shadowBlur = 16;
+  ctx.fillText(`${fmt.value}${fmt.unit}`, W/2, boxY + 100);
+  ctx.shadowBlur = 0;
+
+  // data
+  const dstr = (dateObj instanceof Date ? dateObj : new Date(dateObj || Date.now()))
+    .toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  ctx.fillStyle = '#6f95a3';
+  ctx.font = "13px 'Space Grotesk', sans-serif";
+  ctx.fillText(dstr, W/2, 570);
+
+  // rodapé / branding
+  ctx.fillStyle = '#4fd6ff';
+  ctx.font = "600 16px 'Space Grotesk', sans-serif";
+  ctx.fillText('⛏️ Centro de Comando — Mineração Bitcoin', W/2, 615);
+
+  return canvas;
+}
+
+async function _downloadOrShareCanvas(canvas, filenameBase) {
+  canvas.toBlob(async (blob) => {
+    if(!blob) { _blockShareToast('Falha ao gerar imagem.'); return; }
+    const file = new File([blob], `${filenameBase}.png`, { type: 'image/png' });
+
+    if(navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Bloco Encontrado! 🚀',
+          text: 'Bloco minerado com sucesso — Centro de Comando'
+        });
+        return;
+      } catch(e) {
+        // utilizador cancelou ou partilha falhou — cai para download
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filenameBase}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    _blockShareToast('📥 Imagem guardada — pronta a partilhar!');
+  }, 'image/png');
+}
+
+function shareBlockImage(machineName, diffVal, tsOrDate) {
+  const canvas = generateBlockShareCanvas(machineName, diffVal, tsOrDate ? new Date(tsOrDate) : new Date());
+  const safeName = (machineName || 'bloco').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  _downloadOrShareCanvas(canvas, `bloco-encontrado-${safeName || 'bloco'}`);
+}
+
+function shareLastBlockImage() {
+  const last = window._lastBlockShare;
+  if(!last) { _blockShareToast('Sem dados de bloco recentes.'); return; }
+  shareBlockImage(last.machineName, last.diff, last.date);
+}
+
+// --- Conquistas / Badges (gamificação cosmética) ------------------------
+// Sistema 100% local (localStorage), sem infraestrutura nova: acompanha
+// marcos acumulados ao longo da vida do painel — dias seguidos sem
+// overheating, hash total já processado pelas máquinas, blocos
+// encontrados, recordes de dificuldade e tempo de atividade contínua.
+
+const ACHIEVEMENTS_DEFS = [
+  { id: 'no_overheat_7',   icon: '🧊',  tier: 'bronze',   metric: 'daysCool',     threshold: 7,
+    title: '7 Dias Sem Overheating', desc: 'Nenhuma máquina atingiu a temperatura crítica de forma sustentada durante 7 dias seguidos.' },
+  { id: 'no_overheat_30',  icon: '❄️',  tier: 'silver',   metric: 'daysCool',     threshold: 30,
+    title: '30 Dias Sem Overheating', desc: '30 dias seguidos sem nenhum alarme crítico de temperatura.' },
+  { id: 'no_overheat_90',  icon: '🥶',  tier: 'gold',     metric: 'daysCool',     threshold: 90,
+    title: '90 Dias Sem Overheating', desc: 'Um trimestre inteiro sem overheating sustentado em nenhuma máquina.' },
+  { id: 'no_overheat_365', icon: '🧊👑', tier: 'platinum', metric: 'daysCool',     threshold: 365,
+    title: '1 Ano Sem Overheating', desc: 'Um ano completo de funcionamento sem qualquer overheating crítico.' },
+
+  { id: 'hash_1ph',   icon: '⚡',  tier: 'bronze',   metric: 'totalPH', threshold: 1,
+    title: '1 PH Acumulado', desc: 'As tuas máquinas já processaram 1 petahash de trabalho, no total, desde que usas o painel.' },
+  { id: 'hash_10ph',  icon: '⚡⚡', tier: 'silver',   metric: 'totalPH', threshold: 10,
+    title: '10 PH Acumulados', desc: '10 petahashes de trabalho acumulado. O contador nunca para.' },
+  { id: 'hash_100ph', icon: '🔋',  tier: 'gold',     metric: 'totalPH', threshold: 100,
+    title: '100 PH Acumulados', desc: '100 petahashes acumulados — hardware doméstico a sério.' },
+  { id: 'hash_1eh',   icon: '🌌',  tier: 'platinum', metric: 'totalPH', threshold: 1000,
+    title: '1 EH Acumulado', desc: '1 exahash acumulado ao longo da vida do painel. Marco raro para mineração a solo.' },
+
+  { id: 'first_block', icon: '🚀',   tier: 'gold',     metric: 'totalBlocks', threshold: 1,
+    title: 'Primeiro Bloco Encontrado', desc: 'Uma das tuas máquinas encontrou um bloco na rede Bitcoin. Lotaria vencida.' },
+  { id: 'blocks_5',    icon: '🚀🚀', tier: 'platinum', metric: 'totalBlocks', threshold: 5,
+    title: '5 Blocos Encontrados', desc: '5 blocos encontrados no total. Sorte a sério.' },
+
+  { id: 'uptime_7',  icon: '📅',  tier: 'bronze', metric: 'maxUptimeDays', threshold: 7,
+    title: '7 Dias de Atividade Contínua', desc: 'Uma máquina esteve ligada sem reiniciar durante 7 dias seguidos.' },
+  { id: 'uptime_30', icon: '🗓️',  tier: 'silver', metric: 'maxUptimeDays', threshold: 30,
+    title: '30 Dias de Atividade Contínua', desc: 'Uma máquina esteve ligada sem reiniciar durante 30 dias seguidos.' },
+  { id: 'uptime_90', icon: '🛠️',  tier: 'gold',   metric: 'maxUptimeDays', threshold: 90,
+    title: '90 Dias de Atividade Contínua', desc: 'Uma máquina esteve ligada sem reiniciar durante 90 dias seguidos. Estabilidade exemplar.' },
+
+  { id: 'diff_1g',   icon: '🏆',  tier: 'bronze', metric: 'bestDiffAll', threshold: 1e9,
+    title: 'Best Diff acima de 1G', desc: 'Alguma das tuas máquinas já superou 1G de dificuldade numa share.' },
+  { id: 'diff_10g',  icon: '🏆🏆', tier: 'silver', metric: 'bestDiffAll', threshold: 1e10,
+    title: 'Best Diff acima de 10G', desc: 'Recorde de dificuldade acima de 10G numa única share.' },
+  { id: 'diff_100g', icon: '👑',  tier: 'gold',   metric: 'bestDiffAll', threshold: 1e11,
+    title: 'Best Diff acima de 100G', desc: 'Recorde de dificuldade acima de 100G. Muito perto da sorte grande.' },
+
+  { id: 'veteran_100', icon: '🎖️',  tier: 'silver', metric: 'appAgeDays', threshold: 100,
+    title: '100 Dias com o Centro de Comando', desc: '100 dias a usar o painel para acompanhar as tuas máquinas.' },
+  { id: 'veteran_365', icon: '🎖️👑', tier: 'gold',   metric: 'appAgeDays', threshold: 365,
+    title: '1 Ano com o Centro de Comando', desc: 'Um ano completo a usar o Centro de Comando.' },
+];
+
+function loadAchievements() {
+  let loaded = null;
+  try {
+    const raw = localStorage.getItem(ACHIEVEMENTS_KEY);
+    if(raw) loaded = JSON.parse(raw);
+  } catch(e) { loaded = null; }
+
+  achievements = Object.assign({
+    installDate: Date.now(),
+    totalHashes: 0,          // em hashes (H), acumulado ao longo da vida do painel
+    totalBlocksFound: 0,
+    bestDiffEver: 0,
+    lastCriticalAt: null,    // timestamp do último alarme crítico de temperatura
+    lastPollTs: {},          // por dispositivo, para calcular deltas de tempo no acumulo de hash
+    unlocked: {}             // { achievementId: timestampDesbloqueio }
+  }, loaded || {});
+
+  if(!achievements.lastPollTs) achievements.lastPollTs = {};
+  if(!achievements.unlocked) achievements.unlocked = {};
+}
+
+function saveAchievements() {
+  try {
+    // lastPollTs não precisa de sobreviver a um refresh com grande precisão;
+    // limitamos o objeto para não crescer indefinidamente com IDs antigos.
+    localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(achievements));
+  } catch(e) {}
+}
+
+function computeAchvMetrics() {
+  const now = Date.now();
+  const daysCool = Math.max(0, (now - (achievements.lastCriticalAt || achievements.installDate)) / 86400000);
+  const totalPH = achievements.totalHashes / 1e15;
+  const totalBlocks = achievements.totalBlocksFound;
+  const maxUptimeSec = Math.max(0, ...devices.map(d => readings[d.id]?.uptime || 0));
+  const maxUptimeDays = maxUptimeSec / 86400;
+  const liveBest = Math.max(0, ...devices.map(d => readings[d.id]?.best || 0));
+  const bestDiffAll = Math.max(achievements.bestDiffEver || 0, liveBest);
+  const appAgeDays = Math.max(0, (now - achievements.installDate) / 86400000);
+
+  return { daysCool, totalPH, totalBlocks, maxUptimeDays, bestDiffAll, appAgeDays };
+}
+
+function checkAchievements() {
+  if(!achievements) return;
+  const metrics = computeAchvMetrics();
+  const newlyUnlocked = [];
+
+  ACHIEVEMENTS_DEFS.forEach(def => {
+    if(achievements.unlocked[def.id]) return;
+    const val = metrics[def.metric] || 0;
+    if(val >= def.threshold) {
+      achievements.unlocked[def.id] = Date.now();
+      newlyUnlocked.push(def);
+    }
+  });
+
+  if(newlyUnlocked.length) {
+    saveAchievements();
+    newlyUnlocked.forEach(def => {
+      logEvent(`🏅 Conquista desbloqueada: ${def.title}`, 'new');
+      addNotification('achievement', `Conquista Desbloqueada: ${def.title}`, def.desc, def.icon);
+    });
+    unseenAchievements += newlyUnlocked.length;
+    updateAchvBadge();
+    if($('tab-achievements')?.classList.contains('active')) {
+      renderAchievements();
+    }
+  }
+}
+
+function updateAchvBadge() {
+  const badge = $('achvBadge');
+  if(!badge) return;
+  if(unseenAchievements > 0) {
+    badge.textContent = unseenAchievements;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function _achvFormatMetricValue(metric, value) {
+  switch(metric) {
+    case 'daysCool':
+    case 'maxUptimeDays':
+    case 'appAgeDays':
+      return `${value.toFixed(1)}d`;
+    case 'totalPH':
+      return `${value.toFixed(2)} PH`;
+    case 'totalBlocks':
+      return `${Math.floor(value)}`;
+    case 'bestDiffAll': {
+      const fmt = (typeof formatDiff === 'function') ? formatDiff(value) : { value, unit: '' };
+      return `${fmt.value}${fmt.unit}`;
+    }
+    default:
+      return String(value);
+  }
+}
+
+function renderAchievements() {
+  const grid = $('achvGrid');
+  if(!grid) return;
+  if(!achievements) loadAchievements();
+
+  const metrics = computeAchvMetrics();
+  const totalCount = ACHIEVEMENTS_DEFS.length;
+  const unlockedCount = ACHIEVEMENTS_DEFS.filter(d => achievements.unlocked[d.id]).length;
+
+  $('achvUnlockedCount').textContent = `${unlockedCount} / ${totalCount}`;
+  $('achvDaysCool').textContent = `${metrics.daysCool.toFixed(1)}d`;
+  $('achvTotalHash').textContent = `${metrics.totalPH.toFixed(3)} PH`;
+
+  const pct = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
+  const fillEl = $('achvOverallFill');
+  if(fillEl) fillEl.style.width = `${pct}%`;
+  const pctEl = $('achvOverallPct');
+  if(pctEl) pctEl.textContent = `${pct}%`;
+
+  if(ACHIEVEMENTS_DEFS.length === 0) {
+    grid.innerHTML = '<div class="achv-empty">Nenhuma conquista configurada.</div>';
+    return;
+  }
+
+  // Ordena: desbloqueadas mais recentes primeiro, depois bloqueadas por proximidade do objetivo.
+  const sorted = [...ACHIEVEMENTS_DEFS].sort((a, b) => {
+    const uA = achievements.unlocked[a.id], uB = achievements.unlocked[b.id];
+    if(uA && uB) return uB - uA;
+    if(uA && !uB) return -1;
+    if(!uA && uB) return 1;
+    const progA = Math.min(1, (metrics[a.metric] || 0) / a.threshold);
+    const progB = Math.min(1, (metrics[b.metric] || 0) / b.threshold);
+    return progB - progA;
+  });
+
+  grid.innerHTML = sorted.map(def => {
+    const unlockedAt = achievements.unlocked[def.id];
+    const isUnlocked = !!unlockedAt;
+    const value = metrics[def.metric] || 0;
+    const progressPct = Math.max(0, Math.min(100, Math.round((value / def.threshold) * 100)));
+    const currentStr = _achvFormatMetricValue(def.metric, Math.min(value, def.threshold));
+    const targetStr = _achvFormatMetricValue(def.metric, def.threshold);
+    const dateStr = isUnlocked ? new Date(unlockedAt).toLocaleDateString('pt-PT') : '';
+
+    return `
+      <div class="achv-card ${isUnlocked ? 'unlocked' : 'locked'}">
+        <span class="achv-tier ${def.tier}">${def.tier}</span>
+        <div class="achv-card-head">
+          <span class="achv-icon">${def.icon}</span>
+          <span class="achv-title">${def.title}</span>
+        </div>
+        <div class="achv-desc">${def.desc}</div>
+        <div class="achv-bottom">
+          <div class="achv-track"><div class="achv-fill" style="width:${progressPct}%"></div></div>
+          <div class="achv-meta">
+            <span>${currentStr} / ${targetStr}</span>
+            <span>${isUnlocked ? `<span class="achv-unlocked-badge">✓ ${dateStr}</span>` : `${progressPct}%`}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function addNotification(type, title, description, machineName, extra) {
   const item = {
     id: 'notif_' + Math.random().toString(36).slice(2, 9),
     type,
@@ -3427,7 +4162,9 @@ function addNotification(type, title, description, machineName) {
     description,
     machineName,
     time: nowStamp(),
-    dateStr: new Date().toLocaleString('pt-BR')
+    dateStr: new Date().toLocaleString('pt-BR'),
+    ts: Date.now(),
+    ...(extra || {})
   };
   notifications.unshift(item);
   if(notifications.length > 100) notifications.pop();
@@ -3452,6 +4189,7 @@ const TOAST_STYLES = {
   thermal:           { itemClass: 'type-thermal',            icon: '🧬' },
   'thermal-warning': { itemClass: 'type-thermal-warning',    icon: '🧬' },
   critical:          { itemClass: 'type-critical',           icon: '🛡️' },
+  achievement:       { itemClass: 'type-achievement',        icon: '🏅' },
 };
 
 function toastsEnabled() {
@@ -3524,8 +4262,8 @@ function triggerTestNotifications() {
   
   addNotification('best', 'Novo Recorde de Dificuldade: 45.2M', 'A máquina alcançou um novo best diff de 45,230,100 na sessão de teste.', randomMachine.name);
   setTimeout(() => {
-    addNotification('block', 'Bloco Encontrado com Sucesso! (TESTE)', 'Simulação de bloco minerado com sucesso na rede.', randomMachine.name);
-    celebrateBlockFound(randomMachine.name);
+    addNotification('block', 'Bloco Encontrado com Sucesso! (TESTE)', 'Simulação de bloco minerado com sucesso na rede.', randomMachine.name, { diff: 45230100 });
+    celebrateBlockFound(randomMachine.name, 45230100);
   }, 600);
   
   logEvent('Notificações de teste geradas com som.', 'new', randomMachine.name, randomMachine.id || 'sys');
@@ -3562,6 +4300,7 @@ function renderNotifications() {
     thermal:          { itemClass: 'type-thermal',            tagClass: 'thermal-critical',  label: '🧬 Manutenção Preditiva' },
     'thermal-warning':{ itemClass: 'type-thermal-warning',    tagClass: 'thermal-warning',   label: '🧬 Manutenção Preditiva' },
     critical:         { itemClass: 'type-thermal',            tagClass: 'thermal-critical',  label: '🛡️ Overheating Crítico' },
+    achievement:      { itemClass: 'type-achievement',         tagClass: 'achievement',       label: '🏅 Conquista Desbloqueada' },
   };
 
   list.innerHTML = '';
@@ -3569,6 +4308,9 @@ function renderNotifications() {
     const el = document.createElement('div');
     const style = NOTIF_STYLES[n.type] || NOTIF_STYLES.best;
     el.className = `notif-item ${style.itemClass}`;
+    const shareBtnHtml = n.type === 'block'
+      ? `<button type="button" class="notif-share-btn" title="Gerar imagem para partilhar" onclick="event.stopPropagation(); shareBlockImage('${(n.machineName||'').replace(/'/g,"\\'")}', ${Number(n.diff)||0}, ${n.ts || Date.now()})">📤</button>`
+      : '';
     el.innerHTML = `
       <div class="notif-info">
         <div class="notif-header-line">
@@ -3578,7 +4320,7 @@ function renderNotifications() {
         <div class="notif-text" style="font-weight: 600; color: var(--text);">${n.title}</div>
         <div class="notif-text">${n.description}</div>
       </div>
-      <div class="notif-time">${n.dateStr}</div>
+      <div class="notif-time">${n.dateStr}${shareBtnHtml}</div>
     `;
     list.appendChild(el);
   });
@@ -3764,6 +4506,7 @@ function evaluateThermalProtection(dev, reading){
       logEvent(`🛡️🔥 CRÍTICO: temperatura sustentada em ${temp.toFixed(1)}°C durante ${Math.round(elapsedSec)}s — possível overheating.`, 'error', dev.name, dev.id);
       addNotification('critical', 'Overheating Crítico Detetado', `${dev.name} manteve-se a ${temp.toFixed(1)}°C (limite: ${thermalProtectionSettings.criticalTemp}°C) durante mais de ${thermalProtectionSettings.sustainSec}s. Verifica ventilação, pasta térmica e fluxo de ar.`, dev.name);
       updateCriticalAlarmUI();
+      if(achievements) { achievements.lastCriticalAt = Date.now(); saveAchievements(); }
     }
   } else {
     state.since = null;
@@ -4980,6 +5723,10 @@ async function pollAll(){
   try {
     await Promise.all(devices.map(dev => pollOneDevice(dev)));
     renderAll();
+    if(achievements) {
+      saveAchievements();
+      checkAchievements();
+    }
   } finally {
     pollInProgress = false;
   }
@@ -5055,6 +5802,19 @@ async function pollOneDevice(dev){
     const blocksFoundVal = Number(d.blockFound ?? d.blocksFound ?? 0);
     const uptimeVal = d.uptimeSeconds ?? d.uptime ?? null;
 
+    // Conquistas: acumula hash total (hashrateVal está em GH/s) desde a última
+    // leitura bem-sucedida deste dispositivo. Protege contra gaps grandes
+    // (reinícios, app fechada) assumindo o intervalo de poll normal (5s).
+    if(achievements && hashrateVal > 0) {
+      const nowTs = Date.now();
+      const lastTs = achievements.lastPollTs[dev.id];
+      let deltaSec = lastTs ? (nowTs - lastTs) / 1000 : 5;
+      if(!isFinite(deltaSec) || deltaSec <= 0 || deltaSec > 60) deltaSec = 5;
+      achievements.totalHashes += hashrateVal * 1e9 * deltaSec;
+      achievements.lastPollTs[dev.id] = nowTs;
+      if(currentBest > (achievements.bestDiffEver || 0)) achievements.bestDiffEver = currentBest;
+    }
+
     const reading = {
       hashrate: hashrateVal,
       best: currentBest,
@@ -5098,8 +5858,9 @@ async function pollOneDevice(dev){
 
     if(hasBaseline && blocksFoundVal > oldBlocks) {
       logEvent(`Bloco encontrado com sucesso! 🎉`, 'new', dev.name, dev.id);
-      addNotification('block', `Bloco Encontrado com Sucesso!`, `Total de blocos encontrados por esta máquina atualizado para ${blocksFoundVal}.`, dev.name);
-      celebrateBlockFound(dev.name);
+      addNotification('block', `Bloco Encontrado com Sucesso!`, `Total de blocos encontrados por esta máquina atualizado para ${blocksFoundVal}.`, dev.name, { diff: currentBest });
+      celebrateBlockFound(dev.name, currentBest);
+      if(achievements) achievements.totalBlocksFound += (blocksFoundVal - oldBlocks);
     }
 
     baselineSeen[dev.id] = true;
@@ -5840,12 +6601,15 @@ $('clearLogBtn').onclick = () => {
 
 loadTheme();
 loadLanguage();
+initKioskMode();
 (async () => {
   await loadDevices();
   loadNotifications();
   updateToastToggleBtn();
   loadThermalHistory();
   loadThermalProtectionSettings();
+  loadAchievements();
+  updateAchvBadge();
   devices.forEach(d => { thermalAlertState[d.id] = computeThermalHealth(d.id).status; });
   updateThermalBadge();
   updateNotifBadge();
