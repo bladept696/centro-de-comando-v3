@@ -662,6 +662,38 @@
   .oc-card-status.err{color:var(--red);}
   .oc-empty{text-align:center; color:var(--muted); font-size:12px; padding:30px;}
 
+  .rates-status-row{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .rate-chip{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:8px 14px; display:flex; flex-direction:column; gap:2px; min-width:110px;
+  }
+  .rate-chip .rate-label{font-size:9px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase;}
+  .rate-chip .rate-value{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:var(--cyan);}
+  .rates-updated{font-size:10px; color:var(--muted-2); margin-left:auto;}
+  .converter-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px;
+  }
+  .converter-field{display:flex; flex-direction:column; gap:6px;}
+  .converter-field label{font-size:11px; color:var(--muted); font-weight:600; display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .btc-unit-toggle{
+    display:inline-flex; background:var(--panel); border:1px solid var(--line-strong);
+    border-radius:6px; padding:2px; gap:2px;
+  }
+  .btc-unit-btn{
+    background:transparent; border:none; color:var(--muted); font-family:inherit;
+    font-size:9px; font-weight:700; padding:3px 7px; border-radius:4px; cursor:pointer;
+  }
+  .btc-unit-btn.active{background:var(--amber); color:#000;}
+  .converter-field input{
+    background:#081119; border:1px solid var(--line-strong); color:var(--text);
+    font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600;
+    padding:12px 14px; border-radius:8px; outline:none; width:100%;
+  }
+  .converter-field input:focus{border-color:var(--cyan);}
+  .converter-error{font-size:11px; color:var(--red); margin-top:10px; min-height:14px;}
+
   .protection-config-row {
     display: flex;
     align-items: center;
@@ -1862,6 +1894,7 @@
       <button class="tab-btn" onclick="switchTab('simulator', this)"><span data-i18n="simulador">⏱️ Simulador</span></button>
       <button class="tab-btn" onclick="switchTab('latency', this)"><span data-i18n="latencia">📡 Latência</span></button>
       <button class="tab-btn" onclick="switchTab('oc', this)"><span data-i18n="overclock">🔧 OC</span></button>
+      <button class="tab-btn" onclick="switchTab('converter', this)"><span data-i18n="conversor">💱 Conversor</span></button>
       <button class="tab-btn" onclick="switchTab('thermal', this)">
         <span data-i18n="saude_termica">🧬 Saúde Térmica</span>
         <span class="badge-counter" id="thermalBadge" style="display:none;">0</span>
@@ -2332,6 +2365,55 @@
     </div>
   </div>
 
+  <div id="tab-converter" class="tab-content">
+    <div class="blocks-container">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-title">
+          <span data-i18n="conversor_de_moedas">💱 Conversor de Moedas</span>
+          <button id="ratesRefreshBtn" class="config ghost" style="padding:2px 8px; font-size:9px; border-radius:5px;"><span data-i18n="atualizar">atualizar</span></button>
+        </div>
+        <div class="hint" style="margin-bottom:12px;" data-i18n="conversor_hint">Cotações em tempo real via Binance (BTC/EUR e BTC/USDT). Escreve um valor em qualquer campo — os outros dois atualizam automaticamente.</div>
+
+        <div class="rates-status-row">
+          <div class="rate-chip">
+            <span class="rate-label">BTC/EUR</span>
+            <span class="rate-value" id="rateBtcEur">—</span>
+          </div>
+          <div class="rate-chip">
+            <span class="rate-label">BTC/USDT</span>
+            <span class="rate-value" id="rateBtcUsdt">—</span>
+          </div>
+          <div class="rate-chip">
+            <span class="rate-label">EUR/USDT</span>
+            <span class="rate-value" id="rateEurUsdt">—</span>
+          </div>
+          <span class="rates-updated" id="ratesUpdatedAt"></span>
+        </div>
+
+        <div class="converter-grid">
+          <div class="converter-field">
+            <label>₿ <span data-i18n="bitcoin">Bitcoin</span> (<span id="btcUnitLabel">BTC</span>)
+              <span class="btc-unit-toggle">
+                <button type="button" class="btc-unit-btn active" data-unit="btc">BTC</button>
+                <button type="button" class="btc-unit-btn" data-unit="sats">SATS</button>
+              </span>
+            </label>
+            <input type="number" id="convBtcInput" placeholder="0.00000000" step="any">
+          </div>
+          <div class="converter-field">
+            <label>€ <span data-i18n="euro">Euro</span> (EUR)</label>
+            <input type="number" id="convEurInput" placeholder="0.00" step="any">
+          </div>
+          <div class="converter-field">
+            <label>$ Tether (USDT)</label>
+            <input type="number" id="convUsdtInput" placeholder="0.00" step="any">
+          </div>
+        </div>
+        <div class="converter-error" id="converterError"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="tab-power" class="tab-content">
     <div class="blocks-container">
       <div class="panel" style="margin-bottom:18px;">
@@ -2523,6 +2605,15 @@ const I18N_DICT = {
   "maquina_a_reiniciar": { pt: `✓ Máquina a reiniciar...`, en: `✓ Machine restarting...`, es: `✓ Máquina reiniciándose...`, fr: `✓ Machine en redémarrage...` },
   "erro_ao_reiniciar": { pt: `✕ Erro ao reiniciar. Confirma o IP e se a máquina está online.`, en: `✕ Error restarting. Check the IP and whether the machine is online.`, es: `✕ Error al reiniciar. Confirma el IP y si la máquina está en línea.`, fr: `✕ Erreur lors du redémarrage. Vérifie l'IP et si la machine est en ligne.` },
   "nenhuma_maquina_registada_dashboard": { pt: `Nenhuma máquina registada. Adiciona uma máquina no separador "Dashboard Geral".`, en: `No machine registered. Add a machine in the "General Dashboard" tab.`, es: `No hay ninguna máquina registrada. Añade una máquina en la pestaña "Panel General".`, fr: `Aucune machine enregistrée. Ajoute une machine dans l'onglet "Tableau de Bord Général".` },
+  "conversor": { pt: `💱 Conversor`, en: `💱 Converter`, es: `💱 Conversor`, fr: `💱 Convertisseur` },
+  "conversor_de_moedas": { pt: `💱 Conversor de Moedas`, en: `💱 Currency Converter`, es: `💱 Conversor de Monedas`, fr: `💱 Convertisseur de Devises` },
+  "conversor_hint": { pt: `Cotações em tempo real via Binance (BTC/EUR e BTC/USDT). Escreve um valor em qualquer campo — os outros dois atualizam automaticamente.`, en: `Live rates via Binance (BTC/EUR and BTC/USDT). Type a value in any field — the other two update automatically.`, es: `Cotizaciones en tiempo real vía Binance (BTC/EUR y BTC/USDT). Escribe un valor en cualquier campo — los otros dos se actualizan automáticamente.`, fr: `Cours en temps réel via Binance (BTC/EUR et BTC/USDT). Saisis une valeur dans n'importe quel champ — les deux autres se mettent à jour automatiquement.` },
+  "atualizar": { pt: `atualizar`, en: `refresh`, es: `actualizar`, fr: `actualiser` },
+  "bitcoin": { pt: `Bitcoin`, en: `Bitcoin`, es: `Bitcoin`, fr: `Bitcoin` },
+  "euro": { pt: `Euro`, en: `Euro`, es: `Euro`, fr: `Euro` },
+  "atualizado_as": { pt: `atualizado às`, en: `updated at`, es: `actualizado a las`, fr: `mis à jour à` },
+  "erro_ao_obter_cotacoes": { pt: `Não foi possível obter cotações da Binance.`, en: `Could not fetch rates from Binance.`, es: `No se pudieron obtener cotizaciones de Binance.`, fr: `Impossible d'obtenir les cours depuis Binance.` },
+  "erro_de_ligacao_cotacoes": { pt: `Erro de ligação ao obter cotações.`, en: `Connection error while fetching rates.`, es: `Error de conexión al obtener cotizaciones.`, fr: `Erreur de connexion lors de l'obtention des cours.` },
   "ainda_nao_existem_notificacoes_registada": { pt: `Ainda não existem notificações registadas.`, en: `No notifications recorded yet.`, es: `Aún no hay notificaciones registradas.`, fr: `Aucune notification enregistrée pour l'instant.` },
   "assinatura_termica_ventoinha_por_th_s": { pt: `Assinatura Térmica (ventoinha por TH/s) —`, en: `Thermal Signature (fan per TH/s) —`, es: `Firma Térmica (ventilador por TH/s) —`, fr: `Signature Thermique (ventilateur par TH/s) —` },
   "atual": { pt: `Atual:`, en: `Current:`, es: `Actual:`, fr: `Actuel :` },
@@ -2928,6 +3019,7 @@ const TAB_LABEL_KEYS = {
   latency: 'latencia',
   thermal: 'saude_termica',
   oc: 'overclock',
+  converter: 'conversor',
   donate: 'apoiar_doar',
   supporters: 'apoiantes',
   support: 'suporte'
@@ -2981,6 +3073,11 @@ function switchTab(tabName, btnEl) {
   }
   if(tabName === 'oc') {
     renderOcTab();
+  }
+  if(tabName === 'converter') {
+    initConverterTab();
+  } else {
+    stopRatesAutoRefresh();
   }
   if(tabName === 'support') {
     renderSupportDiagBox();
@@ -4235,6 +4332,144 @@ function renderOcTab(){
   });
 
   if(typeof applyTranslations === 'function') applyTranslations();
+}
+
+// --- Conversor de moedas (BTC/EUR/USDT via Binance) ---
+let currentRates = { btc_eur: null, btc_usdt: null, updated: null };
+let ratesRefreshTimer = null;
+let converterListenersWired = false;
+let convertingLock = false;
+let btcUnit = 'btc'; // 'btc' ou 'sats'
+let btcCanonical = null; // valor em BTC "cheio", independente da unidade mostrada
+
+function fmtCurrency(v, decimals){
+  return Number(v).toLocaleString('pt-PT', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+}
+
+function renderRates(){
+  $('rateBtcEur').textContent = currentRates.btc_eur != null ? `${fmtCurrency(currentRates.btc_eur, 2)} €` : '—';
+  $('rateBtcUsdt').textContent = currentRates.btc_usdt != null ? `${fmtCurrency(currentRates.btc_usdt, 2)} $` : '—';
+  if(currentRates.btc_eur && currentRates.btc_usdt){
+    const eurUsdt = currentRates.btc_usdt / currentRates.btc_eur;
+    $('rateEurUsdt').textContent = `${fmtCurrency(eurUsdt, 4)} $`;
+  } else {
+    $('rateEurUsdt').textContent = '—';
+  }
+  const upd = $('ratesUpdatedAt');
+  if(upd){
+    upd.textContent = currentRates.updated
+      ? `${t('atualizado_as')} ${new Date(currentRates.updated * 1000).toLocaleTimeString('pt-PT')}`
+      : '';
+  }
+}
+
+async function fetchRates(force){
+  const errEl = $('converterError');
+  try {
+    const res = await fetch(`/api/rates${force ? '?force=1' : ''}`);
+    const data = await res.json();
+    if(data.btc_eur == null || data.btc_usdt == null){
+      errEl.textContent = t('erro_ao_obter_cotacoes') + (data.error ? ` (${data.error})` : '');
+      return;
+    }
+    errEl.textContent = '';
+    currentRates = data;
+    renderRates();
+  } catch(e){
+    errEl.textContent = t('erro_de_ligacao_cotacoes') + (e.message ? ` (${e.message})` : '');
+  }
+}
+
+function startRatesAutoRefresh(){
+  stopRatesAutoRefresh();
+  ratesRefreshTimer = setInterval(() => fetchRates(false), 30000);
+}
+function stopRatesAutoRefresh(){
+  if(ratesRefreshTimer){ clearInterval(ratesRefreshTimer); ratesRefreshTimer = null; }
+}
+
+function wireConverterInputs(){
+  if(converterListenersWired) return;
+  converterListenersWired = true;
+  const btcEl = $('convBtcInput'), eurEl = $('convEurInput'), usdtEl = $('convUsdtInput');
+
+  const formatBtcForDisplay = (amount) => {
+    if(amount == null || isNaN(amount)) return '';
+    return btcUnit === 'sats' ? String(Math.round(amount * 1e8)) : amount.toFixed(8);
+  };
+  const parseBtcFromInput = (value) => {
+    if(value === '' || value == null) return null;
+    const num = parseFloat(value);
+    if(isNaN(num)) return null;
+    return btcUnit === 'sats' ? num / 1e8 : num;
+  };
+
+  btcEl.addEventListener('input', () => {
+    if(convertingLock) return;
+    const btc = parseBtcFromInput(btcEl.value);
+    btcCanonical = btc;
+    if(!currentRates.btc_eur || !currentRates.btc_usdt) return;
+    convertingLock = true;
+    if(btc != null){
+      eurEl.value = (btc * currentRates.btc_eur).toFixed(2);
+      usdtEl.value = (btc * currentRates.btc_usdt).toFixed(2);
+    } else {
+      eurEl.value = ''; usdtEl.value = '';
+    }
+    convertingLock = false;
+  });
+
+  eurEl.addEventListener('input', () => {
+    if(convertingLock || !currentRates.btc_eur || !currentRates.btc_usdt) return;
+    convertingLock = true;
+    const eur = parseFloat(eurEl.value);
+    if(!isNaN(eur)){
+      const btc = eur / currentRates.btc_eur;
+      btcCanonical = btc;
+      btcEl.value = formatBtcForDisplay(btc);
+      usdtEl.value = (btc * currentRates.btc_usdt).toFixed(2);
+    } else {
+      btcCanonical = null;
+      btcEl.value = ''; usdtEl.value = '';
+    }
+    convertingLock = false;
+  });
+
+  usdtEl.addEventListener('input', () => {
+    if(convertingLock || !currentRates.btc_eur || !currentRates.btc_usdt) return;
+    convertingLock = true;
+    const usdt = parseFloat(usdtEl.value);
+    if(!isNaN(usdt)){
+      const btc = usdt / currentRates.btc_usdt;
+      btcCanonical = btc;
+      btcEl.value = formatBtcForDisplay(btc);
+      eurEl.value = (btc * currentRates.btc_eur).toFixed(2);
+    } else {
+      btcCanonical = null;
+      btcEl.value = ''; eurEl.value = '';
+    }
+    convertingLock = false;
+  });
+
+  document.querySelectorAll('.btc-unit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newUnit = btn.dataset.unit;
+      if(newUnit === btcUnit) return;
+      btcUnit = newUnit;
+      document.querySelectorAll('.btc-unit-btn').forEach(b => b.classList.toggle('active', b === btn));
+      $('btcUnitLabel').textContent = btcUnit === 'sats' ? 'SATS' : 'BTC';
+      btcEl.placeholder = btcUnit === 'sats' ? '0' : '0.00000000';
+      convertingLock = true;
+      btcEl.value = formatBtcForDisplay(btcCanonical);
+      convertingLock = false;
+    });
+  });
+}
+
+function initConverterTab(){
+  wireConverterInputs();
+  fetchRates(false);
+  startRatesAutoRefresh();
 }
 
 function renderThermalTab(){
@@ -5595,6 +5830,8 @@ $('scanModalCloseBtn').onclick = closeScanModal;
 $('scanModalOverlay').addEventListener('click', (e) => {
   if(e.target === $('scanModalOverlay')) closeScanModal();
 });
+
+$('ratesRefreshBtn').onclick = () => fetchRates(true);
 
 $('clearLogBtn').onclick = () => { 
   $('eventLog').innerHTML = ''; 
