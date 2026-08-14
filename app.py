@@ -43,6 +43,10 @@ UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
 _update_cache_lock = threading.Lock()
 
+BINANCE_RATES_CACHE_SECONDS = 20  # não martela a API da Binance
+_rates_cache = {"ts": 0, "data": None}
+_rates_cache_lock = threading.Lock()
+
 # --- Fecho total automático ------------------------------------------------
 # O painel corre no browser predefinido (não é uma janela nativa), por isso
 # o Python não sabe diretamente quando o utilizador fecha o separador/janela
@@ -410,6 +414,52 @@ def check_for_update(force=False):
     with _update_cache_lock:
         _update_cache["ts"] = time.time()
         _update_cache["data"] = result
+    return result
+
+
+def fetch_binance_rates(force=False):
+    """Consulta a Binance (API pública, sem autenticação) para BTC/EUR e
+    BTC/USDT. Faz cache em memória durante BINANCE_RATES_CACHE_SECONDS
+    para não exceder o limite de pedidos da API."""
+    with _rates_cache_lock:
+        cached = _rates_cache["data"]
+        age = time.time() - _rates_cache["ts"]
+        if cached is not None and not force and age < BINANCE_RATES_CACHE_SECONDS:
+            return cached
+
+    result = {
+        "btc_eur": None,
+        "btc_usdt": None,
+        "updated": None,
+        "error": None,
+    }
+    try:
+        api_url = "https://api.binance.com/api/v3/ticker/price?symbols=%5B%22BTCEUR%22%2C%22BTCUSDT%22%5D"
+        req = urllib.request.Request(
+            api_url,
+            headers={'User-Agent': 'CentroDeComando-RatesCheck'}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode('utf-8', errors='ignore'))
+
+        for entry in data:
+            sym = entry.get('symbol')
+            price = entry.get('price')
+            if sym == 'BTCEUR' and price is not None:
+                result["btc_eur"] = float(price)
+            elif sym == 'BTCUSDT' and price is not None:
+                result["btc_usdt"] = float(price)
+
+        if result["btc_eur"] is None or result["btc_usdt"] is None:
+            result["error"] = "Resposta da Binance incompleta"
+        else:
+            result["updated"] = time.time()
+    except Exception as e:
+        result["error"] = str(e)
+
+    with _rates_cache_lock:
+        _rates_cache["ts"] = time.time()
+        _rates_cache["data"] = result
     return result
 
 
@@ -900,6 +950,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e), "subnet": subnet, "devices": []}).encode('utf-8'))
                 return
+
+        if path == '/api/rates':
+            force = query_params.get('force', ['0'])[0] == '1'
+            rates = fetch_binance_rates(force=force)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(rates).encode('utf-8'))
+            return
 
         if path == '/api/power/config':
             with POWER_CONFIG_LOCK:
