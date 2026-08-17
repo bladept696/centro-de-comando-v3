@@ -917,6 +917,34 @@
   .thermal-stats-mini{display:flex; justify-content:space-between; font-size:9.5px; color:var(--muted-2); margin-top:6px; letter-spacing:.03em;}
   .thermal-detail-panel{margin-top:16px;}
 
+  .thermal-detail-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:4px;}
+  .btn-maint{
+    background:#0d2b22; color:var(--green); border:1px solid #21ffb055;
+    font-family:inherit; font-size:11px; font-weight:600; padding:8px 14px; border-radius:6px;
+    cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; transition: all .15s ease;
+  }
+  .btn-maint:hover{background:#0f3a2c;}
+  .btn-maint:disabled{opacity:.45; cursor:not-allowed;}
+  .maint-lastbadge{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600;
+    color:var(--cyan); background:#0d222b; border:1px solid #4fd6ff55; border-radius:6px; padding:6px 10px; margin:8px 0 4px 0;
+  }
+  .maint-history{margin-top:16px; border-top:1px solid var(--line); padding-top:12px;}
+  .maint-history-title{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:8px;}
+  .maint-history-list{display:flex; flex-direction:column; gap:6px;}
+  .maint-history-item{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background:#08121a; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:11px;
+  }
+  .maint-history-item .maint-date{color:var(--cyan); font-weight:600; white-space:nowrap;}
+  .maint-history-item .maint-note{color:var(--muted); flex:1; margin-left:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .maint-history-item .btn-maint-remove{
+    background:transparent; color:var(--muted-2); border:1px solid var(--line-strong);
+    font-family:inherit; font-size:10px; padding:5px 9px; border-radius:6px; cursor:pointer; white-space:nowrap;
+  }
+  .maint-history-item .btn-maint-remove:hover{color:var(--red); border-color:#ff5d5d55; background:#2b0d0d;}
+  .maint-history-empty{font-size:11px; color:var(--muted-2);}
+
   /* --- Simulador Preditivo de Desgaste / Forecast --- */
   .thermal-summary-row{grid-template-columns:repeat(5, 1fr) !important;}
   @media(max-width:1100px){ .thermal-summary-row{grid-template-columns:repeat(2, 1fr) !important;} }
@@ -2717,13 +2745,21 @@
       <div class="thermal-grid" id="thermalGrid"></div>
 
       <div class="panel thermal-detail-panel">
-        <div class="panel-title"><span><span data-i18n="assinatura_termica_ventoinha_por_th_s">Assinatura Térmica (ventoinha por TH/s) —</span> <span id="thermalDetailName">—</span></span></div>
+        <div class="thermal-detail-head">
+          <div class="panel-title" style="margin-bottom:0;"><span><span data-i18n="assinatura_termica_ventoinha_por_th_s">Assinatura Térmica (ventoinha por TH/s) —</span> <span id="thermalDetailName">—</span></span></div>
+          <button class="btn-maint" id="btnRegisterMaint" onclick="registerMaintenance()"><span data-i18n="registar_manutencao">✓ Registar manutenção</span></button>
+        </div>
+        <div id="maintLastBadgeWrap"></div>
         <svg id="chartThermal" viewBox="0 0 300 130" preserveAspectRatio="none" style="width:100%; height:180px;"></svg>
         <div class="ping-detail-stats">
           <div><span data-i18n="atual">Atual:</span> <b id="valThermalNow">—</b></div>
           <div><span data-i18n="baseline_historico">Baseline histórico:</span> <b id="valThermalBaseline">—</b></div>
           <div><span data-i18n="variacao">Variação:</span> <b id="valThermalChange">—</b></div>
           <div><span data-i18n="dados_recolhidos">Dados recolhidos:</span> <b id="valThermalDays">—</b></div>
+        </div>
+        <div class="maint-history">
+          <div class="maint-history-title"><span data-i18n="historico_de_manutencoes">Histórico de Manutenções</span> (<span id="maintHistoryCount">0</span>)</div>
+          <div class="maint-history-list" id="maintHistoryList"></div>
         </div>
       </div>
 
@@ -2983,6 +3019,15 @@ const I18N_DICT = {
   "ph_deixa_em_branco_para_manter": { pt: `deixa em branco para manter`, en: `leave blank to keep`, es: `déjalo en blanco para mantener`, fr: `laisser vide pour conserver` },
   "notificacoes_block_best_diff": { pt: `🔔 Notificações (Block / Best Diff)`, en: `🔔 Notifications (Block / Best Diff)`, es: `🔔 Notificaciones (Block / Best Diff)`, fr: `🔔 Notifications (Block / Best Diff)` },
   "saude_termica": { pt: `🧬 Saúde Térmica`, en: `🧬 Thermal Health`, es: `🧬 Salud Térmica`, fr: `🧬 Santé Thermique` },
+  "registar_manutencao": { pt: `✓ Registar manutenção`, en: `✓ Log maintenance`, es: `✓ Registrar mantenimiento`, fr: `✓ Enregistrer l'entretien` },
+  "historico_de_manutencoes": { pt: `Histórico de Manutenções`, en: `Maintenance History`, es: `Historial de Mantenimientos`, fr: `Historique d'Entretien` },
+  "ultima_manutencao": { pt: `Última manutenção`, en: `Last maintenance`, es: `Último mantenimiento`, fr: `Dernier entretien` },
+  "remover": { pt: `Remover`, en: `Remove`, es: `Eliminar`, fr: `Supprimer` },
+  "hoje": { pt: `hoje`, en: `today`, es: `hoy`, fr: `aujourd'hui` },
+  "ontem": { pt: `ontem`, en: `yesterday`, es: `ayer`, fr: `hier` },
+  "sem_manutencoes_registadas": { pt: `Nenhuma manutenção registada ainda.`, en: `No maintenance logged yet.`, es: `Aún no hay mantenimientos registrados.`, fr: `Aucun entretien enregistré pour l'instant.` },
+  "prompt_nota_manutencao": { pt: `Descreve a manutenção feita (ex: limpeza e pasta térmica):`, en: `Describe the maintenance performed (e.g. cleaning and thermal paste):`, es: `Describe el mantenimiento realizado (ej: limpieza y pasta térmica):`, fr: `Décris l'entretien effectué (ex : nettoyage et pâte thermique) :` },
+  "nota_manutencao_default": { pt: `Limpeza e pasta térmica`, en: `Cleaning and thermal paste`, es: `Limpieza y pasta térmica`, fr: `Nettoyage et pâte thermique` },
   "tempo_seg_atras": { pt: `{n} seg atrás`, en: `{n} sec ago`, es: `hace {n} seg`, fr: `il y a {n} sec` },
   "tempo_min_atras": { pt: `{n} min atrás`, en: `{n} min ago`, es: `hace {n} min`, fr: `il y a {n} min` },
   "tempo_h_atras": { pt: `{n}h atrás`, en: `{n}h ago`, es: `hace {n}h`, fr: `il y a {n}h` },
@@ -3023,6 +3068,7 @@ const THEME_KEY = 'nerdqaxe:theme';
 const MAX_POINTS = 300;
 
 const THERMAL_KEY = 'nerdqaxe:thermal_history';
+const THERMAL_MAINT_KEY = 'nerdqaxe:thermal_maintenance';
 const THERMAL_SNAPSHOT_INTERVAL_MS = 20 * 60 * 1000;   // regista 1 amostra a cada 20 min
 const THERMAL_MAX_SNAPSHOTS = 504;                     // ~7 dias de amostras por máquina
 const THERMAL_MIN_BASELINE_SNAPSHOTS = 36;              // ~12h antes de emitir diagnóstico
@@ -3050,6 +3096,7 @@ let selectedId = null;
 let baselineSeen = {};
 
 let thermalHistory = {};
+let maintenanceLog = {}; // { [devId]: [{ t: timestamp, note: string }] }, mais recente no fim
 let thermalAlertState = {};
 let thermalForecastAlertState = {};
 let thermalSelectedId = null;
@@ -4572,6 +4619,98 @@ function saveThermalHistory(){
   try { localStorage.setItem(THERMAL_KEY, JSON.stringify(thermalHistory)); } catch(e){}
 }
 
+// ---------- Registo de Manutenções (limpeza / pasta térmica / troca de ventoinha) ----------
+// Guarda, por máquina, um histórico de manutenções físicas feitas. Ao registar uma
+// manutenção, o diagnóstico de saúde térmica e a previsão de desgaste passam a
+// considerar apenas as amostras recolhidas depois dessa data, para que o baseline
+// reflita o estado "pós-manutenção" em vez de misturar dados de antes e depois da limpeza.
+
+function loadMaintenanceLog(){
+  try {
+    const res = localStorage.getItem(THERMAL_MAINT_KEY);
+    if(res) maintenanceLog = JSON.parse(res);
+  } catch(e) { maintenanceLog = {}; }
+}
+
+function saveMaintenanceLog(){
+  try { localStorage.setItem(THERMAL_MAINT_KEY, JSON.stringify(maintenanceLog)); } catch(e){}
+}
+
+function getLastMaintenanceTime(devId){
+  const arr = maintenanceLog[devId];
+  if(!arr || !arr.length) return null;
+  return arr[arr.length - 1].t;
+}
+
+function registerMaintenance(){
+  const dev = devices.find(d => d.id === thermalSelectedId);
+  if(!dev) return;
+
+  const note = prompt(t('prompt_nota_manutencao'), t('nota_manutencao_default'));
+  if(note === null) return; // utilizador cancelou o prompt
+
+  const arr = maintenanceLog[dev.id] || (maintenanceLog[dev.id] = []);
+  arr.push({ t: Date.now(), note: (note || '').trim() || t('nota_manutencao_default') });
+  saveMaintenanceLog();
+
+  logEvent(`🔧 Manutenção registada: ${arr[arr.length - 1].note}`, 'new', dev.name, dev.id);
+  thermalAlertState[dev.id] = 'normal';
+  renderThermalTab();
+}
+
+function removeMaintenanceEntry(devId, index){
+  const arr = maintenanceLog[devId];
+  if(!arr || !arr[index]) return;
+  arr.splice(index, 1);
+  saveMaintenanceLog();
+  renderThermalTab();
+}
+
+function formatMaintDate(ts){
+  const d = new Date(ts);
+  const dateStr = d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const today = new Date();
+  const yest = new Date(today); yest.setDate(yest.getDate() - 1);
+  let suffix = '';
+  if(d.toDateString() === today.toDateString()) suffix = ` (${t('hoje')})`;
+  else if(d.toDateString() === yest.toDateString()) suffix = ` (${t('ontem')})`;
+  return dateStr + suffix;
+}
+
+function renderMaintenancePanel(devId){
+  const badgeWrap = $('maintLastBadgeWrap');
+  const listEl = $('maintHistoryList');
+  const countEl = $('maintHistoryCount');
+  const btn = $('btnRegisterMaint');
+  if(!badgeWrap || !listEl || !countEl) return;
+
+  if(btn) btn.disabled = !devId;
+
+  const arr = (devId && maintenanceLog[devId]) || [];
+
+  if(!arr.length){
+    badgeWrap.innerHTML = '';
+    countEl.textContent = '0';
+    listEl.innerHTML = `<div class="maint-history-empty">${t('sem_manutencoes_registadas')}</div>`;
+    return;
+  }
+
+  const last = arr[arr.length - 1];
+  badgeWrap.innerHTML = `<div class="maint-lastbadge">🔧 <span data-i18n="ultima_manutencao">${t('ultima_manutencao')}</span>: ${formatMaintDate(last.t)}</div>`;
+  countEl.textContent = arr.length;
+
+  listEl.innerHTML = arr.slice().reverse().map((entry) => {
+    const realIndex = arr.indexOf(entry);
+    return `
+      <div class="maint-history-item">
+        <span class="maint-date">${formatMaintDate(entry.t)}</span>
+        <span class="maint-note">${entry.note}</span>
+        <button class="btn-maint-remove" onclick="removeMaintenanceEntry('${devId}', ${realIndex})"><span data-i18n="remover">${t('remover')}</span></button>
+      </div>
+    `;
+  }).join('');
+}
+
 // Regista periodicamente uma amostra de quanto "esforço" de ventilação (RPM por TH/s)
 // a máquina precisou para manter o hashrate atual. É esta série ao longo de vários dias
 // que permite detetar degradação de pasta térmica, pó nos dissipadores ou desgaste da ventoinha.
@@ -4598,7 +4737,8 @@ function recordThermalSnapshot(dev, reading){
 // Compara o esforço de arrefecimento recente (últimas 24h) com a média histórica
 // registada nos dias anteriores, para o mesmo dispositivo.
 function computeThermalHealth(devId){
-  const arr = (thermalHistory[devId] || []).filter(s => s.effort > 0 && isFinite(s.effort));
+  const lastMaint = getLastMaintenanceTime(devId);
+  const arr = (thermalHistory[devId] || []).filter(s => s.effort > 0 && isFinite(s.effort) && (!lastMaint || s.t > lastMaint));
 
   if(arr.length < THERMAL_MIN_BASELINE_SNAPSHOTS){
     return {
@@ -4657,7 +4797,8 @@ function evaluateThermalHealth(dev){
 // de "Atenção" e "Crítico" já usados no diagnóstico em tempo real, permitindo agendar
 // limpeza/manutenção antes de o ASIC entrar em thermal throttling inesperado.
 function computeThermalForecast(devId){
-  const arr = (thermalHistory[devId] || []).filter(s => s.effort > 0 && isFinite(s.effort));
+  const lastMaint = getLastMaintenanceTime(devId);
+  const arr = (thermalHistory[devId] || []).filter(s => s.effort > 0 && isFinite(s.effort) && (!lastMaint || s.t > lastMaint));
   if(arr.length < THERMAL_MIN_BASELINE_SNAPSHOTS){
     return { status: 'collecting' };
   }
@@ -5231,6 +5372,7 @@ function renderThermalTab(){
     $('valThermalBaseline').textContent = '—';
     $('valThermalChange').textContent = '—';
     $('valThermalDays').textContent = '—';
+    renderMaintenancePanel(null);
     return;
   }
 
@@ -5329,6 +5471,7 @@ function renderThermalTab(){
     $('valThermalBaseline').textContent = health.baselineEffort != null ? health.baselineEffort.toFixed(2) : '—';
     $('valThermalChange').textContent = health.changePct != null ? `${health.changePct >= 0 ? '+' : ''}${health.changePct.toFixed(1)}%` : '—';
     $('valThermalDays').textContent = health.points.length ? `${health.daysRecorded.toFixed(1)} dias (${health.points.length} amostras)` : '—';
+    renderMaintenancePanel(selDev.id);
   } else {
     $('thermalDetailName').textContent = '—';
     $('chartThermal').innerHTML = '';
@@ -5336,6 +5479,7 @@ function renderThermalTab(){
     $('valThermalBaseline').textContent = '—';
     $('valThermalChange').textContent = '—';
     $('valThermalDays').textContent = '—';
+    renderMaintenancePanel(null);
   }
 
   renderForecastBody(selDev);
@@ -6607,6 +6751,7 @@ initKioskMode();
   loadNotifications();
   updateToastToggleBtn();
   loadThermalHistory();
+  loadMaintenanceLog();
   loadThermalProtectionSettings();
   loadAchievements();
   updateAchvBadge();
