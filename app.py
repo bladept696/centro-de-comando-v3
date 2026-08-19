@@ -37,7 +37,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.2.0"
+APP_VERSION = "3.2.1"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -343,6 +343,17 @@ DEFAULT_POWER_CONFIG = {
     "profiles": [],
     "devices": []   # lista de máquinas registadas: {id, name, ip}
 }
+
+# Cache do endpoint que funcionou da última vez para cada IP ('info',
+# 'system' ou 'cgminer'). Evita repetir toda a cadeia de fallback
+# (info -> system -> cgminer, que no pior caso pode demorar ~8.5s) em
+# cada poll de 5s para máquinas que não respondem ao endpoint
+# primário 'info' - isso fazia essas máquinas serem abortadas pelo
+# timeout de 3.5s do frontend e aparecerem como offline quase sempre,
+# mesmo estando online.
+endpoint_cache_lock = threading.Lock()
+endpoint_cache = {}  # ip -> 'info' | 'system' | 'cgminer'
+
 
 mqtt_state_lock = threading.Lock()
 mqtt_state = {
@@ -812,80 +823,84 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             target_ip = ip_list[0].strip()
-            target_url = f"http://{target_ip}/api/system/info"
 
-            try:
-                req = urllib.request.Request(
-                    target_url,
-                    headers={
-                        'User-Agent': 'NerdQaxeDashboard/1.0',
-                        'Accept-Encoding': 'gzip, deflate'
-                    }
-                )
-                with urllib.request.urlopen(req, timeout=3) as response:
-                    raw_data = response.read()
-                    if response.headers.get('Content-Encoding') == 'gzip' or raw_data[:2] == b'\x1f\x8b':
-                        buffer = io.BytesIO(raw_data)
-                        with gzip.GzipFile(fileobj=buffer) as gz:
-                            data = gz.read()
-                    else:
-                        data = raw_data
+            # Tenta primeiro o endpoint que se sabe (de um pedido anterior)
+            # que esta máquina usa, para não perder tempo a sondar os
+            # outros dois em cada poll de 5s. Isto é o que evita que uma
+            # máquina que só responde em 'system' (não em 'info') seja
+            # sempre abortada pelo timeout de 3.5s do frontend antes de o
+            # backend sequer lá chegar.
+            with endpoint_cache_lock:
+                preferred = endpoint_cache.get(target_ip, 'info')
+            order = [preferred] + [m for m in ('info', 'system', 'cgminer') if m != preferred]
 
-                    try:
-                        cache_reading(target_ip, json.loads(data.decode('utf-8')))
-                    except Exception:
-                        pass
-
-                    self.send_response(200)
-                    self.send_header('Access-Control-Allow-Origin', '*')
-                    self.send_header('Content-Type', 'application/json; charset=utf-8')
-                    self.end_headers()
-                    self.wfile.write(data)
-                    return
-            except Exception:
+            last_error = None
+            for method in order:
                 try:
-                    alt_url = f"http://{target_ip}/api/system"
-                    req_alt = urllib.request.Request(alt_url, headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Accept-Encoding': 'gzip, deflate'})
-                    with urllib.request.urlopen(req_alt, timeout=3) as resp_alt:
-                        raw_alt = resp_alt.read()
-                        if resp_alt.headers.get('Content-Encoding') == 'gzip' or raw_alt[:2] == b'\x1f\x8b':
-                            buf_alt = io.BytesIO(raw_alt)
-                            with gzip.GzipFile(fileobj=buf_alt) as gz_alt:
-                                data_alt = gz_alt.read()
-                        else:
-                            data_alt = raw_alt
+                    if method in ('info', 'system'):
+                        path_suffix = '/api/system/info' if method == 'info' else '/api/system'
+                        req = urllib.request.Request(
+                            f"http://{target_ip}{path_suffix}",
+                            headers={
+                                'User-Agent': 'NerdQaxeDashboard/1.0',
+                                'Accept-Encoding': 'gzip, deflate'
+                            }
+                        )
+                        # Timeout mais curto (1.8s) por tentativa: com o
+                        # cache de endpoint, a tentativa preferida costuma
+                        # acertar à primeira, e isto mantém o pior caso
+                        # (3 tentativas) sob o limite de 3.5s do frontend.
+                        with urllib.request.urlopen(req, timeout=1.8) as response:
+                            raw_data = response.read()
+                            if response.headers.get('Content-Encoding') == 'gzip' or raw_data[:2] == b'\x1f\x8b':
+                                buffer = io.BytesIO(raw_data)
+                                with gzip.GzipFile(fileobj=buffer) as gz:
+                                    data = gz.read()
+                            else:
+                                data = raw_data
 
-                        try:
-                            cache_reading(target_ip, json.loads(data_alt.decode('utf-8')))
-                        except Exception:
-                            pass
+                            try:
+                                cache_reading(target_ip, json.loads(data.decode('utf-8')))
+                            except Exception:
+                                pass
 
-                        self.send_response(200)
-                        self.send_header('Access-Control-Allow-Origin', '*')
-                        self.send_header('Content-Type', 'application/json; charset=utf-8')
-                        self.end_headers()
-                        self.wfile.write(data_alt)
-                        return
-                except Exception as e2:
-                    # Não respondeu como NerdQAxe++ (HTTP) — tenta a API
-                    # cgminer/LuxOS (Antminer e derivados) na porta 4028
-                    # antes de reportar a máquina como offline.
-                    cgminer_data = fetch_cgminer_full(target_ip)
-                    if cgminer_data is not None:
-                        cache_reading(target_ip, cgminer_data)
-                        self.send_response(200)
-                        self.send_header('Access-Control-Allow-Origin', '*')
-                        self.send_header('Content-Type', 'application/json; charset=utf-8')
-                        self.end_headers()
-                        self.wfile.write(json.dumps(cgminer_data).encode('utf-8'))
-                        return
+                            with endpoint_cache_lock:
+                                endpoint_cache[target_ip] = method
 
-                    self.send_response(502)
-                    self.send_header('Access-Control-Allow-Origin', '*')
-                    self.send_header('Content-Type', 'application/json; charset=utf-8')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"error": str(e2), "online": False}).encode('utf-8'))
-                    return
+                            self.send_response(200)
+                            self.send_header('Access-Control-Allow-Origin', '*')
+                            self.send_header('Content-Type', 'application/json; charset=utf-8')
+                            self.end_headers()
+                            self.wfile.write(data)
+                            return
+                    else:  # cgminer
+                        cgminer_data = fetch_cgminer_full(target_ip)
+                        if cgminer_data is not None:
+                            cache_reading(target_ip, cgminer_data)
+                            with endpoint_cache_lock:
+                                endpoint_cache[target_ip] = 'cgminer'
+                            self.send_response(200)
+                            self.send_header('Access-Control-Allow-Origin', '*')
+                            self.send_header('Content-Type', 'application/json; charset=utf-8')
+                            self.end_headers()
+                            self.wfile.write(json.dumps(cgminer_data).encode('utf-8'))
+                            return
+                        last_error = Exception("cgminer: sem resposta")
+                except Exception as e:
+                    last_error = e
+                    continue
+
+            # Nenhum dos três métodos respondeu: limpa a preferência
+            # em cache (pode ter mudado de firmware/tipo) e reporta offline.
+            with endpoint_cache_lock:
+                endpoint_cache.pop(target_ip, None)
+
+            self.send_response(502)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(last_error), "online": False}).encode('utf-8'))
+            return
 
         if path == '/api/overlay':
             farm, machines = build_overlay_snapshot()
