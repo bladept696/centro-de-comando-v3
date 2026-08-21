@@ -21,6 +21,8 @@ import json
 import gzip
 import io
 import copy
+import hmac
+import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
@@ -341,7 +343,11 @@ DEFAULT_POWER_CONFIG = {
         "topic_tariff": "",
     },
     "profiles": [],
-    "devices": []   # lista de máquinas registadas: {id, name, ip}
+    "devices": [],   # lista de máquinas registadas: {id, name, ip}
+    "mrr": {
+        "api_key": "",
+        "api_secret": "",
+    },
 }
 
 # Cache do endpoint que funcionou da última vez para cada IP ('info',
@@ -496,6 +502,7 @@ def load_power_config():
         cfg["mqtt"].update(data.get("mqtt", {}) or {})
         cfg["profiles"] = data.get("profiles", []) or []
         cfg["devices"] = data.get("devices", []) or []
+        cfg["mrr"].update(data.get("mrr", {}) or {})
         return cfg
     except Exception:
         return copy.deepcopy(DEFAULT_POWER_CONFIG)
@@ -511,6 +518,53 @@ def save_power_config(cfg):
 
 
 power_config = load_power_config()
+
+
+# --- MiningRigRentals (aba "Renting") --------------------------------------
+# A API da MRR exige autenticação por API Key + API Secret (não é possível
+# usar apenas o email) com assinatura HMAC-SHA1 por pedido:
+# https://www.miningrigrentals.com/apidocv2
+MRR_API_BASE = "https://www.miningrigrentals.com/api/v2"
+MRR_NONCE_LOCK = threading.Lock()
+_mrr_last_nonce = [0]
+
+
+def mrr_next_nonce():
+    # O nonce tem de ser sempre crescente entre pedidos; usar millis desde
+    # epoch chega, mas se dois pedidos caírem no mesmo milissegundo
+    # garantimos incremento manual.
+    with MRR_NONCE_LOCK:
+        n = int(time.time() * 1000)
+        if n <= _mrr_last_nonce[0]:
+            n = _mrr_last_nonce[0] + 1
+        _mrr_last_nonce[0] = n
+        return str(n)
+
+
+def mrr_request(endpoint, method='GET', params=None):
+    """Chama a API v2 da MiningRigRentals com assinatura HMAC-SHA1.
+    endpoint deve começar por '/' e não ter barra final, ex: '/whoami'."""
+    api_key = (power_config.get("mrr", {}) or {}).get("api_key", "").strip()
+    api_secret = (power_config.get("mrr", {}) or {}).get("api_secret", "").strip()
+    if not api_key or not api_secret:
+        raise Exception("Chave/segredo da MiningRigRentals não configurados")
+
+    nonce = mrr_next_nonce()
+    sign_string = f"{api_key}{nonce}{endpoint}"
+    signature = hmac.new(api_secret.encode('utf-8'), sign_string.encode('utf-8'), hashlib.sha1).hexdigest()
+
+    url = f"{MRR_API_BASE}{endpoint}"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+
+    req = urllib.request.Request(url, method=method, headers={
+        'x-api-key': api_key,
+        'x-api-sign': signature,
+        'x-api-nonce': nonce,
+        'User-Agent': 'NerdQaxeDashboard/1.0',
+    })
+    with urllib.request.urlopen(req, timeout=10) as response:
+        return json.loads(response.read().decode('utf-8'))
 
 
 # --- Integrações externas (Rainmeter / OBS) --------------------------------
@@ -1028,6 +1082,49 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"devices": devices}).encode('utf-8'))
             return
 
+        if path == '/api/mrr/status':
+            with POWER_CONFIG_LOCK:
+                mrr_cfg = copy.deepcopy(power_config.get("mrr", {}) or {})
+            configured = bool(mrr_cfg.get("api_key")) and bool(mrr_cfg.get("api_secret"))
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"configured": configured}).encode('utf-8'))
+            return
+
+        if path == '/api/mrr/rentals':
+            try:
+                # type=renter -> rentals que TU alugaste (não as tuas rigs
+                # alugadas a outros); history=0 -> só as ativas, não
+                # o histórico (usamos '0'/'1' em vez de 'true'/'false' em
+                # texto, já que muitas APIs em PHP tratam a string "false"
+                # como verdadeira por não estar vazia).
+                result = mrr_request('/rental', params={'type': 'renter', 'history': '0'})
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+            except Exception as e:
+                self.send_response(502)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}, ensure_ascii=False).encode('utf-8'))
+            return
+
+        if path == '/api/mrr/balance':
+            try:
+                result = mrr_request('/account/balance')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+            except Exception as e:
+                self.send_response(502)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}, ensure_ascii=False).encode('utf-8'))
+            return
+
         super().do_GET()
 
     def do_POST(self):
@@ -1157,6 +1254,29 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({"ok": saved, "devices": clean}).encode('utf-8'))
+            return
+
+        if path == '/api/mrr/config':
+            api_key = str(body.get("api_key") or "").strip()
+            # Se o secret não vier no pedido (campo deixado em branco no
+            # frontend para "manter o atual"), preserva o que já estava
+            # guardado em vez de o apagar - bug anterior sobrescrevia
+            # sempre com string vazia e desfazia a ligação sem avisar.
+            secret_provided = "api_secret" in body and str(body.get("api_secret") or "").strip() != ""
+            with POWER_CONFIG_LOCK:
+                new_cfg = copy.deepcopy(power_config)
+                existing_secret = (new_cfg.get("mrr", {}) or {}).get("api_secret", "")
+                new_secret = str(body.get("api_secret")).strip() if secret_provided else existing_secret
+                new_cfg["mrr"] = {"api_key": api_key, "api_secret": new_secret}
+                saved = save_power_config(new_cfg)
+                if saved:
+                    power_config = new_cfg
+
+            self.send_response(200 if saved else 500)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
             return
 
         if path == '/api/apply-profile':
