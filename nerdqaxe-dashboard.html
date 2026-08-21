@@ -1084,6 +1084,45 @@
   .power-live-row b { color: var(--cyan); font-family: 'Space Grotesk', sans-serif; font-size: 14px; }
   .power-live-error { color: var(--amber); font-size: 11px; margin-top: 6px; }
 
+  /* --- Renting (MiningRigRentals) ---------------------------------------- */
+  .renting-list { display: flex; flex-direction: column; gap: 12px; }
+  .renting-empty { text-align: center; color: var(--muted); font-size: 12px; padding: 30px; }
+  .renting-card {
+    background: #ffffff06;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .renting-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .renting-card-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; color: var(--text); }
+  .renting-status-pill {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .renting-status-pill.active { background: #12351f; color: var(--green); }
+  .renting-status-pill.expired { background: #3a1414; color: var(--red); }
+  .renting-status-pill.other { background: #2a2a1a; color: var(--amber); }
+  .renting-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px 16px;
+  }
+  .renting-field-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .renting-field-val { font-family: monospace; font-size: 13px; color: var(--text); margin-top: 2px; }
+  @media (max-width: 600px) {
+    .renting-grid { grid-template-columns: 1fr 1fr; }
+  }
+
   .power-profiles-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
   .power-profile-row {
     display: grid;
@@ -2063,18 +2102,6 @@
   }
   .notif-share-btn:hover{ background:#ffb02022; border-color:var(--amber); }
 
-  /* --- Partilha de Best Diff em tempo real ------------------------------ */
-  .diff-share-btn{
-    border:1px solid var(--line-strong); background:#0d1a26; color:var(--amber);
-    border-radius:5px; padding:2px 5px; font-size:10px; cursor:pointer; line-height:1.4;
-    transition:background .15s ease, border-color .15s ease, transform .15s ease;
-    flex-shrink:0;
-  }
-  .diff-share-btn:hover{ background:#ffb02022; border-color:var(--amber); transform:translateY(-1px); }
-  .diff-share-btn:active{ transform:translateY(0); }
-  .metric-value-group{ display:flex; align-items:center; gap:6px; }
-  .gauge-share-btn{ margin-top:6px; }
-
   /* --- Toasts (pop-ups de notificação) --------------------------------- */
   .toast-stack {
     position: fixed;
@@ -2344,6 +2371,299 @@
     .achv-grid{ grid-template-columns:1fr; padding:2px 14px 20px; }
     .achv-summary-bar{ padding:14px; }
   }
+
+  /* --- Live Shares (widget flutuante) ----------------------------------- */
+  .ls-fab {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 9998;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 8px 22px #000a, 0 0 0 1px #ffffff08;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .ls-fab:hover { transform: scale(1.06); border-color: var(--green); }
+  .ls-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--green);
+    color: #04140d;
+    font-size: 10px;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+  }
+  .ls-fab-badge.show { display: flex; }
+  .ls-fab.pulse { animation: ls-fab-pulse 0.5s ease; }
+  @keyframes ls-fab-pulse {
+    0% { box-shadow: 0 0 0 0 var(--green-dim); }
+    100% { box-shadow: 0 0 0 14px #21ffb000; }
+  }
+
+  .ls-panel {
+    position: fixed;
+    right: 18px;
+    bottom: 82px;
+    z-index: 9998;
+    width: min(320px, calc(100vw - 32px));
+    max-height: 320px;
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px #000c, 0 0 0 1px #ffffff08;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .ls-panel.open { display: flex; animation: toast-in 0.2s ease-out; }
+  .ls-panel-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .ls-panel-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .ls-panel-title .ls-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .ls-panel-close { background: none; border: none; color: var(--muted-2); font-size: 15px; cursor: pointer; line-height: 1; }
+  .ls-panel-close:hover { color: var(--text); }
+  .ls-stats-row {
+    display: flex;
+    gap: 6px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ls-stat {
+    flex: 1;
+    text-align: center;
+    background: #ffffff06;
+    border-radius: 7px;
+    padding: 5px 4px;
+  }
+  .ls-stat-val { font-family: monospace; font-weight: 700; font-size: 13px; color: var(--text); }
+  .ls-stat-val.green { color: var(--green); }
+  .ls-stat-val.red { color: var(--red); }
+  .ls-stat-label { font-size: 8.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 1px; }
+  .ls-feed {
+    flex: 1;
+    max-height: 170px;
+    overflow: hidden;
+    padding: 5px 6px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 3px;
+  }
+  .ls-feed-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 7px;
+    border-radius: 6px;
+    background: #ffffff05;
+    font-size: 11px;
+    animation: ls-feed-in 0.25s ease-out;
+  }
+  @keyframes ls-feed-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .ls-feed-icon { font-size: 12px; width: 14px; text-align: center; flex-shrink: 0; }
+  .ls-feed-item.accepted .ls-feed-icon { color: var(--green); }
+  .ls-feed-item.rejected .ls-feed-icon { color: var(--red); }
+  .ls-feed-machine { font-weight: 600; color: var(--text); flex-shrink: 0; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ls-feed-text { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ls-feed-time { font-family: monospace; font-size: 10px; color: var(--muted-2); flex-shrink: 0; }
+  .ls-feed-empty { text-align: center; color: var(--muted); font-size: 11.5px; padding: 24px 10px; }
+  @media (max-width: 600px) {
+    .ls-panel { right: 8px; left: 8px; width: auto; bottom: 76px; }
+    .ls-fab { right: 12px; bottom: 12px; }
+  }
+
+  .ls-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ls-filter-select {
+    flex: 1;
+    background: #ffffff08;
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 6px;
+    font-size: 11px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .ls-filter-select option {
+    background: var(--panel);
+    color: var(--text);
+  }
+  .ls-viewall-btn {
+    background: none;
+    border: 1px solid var(--line-strong);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 10.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .ls-viewall-btn:hover { color: var(--text); border-color: var(--cyan); }
+
+  .ls-full-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #000a;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .ls-full-modal.open { display: flex; }
+  .ls-full-card {
+    width: min(480px, 100%);
+    max-height: min(72vh, 640px);
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px #000c;
+  }
+  .ls-full-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .ls-full-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; color: var(--text); }
+  .ls-full-close { background: none; border: none; color: var(--muted-2); font-size: 17px; cursor: pointer; line-height: 1; }
+  .ls-full-close:hover { color: var(--text); }
+  .ls-full-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
+  }
+
+  /* --- Best Diff ao vivo (widget flutuante) ------------------------------ */
+  .bd-fab {
+    position: fixed;
+    right: 82px;
+    bottom: 18px;
+    z-index: 9998;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 8px 22px #000a, 0 0 0 1px #ffffff08;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .bd-fab:hover { transform: scale(1.06); border-color: var(--amber); }
+  .bd-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--amber);
+    color: #241800;
+    font-size: 10px;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+  }
+  .bd-fab-badge.show { display: flex; }
+  .bd-fab.pulse { animation: bd-fab-pulse 0.5s ease; }
+  @keyframes bd-fab-pulse {
+    0% { box-shadow: 0 0 0 0 var(--amber-dim); }
+    100% { box-shadow: 0 0 0 14px #ffb02000; }
+  }
+  .bd-panel {
+    position: fixed;
+    right: 18px;
+    bottom: 82px;
+    z-index: 9998;
+    width: min(320px, calc(100vw - 32px));
+    max-height: 320px;
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px #000c, 0 0 0 1px #ffffff08;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .bd-panel.open { display: flex; animation: toast-in 0.2s ease-out; }
+  .bd-panel-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .bd-panel-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .bd-panel-title .bd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .bd-panel-close { background: none; border: none; color: var(--muted-2); font-size: 15px; cursor: pointer; line-height: 1; }
+  .bd-panel-close:hover { color: var(--text); }
+  .bd-feed-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 7px;
+    border-radius: 6px;
+    background: #ffffff05;
+    font-size: 11px;
+    animation: ls-feed-in 0.25s ease-out;
+  }
+  .bd-feed-icon { font-size: 12px; width: 14px; text-align: center; flex-shrink: 0; color: var(--amber); }
+  .bd-feed-machine { font-weight: 600; color: var(--text); flex-shrink: 0; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bd-feed-text { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bd-feed-text b { color: var(--amber); font-weight: 700; }
+  .bd-feed-time { font-family: monospace; font-size: 10px; color: var(--muted-2); flex-shrink: 0; }
+  @media (max-width: 600px) {
+    .bd-panel { right: 8px; left: 8px; width: auto; bottom: 76px; }
+    .bd-fab { right: 68px; bottom: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -2370,6 +2690,90 @@
     <span data-i18n="rodar_separadores">Rodar separadores</span>
   </label>
   <button class="kiosk-exit-btn" onclick="exitKioskMode()"><span data-i18n="sair_do_kiosk">Sair (Esc)</span></button>
+</div>
+
+<button class="ls-fab" id="lsFab" onclick="toggleLiveSharesPanel()" title="Live Shares">
+  ⚡<span class="ls-fab-badge" id="lsFabBadge">0</span>
+</button>
+<div class="ls-panel" id="lsPanel">
+  <div class="ls-panel-header">
+    <div class="ls-panel-title"><span class="ls-dot"></span><span data-i18n="live_shares">Live Shares</span></div>
+    <button class="ls-panel-close" onclick="toggleLiveSharesPanel(false)">✕</button>
+  </div>
+  <div class="ls-stats-row">
+    <div class="ls-stat">
+      <div class="ls-stat-val green" id="lsStatAccepted">0</div>
+      <div class="ls-stat-label" data-i18n="aceites">Aceites</div>
+    </div>
+    <div class="ls-stat">
+      <div class="ls-stat-val red" id="lsStatRejected">0</div>
+      <div class="ls-stat-label" data-i18n="rejeitadas">Rejeitadas</div>
+    </div>
+    <div class="ls-stat">
+      <div class="ls-stat-val" id="lsStatRate">0</div>
+      <div class="ls-stat-label" data-i18n="por_minuto">/min</div>
+    </div>
+  </div>
+  <div class="ls-filter-row">
+    <select class="ls-filter-select" id="lsMachineFilter" onchange="onLiveSharesFilterChange(this.value)"></select>
+    <button class="ls-viewall-btn" onclick="openLiveSharesFullModal()" data-i18n="ver_tudo">Ver tudo</button>
+  </div>
+  <div class="ls-feed" id="lsFeed">
+    <div class="ls-feed-empty" data-i18n="ls_a_aguardar">A aguardar shares...</div>
+  </div>
+</div>
+
+<div class="ls-full-modal" id="lsFullModal" onclick="if(event.target===this) closeLiveSharesFullModal()">
+  <div class="ls-full-card">
+    <div class="ls-full-header">
+      <div class="ls-full-title" data-i18n="live_shares">Live Shares</div>
+      <select class="ls-filter-select" id="lsMachineFilterFull" style="max-width:150px;" onchange="onLiveSharesFilterChange(this.value)"></select>
+      <button class="ls-full-close" onclick="closeLiveSharesFullModal()">✕</button>
+    </div>
+    <div class="ls-full-list" id="lsFullList"></div>
+  </div>
+</div>
+
+<button class="bd-fab" id="bdFab" onclick="toggleBestDiffPanel()" title="Best Diff ao vivo">
+  🏆<span class="bd-fab-badge" id="bdFabBadge">0</span>
+</button>
+<div class="bd-panel" id="bdPanel">
+  <div class="bd-panel-header">
+    <div class="bd-panel-title"><span class="bd-dot"></span><span data-i18n="best_diff_ao_vivo">Best Diff ao Vivo</span></div>
+    <button class="bd-panel-close" onclick="toggleBestDiffPanel(false)">✕</button>
+  </div>
+  <div class="ls-stats-row">
+    <div class="ls-stat">
+      <div class="ls-stat-val" id="bdStatBest" style="color:var(--amber);">—</div>
+      <div class="ls-stat-label" data-i18n="melhor_diff">Melhor Diff</div>
+    </div>
+    <div class="ls-stat">
+      <div class="ls-stat-val" id="bdStatCount">0</div>
+      <div class="ls-stat-label" data-i18n="registos">Registos</div>
+    </div>
+    <div class="ls-stat">
+      <div class="ls-stat-val" id="bdStatLast">—</div>
+      <div class="ls-stat-label" data-i18n="ultima">Última</div>
+    </div>
+  </div>
+  <div class="ls-filter-row">
+    <select class="ls-filter-select" id="bdMachineFilter" onchange="onBestDiffFilterChange(this.value)"></select>
+    <button class="ls-viewall-btn" onclick="openBestDiffFullModal()" data-i18n="ver_tudo">Ver tudo</button>
+  </div>
+  <div class="ls-feed" id="bdFeed">
+    <div class="ls-feed-empty" data-i18n="bd_a_aguardar">A aguardar novos recordes...</div>
+  </div>
+</div>
+
+<div class="ls-full-modal" id="bdFullModal" onclick="if(event.target===this) closeBestDiffFullModal()">
+  <div class="ls-full-card">
+    <div class="ls-full-header">
+      <div class="ls-full-title" data-i18n="best_diff_ao_vivo">Best Diff ao Vivo</div>
+      <select class="ls-filter-select" id="bdMachineFilterFull" style="max-width:150px;" onchange="onBestDiffFilterChange(this.value)"></select>
+      <button class="ls-full-close" onclick="closeBestDiffFullModal()">✕</button>
+    </div>
+    <div class="ls-full-list" id="bdFullList"></div>
+  </div>
 </div>
 
 <div class="frame">
@@ -2444,6 +2848,7 @@
       <button class="tab-btn amber-tab" onclick="switchTab('donate', this)"><span data-i18n="apoiar_doar">⚡ Apoiar / Doar</span></button>
       <button class="tab-btn" onclick="switchTab('supporters', this)"><span data-i18n="apoiantes">🌟 Apoiantes</span></button>
       <button class="tab-btn" onclick="switchTab('support', this)"><span data-i18n="suporte">🛟 Suporte</span></button>
+      <button class="tab-btn" onclick="switchTab('renting', this)"><span data-i18n="renting">🏗️ Renting</span></button>
     </div>
   </div>
 
@@ -2477,7 +2882,6 @@
           </div>
           <div class="gauge-right">
             <div class="value amber" id="sBest">—</div>
-            <button type="button" class="diff-share-btn gauge-share-btn" id="sBestShareBtn" title="Partilhar melhor diff" data-i18n-title="partilhar_diff_atual" onclick="shareGlobalBestDiffImage()">📤</button>
           </div>
         </div>
 
@@ -3029,6 +3433,47 @@
     </div>
   </div>
 
+  <div id="tab-renting" class="tab-content">
+    <div class="blocks-container">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-title"><span data-i18n="renting_ligacao">🏗️ Renting — MiningRigRentals</span></div>
+        <div class="hint" style="margin-bottom:12px;">
+          A MiningRigRentals não autentica por email — precisas de gerar uma <b>API Key</b> e um <b>API Secret</b> em
+          <a href="https://www.miningrigrentals.com/account/apikey" target="_blank" rel="noopener">miningrigrentals.com/account/apikey</a>
+          (basta a permissão "Rent"). Estas credenciais ficam guardadas apenas no teu servidor local (<code>app.py</code>), nunca no browser.
+        </div>
+
+        <div class="power-mqtt-form">
+          <label>API Key
+            <input type="text" id="mrrApiKey" placeholder="a tua API Key da MiningRigRentals" autocomplete="off">
+          </label>
+          <label>API Secret
+            <input type="password" id="mrrApiSecret" placeholder="deixa em branco para manter" data-i18n-placeholder="ph_deixa_em_branco_para_manter" autocomplete="off">
+          </label>
+        </div>
+
+        <div class="power-actions-row">
+          <button class="power-save-btn" onclick="saveMrrConfig()"><span data-i18n="guardar_ligacao_mrr">💾 Guardar Ligação</span></button>
+          <div class="power-live-row">
+            <span><span class="power-status-dot" id="mrrStatusDot"></span><span id="mrrConnLabel"><span data-i18n="a_verificar">a verificar...</span></span></span>
+            <span><span data-i18n="ultima_leitura">Última leitura:</span> <b id="mrrLastUpdate">—</b></span>
+          </div>
+        </div>
+        <div class="power-live-error" id="mrrLiveError" style="display:none;"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span data-i18n="as_minhas_rentals">📦 As Minhas Rentals (como inquilino)</span></div>
+        <div class="hint" style="margin-bottom:12px;" data-i18n="renting_hint_atualiza">Atualiza automaticamente a cada 30 segundos enquanto esta aba estiver aberta.</div>
+        <div class="renting-list" id="rentingList">
+          <div class="renting-empty" data-i18n="renting_sem_dados">Configura a ligação acima para veres as tuas rentals aqui.</div>
+        </div>
+        <button class="ls-viewall-btn" style="margin-top:12px;" onclick="toggleMrrRawDebug()" data-i18n="ver_resposta_api">Ver resposta bruta da API</button>
+        <pre id="mrrRawDebug" style="display:none; white-space:pre-wrap; font-size:11px; color:var(--muted); margin-top:10px; overflow-x:auto; max-height:280px; overflow-y:auto; background:#ffffff05; padding:10px; border-radius:8px;"></pre>
+      </div>
+    </div>
+  </div>
+
   <div id="tab-thermal" class="tab-content">
     <div class="blocks-container">
       <div class="panel thermal-protection-panel" style="margin-bottom:18px;">
@@ -3214,7 +3659,6 @@ const I18N_DICT = {
   "atual": { pt: `Atual:`, en: `Current:`, es: `Actual:`, fr: `Actuel :` },
   "bloco_encontrado": { pt: `BLOCO ENCONTRADO!`, en: `BLOCK FOUND!`, es: `¡BLOQUE ENCONTRADO!`, fr: `BLOC TROUVÉ !` },
   "partilhar_conquista": { pt: `Partilhar Conquista`, en: `Share Achievement`, es: `Compartir Logro`, fr: `Partager la Réussite` },
-  "partilhar_diff_atual": { pt: `Partilhar melhor diff atual`, en: `Share current best diff`, es: `Compartir mejor diff actual`, fr: `Partager le meilleur diff actuel` },
   "conquistas": { pt: `🏅 Conquistas`, en: `🏅 Achievements`, es: `🏅 Logros`, fr: `🏅 Succès` },
   "conquistas_titulo": { pt: `🏅 Conquistas — Centro de Comando`, en: `🏅 Achievements — Centro de Comando`, es: `🏅 Logros — Centro de Comando`, fr: `🏅 Succès — Centro de Comando` },
   "conquistas_desbloqueadas": { pt: `Conquistas Desbloqueadas`, en: `Achievements Unlocked`, es: `Logros Desbloqueados`, fr: `Succès Débloqués` },
@@ -3397,6 +3841,25 @@ const I18N_DICT = {
   "utilizador": { pt: `Utilizador`, en: `User`, es: `Usuario`, fr: `Utilisateur` },
   "dificuldade_pool": { pt: `Dificuldade`, en: `Difficulty`, es: `Dificultad`, fr: `Difficulté` },
   "shares_aceites_rejeitadas": { pt: `Shares Aceites / Rejeitadas`, en: `Accepted / Rejected Shares`, es: `Shares Aceptadas / Rechazadas`, fr: `Shares Acceptées / Rejetées` },
+  "live_shares": { pt: `Live Shares`, en: `Live Shares`, es: `Live Shares`, fr: `Live Shares` },
+  "aceites": { pt: `Aceites`, en: `Accepted`, es: `Aceptadas`, fr: `Acceptées` },
+  "rejeitadas": { pt: `Rejeitadas`, en: `Rejected`, es: `Rechazadas`, fr: `Rejetées` },
+  "por_minuto": { pt: `/min`, en: `/min`, es: `/min`, fr: `/min` },
+  "ls_a_aguardar": { pt: `A aguardar shares...`, en: `Waiting for shares...`, es: `Esperando shares...`, fr: `En attente de shares...` },
+  "ver_tudo": { pt: `Ver tudo`, en: `View all`, es: `Ver todo`, fr: `Tout voir` },
+  "todas_as_maquinas": { pt: `Todas as máquinas`, en: `All machines`, es: `Todas las máquinas`, fr: `Toutes les machines` },
+  "renting": { pt: `Renting`, en: `Renting`, es: `Renting`, fr: `Renting` },
+  "renting_ligacao": { pt: `Renting — MiningRigRentals`, en: `Renting — MiningRigRentals`, es: `Renting — MiningRigRentals`, fr: `Renting — MiningRigRentals` },
+  "guardar_ligacao_mrr": { pt: `Guardar Ligação`, en: `Save Connection`, es: `Guardar Conexión`, fr: `Enregistrer la Connexion` },
+  "as_minhas_rentals": { pt: `As Minhas Rentals (como inquilino)`, en: `My Rentals (as renter)`, es: `Mis Rentals (como inquilino)`, fr: `Mes Locations (en tant que locataire)` },
+  "renting_hint_atualiza": { pt: `Atualiza automaticamente a cada 30 segundos enquanto esta aba estiver aberta.`, en: `Automatically refreshes every 30 seconds while this tab is open.`, es: `Se actualiza automáticamente cada 30 segundos mientras esta pestaña esté abierta.`, fr: `Se met à jour automatiquement toutes les 30 secondes tant que cet onglet est ouvert.` },
+  "renting_sem_dados": { pt: `Configura a ligação acima para veres as tuas rentals aqui.`, en: `Set up the connection above to see your rentals here.`, es: `Configura la conexión arriba para ver tus rentals aquí.`, fr: `Configure la connexion ci-dessus pour voir tes locations ici.` },
+  "ver_resposta_api": { pt: `Ver resposta bruta da API`, en: `View raw API response`, es: `Ver respuesta bruta de la API`, fr: `Voir la réponse brute de l'API` },
+  "best_diff_ao_vivo": { pt: `Best Diff ao Vivo`, en: `Live Best Diff`, es: `Best Diff en Vivo`, fr: `Best Diff en Direct` },
+  "melhor_diff": { pt: `Melhor Diff`, en: `Best Diff`, es: `Mejor Diff`, fr: `Meilleur Diff` },
+  "registos": { pt: `Registos`, en: `Records`, es: `Registros`, fr: `Records` },
+  "ultima": { pt: `Última`, en: `Last`, es: `Última`, fr: `Dernier` },
+  "bd_a_aguardar": { pt: `A aguardar novos recordes...`, en: `Waiting for new records...`, es: `Esperando nuevos récords...`, fr: `En attente de nouveaux records...` },
   "pool_sem_dados": { pt: `Nenhuma máquina registada. Adiciona uma máquina no separador "Dashboard Geral".`, en: `No machine registered. Add a machine in the "General Dashboard" tab.`, es: `Ninguna máquina registrada. Añade una máquina en la pestaña "Panel General".`, fr: `Aucune machine enregistrée. Ajoute une machine dans l'onglet "Tableau de bord général".` },
   "latencia_local": { pt: `Latência Local`, en: `Local Latency`, es: `Latencia Local`, fr: `Latence Locale` },
   "offline": { pt: `Offline`, en: `Offline`, es: `Desconectado`, fr: `Hors ligne` },
@@ -3448,6 +3911,351 @@ let machineCardElements = {}; // dev.id -> nó DOM do cartão, reaproveitado ent
 // valores já existentes na máquina, não é um evento novo).
 let baselineSeen = {};
 let consecutiveFails = {}; // dev.id -> nº de falhas de poll seguidas (só marca offline ao fim de 2, para não "flapar" com um blip isolado)
+
+// --- Live Shares (widget flutuante) ----------------------------------------
+const LS_FEED_MAX = 150;      // entradas mantidas em memória
+const LS_FEED_RENDER_MAX = 5; // entradas visíveis no painel (sem scroll)
+const LS_RATE_WINDOW_MS = 60000; // janela para calcular shares/min
+let liveShares = {
+  feed: [],              // { id, machineId, machine, kind: 'accepted'|'rejected', delta, ts }
+  totalAccepted: 0,
+  totalRejected: 0,
+  windowTs: [],           // timestamps de todos os shares aceites (para taxa/min, "todas as máquinas")
+  perMachine: {},          // devId -> { name, totalAccepted, totalRejected, windowTs: [] }
+  panelOpen: false,
+  unseenCount: 0,
+  filterMachineId: 'all',
+};
+
+function toggleLiveSharesPanel(force){
+  const panel = document.getElementById('lsPanel');
+  if(!panel) return;
+  const shouldOpen = (typeof force === 'boolean') ? force : !liveShares.panelOpen;
+  liveShares.panelOpen = shouldOpen;
+  panel.classList.toggle('open', shouldOpen);
+  if(shouldOpen){
+    liveShares.unseenCount = 0;
+    const badge = document.getElementById('lsFabBadge');
+    if(badge){ badge.classList.remove('show'); badge.textContent = '0'; }
+    populateLiveSharesFilterSelects();
+    renderLiveSharesPanel();
+  }
+  repositionFloatingPanels();
+}
+
+// Os dois widgets flutuantes (Live Shares e Best Diff) abrem a partir do
+// mesmo canto. Quando ambos estão abertos ao mesmo tempo, empilha o painel
+// Best Diff por cima do Live Shares em vez de os deixar sobrepostos.
+function repositionFloatingPanels(){
+  const ls = document.getElementById('lsPanel');
+  const bd = document.getElementById('bdPanel');
+  if(!ls || !bd) return;
+  const lsOpen = ls.classList.contains('open');
+  const bdOpen = bd.classList.contains('open');
+  if(lsOpen && bdOpen){
+    bd.style.bottom = (82 + ls.offsetHeight + 10) + 'px';
+  } else {
+    bd.style.bottom = '';
+  }
+}
+
+function populateLiveSharesFilterSelects(){
+  const selects = [document.getElementById('lsMachineFilter'), document.getElementById('lsMachineFilterFull')].filter(Boolean);
+  selects.forEach(sel => {
+    const current = sel.value || liveShares.filterMachineId || 'all';
+    const options = [`<option value="all">${t('todas_as_maquinas')}</option>`]
+      .concat(devices.map(d => `<option value="${d.id}">${d.name}</option>`));
+    sel.innerHTML = options.join('');
+    const stillExists = current === 'all' || devices.some(d => String(d.id) === String(current));
+    sel.value = stillExists ? current : 'all';
+  });
+  liveShares.filterMachineId = selects[0] ? selects[0].value : 'all';
+}
+
+function onLiveSharesFilterChange(value){
+  liveShares.filterMachineId = value || 'all';
+  const selects = [document.getElementById('lsMachineFilter'), document.getElementById('lsMachineFilterFull')].filter(Boolean);
+  selects.forEach(sel => { sel.value = liveShares.filterMachineId; });
+  renderLiveSharesPanel();
+  if(liveShares.fullModalOpen) renderLiveSharesFullModal();
+}
+
+function openLiveSharesFullModal(){
+  liveShares.fullModalOpen = true;
+  populateLiveSharesFilterSelects();
+  document.getElementById('lsFullModal')?.classList.add('open');
+  renderLiveSharesFullModal();
+}
+
+function closeLiveSharesFullModal(){
+  liveShares.fullModalOpen = false;
+  document.getElementById('lsFullModal')?.classList.remove('open');
+}
+
+function recordShareDelta(dev, reading, oldReading, hasBaseline){
+  if(!hasBaseline) return; // evita gerar um "delta gigante" logo na primeira leitura de cada máquina
+  const accDelta = (reading.accepted || 0) - (oldReading?.accepted || 0);
+  const rejDelta = (reading.rejected || 0) - (oldReading?.rejected || 0);
+  if(accDelta <= 0 && rejDelta <= 0) return;
+  if(accDelta < 0 || rejDelta < 0) return; // contador reiniciado (reboot) - ignora este poll
+
+  const now = Date.now();
+  if(!liveShares.perMachine[dev.id]) liveShares.perMachine[dev.id] = { name: dev.name, totalAccepted: 0, totalRejected: 0, windowTs: [] };
+  const pm = liveShares.perMachine[dev.id];
+  pm.name = dev.name;
+
+  if(accDelta > 0){
+    liveShares.totalAccepted += accDelta;
+    pm.totalAccepted += accDelta;
+    for(let i = 0; i < accDelta; i++){ liveShares.windowTs.push(now); pm.windowTs.push(now); }
+    pushLiveShareFeedEntry(dev, 'accepted', accDelta, now);
+  }
+  if(rejDelta > 0){
+    liveShares.totalRejected += rejDelta;
+    pm.totalRejected += rejDelta;
+    pushLiveShareFeedEntry(dev, 'rejected', rejDelta, now);
+  }
+  if(!liveShares.panelOpen){
+    liveShares.unseenCount++;
+    const badge = document.getElementById('lsFabBadge');
+    if(badge){ badge.classList.add('show'); badge.textContent = liveShares.unseenCount > 99 ? '99+' : String(liveShares.unseenCount); }
+  }
+  const fab = document.getElementById('lsFab');
+  if(fab){ fab.classList.remove('pulse'); void fab.offsetWidth; fab.classList.add('pulse'); }
+
+  renderLiveSharesPanel();
+  if(liveShares.fullModalOpen) renderLiveSharesFullModal();
+}
+
+function pushLiveShareFeedEntry(dev, kind, delta, ts){
+  liveShares.feed.push({ id: `${dev.id}-${ts}-${kind}-${Math.random().toString(36).slice(2,7)}`, machineId: dev.id, machine: dev.name, kind, delta, ts });
+  if(liveShares.feed.length > LS_FEED_MAX) liveShares.feed.splice(0, liveShares.feed.length - LS_FEED_MAX);
+}
+
+function getFilteredLiveShareFeed(){
+  if(liveShares.filterMachineId === 'all') return liveShares.feed;
+  return liveShares.feed.filter(item => String(item.machineId) === String(liveShares.filterMachineId));
+}
+
+function renderFeedItemsHtml(items){
+  return items.map(item => {
+    const time = new Date(item.ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const icon = item.kind === 'accepted' ? '✓' : '✗';
+    const label = item.kind === 'accepted' ? t('aceites') : t('rejeitadas');
+    return `<div class="ls-feed-item ${item.kind}">
+      <span class="ls-feed-icon">${icon}</span>
+      <span class="ls-feed-machine">${item.machine}</span>
+      <span class="ls-feed-text">+${item.delta} ${label.toLowerCase()}</span>
+      <span class="ls-feed-time">${time}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderLiveSharesPanel(){
+  const now = Date.now();
+  liveShares.windowTs = liveShares.windowTs.filter(ts => now - ts <= LS_RATE_WINDOW_MS);
+  Object.values(liveShares.perMachine).forEach(pm => { pm.windowTs = pm.windowTs.filter(ts => now - ts <= LS_RATE_WINDOW_MS); });
+
+  const filterId = liveShares.filterMachineId || 'all';
+  const isAll = filterId === 'all';
+  const pm = !isAll ? liveShares.perMachine[filterId] : null;
+  const accepted = isAll ? liveShares.totalAccepted : (pm?.totalAccepted || 0);
+  const rejected = isAll ? liveShares.totalRejected : (pm?.totalRejected || 0);
+  const rate = isAll ? liveShares.windowTs.length : (pm?.windowTs.length || 0);
+
+  const elAcc = document.getElementById('lsStatAccepted');
+  const elRej = document.getElementById('lsStatRejected');
+  const elRate = document.getElementById('lsStatRate');
+  if(elAcc) elAcc.textContent = accepted.toLocaleString();
+  if(elRej) elRej.textContent = rejected.toLocaleString();
+  if(elRate) elRate.textContent = rate.toLocaleString();
+
+  const feedEl = document.getElementById('lsFeed');
+  if(!feedEl) return;
+  const filtered = getFilteredLiveShareFeed();
+  if(filtered.length === 0){
+    feedEl.innerHTML = `<div class="ls-feed-empty">${t('ls_a_aguardar')}</div>`;
+    return;
+  }
+  feedEl.innerHTML = renderFeedItemsHtml(filtered.slice(-LS_FEED_RENDER_MAX));
+}
+
+function renderLiveSharesFullModal(){
+  const listEl = document.getElementById('lsFullList');
+  if(!listEl) return;
+  const filtered = getFilteredLiveShareFeed();
+  if(filtered.length === 0){
+    listEl.innerHTML = `<div class="ls-feed-empty">${t('ls_a_aguardar')}</div>`;
+    return;
+  }
+  listEl.innerHTML = renderFeedItemsHtml(filtered);
+}
+
+// --- Best Diff ao vivo (widget flutuante) -----------------------------------
+const BD_FEED_MAX = 150;
+const BD_FEED_RENDER_MAX = 5;
+let bestDiffLive = {
+  feed: [],              // { id, machineId, machine, diff, ts }
+  perMachine: {},         // devId -> { name, best, count, lastTs }
+  globalBest: 0,
+  globalCount: 0,
+  globalLastTs: null,
+  panelOpen: false,
+  fullModalOpen: false,
+  unseenCount: 0,
+  filterMachineId: 'all',
+};
+
+function toggleBestDiffPanel(force){
+  const panel = document.getElementById('bdPanel');
+  if(!panel) return;
+  const shouldOpen = (typeof force === 'boolean') ? force : !bestDiffLive.panelOpen;
+  bestDiffLive.panelOpen = shouldOpen;
+  panel.classList.toggle('open', shouldOpen);
+  if(shouldOpen){
+    bestDiffLive.unseenCount = 0;
+    const badge = document.getElementById('bdFabBadge');
+    if(badge){ badge.classList.remove('show'); badge.textContent = '0'; }
+    populateBestDiffFilterSelects();
+    renderBestDiffPanel();
+  }
+  repositionFloatingPanels();
+}
+
+function populateBestDiffFilterSelects(){
+  const selects = [document.getElementById('bdMachineFilter'), document.getElementById('bdMachineFilterFull')].filter(Boolean);
+  selects.forEach(sel => {
+    const current = sel.value || bestDiffLive.filterMachineId || 'all';
+    const options = [`<option value="all">${t('todas_as_maquinas')}</option>`]
+      .concat(devices.map(d => `<option value="${d.id}">${d.name}</option>`));
+    sel.innerHTML = options.join('');
+    const stillExists = current === 'all' || devices.some(d => String(d.id) === String(current));
+    sel.value = stillExists ? current : 'all';
+  });
+  bestDiffLive.filterMachineId = selects[0] ? selects[0].value : 'all';
+}
+
+function onBestDiffFilterChange(value){
+  bestDiffLive.filterMachineId = value || 'all';
+  const selects = [document.getElementById('bdMachineFilter'), document.getElementById('bdMachineFilterFull')].filter(Boolean);
+  selects.forEach(sel => { sel.value = bestDiffLive.filterMachineId; });
+  renderBestDiffPanel();
+  if(bestDiffLive.fullModalOpen) renderBestDiffFullModal();
+}
+
+function openBestDiffFullModal(){
+  bestDiffLive.fullModalOpen = true;
+  populateBestDiffFilterSelects();
+  document.getElementById('bdFullModal')?.classList.add('open');
+  renderBestDiffFullModal();
+}
+
+function closeBestDiffFullModal(){
+  bestDiffLive.fullModalOpen = false;
+  document.getElementById('bdFullModal')?.classList.remove('open');
+}
+
+// Chamada a partir do pollOneDevice, só quando a máquina bate um novo
+// recorde de dificuldade da sessão (hasBaseline && currentBest > oldBest).
+// Fica "parado" no último valor até haver de facto um recorde diferente.
+function recordBestDiffEvent(dev, currentBest, ts){
+  if(!bestDiffLive.perMachine[dev.id]) bestDiffLive.perMachine[dev.id] = { name: dev.name, best: 0, count: 0, lastTs: null };
+  const pm = bestDiffLive.perMachine[dev.id];
+  pm.name = dev.name;
+  pm.best = currentBest;
+  pm.count += 1;
+  pm.lastTs = ts;
+
+  if(currentBest > bestDiffLive.globalBest) bestDiffLive.globalBest = currentBest;
+  bestDiffLive.globalCount += 1;
+  bestDiffLive.globalLastTs = ts;
+
+  const fmt = formatDiff(currentBest);
+  bestDiffLive.feed.push({
+    id: `${dev.id}-${ts}-${Math.random().toString(36).slice(2,7)}`,
+    machineId: dev.id, machine: dev.name,
+    diffText: `${fmt.value} ${fmt.unit}`, ts
+  });
+  if(bestDiffLive.feed.length > BD_FEED_MAX) bestDiffLive.feed.splice(0, bestDiffLive.feed.length - BD_FEED_MAX);
+
+  if(!bestDiffLive.panelOpen){
+    bestDiffLive.unseenCount++;
+    const badge = document.getElementById('bdFabBadge');
+    if(badge){ badge.classList.add('show'); badge.textContent = bestDiffLive.unseenCount > 99 ? '99+' : String(bestDiffLive.unseenCount); }
+  }
+  const fab = document.getElementById('bdFab');
+  if(fab){ fab.classList.remove('pulse'); void fab.offsetWidth; fab.classList.add('pulse'); }
+
+  renderBestDiffPanel();
+  if(bestDiffLive.fullModalOpen) renderBestDiffFullModal();
+}
+
+function getFilteredBestDiffFeed(){
+  if(bestDiffLive.filterMachineId === 'all') return bestDiffLive.feed;
+  return bestDiffLive.feed.filter(item => String(item.machineId) === String(bestDiffLive.filterMachineId));
+}
+
+function relativeTimeFromNow(ts){
+  if(!ts) return '—';
+  const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if(diffSec < 60) return `${diffSec}s`;
+  const diffMin = Math.floor(diffSec / 60);
+  if(diffMin < 60) return `${diffMin}m`;
+  const diffH = Math.floor(diffMin / 60);
+  return `${diffH}h`;
+}
+
+function renderBestDiffFeedItemsHtml(items){
+  return items.map(item => {
+    const time = new Date(item.ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return `<div class="bd-feed-item">
+      <span class="bd-feed-icon">🏆</span>
+      <span class="bd-feed-machine">${item.machine}</span>
+      <span class="bd-feed-text">${t('melhor_diff')}: <b>${item.diffText}</b></span>
+      <span class="bd-feed-time">${time}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderBestDiffPanel(){
+  const filterId = bestDiffLive.filterMachineId || 'all';
+  const isAll = filterId === 'all';
+  const pm = !isAll ? bestDiffLive.perMachine[filterId] : null;
+  const best = isAll ? bestDiffLive.globalBest : (pm?.best || 0);
+  const count = isAll ? bestDiffLive.globalCount : (pm?.count || 0);
+  const lastTs = isAll ? bestDiffLive.globalLastTs : (pm?.lastTs || null);
+
+  const elBest = document.getElementById('bdStatBest');
+  const elCount = document.getElementById('bdStatCount');
+  const elLast = document.getElementById('bdStatLast');
+  if(elBest){
+    if(best > 0){ const fmt = formatDiff(best); elBest.textContent = `${fmt.value}${fmt.unit}`; }
+    else elBest.textContent = '—';
+  }
+  if(elCount) elCount.textContent = count.toLocaleString();
+  if(elLast) elLast.textContent = lastTs ? relativeTimeFromNow(lastTs) : '—';
+
+  const feedEl = document.getElementById('bdFeed');
+  if(!feedEl) return;
+  const filtered = getFilteredBestDiffFeed();
+  if(filtered.length === 0){
+    feedEl.innerHTML = `<div class="ls-feed-empty">${t('bd_a_aguardar')}</div>`;
+    return;
+  }
+  feedEl.innerHTML = renderBestDiffFeedItemsHtml(filtered.slice(-BD_FEED_RENDER_MAX));
+}
+
+function renderBestDiffFullModal(){
+  const listEl = document.getElementById('bdFullList');
+  if(!listEl) return;
+  const filtered = getFilteredBestDiffFeed();
+  if(filtered.length === 0){
+    listEl.innerHTML = `<div class="ls-feed-empty">${t('bd_a_aguardar')}</div>`;
+    return;
+  }
+  listEl.innerHTML = renderBestDiffFeedItemsHtml(filtered);
+}
+
 
 let thermalHistory = {};
 let maintenanceLog = {}; // { [devId]: [{ t: timestamp, note: string }] }, mais recente no fim
@@ -3766,7 +4574,8 @@ const TAB_LABEL_KEYS = {
   converter: 'conversor',
   donate: 'apoiar_doar',
   supporters: 'apoiantes',
-  support: 'suporte'
+  support: 'suporte',
+  renting: 'renting'
 };
 function getTabLabel(tabName) {
   const key = TAB_LABEL_KEYS[tabName];
@@ -3833,6 +4642,11 @@ function switchTab(tabName, btnEl) {
   }
   if(tabName === 'support') {
     renderSupportDiagBox();
+  }
+  if(tabName === 'renting') {
+    initRentingTab();
+  } else {
+    stopRentingAutoRefresh();
   }
 }
 
@@ -4312,7 +5126,7 @@ function generateBlockShareCanvas(machineName, diffVal, dateObj) {
   return canvas;
 }
 
-async function _downloadOrShareCanvas(canvas, filenameBase, shareTitle, shareText) {
+async function _downloadOrShareCanvas(canvas, filenameBase) {
   canvas.toBlob(async (blob) => {
     if(!blob) { _blockShareToast('Falha ao gerar imagem.'); return; }
     const file = new File([blob], `${filenameBase}.png`, { type: 'image/png' });
@@ -4321,8 +5135,8 @@ async function _downloadOrShareCanvas(canvas, filenameBase, shareTitle, shareTex
       try {
         await navigator.share({
           files: [file],
-          title: shareTitle || 'Bloco Encontrado! 🚀',
-          text: shareText || 'Bloco minerado com sucesso — Centro de Comando'
+          title: 'Bloco Encontrado! 🚀',
+          text: 'Bloco minerado com sucesso — Centro de Comando'
         });
         return;
       } catch(e) {
@@ -4352,111 +5166,6 @@ function shareLastBlockImage() {
   const last = window._lastBlockShare;
   if(!last) { _blockShareToast('Sem dados de bloco recentes.'); return; }
   shareBlockImage(last.machineName, last.diff, last.date);
-}
-
-// --- Partilha do Best Diff em tempo real (sem estar ligado a um bloco) ---
-
-function generateCurrentDiffShareCanvas(machineName, diffVal, dateObj, isFleet) {
-  const W = 1200, H = 675;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  // fundo
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#060d14');
-  bg.addColorStop(1, '#0a1620');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // brilho radial
-  const glow = ctx.createRadialGradient(W/2, H*0.38, 40, W/2, H*0.38, 620);
-  glow.addColorStop(0, 'rgba(255,176,32,0.18)');
-  glow.addColorStop(1, 'rgba(255,176,32,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
-
-  // moldura
-  ctx.strokeStyle = 'rgba(255,176,32,0.55)';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(24, 24, W - 48, H - 48);
-
-  ctx.textAlign = 'center';
-  ctx.font = '80px sans-serif';
-  ctx.fillText('⛏️', W/2, 160);
-
-  // titulo
-  ctx.fillStyle = '#ffb020';
-  ctx.font = "700 50px 'Space Grotesk', sans-serif";
-  ctx.shadowColor = 'rgba(255,176,32,0.5)';
-  ctx.shadowBlur = 18;
-  ctx.fillText('MELHOR DIFF EM TEMPO REAL', W/2, 245);
-  ctx.shadowBlur = 0;
-
-  // nome da máquina / frota
-  ctx.fillStyle = '#eaf6f7';
-  ctx.font = "600 30px 'Space Grotesk', sans-serif";
-  _wrapCanvasText(ctx, machineName || (isFleet ? 'Frota Completa' : 'Máquina'), W/2, 305, W - 160, 38);
-
-  // caixa best diff
-  const boxY = 370, boxH = 150, boxW = 640, boxX = (W - boxW) / 2;
-  ctx.fillStyle = 'rgba(13,26,38,0.9)';
-  ctx.strokeStyle = 'rgba(79,214,255,0.55)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(boxX, boxY, boxW, boxH, 16) : ctx.rect(boxX, boxY, boxW, boxH);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = '#6f95a3';
-  ctx.font = "600 14px 'Space Grotesk', sans-serif";
-  ctx.textAlign = 'center';
-  ctx.fillText(isFleet ? 'MELHOR DIFF GLOBAL (AGORA)' : 'MELHOR DIFF DA MÁQUINA (AGORA)', W/2, boxY + 34);
-
-  const fmt = (typeof formatDiff === 'function') ? formatDiff(diffVal) : { value: diffVal, unit: '' };
-  ctx.fillStyle = '#4fd6ff';
-  ctx.font = "700 52px 'Space Grotesk', sans-serif";
-  ctx.shadowColor = 'rgba(79,214,255,0.5)';
-  ctx.shadowBlur = 16;
-  ctx.fillText(`${fmt.value}${fmt.unit}`, W/2, boxY + 100);
-  ctx.shadowBlur = 0;
-
-  // data/hora
-  const dstr = (dateObj instanceof Date ? dateObj : new Date(dateObj || Date.now()))
-    .toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  ctx.fillStyle = '#6f95a3';
-  ctx.font = "13px 'Space Grotesk', sans-serif";
-  ctx.fillText(`Atualizado: ${dstr}`, W/2, 570);
-
-  // rodapé / branding
-  ctx.fillStyle = '#ffb020';
-  ctx.font = "600 16px 'Space Grotesk', sans-serif";
-  ctx.fillText('⛏️ Centro de Comando — Mineração Bitcoin', W/2, 615);
-
-  return canvas;
-}
-
-function shareCurrentDiffImage(machineName, diffVal) {
-  const canvas = generateCurrentDiffShareCanvas(machineName, diffVal, new Date(), false);
-  const safeName = (machineName || 'maquina').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  _downloadOrShareCanvas(
-    canvas,
-    `melhor-diff-${safeName || 'maquina'}`,
-    'Melhor Diff em Tempo Real ⛏️',
-    `${machineName || 'A minha máquina'} — a minerar com o Centro de Comando`
-  );
-}
-
-function shareGlobalBestDiffImage() {
-  const bestAll = Math.max(0, ...devices.map(d => readings[d.id]?.best || 0));
-  if(!bestAll) { _blockShareToast('Sem dados suficientes para partilhar.'); return; }
-  const canvas = generateCurrentDiffShareCanvas(null, bestAll, new Date(), true);
-  _downloadOrShareCanvas(
-    canvas,
-    'melhor-diff-frota',
-    'Melhor Diff da Frota em Tempo Real ⛏️',
-    'A minha frota de mineração — Centro de Comando'
-  );
 }
 
 // --- Conquistas / Badges (gamificação cosmética) ------------------------
@@ -5969,6 +6678,11 @@ async function fetchRates(force){
 function startRatesAutoRefresh(){
   stopRatesAutoRefresh();
   ratesRefreshTimer = setInterval(() => fetchRates(false), 30000);
+  // Refresca o painel de Live Shares periodicamente mesmo sem shares novas,
+  // para a taxa/min ir descendo à medida que entradas antigas saem da janela.
+  setInterval(renderLiveSharesPanel, 5000);
+  // Mesmo sem novos recordes, atualiza o "há Xm" do último recorde no painel Best Diff.
+  setInterval(renderBestDiffPanel, 5000);
 }
 function stopRatesAutoRefresh(){
   if(ratesRefreshTimer){ clearInterval(ratesRefreshTimer); ratesRefreshTimer = null; }
@@ -6751,6 +7465,7 @@ async function pollOneDevice(dev){
       const fmt = formatDiff(currentBest);
       logEvent(`Novo recorde de dificuldade! ${fmt.value} ${fmt.unit}`, 'new', dev.name, dev.id);
       addNotification('best', `Novo Recorde de Dificuldade: ${fmt.value} ${fmt.unit}`, `A máquina alcançou um novo best diff de ${currentBest.toLocaleString()} na sessão.`, dev.name);
+      recordBestDiffEvent(dev, currentBest, Date.now());
     }
 
     if(hasBaseline && blocksFoundVal > oldBlocks) {
@@ -6759,6 +7474,8 @@ async function pollOneDevice(dev){
       celebrateBlockFound(dev.name, currentBest);
       if(achievements) achievements.totalBlocksFound += (blocksFoundVal - oldBlocks);
     }
+
+    recordShareDelta(dev, reading, oldReading, hasBaseline);
 
     consecutiveFails[dev.id] = 0;
     baselineSeen[dev.id] = true;
@@ -6928,10 +7645,7 @@ function renderAll(){
           <div class="temp-gauge"><div class="temp-gauge-fill" data-f="tempGaugeFill"></div></div>
           <div class="metric-row">
             <span class="metric-label">🏆 ${t('melhor_dif')}</span>
-            <span class="metric-value-group">
-              <span class="metric-value highlight-amber" data-f="best"></span>
-              <button type="button" class="diff-share-btn" data-f="shareDiffBtn" title="${t('partilhar_diff_atual')}">📤</button>
-            </span>
+            <span class="metric-value highlight-amber" data-f="best"></span>
           </div>
           <div class="metric-row">
             <span class="metric-label">⚙️ ${t('frequencia')}</span>
@@ -6959,15 +7673,8 @@ function renderAll(){
           </div>
         </div>
       `;
-      card.onclick = (e) => { if(!e.target.closest('.remove') && !e.target.closest('.diff-share-btn')){ selectedId = dev.id; renderAll(); } };
+      card.onclick = (e) => { if(!e.target.closest('.remove')){ selectedId = dev.id; renderAll(); } };
       card.querySelector('[data-f="removeBtn"]').onclick = (e) => { e.stopPropagation(); removeDevice(dev.id); };
-      card.querySelector('[data-f="shareDiffBtn"]').onclick = (e) => {
-        e.stopPropagation();
-        const rr = readings[dev.id];
-        if(!rr || !rr.online){ _blockShareToast('Máquina offline — sem dados para partilhar.'); return; }
-        const currentName = card.querySelector('[data-f="name"]').textContent || dev.name;
-        shareCurrentDiffImage(currentName, rr.best);
-      };
       machineCardElements[dev.id] = card;
       grid.appendChild(card);
     } else if(card.parentNode !== grid || grid.children[[...grid.children].indexOf(card)] !== card){
@@ -7129,711 +7836,3 @@ function drawAmberChart(svgId, vals, formatter, isHashrate = true){
     <path class="chart-line-draw" fill="none" stroke="#ffb020" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow_${svgId})" d="M${ptsString}"></path>
     <path class="chart-flow-overlay" fill="none" stroke="#fff6de" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="0.5 16" d="M${ptsString}"></path>
     <circle class="chart-end-dot" cx="${lastPt.x}" cy="${lastPt.y}" r="4.5" fill="#ffb020" stroke="#0d1a26" stroke-width="2"/>
-
-    <g id="tooltip_${svgId}" style="display:none;">
-      <line x1="0" y1="0" x2="0" y2="${h}" stroke="#ffb02088" stroke-dasharray="3,3" stroke-width="1"></line>
-      <circle r="4" fill="#ffb020" stroke="#060d14" stroke-width="2"></circle>
-    </g>
-  `;
-
-  const linePath = svg.querySelector('.chart-line-draw');
-  if(linePath){
-    try{
-      const len = linePath.getTotalLength();
-      linePath.style.strokeDasharray = len;
-      linePath.style.strokeDashoffset = len;
-      linePath.getBoundingClientRect(); // força reflow para a transição arrancar
-      linePath.style.transition = 'stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)';
-      requestAnimationFrame(() => { linePath.style.strokeDashoffset = '0'; });
-    } catch(e){}
-  }
-  
-  svg.onmousemove = (e) => {
-    const rect = svg.getBoundingClientRect();
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    
-    let closest = pts[0];
-    let minDist = Infinity;
-    for(const p of pts){
-      const dist = Math.abs(p.x - mouseX);
-      if(dist < minDist){ minDist = dist; closest = p; }
-    }
-    
-    const tip = svg.querySelector(`#tooltip_${svgId}`);
-    if(tip){
-      tip.style.display = 'block';
-      tip.setAttribute('transform', `translate(${closest.x}, 0)`);
-      tip.querySelector('circle').setAttribute('cy', closest.y);
-      
-      const res = formatter(closest.val);
-      if(isHashrate) {
-        $('valHashrate').textContent = `${res.value} ${res.unit}`;
-      } else {
-        $('valBest').textContent = `${res.value}${res.unit}`;
-      }
-    }
-  };
-  
-  svg.onmouseleave = () => {
-    const tip = svg.querySelector(`#tooltip_${svgId}`);
-    if(tip) tip.style.display = 'none';
-    const res = formatter(vals[vals.length - 1]);
-    if(isHashrate) {
-      $('valHashrate').textContent = `${res.value} ${res.unit}`;
-    } else {
-      $('valBest').textContent = `${res.value}${res.unit}`;
-    }
-  };
-}
-
-// --- Perfis de Energia (MQTT / Home Assistant) ---------------------------
-let powerProfiles = [];
-let powerConfigLoaded = false;
-
-function emptyPowerProfile(){
-  return { name: '', min_solar: '', max_tariff: '', frequency: '', coreVoltage: '' };
-}
-
-async function loadPowerConfig(){
-  try {
-    const res = await fetch('http://localhost:8765/api/power/config');
-    const cfg = await res.json();
-    $('pwHost').value = cfg.mqtt.host || '';
-    $('pwPort').value = cfg.mqtt.port || 1883;
-    $('pwUser').value = cfg.mqtt.username || '';
-    $('pwPass').placeholder = cfg.mqtt.password_set ? '•••••••• (já definida — deixa em branco para manter)' : 'deixa em branco para manter';
-    $('pwTopicSolar').value = cfg.mqtt.topic_solar || '';
-    $('pwTopicTariff').value = cfg.mqtt.topic_tariff || '';
-    powerProfiles = Array.isArray(cfg.profiles) && cfg.profiles.length ? cfg.profiles : [];
-    renderPowerProfilesForm();
-    powerConfigLoaded = true;
-  } catch(e) {
-    $('powerLiveError').style.display = 'block';
-    $('powerLiveError').textContent = 'Não foi possível carregar a configuração de energia do servidor local.';
-  }
-}
-
-function renderPowerProfilesForm(){
-  const el = $('powerProfilesList');
-  if(!powerProfiles.length){
-    el.innerHTML = `<div class="hint">Ainda não tens perfis definidos. Clica em "+ Adicionar Perfil".</div>`;
-    return;
-  }
-  el.innerHTML = powerProfiles.map((p, i) => `
-    <div class="power-profile-row">
-      <div class="priority-num">#${i+1}</div>
-      <label><span class="field-label">Nome</span><input type="text" value="${p.name ?? ''}" placeholder="ex: Turbo" oninput="powerProfiles[${i}].name=this.value"></label>
-      <label><span class="field-label">Solar mín. (W)</span><input type="number" value="${p.min_solar ?? ''}" placeholder="sem mínimo" oninput="powerProfiles[${i}].min_solar=this.value"></label>
-      <label><span class="field-label">Tarifa máx. (€/kWh)</span><input type="number" step="0.01" value="${p.max_tariff ?? ''}" placeholder="sem máximo" oninput="powerProfiles[${i}].max_tariff=this.value"></label>
-      <label><span class="field-label">Frequência (MHz)</span><input type="number" value="${p.frequency ?? ''}" placeholder="ex: 550" oninput="powerProfiles[${i}].frequency=this.value"></label>
-      <label><span class="field-label">CoreVoltage (mV)</span><input type="number" value="${p.coreVoltage ?? ''}" placeholder="ex: 1150" oninput="powerProfiles[${i}].coreVoltage=this.value"></label>
-      <div class="power-profile-row-actions">
-        <button title="Subir prioridade" onclick="movePowerProfile(${i}, -1)" ${i===0 ? 'disabled' : ''}>↑</button>
-        <button title="Descer prioridade" onclick="movePowerProfile(${i}, 1)" ${i===powerProfiles.length-1 ? 'disabled' : ''}>↓</button>
-        <button class="remove" title="Remover" onclick="removePowerProfile(${i})">✕</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function addPowerProfile(){
-  powerProfiles.push(emptyPowerProfile());
-  renderPowerProfilesForm();
-}
-
-function removePowerProfile(i){
-  powerProfiles.splice(i, 1);
-  renderPowerProfilesForm();
-}
-
-function movePowerProfile(i, dir){
-  const j = i + dir;
-  if(j < 0 || j >= powerProfiles.length) return;
-  [powerProfiles[i], powerProfiles[j]] = [powerProfiles[j], powerProfiles[i]];
-  renderPowerProfilesForm();
-}
-
-function sanitizedPowerProfiles(){
-  return powerProfiles
-    .filter(p => (p.name || '').trim())
-    .map(p => {
-      const out = { name: p.name.trim() };
-      if(p.min_solar !== '' && p.min_solar != null) out.min_solar = Number(p.min_solar);
-      if(p.max_tariff !== '' && p.max_tariff != null) out.max_tariff = Number(p.max_tariff);
-      if(p.frequency !== '' && p.frequency != null) out.frequency = Number(p.frequency);
-      if(p.coreVoltage !== '' && p.coreVoltage != null) out.coreVoltage = Number(p.coreVoltage);
-      return out;
-    });
-}
-
-async function savePowerMqttConfig(){
-  const body = {
-    mqtt: {
-      host: $('pwHost').value.trim(),
-      port: Number($('pwPort').value) || 1883,
-      username: $('pwUser').value.trim(),
-      topic_solar: $('pwTopicSolar').value.trim(),
-      topic_tariff: $('pwTopicTariff').value.trim(),
-    }
-  };
-  if($('pwPass').value) body.mqtt.password = $('pwPass').value;
-  try {
-    const res = await fetch('http://localhost:8765/api/power/config', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
-    });
-    const data = await res.json();
-    if(data.ok){
-      $('pwPass').value = '';
-      logEvent('Configuração MQTT de energia guardada.', 'new', 'Sistema', 'sys');
-    }
-  } catch(e) {
-    $('powerLiveError').style.display = 'block';
-    $('powerLiveError').textContent = 'Falha ao guardar a configuração MQTT.';
-  }
-  pollPowerStatus();
-}
-
-async function savePowerProfiles(){
-  try {
-    const res = await fetch('http://localhost:8765/api/power/config', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ profiles: sanitizedPowerProfiles() })
-    });
-    const data = await res.json();
-    if(data.ok) logEvent('Perfis de energia guardados.', 'new', 'Sistema', 'sys');
-  } catch(e) {
-    $('powerLiveError').style.display = 'block';
-    $('powerLiveError').textContent = 'Falha ao guardar os perfis de energia.';
-  }
-  pollPowerStatus();
-}
-
-let lastSuggestedProfile = null;
-
-async function pollPowerStatus(){
-  try {
-    const res = await fetch('http://localhost:8765/api/power/status');
-    const st = await res.json();
-
-    const dots = [$('powerStatusDot'), $('powerStatusDotInline')];
-    dots.forEach(d => { if(d) d.classList.remove('connected', 'disconnected'); d?.classList.add(st.connected ? 'connected' : 'disconnected'); });
-    $('powerConnLabel').textContent = st.connected ? 'MQTT ligado' : 'MQTT desligado';
-
-    $('powerSolarVal').textContent = st.solar != null ? `${st.solar.toFixed(0)} W` : '—';
-    $('powerTariffVal').textContent = st.tariff != null ? `${st.tariff.toFixed(3)} €/kWh` : '—';
-    $('powerLastUpdate').textContent = st.last_update ? new Date(st.last_update * 1000).toLocaleTimeString('pt-PT') : '—';
-
-    const errEl = $('powerLiveError');
-    if(st.error && !st.connected){
-      errEl.style.display = 'block';
-      errEl.textContent = st.mqtt_available === false
-        ? 'A biblioteca paho-mqtt não está instalada no ambiente que corre o app.py — instala-a com "pip install paho-mqtt" e reinicia o Centro de Comando.'
-        : st.error;
-    } else {
-      errEl.style.display = 'none';
-    }
-
-    lastSuggestedProfile = st.suggested_profile || null;
-    if(lastSuggestedProfile){
-      $('powerSuggestedName').textContent = lastSuggestedProfile.name;
-      const parts = [];
-      if(lastSuggestedProfile.frequency != null) parts.push(`${lastSuggestedProfile.frequency} MHz`);
-      if(lastSuggestedProfile.coreVoltage != null) parts.push(`${lastSuggestedProfile.coreVoltage} mV`);
-      parts.push(`solar: ${st.solar != null ? st.solar.toFixed(0)+' W' : '—'}`, `tarifa: ${st.tariff != null ? st.tariff.toFixed(3)+' €/kWh' : '—'}`);
-      $('powerSuggestedMeta').textContent = parts.join(' · ');
-    } else {
-      $('powerSuggestedName').textContent = 'Sem sugestão disponível';
-      $('powerSuggestedMeta').textContent = 'Configura o MQTT e pelo menos um perfil para começar a receber sugestões.';
-    }
-    renderPowerDevicesApply();
-  } catch(e) {
-    // servidor local indisponível - ignora silenciosamente neste ciclo
-  }
-}
-
-function renderPowerDevicesApply(){
-  const el = $('powerDevicesApply');
-  const allBtn = $('powerApplyAllBtn');
-  if(!devices.length){
-    el.innerHTML = `<div class="hint">Adiciona máquinas no separador "Dashboard Geral" para poderes aplicar perfis.</div>`;
-    allBtn.disabled = true;
-    return;
-  }
-  allBtn.disabled = !lastSuggestedProfile;
-  el.innerHTML = devices.map(d => {
-    const r = readings[d.id];
-    const current = r ? `atual: ${r.frequency || '—'} MHz` : 'sem leitura';
-    return `
-      <div class="power-device-apply-row">
-        <div>
-          <div class="dname">${d.name}</div>
-          <div class="dcurrent">${d.ip} · ${current}</div>
-        </div>
-        <button class="power-apply-btn" ${lastSuggestedProfile ? '' : 'disabled'} onclick="applySuggestedProfileToDevice('${d.id}')">Aplicar "${lastSuggestedProfile ? lastSuggestedProfile.name : '—'}"</button>
-      </div>
-    `;
-  }).join('');
-}
-
-async function applySuggestedProfileToDevice(devId){
-  if(!lastSuggestedProfile) return;
-  const dev = devices.find(d => d.id === devId);
-  if(!dev) return;
-  const payload = { ip: dev.ip };
-  if(lastSuggestedProfile.frequency != null) payload.frequency = lastSuggestedProfile.frequency;
-  if(lastSuggestedProfile.coreVoltage != null) payload.coreVoltage = lastSuggestedProfile.coreVoltage;
-  try {
-    const res = await fetch('http://localhost:8765/api/apply-profile', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if(data.ok){
-      logEvent(`Perfil "${lastSuggestedProfile.name}" aplicado com sucesso.`, 'new', dev.name, dev.id);
-    } else {
-      logEvent(`Falha ao aplicar perfil: ${data.error || 'erro desconhecido'}`, 'error', dev.name, dev.id);
-    }
-  } catch(e) {
-    logEvent(`Falha ao aplicar perfil "${lastSuggestedProfile.name}".`, 'error', dev.name, dev.id);
-  }
-}
-
-async function applySuggestedProfileToAll(){
-  for(const d of devices){
-    await applySuggestedProfileToDevice(d.id);
-  }
-}
-
-// --- Assistente (agente IA local, sem chave/API) -------------------------
-// Responde a perguntas frequentes sobre as funcionalidades do painel a
-// partir de uma base de conhecimento local, com correspondência simples
-// por palavras-chave. Não faz chamadas externas nem precisa de ligação
-// à internet.
-
-const AI_KB = [
-  { key: 'best_diff', kw: ['best diff','melhor dif','bestdiff','dificuldade','best share','best difficulty','efficiency record'],
-    q: { pt: `O que é o Best Diff / Melhor Dif.?`, en: `What is Best Diff?`, es: `¿Qué es el Best Diff / Mejor Dif.?`, fr: `Qu'est-ce que le Best Diff ?` },
-    a: { pt: `O "Melhor Dif." (Best Diff) é a maior dificuldade de share que a tua máquina já encontrou. Quanto mais alto, mais perto (em termos de sorte) estiveste de encontrar um bloco a solo. É um recorde acumulado desde que o ASIC arrancou.`,
-         en: `"Best Diff" is the highest share difficulty your machine has ever found. The higher it is, the closer (in terms of luck) you have been to finding a solo block. It is a record that accumulates since the ASIC started.`,
-         es: `El "Mejor Dif." (Best Diff) es la mayor dificultad de share que tu máquina ha encontrado. Cuanto más alto, más cerca (en términos de suerte) has estado de encontrar un bloque en solitario. Es un récord acumulado desde que el ASIC arrancó.`,
-         fr: `Le « Best Diff » est la plus grande difficulté de share que ta machine ait jamais trouvée. Plus il est élevé, plus tu as été proche (en termes de chance) de trouver un bloc en solo. C'est un record cumulé depuis le démarrage de l'ASIC.` } },
-  { key: 'eficiencia', kw: ['eficiencia','eficiência','j/th','joules','efficiency'],
-    q: { pt: `O que significa Eficiência (J/Th)?`, en: `What does Efficiency (J/Th) mean?`, es: `¿Qué significa Eficiencia (J/Th)?`, fr: `Que signifie l'Efficacité (J/Th) ?` },
-    a: { pt: `A eficiência em J/Th indica quantos Joules de energia a máquina gasta por cada Terahash de poder de processamento. Quanto MENOR o valor, mais eficiente é o ASIC (menos energia gasta pelo mesmo hashrate).`,
-         en: `Efficiency in J/Th indicates how many Joules of energy the machine spends per Terahash of processing power. The LOWER the value, the more efficient the ASIC is (less energy spent for the same hashrate).`,
-         es: `La eficiencia en J/Th indica cuántos Julios de energía gasta la máquina por cada Terahash de potencia de procesamiento. Cuanto MENOR sea el valor, más eficiente es el ASIC (menos energía gastada por el mismo hashrate).`,
-         fr: `L'efficacité en J/Th indique combien de Joules d'énergie la machine consomme par Terahash de puissance de traitement. Plus la valeur est BASSE, plus l'ASIC est efficace (moins d'énergie dépensée pour le même hashrate).` } },
-  { key: 'hashrate', kw: ['hashrate','hash rate','th/s'],
-    q: { pt: `O que é o Hashrate?`, en: `What is Hashrate?`, es: `¿Qué es el Hashrate?`, fr: `Qu'est-ce que le Hashrate ?` },
-    a: { pt: `O Hashrate mede quantos cálculos (hashes) o ASIC faz por segundo, normalmente em TH/s (terahashes por segundo). Quanto mais alto, maior a tua parte do poder computacional da rede.`,
-         en: `Hashrate measures how many calculations (hashes) the ASIC performs per second, usually in TH/s (terahashes per second). The higher it is, the bigger your share of the network's computing power.`,
-         es: `El Hashrate mide cuántos cálculos (hashes) realiza el ASIC por segundo, normalmente en TH/s (terahashes por segundo). Cuanto más alto, mayor es tu parte del poder computacional de la red.`,
-         fr: `Le Hashrate mesure combien de calculs (hashes) l'ASIC effectue par seconde, généralement en TH/s (térahashes par seconde). Plus il est élevé, plus grande est ta part de puissance de calcul du réseau.` } },
-  { key: 'frequencia_undervolt', kw: ['frequencia','frequência','undervolt','corevoltage','mhz','voltagem','voltage','frequency'],
-    q: { pt: `Como funciona a Frequência e o Undervolt?`, en: `How do Frequency and Undervolt work?`, es: `¿Cómo funcionan la Frecuencia y el Undervolt?`, fr: `Comment fonctionnent la Fréquence et l'Undervolt ?` },
-    a: { pt: `A Frequência (MHz) e a Voltagem do núcleo (coreVoltage) controlam o desempenho do chip ASIC: mais frequência = mais hashrate mas mais calor e consumo. O undervolt reduz a voltagem para poupar energia e baixar temperatura, geralmente à custa de algum hashrate.`,
-         en: `Frequency (MHz) and core voltage (coreVoltage) control the ASIC chip's performance: more frequency means more hashrate but more heat and consumption. Undervolting lowers the voltage to save energy and reduce temperature, usually at the cost of some hashrate.`,
-         es: `La Frecuencia (MHz) y el Voltaje del núcleo (coreVoltage) controlan el rendimiento del chip ASIC: más frecuencia significa más hashrate pero más calor y consumo. El undervolt reduce el voltaje para ahorrar energía y bajar la temperatura, normalmente a costa de algo de hashrate.`,
-         fr: `La Fréquence (MHz) et la Tension du cœur (coreVoltage) contrôlent la performance de la puce ASIC : plus de fréquence signifie plus de hashrate mais plus de chaleur et de consommation. L'undervolt réduit la tension pour économiser l'énergie et baisser la température, généralement au prix d'un peu de hashrate.` } },
-  { key: 'perfis_energia', kw: ['perfil de energia','perfis de energia','mqtt','home assistant','solar','tarifa','power profile'],
-    q: { pt: `O que são os Perfis de Energia?`, en: `What are Power Profiles?`, es: `¿Qué son los Perfiles de Energía?`, fr: `Que sont les Profils d'Énergie ?` },
-    a: { pt: `Os Perfis de Energia (separador "☀️ Perfis de Energia") ligam-se ao teu broker MQTT (ex: Home Assistant) para ler produção solar e tarifa elétrica. Com base nesses valores, o painel SUGERE um perfil de frequência/undervolt mais adequado — mas a aplicação é sempre manual, nunca automática.`,
-         en: `Power Profiles (the "Power Profiles" tab) connect to your MQTT broker (e.g. Home Assistant) to read solar production and electricity rate. Based on those values, the dashboard SUGGESTS a more suitable frequency/undervolt profile - but applying it is always manual, never automatic.`,
-         es: `Los Perfiles de Energía (pestaña "Perfiles de Energía") se conectan a tu broker MQTT (ej: Home Assistant) para leer la producción solar y la tarifa eléctrica. Según esos valores, el panel SUGIERE un perfil de frecuencia/undervolt más adecuado - pero la aplicación siempre es manual, nunca automática.`,
-         fr: `Les Profils d'Énergie (onglet « Profils d'Énergie ») se connectent à ton broker MQTT (ex : Home Assistant) pour lire la production solaire et le tarif électrique. En fonction de ces valeurs, le panneau SUGGÈRE un profil de fréquence/undervolt plus adapté - mais l'application est toujours manuelle, jamais automatique.` } },
-  { key: 'adicionar_maquina_faq', kw: ['adicionar maquina','adicionar máquina','registar maquina','novo asic','ip','add machine'],
-    q: { pt: `Como adiciono uma máquina?`, en: `How do I add a machine?`, es: `¿Cómo añado una máquina?`, fr: `Comment ajouter une machine ?` },
-    a: { pt: `No painel "Dashboard Geral", usa os campos "Apelido" e "IP" no topo do painel de Máquinas e clica em "Adicionar máquina". É preciso o servidor local (app.py / nerdqaxe_server.py) estar a correr em localhost:8765.`,
-         en: `In the "General Dashboard" panel, use the "Nickname" and "IP" fields at the top of the Machines panel and click "Add machine". The local server (app.py / nerdqaxe_server.py) needs to be running on localhost:8765.`,
-         es: `En el panel "Panel General", usa los campos "Apodo" e "IP" en la parte superior del panel de Máquinas y haz clic en "Añadir máquina". Es necesario que el servidor local (app.py / nerdqaxe_server.py) esté ejecutándose en localhost:8765.`,
-         fr: `Dans le panneau « Tableau de Bord Général », utilise les champs « Surnom » et « IP » en haut du panneau des Machines et clique sur « Ajouter une machine ». Le serveur local (app.py / nerdqaxe_server.py) doit être actif sur localhost:8765.` } },
-  { key: 'aceites_rejeitadas', kw: ['aceites','rejeitadas','shares','accepted','rejected'],
-    q: { pt: `O que são Aceites/Rejeitadas?`, en: `What are Accepted/Rejected shares?`, es: `¿Qué son Aceptadas/Rechazadas?`, fr: `Que sont les shares Acceptées/Rejetées ?` },
-    a: { pt: `São o número de shares (unidades de trabalho) que a tua pool aceitou vs. rejeitou. Uma taxa de rejeição alta pode indicar problemas de rede, latência ou instabilidade na ligação à pool.`,
-         en: `These are the number of shares (units of work) your pool has accepted vs. rejected. A high rejection rate can indicate network problems, latency, or instability in the pool connection.`,
-         es: `Son el número de shares (unidades de trabajo) que tu pool ha aceptado frente a las que ha rechazado. Una tasa de rechazo alta puede indicar problemas de red, latencia o inestabilidad en la conexión al pool.`,
-         fr: `C'est le nombre de shares (unités de travail) que ton pool a acceptées vs rejetées. Un taux de rejet élevé peut indiquer des problèmes réseau, de latence ou une instabilité de la connexion au pool.` } },
-  { key: 'distribuicao_hashrate_faq', kw: ['distribuicao','distribuição','donut','distribution'],
-    q: { pt: `O que é a Distribuição de Hashrate?`, en: `What is the Hashrate Distribution?`, es: `¿Qué es la Distribución de Hashrate?`, fr: `Qu'est-ce que la Répartition du Hashrate ?` },
-    a: { pt: `É um gráfico que mostra a fatia de hashrate total que cada máquina está a contribuir, para veres rapidamente se alguma está com desempenho abaixo do esperado.`,
-         en: `It is a chart that shows the slice of total hashrate each machine is contributing, so you can quickly see if any of them is underperforming.`,
-         es: `Es un gráfico que muestra la parte del hashrate total que aporta cada máquina, para que veas rápidamente si alguna tiene un rendimiento por debajo de lo esperado.`,
-         fr: `C'est un graphique qui montre la part du hashrate total que chaque machine apporte, pour repérer rapidement si l'une d'elles est sous-performante.` } },
-  { key: 'latencia_faq', kw: ['latencia','latência','ping','perda','latency'],
-    q: { pt: `O que é a Latência / Ping ao Pool?`, en: `What is Latency / Pool Ping?`, es: `¿Qué es la Latencia / Ping al Pool?`, fr: `Qu'est-ce que la Latence / le Ping au Pool ?` },
-    a: { pt: `"Ping ao Pool" mede o tempo de resposta entre a tua máquina e o servidor da pool de mineração — valores altos ou perda de pacotes podem causar mais shares rejeitadas. "Latência Local" mede a resposta do próprio ASIC na tua rede.`,
-         en: `"Pool Ping" measures the response time between your machine and the mining pool server - high values or packet loss can cause more rejected shares. "Local Latency" measures the response of the ASIC itself on your network.`,
-         es: `"Ping al Pool" mide el tiempo de respuesta entre tu máquina y el servidor del pool de minería - valores altos o pérdida de paquetes pueden causar más shares rechazadas. "Latencia Local" mide la respuesta del propio ASIC en tu red.`,
-         fr: `« Ping au Pool » mesure le temps de réponse entre ta machine et le serveur du pool de minage - des valeurs élevées ou une perte de paquets peuvent causer plus de shares rejetées. « Latence Locale » mesure la réponse de l'ASIC lui-même sur ton réseau.` } },
-  { key: 'saude_termica_faq', kw: ['termica','térmica','temperatura','saude','saúde','sobreaquecimento','thermal'],
-    q: { pt: `O que faz a saúde térmica preditiva?`, en: `What does predictive thermal health do?`, es: `¿Qué hace la salud térmica predictiva?`, fr: `À quoi sert la santé thermique prédictive ?` },
-    a: { pt: `A funcionalidade de saúde térmica acompanha o histórico de temperatura de cada máquina e tenta prever tendências de sobreaquecimento antes que aconteçam, permitindo agir com antecedência (ex: aplicar undervolt).`,
-         en: `The thermal health feature tracks each machine's temperature history and tries to predict overheating trends before they happen, letting you act ahead of time (e.g. applying undervolt).`,
-         es: `La función de salud térmica sigue el historial de temperatura de cada máquina e intenta predecir tendencias de sobrecalentamiento antes de que ocurran, permitiéndote actuar con antelación (ej: aplicar undervolt).`,
-         fr: `La fonctionnalité de santé thermique suit l'historique de température de chaque machine et essaie de prédire les tendances de surchauffe avant qu'elles ne surviennent, te permettant d'agir à l'avance (ex : appliquer un undervolt).` } },
-  { key: 'simulador_faq', kw: ['simulador','bloco','probabilidade','ajuste de dificuldade','simulator'],
-    q: { pt: `Como funciona o simulador de bloco?`, en: `How does the block simulator work?`, es: `¿Cómo funciona el simulador de bloque?`, fr: `Comment fonctionne le simulateur de bloc ?` },
-    a: { pt: `O simulador cruza o teu hashrate atual com os dados em tempo real da rede Bitcoin para estimar o impacto do próximo ajuste de dificuldade (a cada 2016 blocos) na tua probabilidade teórica de encontrar um bloco a solo.`,
-         en: `The simulator combines your current hashrate with real-time Bitcoin network data to estimate the impact of the next difficulty adjustment (every 2016 blocks) on your theoretical probability of finding a solo block.`,
-         es: `El simulador cruza tu hashrate actual con los datos en tiempo real de la red Bitcoin para estimar el impacto del próximo ajuste de dificultad (cada 2016 bloques) en tu probabilidad teórica de encontrar un bloque en solitario.`,
-         fr: `Le simulateur croise ton hashrate actuel avec les données en temps réel du réseau Bitcoin pour estimer l'impact du prochain ajustement de difficulté (tous les 2016 blocs) sur ta probabilité théorique de trouver un bloc en solo.` } },
-  { key: 'configuracao_faq', kw: ['configuracao','configuração','ficheiro','power_profiles','gravar','guardar','config file'],
-    q: { pt: `Onde fica guardada a configuração?`, en: `Where is the configuration stored?`, es: `¿Dónde se guarda la configuración?`, fr: `Où est stockée la configuration ?` },
-    a: { pt: `A configuração dos Perfis de Energia fica em power_profiles.json, ao lado do executável ou do app.py. As máquinas registadas e outras preferências ficam guardadas no localStorage do teu browser.`,
-         en: `The Power Profiles configuration is stored in power_profiles.json, next to the executable or app.py. Registered machines and other preferences are stored in your browser's localStorage.`,
-         es: `La configuración de los Perfiles de Energía se guarda en power_profiles.json, junto al ejecutable o a app.py. Las máquinas registradas y otras preferencias se guardan en el localStorage de tu navegador.`,
-         fr: `La configuration des Profils d'Énergie est stockée dans power_profiles.json, à côté de l'exécutable ou de app.py. Les machines enregistrées et les autres préférences sont stockées dans le localStorage de ton navigateur.` } },
-];
-
-function getAiGreeting() { return t('ai_greeting'); }
-function getAiFallback() { return t('ai_fallback'); }
-
-function aiNormalize(str){
-  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
-function aiFindAnswer(question){
-  const norm = aiNormalize(question);
-  let best = null, bestScore = 0;
-  for(const entry of AI_KB){
-    let score = 0;
-    for(const kw of entry.kw){
-      if(norm.includes(aiNormalize(kw))) score += kw.length;
-    }
-    if(score > bestScore){ bestScore = score; best = entry; }
-  }
-  return best ? (best.a[currentLang] || best.a.pt) : getAiFallback();
-}
-
-function aiAppendMsg(text, who){
-  const log = $('aiChatLog');
-  const div = document.createElement('div');
-  div.className = `ai-msg ${who}`;
-  div.textContent = text;
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-}
-
-function aiAsk(question){
-  const q = (question || '').trim();
-  if(!q) return;
-  aiAppendMsg(q, 'user');
-  const answer = aiFindAnswer(q);
-  setTimeout(() => aiAppendMsg(answer, 'bot'), 250);
-}
-
-function aiRenderSuggestions(){
-  const box = $('aiSuggestions');
-  if(!box) return;
-  box.innerHTML = '';
-  const sample = AI_KB.slice(0, 4);
-  sample.forEach(entry => {
-    const btn = document.createElement('button');
-    btn.className = 'ai-chip';
-    const question = entry.q[currentLang] || entry.q.pt;
-    btn.textContent = question;
-    btn.onclick = () => aiAsk(question);
-    box.appendChild(btn);
-  });
-}
-
-function initAiAgent(){
-  aiAppendMsg(getAiGreeting(), 'bot');
-  aiRenderSuggestions();
-  $('aiSendBtn').onclick = () => {
-    const input = $('aiInput');
-    aiAsk(input.value);
-    input.value = '';
-  };
-  $('aiInput').addEventListener('keydown', (e) => {
-    if(e.key === 'Enter'){
-      const input = $('aiInput');
-      aiAsk(input.value);
-      input.value = '';
-    }
-  });
-}
-
-$('addBtn').onclick = () => { 
-  const ip = $('ipInput').value.trim();
-  if(ip) {
-    addDevice($('nameInput').value.trim(), ip);
-    $('ipInput').value = '';
-    $('nameInput').value = '';
-  }
-};
-
-// --- Localizar máquinas na rede (scan de subrede) ---
-let scanInFlight = false;
-
-function openScanModal(){
-  $('scanModalOverlay').classList.add('open');
-  runNetworkScan();
-}
-
-function closeScanModal(){
-  $('scanModalOverlay').classList.remove('open');
-}
-
-async function runNetworkScan(){
-  if(scanInFlight) return;
-  scanInFlight = true;
-  const body = $('scanModalBody');
-  const status = $('scanStatus');
-  const addAllBtn = $('scanAddAllBtn');
-  addAllBtn.style.display = 'none';
-  body.innerHTML = `<div class="scan-empty"><span class="scan-spinner"></span><span data-i18n="a_procurar_maquinas_na_rede">A procurar máquinas na rede local...</span></div>`;
-  if(typeof applyTranslations === 'function') applyTranslations();
-  status.textContent = '';
-  $('scanBtn').disabled = true;
-
-  try {
-    const resp = await fetch('/api/scan');
-    if(!resp.ok) throw new Error('scan failed');
-    const data = await resp.json();
-    renderScanResults(data.devices || [], data.subnet || '');
-  } catch(e){
-    body.innerHTML = `<div class="scan-error" data-i18n="erro_ao_procurar_maquinas_na_rede">Não foi possível concluir o scan da rede. Confirma que o servidor local está a correr.</div>`;
-    if(typeof applyTranslations === 'function') applyTranslations();
-  } finally {
-    scanInFlight = false;
-    $('scanBtn').disabled = false;
-  }
-}
-
-function renderScanResults(found, subnet){
-  const body = $('scanModalBody');
-  const status = $('scanStatus');
-  const addAllBtn = $('scanAddAllBtn');
-  const existingIps = new Set(devices.map(d => d.ip));
-  const newOnes = found.filter(d => !existingIps.has(d.ip));
-
-  status.textContent = subnet ? `${subnet}.0/24` : '';
-
-  if(found.length === 0){
-    body.innerHTML = `<div class="scan-empty" data-i18n="nenhuma_maquina_encontrada_na_rede">Nenhuma máquina encontrada na rede local.</div>`;
-    if(typeof applyTranslations === 'function') applyTranslations();
-    addAllBtn.style.display = 'none';
-    return;
-  }
-
-  body.innerHTML = '';
-  const list = document.createElement('div');
-  list.className = 'scan-device-list';
-
-  found.forEach(dev => {
-    const already = existingIps.has(dev.ip);
-    const row = document.createElement('div');
-    row.className = 'scan-device-row';
-    const meta = [dev.model, dev.protocol === 'cgminer' ? 'cgminer/LuxOS' : null].filter(Boolean).join(' · ');
-    row.innerHTML = `
-      <div class="scan-device-info">
-        <div class="scan-device-name">${escapeHtml(dev.hostname || dev.ip)}</div>
-        <div class="scan-device-meta">${escapeHtml(dev.ip)}${meta ? ' · ' + escapeHtml(meta) : ''}</div>
-      </div>
-    `;
-    if(already){
-      const tag = document.createElement('span');
-      tag.className = 'scan-device-added';
-      tag.textContent = '✓ já adicionada';
-      row.appendChild(tag);
-    } else {
-      const btn = document.createElement('button');
-      btn.className = 'scan-device-add-btn';
-      btn.textContent = 'Adicionar';
-      btn.onclick = () => {
-        addDevice(dev.hostname && dev.hostname !== dev.ip ? dev.hostname : '', dev.ip);
-        existingIps.add(dev.ip);
-        renderScanResults(found, subnet);
-      };
-      row.appendChild(btn);
-    }
-    list.appendChild(row);
-  });
-
-  body.appendChild(list);
-  if(typeof applyTranslations === 'function') applyTranslations();
-  addAllBtn.style.display = newOnes.length > 0 ? 'inline-block' : 'none';
-  addAllBtn.onclick = () => {
-    newOnes.forEach(dev => {
-      addDevice(dev.hostname && dev.hostname !== dev.ip ? dev.hostname : '', dev.ip);
-    });
-    renderScanResults(found, subnet);
-  };
-}
-
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-$('scanBtn').onclick = openScanModal;
-$('scanModalCloseBtn').onclick = closeScanModal;
-$('scanModalOverlay').addEventListener('click', (e) => {
-  if(e.target === $('scanModalOverlay')) closeScanModal();
-});
-
-$('ratesRefreshBtn').onclick = () => fetchRates(true);
-
-$('clearLogBtn').onclick = () => { 
-  $('eventLog').innerHTML = ''; 
-  logEvent('Log limpo.', '', 'Sistema', 'sys');
-};
-
-// --- Holofote que segue o rato pelo painel principal + ripple nos botões
-// --- para o painel parecer mais reativo ao toque/rato. --------------------
-(function(){
-  const frameEl = document.querySelector('.frame');
-  if(frameEl){
-    frameEl.addEventListener('mousemove', (e) => {
-      const r = frameEl.getBoundingClientRect();
-      frameEl.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
-      frameEl.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
-    }, { passive: true });
-  }
-
-  const RIPPLE_SELECTOR = 'button, .tab-btn, .scan-device-add-btn, .btc-unit-btn';
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest ? e.target.closest(RIPPLE_SELECTOR) : null;
-    if(!btn) return;
-    const cs = getComputedStyle(btn);
-    if(cs.position === 'static') btn.style.position = 'relative';
-    const prevOverflow = btn.style.overflow;
-    btn.style.overflow = 'hidden';
-    const r = btn.getBoundingClientRect();
-    const ripple = document.createElement('span');
-    const size = Math.max(r.width, r.height) * 1.4;
-    ripple.className = 'ui-ripple';
-    ripple.style.width = ripple.style.height = size + 'px';
-    ripple.style.left = (e.clientX - r.left - size / 2) + 'px';
-    ripple.style.top = (e.clientY - r.top - size / 2) + 'px';
-    btn.appendChild(ripple);
-    ripple.addEventListener('animationend', () => {
-      ripple.remove();
-      btn.style.overflow = prevOverflow;
-    });
-  });
-})();
-
-loadTheme();
-loadLanguage();
-initKioskMode();
-(async () => {
-  await loadDevices();
-  loadNotifications();
-  updateToastToggleBtn();
-  loadThermalHistory();
-  loadMaintenanceLog();
-  loadThermalProtectionSettings();
-  loadAchievements();
-  updateAchvBadge();
-  devices.forEach(d => { thermalAlertState[d.id] = computeThermalHealth(d.id).status; });
-  updateThermalBadge();
-  updateNotifBadge();
-  updateLogMachineDropdown();
-  renderAll();
-  checkForUpdate();
-})();
-logEvent(t('painel_iniciado_com_alertas'), 'new', 'Sistema', 'sys');
-// pollAll() e pollPowerStatus() já não têm setInterval próprio aqui - são
-// despoletados pelo Web Worker do heartbeat (ver abaixo), para não
-// sofrerem o throttling de abas em segundo plano.
-pollAll();
-fetchRecentBlocks();
-startBlocksAutoRefresh();
-
-loadPowerConfig();
-pollPowerStatus();
-
-initAiAgent();
-
-// --- Fecho total automático -------------------------------------------
-// Avisa o servidor local (app.py) de que este separador/janela continua
-// aberto. Se isto parar de chegar (X premido, browser fechado, etc.), o
-// backend desliga-se por completo ao fim de algum tempo.
-//
-// IMPORTANTE: os browsers "atrasam" (throttle) de propósito os
-// setInterval() de uma página quando a janela é minimizada, quando outra
-// aba fica em foco, ou quando o browser descarta/congela abas em segundo
-// plano para poupar bateria/memória ("Memory Saver"/"Efficiency mode").
-// Isto fazia o heartbeat parar de chegar mesmo com o painel só minimizado
-// (não fechado), levando o servidor a desligar-se por engano. Um Web
-// Worker corre num thread à parte e não sofre este throttling da mesma
-// forma, por isso o heartbeat é enviado a partir dele em vez do thread
-// principal da página.
-function sendHeartbeat() {
-  fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
-}
-
-// IMPORTANTE (continuação): o mesmo throttling que afetava o heartbeat
-// também afeta QUALQUER setInterval() no thread principal da página -
-// incluindo o pollAll() que atualiza os dados das máquinas. Descobrimos
-// isto pelos logs: mesmo com o heartbeat a salvo no worker, o polling das
-// máquinas continuava a saltar para ~60s de intervalo (throttling
-// "intensivo" do Chrome) sempre que a janela ficava em segundo plano
-// durante uns minutos, e a certa altura parava por completo durante
-// dezenas de minutos até a aba "acordar". Por isso o pollAll() (e o
-// pollPowerStatus()) passam também a ser despoletados a partir do worker,
-// tal como o heartbeat - só assim as máquinas continuam a atualizar-se
-// mesmo com o painel minimizado ou noutro separador.
-let _heartbeatWorker = null;
-try {
-  const workerCode = `
-    setInterval(() => { postMessage('heartbeat'); }, 3000);
-    setInterval(() => { postMessage('poll'); }, 5000);
-  `;
-  const blob = new Blob([workerCode], { type: 'application/javascript' });
-  _heartbeatWorker = new Worker(URL.createObjectURL(blob));
-  _heartbeatWorker.onmessage = (e) => {
-    if (e.data === 'heartbeat') sendHeartbeat();
-    else if (e.data === 'poll') { pollAll(); pollPowerStatus(); }
-  };
-} catch (e) {
-  // Fallback (browsers muito antigos/sem suporte a Worker): pelo menos o
-  // heartbeat, pollAll e pollPowerStatus normais continuam a funcionar
-  // enquanto a aba estiver em primeiro plano.
-  setInterval(sendHeartbeat, 3000);
-  setInterval(pollAll, 5000);
-  setInterval(pollPowerStatus, 5000);
-}
-
-// Também manda logo um heartbeat sempre que a aba volta a ficar visível,
-// para "recuperar" imediatamente sem esperar pelo próximo tick do worker.
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) sendHeartbeat();
-});
-
-sendHeartbeat();
-
-// Ao fechar mesmo o separador/janela (não apenas minimizar ou trocar de
-// separador), avisa o servidor de imediato para ele se desligar logo,
-// em vez de esperar até 90s sem heartbeat. sendBeacon é usado porque
-// continua a funcionar mesmo durante o descarregamento da página
-// (um fetch normal seria cancelado nesse momento).
-window.addEventListener('pagehide', (event) => {
-  if (event.persisted) return; // página só foi para bfcache, não fechou
-  try { navigator.sendBeacon('/api/close'); } catch (e) {}
-});
-
-// Mostra a versão instalada (independente de internet, ao contrário da
-// verificação de atualizações que consulta o GitHub).
-(async () => {
-  try {
-    const res = await fetch('/api/version');
-    const data = await res.json();
-    const tag = $('versionTag');
-    if (data.version) appVersion = data.version;
-    if (tag && data.version) tag.textContent = `· v${data.version}`;
-  } catch (e) {}
-})();
-
-// Fecho garantido e imediato, independente de qualquer comportamento do
-// browser ao fechar separador/janela (que por vezes não dispara a tempo,
-// deixando o servidor a correr até 90s em segundo plano). Este botão
-// chama /api/close diretamente, sem depender do evento pagehide.
-function shutdownServer() {
-  if (!confirm(t('confirm_desligar_servidor'))) return;
-  if (_heartbeatWorker) _heartbeatWorker.terminate(); // para não cancelar o próprio pedido de fecho
-  fetch('/api/close', { method: 'POST' }).catch(() => {});
-  document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:JetBrains Mono,monospace;color:var(--muted);font-size:14px;">${t('servidor_desligado_msg')}</div>`;
-}
-</script>
-</body>
-</html>
