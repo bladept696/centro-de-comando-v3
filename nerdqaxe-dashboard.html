@@ -543,6 +543,21 @@
     0%,100%{ box-shadow:0 0 0 1px var(--green-dim); }
     50%{ box-shadow:0 0 0 1px var(--green-dim), 0 0 22px -4px var(--green-dim); }
   }
+  /* Bloco novo a entrar: desliza da esquerda, faz um "pop" e pisca a
+     verde uma vez, para chamar a atenção quando surge um bloco novo. */
+  .block-card.bc-new{
+    animation: blockCardEnter .6s cubic-bezier(.22,1,.36,1) both,
+               blockCardEnterFlash 1.3s ease-out .1s both;
+  }
+  @keyframes blockCardEnter{
+    0%{ opacity:0; transform:translateX(-26px) scale(.94); }
+    100%{ opacity:1; transform:translateX(0) scale(1); }
+  }
+  @keyframes blockCardEnterFlash{
+    0%{ box-shadow:0 0 0 1px var(--green-dim), 0 0 0px var(--green-dim); }
+    30%{ box-shadow:0 0 0 1px var(--green-dim), 0 0 34px -2px var(--green-dim); }
+    100%{ box-shadow:0 0 0 1px transparent, 0 0 0px transparent; }
+  }
   .block-card .bc-head{
     display:flex; justify-content:space-between; align-items:baseline;
     border-bottom:1px solid var(--line); padding-bottom:9px; margin-bottom:9px;
@@ -4783,6 +4798,8 @@ function timeAgoPt(unixSeconds) {
 }
 
 let lastFetchedBlocks = null;
+let seenBlockHeights = new Set();
+
 async function fetchRecentBlocks() {
   const hint = $('blocksRefreshHint');
   const container = $('blocksScroll');
@@ -4804,6 +4821,22 @@ async function fetchRecentBlocks() {
   }
 }
 
+// Conta de 0 até ao valor final (ease-out), só usado nos cartões de blocos
+// que acabaram de aparecer pela primeira vez - blocos já vistos não voltam
+// a animar o número em cada refresh de 60s.
+function _animateTxCountFromZero(el, target){
+  const duration = 900;
+  const start = performance.now();
+  function step(now){
+    const p = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = `${Math.round(target * eased)} txs`;
+    if(p < 1) requestAnimationFrame(step);
+    else el.textContent = `${target} txs`;
+  }
+  requestAnimationFrame(step);
+}
+
 function renderRecentBlocks(blocks) {
   const container = $('blocksScroll');
   if(!container) return;
@@ -4811,18 +4844,22 @@ function renderRecentBlocks(blocks) {
     container.innerHTML = `<div class="blocks-empty">${t('blocos_sem_blocos')}</div>`;
     return;
   }
+  const isFirstRender = seenBlockHeights.size === 0;
   container.innerHTML = blocks.map(b => {
     const pool = (b.extras && b.extras.pool) || { name: t('pool_desconhecida'), slug: 'unknown' };
     const feeRate = b.extras && (b.extras.avgFeeRate ?? b.extras.medianFee);
     const feeStr = (feeRate !== undefined && feeRate !== null) ? `~${Number(feeRate).toFixed(1)} sat/vB` : '—';
     const logoUrl = `https://mempool.space/resources/mining-pools/${pool.slug}.svg`;
+    // Só entra com animação (slide+pop+brilho) se já tínhamos renderizado
+    // blocos antes e este é novo - evita animar tudo no primeiro carregamento.
+    const isNew = !isFirstRender && !seenBlockHeights.has(b.height);
     return `
-      <div class="block-card">
+      <div class="block-card${isNew ? ' bc-new' : ''}" data-height="${b.height}">
         <div class="bc-head">
           <span class="bc-height">${b.height}</span>
           <span class="bc-time">${timeAgoPt(b.timestamp)}</span>
         </div>
-        <div class="bc-row"><span class="bc-ico">▤</span><span>${b.tx_count} txs</span></div>
+        <div class="bc-row"><span class="bc-ico">▤</span><span class="bc-txcount" data-txcount="${b.tx_count}">${isNew ? '0 txs' : b.tx_count + ' txs'}</span></div>
         <div class="bc-row"><span class="bc-ico">₿</span><span>${feeStr}</span></div>
         <div class="bc-pool">
           <span class="bc-pool-name" title="${pool.name}">${pool.name}</span>
@@ -4831,6 +4868,12 @@ function renderRecentBlocks(blocks) {
       </div>
     `;
   }).join('');
+
+  blocks.forEach(b => seenBlockHeights.add(b.height));
+
+  container.querySelectorAll('.block-card.bc-new .bc-txcount').forEach(el => {
+    _animateTxCountFromZero(el, parseInt(el.dataset.txcount, 10) || 0);
+  });
 }
 
 let difficultyData = null;
