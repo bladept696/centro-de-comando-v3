@@ -18,8 +18,8 @@ if errorlevel 1 (
 echo [1/4] A instalar o PyInstaller...
 python -m pip install --upgrade pyinstaller --quiet
 
-echo [2/4] A instalar dependencias (paho-mqtt para os Perfis de Energia)...
-python -m pip install --upgrade paho-mqtt --quiet
+echo [2/4] A instalar dependencias (paho-mqtt para os Perfis de Energia, pystray+Pillow para o icone na bandeja)...
+python -m pip install --upgrade paho-mqtt pystray Pillow --quiet
 
 echo [3/4] A compilar o executavel (isto pode demorar 1-2 minutos)...
 python -m PyInstaller --noconfirm --onefile --windowed ^
@@ -29,7 +29,10 @@ python -m PyInstaller --noconfirm --onefile --windowed ^
     --add-data "overlay-obs.html;." ^
     --add-data "bitminer33-banner.png;." ^
     --add-data "lightning-qrcode.png;." ^
+    --add-data "app_icon.ico;." ^
     --hidden-import "paho.mqtt.client" ^
+    --hidden-import "pystray._win32" ^
+    --hidden-import "PIL._tkinter_finder" ^
     app.py
 
 echo [4/4] Concluido!

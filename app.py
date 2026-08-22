@@ -32,6 +32,16 @@ except ImportError:
     mqtt = None
     MQTT_AVAILABLE = False
 
+try:
+    import pystray
+    from PIL import Image, ImageDraw
+    TRAY_AVAILABLE = True
+except ImportError:
+    pystray = None
+    Image = None
+    ImageDraw = None
+    TRAY_AVAILABLE = False
+
 PORT = 8765
 SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
@@ -133,18 +143,30 @@ def get_usage_count():
 # a este servidor, e o fecho real acontece via /api/close (evento pagehide)
 # ou pelo botão "Desligar" do painel.
 #
-# O antigo watchdog por timeout (matar o processo se não chegasse heartbeat
-# há muito tempo) foi DESATIVADO a pedido do utilizador - causou demasiados
-# falsos positivos (poupança de energia do browser/Windows a suspender o
-# Worker mesmo com a página em primeiro plano, corridas com o F5, etc.),
-# desligando o servidor sem o utilizador ter fechado nada. Sem esse
-# watchdog, o único risco é ficar um processo "zombie" em segundo plano se
-# o browser crashar sem disparar pagehide (raro) - nesse caso, fecha-se
-# manualmente pelo Gestor de Tarefas ou pelo botão "Desligar" antes de
-# fechar o browser.
+# O antigo watchdog por timeout curto (matar o processo se não chegasse
+# heartbeat há pouco tempo) foi DESATIVADO a pedido do utilizador - causou
+# demasiados falsos positivos (poupança de energia do browser/Windows a
+# suspender o Worker mesmo com a página em primeiro plano, corridas com o
+# F5, etc.), desligando o servidor sem o utilizador ter fechado nada.
+#
+# Em vez disso, o fecho normal acontece via /api/close (pagehide) ou pelo
+# botão "Desligar" do painel. Fica só uma REDE DE SEGURANÇA por trás: um
+# timeout muito mais longo (ver SAFETY_NET_TIMEOUT_SECONDS abaixo) que só
+# atua se não chegar NENHUM heartbeat durante esse tempo todo - o que só
+# acontece em cenários de "processo verdadeiramente zombie" (browser
+# crashou sem disparar pagehide, PC foi abaixo sem desligar a app, etc.),
+# nunca em suspensões normais de alguns segundos/minutos.
 LAST_HEARTBEAT = {"ts": None}
-HEARTBEAT_TIMEOUT = None    # desativado - nunca fecha por falta de heartbeat
+HEARTBEAT_TIMEOUT = None    # desativado - nunca fecha por falta de heartbeat a curto prazo
 HEARTBEAT_GRACE = 20        # (sem efeito enquanto HEARTBEAT_TIMEOUT = None)
+
+# Rede de segurança: se não chegar UM ÚNICO heartbeat durante este intervalo
+# (30 minutos), o processo é considerado zombie e fecha-se sozinho. É longo
+# de propósito para nunca disparar por engano - só serve para limpar
+# processos verdadeiramente abandonados que de outra forma ficariam a
+# correr para sempre em segundo plano.
+SAFETY_NET_TIMEOUT_SECONDS = 30 * 60
+SERVER_START_TS = time.time()
 
 # Temporizador de fecho pendente, criado por /api/close. Fica cancelável
 # durante CLOSE_GRACE_SECONDS: se chegar um heartbeat novo nesse intervalo
@@ -182,16 +204,22 @@ def cancel_pending_close():
 
 
 def watchdog_loop():
-    """Antigo watchdog por timeout de heartbeat - DESATIVADO.
-
-    Mantido como no-op (não faz nada) só para não ter de alterar o
-    start_watchdog()/threading.Thread() mais abaixo. O fecho do processo
-    passa a acontecer exclusivamente via /api/close (pagehide) ou pelo
-    botão "Desligar" do painel - nunca por inatividade ou heartbeat em
-    falta.
+    """Rede de segurança: NÃO é o antigo watchdog de timeout curto (esse
+    continua desativado). Isto só fecha o processo se não chegar nenhum
+    heartbeat durante SAFETY_NET_TIMEOUT_SECONDS (30 min) - tempo mais que
+    suficiente para nunca confundir uma suspensão normal do browser com um
+    fecho real. Existe só para limpar processos verdadeiramente
+    abandonados (crash do browser sem pagehide, etc.) que de outra forma
+    ficavam a correr para sempre em segundo plano.
     """
     while True:
-        time.sleep(60)
+        time.sleep(30)
+        ts = LAST_HEARTBEAT["ts"] or SERVER_START_TS
+        idle_for = time.time() - ts
+        if idle_for > SAFETY_NET_TIMEOUT_SECONDS:
+            print(f"[watchdog] rede de segurança: {idle_for:.0f}s sem qualquer heartbeat - "
+                  f"a desligar processo zombie.", flush=True)
+            os._exit(0)
 
 NERDQAXE_SIGNATURE_FIELDS = {
     'ASICModel', 'hashRate', 'bestDiff', 'bestSessionDiff',
@@ -2006,6 +2034,81 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
+# --- Ícone na bandeja do sistema (system tray) ------------------------------
+# Dá ao utilizador uma forma sempre visível e garantida de fechar a app por
+# completo, mesmo que o browser tenha sido fechado sem disparar o pagehide
+# (ex: fechado à força, crash, etc.) e a rede de segurança acima ainda não
+# tenha disparado. O botão "Sair" do menu do ícone chama sempre os._exit(0)
+# diretamente - não depende de heartbeats, janelas de graça, nem de nada
+# que possa falhar; é o "botão de pânico" garantido.
+TRAY_ICON_FILENAME = "app_icon.ico"
+
+
+def _load_tray_image():
+    """Tenta carregar o .ico da app (o mesmo usado no executável). Se não
+    existir ou não for possível ler, gera um ícone simples de reserva para
+    a bandeja nunca ficar sem ícone."""
+    candidates = [
+        os.path.join(resource_dir(), TRAY_ICON_FILENAME),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), TRAY_ICON_FILENAME),
+    ]
+    for path in candidates:
+        if not path:
+            continue
+        try:
+            if os.path.exists(path):
+                return Image.open(path)
+        except Exception:
+            continue
+
+    # Reserva: um quadrado laranja simples com "C" - nunca falha.
+    img = Image.new('RGB', (64, 64), color=(30, 30, 30))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse((4, 4, 60, 60), fill=(247, 147, 26))
+    draw.text((22, 18), "C", fill=(20, 20, 20))
+    return img
+
+
+def _tray_abrir_painel(icon=None, item=None):
+    webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
+
+
+def _tray_sair(icon=None, item=None):
+    print("[tray] 'Sair' escolhido no ícone da bandeja - a fechar a app garantidamente.", flush=True)
+    try:
+        if icon is not None:
+            icon.stop()
+    except Exception:
+        pass
+    os._exit(0)
+
+
+def start_tray_icon():
+    """Cria e corre o ícone da bandeja numa thread dedicada (pystray precisa
+    do seu próprio loop). Se a biblioteca não estiver disponível, não faz
+    nada - a rede de segurança acima continua a garantir que a app não
+    fica presa para sempre."""
+    if not TRAY_AVAILABLE:
+        print("[tray] pystray/Pillow não disponíveis - ícone de bandeja desativado "
+              "(a app continua a funcionar normalmente).", flush=True)
+        return
+
+    def _run():
+        try:
+            image = _load_tray_image()
+            menu = pystray.Menu(
+                pystray.MenuItem("Abrir painel", _tray_abrir_painel, default=True),
+                pystray.MenuItem("Sair", _tray_sair),
+            )
+            icon = pystray.Icon("CentroDeComando", image, "Centro de Comando", menu)
+            icon.run()
+        except Exception as e:
+            print(f"[tray] falha ao arrancar o ícone da bandeja: {e}", flush=True)
+
+    tray_thread = threading.Thread(target=_run, daemon=True)
+    tray_thread.start()
+
+
 def port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('127.0.0.1', port)) == 0
@@ -2056,6 +2159,11 @@ def main():
 
         pool_autoswitch_thread = threading.Thread(target=pool_autoswitch_loop, daemon=True)
         pool_autoswitch_thread.start()
+
+        # Ícone na bandeja com "Sair" garantido - fecha sempre a app, mesmo
+        # que o browser já não esteja a responder ou tenha sido fechado
+        # sem disparar o pagehide.
+        start_tray_icon()
 
         webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
 
