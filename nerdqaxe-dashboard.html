@@ -1600,6 +1600,14 @@
     margin-left: auto;
     margin-right: auto;
   }
+  .channels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .channels-grid .channel-card { max-width: none; margin: 0; }
   .channel-card {
     max-width: 520px;
     margin: 0 auto;
@@ -2832,7 +2840,7 @@
   <header>
     <div>
       <h1><span data-i18n="centro_de_comando">Centro de Comando</span></h1>
-      <div class="subtitle" id="modeLabel"><span data-i18n="sistema_ativo_com_alertas_sonoros">sistema ativo com alertas sonoros</span> <span id="versionTag" style="opacity:0.6; margin-left:6px;"></span> <span id="installsTag" style="opacity:0.6; margin-left:6px;"></span></div>
+      <div class="subtitle" id="modeLabel"><span data-i18n="sistema_ativo_com_alertas_sonoros">sistema ativo com alertas sonoros</span> <span id="versionTag" style="opacity:0.6; margin-left:6px;"></span></div>
     </div>
     <div class="header-actions">
       <select class="theme-select" id="langSelect" onchange="setLanguage(this.value)" title="Language / Idioma / Langue">
@@ -3136,16 +3144,32 @@
       <div class="supporters-title"><span data-i18n="canais_apoiantes">🌟 CANAIS APOIANTES</span></div>
       <div class="supporters-desc"><span data-i18n="canais_de_youtube_e_criadores_de_conteud">Canais de YouTube e criadores de conteúdo que apoiam este projeto.</span></div>
 
-      <div class="channel-card">
-        <div class="channel-banner">
-          <img src="bitminer33-banner.png" alt="bitminer33">
+      <div class="channels-grid">
+        <div class="channel-card">
+          <div class="channel-banner">
+            <img src="bitminer33-banner.png" alt="bitminer33">
+          </div>
+          <div class="channel-body">
+            <div class="channel-name">bitminer33</div>
+            <div class="channel-desc"><span data-i18n="tudo_sobre_mineracao_domestica_de_btc">Tudo sobre mineração doméstica de BTC.</span></div>
+            <div class="channel-footer">
+              <span class="channel-url">youtube.com/@bitminer33</span>
+              <a class="channel-btn" href="https://youtube.com/@bitminer33" target="_blank" rel="noopener"><span data-i18n="ver_canal">Ver canal →</span></a>
+            </div>
+          </div>
         </div>
-        <div class="channel-body">
-          <div class="channel-name">bitminer33</div>
-          <div class="channel-desc"><span data-i18n="tudo_sobre_mineracao_domestica_de_btc">Tudo sobre mineração doméstica de BTC.</span></div>
-          <div class="channel-footer">
-            <span class="channel-url">youtube.com/@bitminer33</span>
-            <a class="channel-btn" href="https://youtube.com/@bitminer33" target="_blank" rel="noopener"><span data-i18n="ver_canal">Ver canal →</span></a>
+
+        <div class="channel-card">
+          <div class="channel-banner">
+            <img src="baroneclub-banner.png" alt="baroneclub">
+          </div>
+          <div class="channel-body">
+            <div class="channel-name">baroneclub</div>
+            <div class="channel-desc"><span data-i18n="apoiante_baroneclub_desc">Reviews Web3 e mineração doméstica.</span></div>
+            <div class="channel-footer">
+              <span class="channel-url">youtube.com/@baroneclub</span>
+              <a class="channel-btn" href="https://www.youtube.com/@baroneclub" target="_blank" rel="noopener"><span data-i18n="ver_canal">Ver canal →</span></a>
+            </div>
           </div>
         </div>
       </div>
@@ -3666,6 +3690,7 @@
         <div class="achv-summary-stat">
           <span class="lbl" data-i18n="hash_acumulado_total">Hash Acumulado (Total)</span>
           <span class="val" id="achvTotalHash">—</span>
+          <button class="config ghost" style="margin-top:4px; padding:2px 8px; font-size:9px; border-radius:5px;" onclick="resetAchievementHashes()">Repor</button>
         </div>
         <div class="achv-progress-wrap">
           <div class="achv-progress-track"><div class="achv-progress-fill" id="achvOverallFill" style="width:0%"></div></div>
@@ -3879,6 +3904,7 @@ const I18N_DICT = {
   "padrao": { pt: `🌘 Padrão`, en: `🌘 Default`, es: `🌘 Predeterminado`, fr: `🌘 Par Défaut` },
   "apoiantes": { pt: `🌟 Apoiantes`, en: `🌟 Supporters`, es: `🌟 Colaboradores`, fr: `🌟 Soutiens` },
   "canais_apoiantes": { pt: `🌟 CANAIS APOIANTES`, en: `🌟 SUPPORTING CHANNELS`, es: `🌟 CANALES COLABORADORES`, fr: `🌟 CHAÎNES PARTENAIRES` },
+  "apoiante_baroneclub_desc": { pt: `Reviews Web3 e mineração doméstica.`, en: `Web3 reviews and home mining.`, es: `Reviews de Web3 y minería doméstica.`, fr: `Reviews Web3 et minage à domicile.` },
   "matrix": { pt: `🌿 Matrix`, en: `🌿 Matrix`, es: `🌿 Matrix`, fr: `🌿 Matrix` },
   "perfis_de_energia": { pt: `🎛️ Perfis de Energia`, en: `🎛️ Power Profiles`, es: `🎛️ Perfiles de Energía`, fr: `🎛️ Profils d'Énergie` },
   "probabilidade_de_bloco_solo_mining_odds": { pt: `🎯 Probabilidade de Bloco (Solo Mining Odds)`, en: `🎯 Block Probability (Solo Mining Odds)`, es: `🎯 Probabilidad de Bloque (Solo Mining Odds)`, fr: `🎯 Probabilité de Bloc (Solo Mining Odds)` },
@@ -5461,6 +5487,45 @@ function saveAchievements() {
     // limitamos o objeto para não crescer indefinidamente com IDs antigos.
     localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(achievements));
   } catch(e) {}
+}
+
+// Corrige o "Hash Acumulado" que podia disparar de forma impossível
+// (ex: 1 EH ou 100 PH em poucos dias): o painel podia ficar aberto em
+// mais do que um separador/janela ao mesmo tempo (ex: um separador antigo
+// que não fechou mesmo depois de "fechado" - ver histórico do bug do
+// heartbeat), e cada um mantinha o seu próprio contador em memória,
+// somando o mesmo intervalo de tempo duas (ou mais) vezes antes de
+// gravar por cima do localStorage. Esta função relê sempre o valor mais
+// recente do localStorage mesmo antes de somar, para que um separador
+// nunca some tempo que outro já tenha contado.
+function accumulateAchievementHashes(deviceId, hashrateGhs) {
+  if(!achievements || !(hashrateGhs > 0)) return;
+  let fresh = achievements;
+  try {
+    const raw = localStorage.getItem(ACHIEVEMENTS_KEY);
+    if(raw) fresh = Object.assign({}, achievements, JSON.parse(raw));
+  } catch(e) {}
+  if(!fresh.lastPollTs) fresh.lastPollTs = {};
+
+  const nowTs = Date.now();
+  const lastTs = fresh.lastPollTs[deviceId];
+  let deltaSec = lastTs ? (nowTs - lastTs) / 1000 : 5;
+  if(!isFinite(deltaSec) || deltaSec <= 0 || deltaSec > 60) deltaSec = 5;
+
+  fresh.totalHashes = (fresh.totalHashes || 0) + hashrateGhs * 1e9 * deltaSec;
+  fresh.lastPollTs[deviceId] = nowTs;
+  achievements = fresh;
+  saveAchievements();
+}
+
+function resetAchievementHashes(){
+  if(!achievements) return;
+  if(!confirm('Repor o Hash Acumulado (total) para zero? As conquistas de hash já desbloqueadas (1 PH, 10 PH, 100 PH, 1 EH) também serão trancadas de novo.')) return;
+  achievements.totalHashes = 0;
+  achievements.lastPollTs = {};
+  ['hash_1ph', 'hash_10ph', 'hash_100ph', 'hash_1eh'].forEach(id => delete achievements.unlocked[id]);
+  saveAchievements();
+  renderAchievements();
 }
 
 function computeAchvMetrics() {
@@ -7485,12 +7550,7 @@ async function pollOneDevice(dev){
     // leitura bem-sucedida deste dispositivo. Protege contra gaps grandes
     // (reinícios, app fechada) assumindo o intervalo de poll normal (5s).
     if(achievements && hashrateVal > 0) {
-      const nowTs = Date.now();
-      const lastTs = achievements.lastPollTs[dev.id];
-      let deltaSec = lastTs ? (nowTs - lastTs) / 1000 : 5;
-      if(!isFinite(deltaSec) || deltaSec <= 0 || deltaSec > 60) deltaSec = 5;
-      achievements.totalHashes += hashrateVal * 1e9 * deltaSec;
-      achievements.lastPollTs[dev.id] = nowTs;
+      accumulateAchievementHashes(dev.id, hashrateVal);
       if(currentBest > (achievements.bestDiffEver || 0)) achievements.bestDiffEver = currentBest;
     }
 
@@ -9004,20 +9064,6 @@ window.addEventListener('pagehide', (event) => {
     const tag = $('versionTag');
     if (data.version) appVersion = data.version;
     if (tag && data.version) tag.textContent = `· v${data.version}`;
-  } catch (e) {}
-})();
-
-// Mostra o nº de instalações únicas do Centro de Comando (contador global,
-// só soma uma vez por PC - não conta cada vez que a app é aberta/fechada).
-(async () => {
-  try {
-    const res = await fetch('/api/usage-count');
-    const data = await res.json();
-    const tag = $('installsTag');
-    if (tag && data.unique_installs != null) {
-      tag.textContent = `· ${data.unique_installs} instalações`;
-      tag.title = 'Nº de instalações únicas do Centro de Comando (contador global)';
-    }
   } catch (e) {}
 })();
 

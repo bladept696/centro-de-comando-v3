@@ -5,7 +5,7 @@ a = Analysis(
     ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[('nerdqaxe-dashboard.html', '.'), ('overlay-obs.html', '.'), ('bitminer33-banner.png', '.'), ('lightning-qrcode.png', '.'), ('app_icon.ico', '.')],
+    datas=[('nerdqaxe-dashboard.html', '.'), ('overlay-obs.html', '.'), ('bitminer33-banner.png', '.'), ('baroneclub-banner.png', '.'), ('lightning-qrcode.png', '.'), ('app_icon.ico', '.')],
     hiddenimports=['paho.mqtt.client', 'pystray._win32', 'PIL._tkinter_finder'],
     hookspath=[],
     hooksconfig={},

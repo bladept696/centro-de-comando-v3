@@ -59,6 +59,7 @@ Name: "startupicon"; Description: "Iniciar automaticamente com o Windows"; Group
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "app_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "bitminer33-banner.png"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "baroneclub-banner.png"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "lightning-qrcode.png"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "LEIA-ME.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist isreadme
 ; NOTA: não incluir power_profiles.json aqui de propósito - é gerado pela
