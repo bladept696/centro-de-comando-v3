@@ -39,7 +39,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.3.0"
+APP_VERSION = "3.4.0"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -48,6 +48,83 @@ _update_cache_lock = threading.Lock()
 BINANCE_RATES_CACHE_SECONDS = 20  # não martela a API da Binance
 _rates_cache = {"ts": 0, "data": None}
 _rates_cache_lock = threading.Lock()
+
+# --- Contador de utilizadores (nº de arranques da app) ----------------------
+# Serviço gratuito e sem registo (countapi.xyz): cada arranque da app soma
+# +1 a um contador identificado por namespace/key. Não identifica pessoas
+# nem máquinas, é só um total global de vezes que a app foi aberta.
+# --- Contador de utilizadores (nº de arranques da app) ----------------------
+# Serviço gratuito e sem registo (countapi.mileshilliard.com - sucessor do
+# antigo countapi.xyz, que deixou de responder): cada arranque da app soma
+# +1 a um contador identificado por uma chave única. Não identifica pessoas
+# nem máquinas, é só um total global de vezes que a app foi aberta/instalada.
+USAGE_COUNTER_BASE = "https://countapi.mileshilliard.com/api/v1"
+USAGE_COUNTER_PREFIX = "centro-de-comando-v3-" + GITHUB_REPO.split("/")[0]
+USAGE_COUNTER_KEY = f"{USAGE_COUNTER_PREFIX}-app-starts"
+USAGE_COUNTER_TIMEOUT = 4
+UNIQUE_INSTALL_KEY = f"{USAGE_COUNTER_PREFIX}-unique-installs"
+UNIQUE_INSTALL_MARKER_FILENAME = ".install_id"
+
+
+def _usage_counter_hit(key):
+    """Soma +1 a um contador countapi (fire-and-forget, nunca falha de
+    forma visível - sem internet ou com o serviço em baixo, só não conta)."""
+    try:
+        url = f"{USAGE_COUNTER_BASE}/hit/{key}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'CentroDeComando-UsageCounter'})
+        with urllib.request.urlopen(req, timeout=USAGE_COUNTER_TIMEOUT):
+            pass
+    except Exception:
+        pass
+
+
+def _install_marker_path():
+    return os.path.join(writable_dir(), UNIQUE_INSTALL_MARKER_FILENAME)
+
+
+def _is_first_run_on_this_machine():
+    """Verifica (e cria, se não existir) o ficheiro-marcador local que
+    identifica se esta é a primeira vez que a app corre nesta pasta/PC.
+    Só devolve True uma única vez por instalação."""
+    marker = _install_marker_path()
+    if os.path.exists(marker):
+        return False
+    try:
+        with open(marker, 'w', encoding='utf-8') as f:
+            f.write(hashlib.sha256(os.urandom(16)).hexdigest())
+    except Exception:
+        pass
+    return True
+
+
+def track_app_start():
+    """Dispara os pings de contagem numa thread separada, para não atrasar
+    o arranque do servidor/browser caso a rede esteja lenta:
+    - 'app-starts': soma sempre, a cada arranque (atividade total).
+    - 'unique-installs': soma só na primeira vez que corre nesta máquina
+      (aproximação a "quantos utilizadores diferentes")."""
+    def _run():
+        _usage_counter_hit(USAGE_COUNTER_KEY)
+        if _is_first_run_on_this_machine():
+            _usage_counter_hit(UNIQUE_INSTALL_KEY)
+    threading.Thread(target=_run, daemon=True).start()
+
+
+def get_usage_count():
+    """Lê os valores atuais dos contadores (sem os incrementar). Devolve
+    None em cada um se não for possível consultar (sem internet, etc.)."""
+    result = {"starts": None, "unique_installs": None}
+    for key, label in ((USAGE_COUNTER_KEY, "starts"), (UNIQUE_INSTALL_KEY, "unique_installs")):
+        try:
+            url = f"{USAGE_COUNTER_BASE}/get/{key}"
+            req = urllib.request.Request(url, headers={'User-Agent': 'CentroDeComando-UsageCounter'})
+            with urllib.request.urlopen(req, timeout=USAGE_COUNTER_TIMEOUT) as resp:
+                data = json.loads(resp.read().decode('utf-8', errors='ignore'))
+            val = data.get("value")
+            result[label] = int(val) if val is not None else None
+        except Exception:
+            pass
+    return result
 
 # --- Fecho total automático ------------------------------------------------
 # O painel corre no browser predefinido (não é uma janela nativa), por isso
@@ -309,6 +386,7 @@ def fetch_cgminer_full(ip, port=None):
     return {
         "hostname": ip,
         "ASICModel": version_desc or "LuxOS / Antminer",
+        "firmwareVersion": version_desc or None,
         "hashRate": hashrate_ghs,
         "temp": max(temps) if temps else None,
         "fanrpm": max(fans) if fans else 0,
@@ -322,6 +400,278 @@ def fetch_cgminer_full(ip, port=None):
         "uptimeSeconds": summary.get('Elapsed', 0),
         "protocol": "cgminer",
     }
+
+# --- Troca Automática de Pool (fee + latência) ------------------------------
+# Catálogo estático das pools SHA-256 mais conhecidas (não é preciso o
+# utilizador andar a configurar isto à mão). fee_percent é aproximado e
+# meramente indicativo - cada pool pode ter esquemas de fee diferentes
+# (PPS, PPLNS, FPPS) que este valor não capta na totalidade.
+POOLS_CATALOG = [
+    {"id": "antpool", "name": "AntPool", "host": "stratum.antpool.com", "port": 3333, "fee_percent": 2.5},
+    {"id": "f2pool", "name": "F2Pool", "host": "btc.f2pool.com", "port": 3333, "fee_percent": 2.5},
+    {"id": "viabtc", "name": "ViaBTC", "host": "btc.viabtc.com", "port": 3333, "fee_percent": 2.0},
+    {"id": "braiins", "name": "Braiins Pool", "host": "stratum.braiins.com", "port": 3333, "fee_percent": 2.0},
+    {"id": "luxor", "name": "Luxor", "host": "btc.global.luxor.tech", "port": 700, "fee_percent": 2.5},
+    {"id": "foundry", "name": "Foundry USA", "host": "btc.global.foundrydigital.com", "port": 3333, "fee_percent": 0.0},
+]
+
+POOL_LATENCY_CACHE_SECONDS = 120
+_pool_catalog_cache = {"ts": 0, "data": None}
+_pool_catalog_cache_lock = threading.Lock()
+
+POOL_LOG_FILENAME = 'pool_switch_log.json'
+POOL_LOG_MAX_ENTRIES = 200
+_pool_log_lock = threading.Lock()
+
+
+def pool_log_path():
+    return os.path.join(writable_dir(), POOL_LOG_FILENAME)
+
+
+def load_pool_log():
+    try:
+        with open(pool_log_path(), 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def append_pool_log(device, pool_name, ok, automatic, message=""):
+    with _pool_log_lock:
+        log = load_pool_log()
+        log.insert(0, {
+            "ts": time.time(),
+            "device": device,
+            "pool": pool_name,
+            "ok": bool(ok),
+            "automatic": bool(automatic),
+            "message": message,
+        })
+        log = log[:POOL_LOG_MAX_ENTRIES]
+        try:
+            with open(pool_log_path(), 'w', encoding='utf-8') as f:
+                json.dump(log, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        return log
+
+
+def measure_tcp_latency(host, port, timeout=1.5):
+    """Mede o tempo de um handshake TCP simples (connect) em ms. Devolve
+    None se a pool não responder dentro do timeout."""
+    start = time.time()
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            pass
+        return round((time.time() - start) * 1000, 1)
+    except Exception:
+        return None
+
+
+def get_pools_catalog_with_latency(force=False):
+    with _pool_catalog_cache_lock:
+        cached = _pool_catalog_cache["data"]
+        age = time.time() - _pool_catalog_cache["ts"]
+        if cached is not None and not force and age < POOL_LATENCY_CACHE_SECONDS:
+            return cached
+
+    results = []
+    with ThreadPoolExecutor(max_workers=len(POOLS_CATALOG) or 1) as executor:
+        futures = {
+            executor.submit(measure_tcp_latency, p["host"], p["port"]): p
+            for p in POOLS_CATALOG
+        }
+        for future in as_completed(futures):
+            p = futures[future]
+            entry = dict(p)
+            entry["latencyMs"] = future.result()
+            results.append(entry)
+
+    results.sort(key=lambda p: p["id"])
+    with _pool_catalog_cache_lock:
+        _pool_catalog_cache["ts"] = time.time()
+        _pool_catalog_cache["data"] = results
+    return results
+
+
+def score_pool(pool, min_gain_percent=0):
+    """Score simples: fee% + penalização por latência. Quanto menor, melhor.
+    Pools sem resposta ficam sempre no fim (score muito alto)."""
+    if pool.get("latencyMs") is None:
+        return pool.get("fee_percent", 0) + 1000
+    return pool.get("fee_percent", 0) + (pool["latencyMs"] / 100) * 0.5
+
+
+def build_stratum_user(btc_address, worker_suffix, device_name):
+    addr = (btc_address or "").strip()
+    if not addr:
+        return None
+    suffix = (worker_suffix or "").strip() or device_name or "worker"
+    suffix = "".join(ch for ch in suffix if ch.isalnum() or ch in "-_") or "worker"
+    return f"{addr}.{suffix}"
+
+
+def switch_device_pool(ip, pool, btc_address, worker_suffix, device_name):
+    """Aplica a troca de pool à máquina em 'ip', detetando o protocolo pelo
+    endpoint_cache (preenchido pelo /api/proxy). Devolve (ok, message)."""
+    stratum_user = build_stratum_user(btc_address, worker_suffix, device_name)
+    if not stratum_user:
+        return False, "Endereço BTC não configurado"
+
+    with endpoint_cache_lock:
+        protocol = endpoint_cache.get(ip, 'info')
+
+    if protocol == 'cgminer':
+        stratum_url = f"stratum+tcp://{pool['host']}:{pool['port']}"
+        add_result = cgminer_command(ip, f"addpool,{stratum_url},{stratum_user},x")
+        if not add_result:
+            return False, "Sem resposta da API cgminer/LuxOS ao adicionar pool"
+        pools_data = cgminer_command(ip, 'pools') or {}
+        pools = pools_data.get('POOLS') or []
+        idx = None
+        for p in pools:
+            if p.get('URL') == stratum_url:
+                idx = p.get('POOL')
+                break
+        if idx is None:
+            return False, "Pool adicionada mas não encontrada na lista para ativar"
+        switch_result = cgminer_command(ip, f"switchpool,{idx}")
+        if not switch_result:
+            return False, "Falha ao ativar a pool adicionada (switchpool)"
+        return True, "ok"
+
+    # AxeOS (NerdQAxe/Bitaxe): PATCH /api/system com os campos da stratum.
+    try:
+        payload = json.dumps({
+            "stratumURL": pool["host"],
+            "stratumPort": pool["port"],
+            "stratumUser": stratum_user,
+            "stratumPassword": "x",
+        }).encode('utf-8')
+        req = urllib.request.Request(
+            f"http://{ip}/api/system",
+            data=payload,
+            method='PATCH',
+            headers={'Content-Type': 'application/json'},
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            resp.read()
+        return True, "ok"
+    except Exception as e:
+        return False, str(e)
+
+
+def pool_autoswitch_loop():
+    """Corre em background: a cada eval_interval_minutes, avalia as
+    máquinas com poolAuto=true e troca-as para a melhor pool do catálogo
+    se o ganho ultrapassar min_gain_percent (histerese - evita "flapping"
+    por diferenças insignificantes de fee/latência)."""
+    while True:
+        with POWER_CONFIG_LOCK:
+            devices = copy.deepcopy(power_config.get("devices", []))
+            pools_cfg = copy.deepcopy(power_config.get("pools", {}) or {})
+
+        interval_min = pools_cfg.get("eval_interval_minutes") or 15
+        try:
+            interval_min = max(1, float(interval_min))
+        except Exception:
+            interval_min = 15
+
+        auto_devices = [d for d in devices if d.get("poolAuto")]
+        if auto_devices and (pools_cfg.get("btc_address") or "").strip():
+            catalog = get_pools_catalog_with_latency()
+            min_gain = pools_cfg.get("min_gain_percent", 5) or 0
+            scored = sorted(catalog, key=score_pool)
+            best = scored[0] if scored else None
+
+            if best:
+                for dev in auto_devices:
+                    ip = dev.get("ip")
+                    if not ip:
+                        continue
+                    with LATEST_READINGS_LOCK:
+                        cached = LATEST_READINGS.get(ip)
+                    current_url = ''
+                    if cached and (time.time() - cached["ts"]) < READING_MAX_AGE:
+                        current_url = str(cached["data"].get("stratumURL") or '')
+                    already_best = best["host"] in current_url
+                    if already_best:
+                        continue
+
+                    current_pool = next((p for p in catalog if p["host"] in current_url), None)
+                    if current_pool:
+                        gain = score_pool(current_pool) - score_pool(best)
+                        # score é "quanto menor melhor"; convertemos numa
+                        # noção grosseira de ganho percentual sobre a fee
+                        # para comparar com min_gain_percent.
+                        gain_pct = gain
+                        if gain_pct < min_gain:
+                            continue
+
+                    ok, msg = switch_device_pool(
+                        ip, best,
+                        pools_cfg.get("btc_address"),
+                        pools_cfg.get("worker_suffix"),
+                        dev.get("name") or ip,
+                    )
+                    append_pool_log(dev.get("name") or ip, best["name"], ok, True, msg)
+                    with endpoint_cache_lock:
+                        endpoint_cache.pop(ip, None)  # força re-detetar protocolo/endpoint no próximo poll
+
+        time.sleep(max(60, interval_min * 60))
+
+
+# --- Histórico de Melhor Dif. (heatmap estilo GitHub) -----------------------
+# Guarda, por IP e por dia (AAAA-MM-DD, hora local), o maior "best diff"
+# visto nesse dia. Atualizado a cada leitura bem-sucedida via cache_reading().
+DIFF_HISTORY_FILENAME = 'diff_history.json'
+_diff_history_lock = threading.Lock()
+_diff_history_cache = None
+
+
+def diff_history_path():
+    return os.path.join(writable_dir(), DIFF_HISTORY_FILENAME)
+
+
+def load_diff_history():
+    global _diff_history_cache
+    if _diff_history_cache is not None:
+        return _diff_history_cache
+    try:
+        with open(diff_history_path(), 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        _diff_history_cache = data if isinstance(data, dict) else {}
+    except Exception:
+        _diff_history_cache = {}
+    return _diff_history_cache
+
+
+def save_diff_history():
+    try:
+        with open(diff_history_path(), 'w', encoding='utf-8') as f:
+            json.dump(_diff_history_cache or {}, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def record_diff_history(ip, best_diff):
+    if not best_diff:
+        return
+    try:
+        best_diff = float(best_diff)
+    except (TypeError, ValueError):
+        return
+    if best_diff <= 0:
+        return
+    day_key = time.strftime('%Y-%m-%d')
+    with _diff_history_lock:
+        hist = load_diff_history()
+        by_day = hist.setdefault(ip, {})
+        if best_diff > by_day.get(day_key, 0):
+            by_day[day_key] = best_diff
+            save_diff_history()
+
 
 # --- Gestão Dinâmica de Perfil de Alimentação (MQTT / Home Assistant) -----
 # Cruza dados de produção solar / tarifa dinâmica (via MQTT, tipicamente
@@ -357,6 +707,12 @@ DEFAULT_POWER_CONFIG = {
         "notify_record": True,
         "notify_rental_ending": True,
         "notify_hashrate_drop": True,
+    },
+    "pools": {
+        "btc_address": "",
+        "worker_suffix": "",
+        "min_gain_percent": 5,
+        "eval_interval_minutes": 15,
     },
 }
 
@@ -514,6 +870,7 @@ def load_power_config():
         cfg["devices"] = data.get("devices", []) or []
         cfg["mrr"].update(data.get("mrr", {}) or {})
         cfg["alerts"].update(data.get("alerts", {}) or {})
+        cfg["pools"].update(data.get("pools", {}) or {})
         return cfg
     except Exception:
         return copy.deepcopy(DEFAULT_POWER_CONFIG)
@@ -643,6 +1000,11 @@ READING_MAX_AGE = 20  # segs - acima disto consideramos a leitura desatualizada 
 def cache_reading(ip, data):
     with LATEST_READINGS_LOCK:
         LATEST_READINGS[ip] = {"data": data, "ts": time.time()}
+    try:
+        best = data.get("bestSessionDiff") or data.get("bestDiff")
+        record_diff_history(ip, best)
+    except Exception:
+        pass
 
 
 def build_overlay_snapshot():
@@ -911,20 +1273,6 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # silencia o log no terminal
 
-    def handle_error(self, request, client_address):
-        """Chamado pelo socketserver quando uma exceção não tratada ocorre
-        a processar um pedido. Ligações abortadas pelo cliente (browser
-        fechou o separador, deu F5 a meio de um pedido, página em segundo
-        plano cancelou o fetch, etc.) são normais e inofensivas - o
-        servidor continua a correr na mesma. Silenciamo-las para não
-        encher o terminal de tracebacks; qualquer outro erro continua a
-        ser impresso normalmente para se poder diagnosticar.
-        """
-        exc_type = sys.exc_info()[0]
-        if exc_type in (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
-            return
-        super().handle_error(request, client_address)
-
     def do_GET(self):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
@@ -976,8 +1324,35 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                             else:
                                 data = raw_data
 
+                            # Confirma que a resposta é mesmo JSON válido da
+                            # API da máquina antes de a aceitar como sucesso.
+                            # Firmwares AxeOS (NerdQaxe/Bitaxe) por vezes
+                            # respondem com HTTP 200 mas devolvem a página do
+                            # captive portal (index.html) em vez de JSON -
+                            # normalmente quando a máquina perdeu a ligação
+                            # WiFi normal e caiu de volta para o modo de
+                            # configuração. Sem esta verificação, isto era
+                            # aceite como "sucesso", ficava em cache como o
+                            # endpoint bom, e o frontend recebia HTML em vez
+                            # de dados - a máquina ficava presa em "offline"
+                            # sem nunca se corrigir sozinha.
                             try:
-                                cache_reading(target_ip, json.loads(data.decode('utf-8')))
+                                parsed = json.loads(data.decode('utf-8'))
+                            except Exception:
+                                last_error = Exception(
+                                    f"{method}: resposta não é JSON válido "
+                                    "(máquina pode estar em modo de configuração WiFi/captive portal)"
+                                )
+                                continue
+                            if not isinstance(parsed, dict) or not (set(parsed.keys()) & NERDQAXE_SIGNATURE_FIELDS):
+                                last_error = Exception(
+                                    f"{method}: resposta não parece ser da API da máquina "
+                                    "(máquina pode estar em modo de configuração WiFi/captive portal)"
+                                )
+                                continue
+
+                            try:
+                                cache_reading(target_ip, parsed)
                             except Exception:
                                 pass
 
@@ -1007,16 +1382,27 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     last_error = e
                     continue
 
-            # Nenhum dos três métodos respondeu: limpa a preferência
-            # em cache (pode ter mudado de firmware/tipo) e reporta offline.
+            # Nenhum dos três métodos respondeu (ou só devolveram dados
+            # inválidos): limpa a preferência em cache (pode ter mudado de
+            # firmware/tipo) e reporta offline.
             with endpoint_cache_lock:
                 endpoint_cache.pop(target_ip, None)
+
+            # Sinaliza ao frontend, de forma explícita (sem ter de andar a
+            # interpretar a mensagem de erro), quando a causa mais provável é
+            # a máquina estar em modo de configuração WiFi/captive portal,
+            # para se poder mostrar um aviso mais útil do que "offline".
+            portal_mode = 'captive portal' in str(last_error)
 
             self.send_response(502)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
-            self.wfile.write(json.dumps({"error": str(last_error), "online": False}).encode('utf-8'))
+            self.wfile.write(json.dumps({
+                "error": str(last_error),
+                "online": False,
+                "portal_mode": portal_mode,
+            }).encode('utf-8'))
             return
 
         if path == '/api/overlay':
@@ -1136,6 +1522,17 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"version": APP_VERSION}).encode('utf-8'))
             return
 
+        if path == '/api/usage-count':
+            # Consulta os totais de utilização registados no contador
+            # global (countapi.xyz): arranques totais e instalações
+            # únicas. Valores a None se não houver internet/serviço.
+            counts = get_usage_count()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(counts).encode('utf-8'))
+            return
+
         if path == '/api/devices':
             with POWER_CONFIG_LOCK:
                 devices = copy.deepcopy(power_config.get("devices", []))
@@ -1152,6 +1549,47 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(alerts_cfg, ensure_ascii=False).encode('utf-8'))
+            return
+
+        if path == '/api/pools/catalog':
+            force = query_params.get('force', ['0'])[0] == '1'
+            catalog = get_pools_catalog_with_latency(force=force)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"pools": catalog}).encode('utf-8'))
+            return
+
+        if path == '/api/pools/config':
+            with POWER_CONFIG_LOCK:
+                cfg = copy.deepcopy(power_config.get("pools", {}) or {})
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(cfg).encode('utf-8'))
+            return
+
+        if path == '/api/pools/log':
+            log = load_pool_log()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"log": log}, ensure_ascii=False).encode('utf-8'))
+            return
+
+        if path == '/api/diff-history':
+            ip_param = (query_params.get('ip') or [''])[0].strip()
+            with _diff_history_lock:
+                hist = load_diff_history()
+                by_day = dict(hist.get(ip_param, {})) if ip_param else {}
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ip": ip_param, "history": by_day}).encode('utf-8'))
             return
 
         if path == '/api/mrr/status':
@@ -1319,7 +1757,12 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 ip = str(d.get("ip") or "").strip()
                 if not dev_id or not ip:
                     continue
-                clean.append({"id": dev_id, "name": name or ip, "ip": ip})
+                clean.append({
+                    "id": dev_id,
+                    "name": name or ip,
+                    "ip": ip,
+                    "poolAuto": bool(d.get("poolAuto", False)),
+                })
 
             with POWER_CONFIG_LOCK:
                 new_cfg = copy.deepcopy(power_config)
@@ -1333,6 +1776,67 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({"ok": saved, "devices": clean}).encode('utf-8'))
+            return
+
+        if path == '/api/pools/config':
+            with POWER_CONFIG_LOCK:
+                new_cfg = copy.deepcopy(power_config)
+                pools_cfg = dict(new_cfg.get("pools", {}) or {})
+                pools_cfg["btc_address"] = str(body.get("btc_address", pools_cfg.get("btc_address", ""))).strip()
+                pools_cfg["worker_suffix"] = str(body.get("worker_suffix", pools_cfg.get("worker_suffix", ""))).strip()
+                try:
+                    pools_cfg["min_gain_percent"] = float(body.get("min_gain_percent", pools_cfg.get("min_gain_percent", 5)))
+                except (TypeError, ValueError):
+                    pass
+                try:
+                    pools_cfg["eval_interval_minutes"] = float(body.get("eval_interval_minutes", pools_cfg.get("eval_interval_minutes", 15)))
+                except (TypeError, ValueError):
+                    pass
+                new_cfg["pools"] = pools_cfg
+                saved = save_power_config(new_cfg)
+                if saved:
+                    power_config = new_cfg
+
+            self.send_response(200 if saved else 500)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
+            return
+
+        if path == '/api/switch-pool':
+            ip = str(body.get("ip") or "").strip()
+            pool_id = str(body.get("poolId") or "").strip()
+            pool = next((p for p in POOLS_CATALOG if p["id"] == pool_id), None)
+
+            if not ip or not pool:
+                self.send_response(400)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "message": "IP ou pool inválidos"}).encode('utf-8'))
+                return
+
+            with POWER_CONFIG_LOCK:
+                pools_cfg = copy.deepcopy(power_config.get("pools", {}) or {})
+                devices = copy.deepcopy(power_config.get("devices", []))
+            dev_name = next((d.get("name") for d in devices if d.get("ip") == ip), ip)
+
+            ok, message = switch_device_pool(
+                ip, pool,
+                pools_cfg.get("btc_address"),
+                pools_cfg.get("worker_suffix"),
+                dev_name,
+            )
+            append_pool_log(dev_name, pool["name"], ok, False, message)
+            with endpoint_cache_lock:
+                endpoint_cache.pop(ip, None)
+
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": ok, "message": message}, ensure_ascii=False).encode('utf-8'))
             return
 
         if path == '/api/mrr/config':
@@ -1419,6 +1923,8 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"ok": len(errors) == 0, "errors": errors}, ensure_ascii=False).encode('utf-8'))
             return
+
+        if path == '/api/apply-profile':
             target_ip = (body.get("ip") or "").strip()
             payload = {}
             if "frequency" in body:
@@ -1505,10 +2011,28 @@ def port_in_use(port):
         return s.connect_ex(('127.0.0.1', port)) == 0
 
 
+class QuietThreadingTCPServer(socketserver.ThreadingTCPServer):
+    """ThreadingTCPServer que não enche o terminal de tracebacks quando um
+    pedido é abortado pelo cliente (browser fechou o separador, deu F5 a
+    meio de um pedido, página em segundo plano cancelou o fetch, etc.) -
+    isto é normal e inofensivo, o servidor continua a correr na mesma.
+    Qualquer outro erro continua a ser impresso normalmente para se poder
+    diagnosticar. NOTA: este hook pertence ao servidor (quem o chama é
+    process_request_thread), não ao RequestHandler - definir handle_error
+    no handler não tem qualquer efeito.
+    """
+    allow_reuse_address = True
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        exc_type = sys.exc_info()[0]
+        if exc_type in (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            return
+        super().handle_error(request, client_address)
+
+
 def start_server():
-    socketserver.ThreadingTCPServer.allow_reuse_address = True
-    socketserver.ThreadingTCPServer.daemon_threads = True
-    with socketserver.ThreadingTCPServer(("", PORT), NerdQaxeProxyHandler) as httpd:
+    with QuietThreadingTCPServer(("", PORT), NerdQaxeProxyHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
@@ -1522,12 +2046,16 @@ def main():
         server_thread = threading.Thread(target=start_server, daemon=True)
         server_thread.start()
         time.sleep(0.6)  # pequena pausa para o servidor arrancar
+        track_app_start()
         start_mqtt_client(power_config)
 
         # Este processo é o "dono" do servidor - vigia o painel e desliga
         # tudo (fecho total) assim que o utilizador fechar o separador/janela.
         watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
         watchdog_thread.start()
+
+        pool_autoswitch_thread = threading.Thread(target=pool_autoswitch_loop, daemon=True)
+        pool_autoswitch_thread.start()
 
         webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
 
