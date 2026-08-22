@@ -445,6 +445,24 @@
   .tab-btn.amber-tab.active { color: var(--amber); background: #2b220d; }
   .tab-btn.cyan-tab.active { color: var(--cyan); background: #0d2530; }
 
+  /* Ícones animados de cada aba do menu - animação contínua e subtil */
+  @keyframes tabIconFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-2px) scale(1.1); }
+  }
+  .tab-icon {
+    display: inline-block;
+    font-size: 14px;
+    line-height: 1;
+    animation: tabIconFloat 2.4s ease-in-out infinite;
+    animation-delay: var(--tab-icon-delay, 0s);
+    will-change: transform;
+  }
+  .tab-btn:hover .tab-icon { animation-duration: 1s; }
+  @media (prefers-reduced-motion: reduce) {
+    .tab-icon { animation: none; }
+  }
+
   .badge-counter {
     position: static;
     margin-left: auto;
@@ -2823,32 +2841,33 @@
       <span class="nav-menu-caret">▾</span>
     </button>
     <div class="nav-menu-dropdown" id="navMenuDropdown">
-      <button class="tab-btn active" onclick="switchTab('dashboard', this)"><span data-i18n="dashboard_geral">Dashboard Geral</span></button>
-      <button class="tab-btn" onclick="switchTab('logs', this)"><span data-i18n="logs_das_maquinas">Logs das Máquinas</span></button>
+      <button class="tab-btn active" onclick="switchTab('dashboard', this)"><span class="tab-icon" style="--tab-icon-delay:0.0s">📊</span><span data-i18n="dashboard_geral">Dashboard Geral</span></button>
+      <button class="tab-btn" onclick="switchTab('logs', this)"><span class="tab-icon" style="--tab-icon-delay:0.1s">📜</span><span data-i18n="logs_das_maquinas">Logs das Máquinas</span></button>
       <button class="tab-btn" onclick="switchTab('notifications', this)">
-        <span data-i18n="notificacoes_block_best_diff">🔔 Notificações (Block / Best Diff)</span>
+        <span class="tab-icon" style="--tab-icon-delay:0.2s">🔔</span><span data-i18n="notificacoes_block_best_diff">Notificações (Block / Best Diff)</span>
         <span class="badge-counter" id="notifBadge">0</span>
       </button>
-      <button class="tab-btn" onclick="switchTab('simulator', this)"><span data-i18n="simulador">⏱️ Simulador</span></button>
-      <button class="tab-btn" onclick="switchTab('latency', this)"><span data-i18n="latencia">📡 Latência</span></button>
-      <button class="tab-btn" onclick="switchTab('pool', this)"><span data-i18n="aba_pool">🔌 Pool</span></button>
-      <button class="tab-btn" onclick="switchTab('oc', this)"><span data-i18n="overclock">🔧 OC</span></button>
-      <button class="tab-btn" onclick="switchTab('converter', this)"><span data-i18n="conversor">💱 Conversor</span></button>
+      <button class="tab-btn" onclick="switchTab('simulator', this)"><span class="tab-icon" style="--tab-icon-delay:0.3s">⏱️</span><span data-i18n="simulador">Simulador</span></button>
+      <button class="tab-btn" onclick="switchTab('latency', this)"><span class="tab-icon" style="--tab-icon-delay:0.4s">📡</span><span data-i18n="latencia">Latência</span></button>
+      <button class="tab-btn" onclick="switchTab('pool', this)"><span class="tab-icon" style="--tab-icon-delay:0.5s">🔌</span><span data-i18n="aba_pool">Pool</span></button>
+      <button class="tab-btn" onclick="switchTab('oc', this)"><span class="tab-icon" style="--tab-icon-delay:0.6s">🔧</span><span data-i18n="overclock">OC</span></button>
+      <button class="tab-btn" onclick="switchTab('converter', this)"><span class="tab-icon" style="--tab-icon-delay:0.7s">💱</span><span data-i18n="conversor">Conversor</span></button>
       <button class="tab-btn" onclick="switchTab('thermal', this)">
-        <span data-i18n="saude_termica">🧬 Saúde Térmica</span>
+        <span class="tab-icon" style="--tab-icon-delay:0.8s">🧬</span><span data-i18n="saude_termica">Saúde Térmica</span>
         <span class="badge-counter" id="thermalBadge" style="display:none;">0</span>
       </button>
       <button class="tab-btn" onclick="switchTab('achievements', this)">
-        <span data-i18n="conquistas">🏅 Conquistas</span>
+        <span class="tab-icon" style="--tab-icon-delay:0.9s">🏅</span><span data-i18n="conquistas">Conquistas</span>
         <span class="badge-counter" id="achvBadge" style="display:none;">0</span>
       </button>
       <button class="tab-btn cyan-tab" onclick="switchTab('power', this)">
-        <span class="power-status-dot" id="powerStatusDot"></span><span data-i18n="perfis_de_energia">☀️ Perfis de Energia</span>
+        <span class="power-status-dot" id="powerStatusDot"></span><span class="tab-icon" style="--tab-icon-delay:1.0s">🎛️</span><span data-i18n="perfis_de_energia">Perfis de Energia</span>
       </button>
-      <button class="tab-btn amber-tab" onclick="switchTab('donate', this)"><span data-i18n="apoiar_doar">⚡ Apoiar / Doar</span></button>
-      <button class="tab-btn" onclick="switchTab('supporters', this)"><span data-i18n="apoiantes">🌟 Apoiantes</span></button>
-      <button class="tab-btn" onclick="switchTab('support', this)"><span data-i18n="suporte">🛟 Suporte</span></button>
-      <button class="tab-btn" onclick="switchTab('renting', this)"><span data-i18n="renting">🏗️ Renting</span></button>
+      <button class="tab-btn amber-tab" onclick="switchTab('donate', this)"><span class="tab-icon" style="--tab-icon-delay:1.1s">⚡</span><span data-i18n="apoiar_doar">Apoiar / Doar</span></button>
+      <button class="tab-btn" onclick="switchTab('supporters', this)"><span class="tab-icon" style="--tab-icon-delay:1.2s">🌟</span><span data-i18n="apoiantes">Apoiantes</span></button>
+      <button class="tab-btn" onclick="switchTab('support', this)"><span class="tab-icon" style="--tab-icon-delay:1.3s">🛟</span><span data-i18n="suporte">Suporte</span></button>
+      <button class="tab-btn" onclick="switchTab('renting', this)"><span class="tab-icon" style="--tab-icon-delay:1.4s">🏗️</span><span data-i18n="renting">Renting</span></button>
+      <button class="tab-btn" onclick="switchTab('alerts', this)"><span class="tab-icon" style="--tab-icon-delay:1.5s">📣</span><span data-i18n="alertas">Alertas</span></button>
     </div>
   </div>
 
@@ -3474,6 +3493,46 @@
     </div>
   </div>
 
+  <div id="tab-alerts" class="tab-content">
+    <div class="blocks-container">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-title"><span data-i18n="alertas_config_titulo">🔔 Alertas — Telegram / Discord</span></div>
+        <div class="hint" style="margin-bottom:12px;" data-i18n="alertas_hint">Recebe um aviso no telemóvel (via bot do Telegram e/ou webhook do Discord) quando uma máquina fica offline, bate um recorde, uma rental está prestes a terminar, ou o hashrate cai muito de repente. As credenciais ficam guardadas apenas no teu servidor local.</div>
+
+        <div class="power-mqtt-form">
+          <label>Telegram — Bot Token
+            <input type="text" id="alTgToken" placeholder="deixa em branco para manter" data-i18n-placeholder="ph_deixa_em_branco_para_manter" autocomplete="off">
+          </label>
+          <label>Telegram — Chat ID
+            <input type="text" id="alTgChatId" placeholder="ex: 123456789" autocomplete="off">
+          </label>
+          <label>Discord — Webhook URL
+            <input type="text" id="alDiscordWebhook" placeholder="deixa em branco para manter" data-i18n-placeholder="ph_deixa_em_branco_para_manter" autocomplete="off">
+          </label>
+          <label><span data-i18n="alertas_queda_hashrate">Queda de hashrate que dispara aviso (%)</span>
+            <input type="number" id="alHashDropPct" min="5" max="90" value="30">
+          </label>
+        </div>
+
+        <div class="hint" style="margin:10px 0;" data-i18n="alertas_telegram_ajuda">Para o Telegram: cria um bot com o @BotFather, copia o token, envia-lhe uma mensagem qualquer e usa <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> para descobrires o teu Chat ID.</div>
+
+        <div class="power-mqtt-form" style="grid-template-columns:1fr 1fr;">
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyOffline" checked style="width:auto;"> <span data-i18n="alertas_ev_offline">Máquina offline</span></label>
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyRecord" checked style="width:auto;"> <span data-i18n="alertas_ev_recorde">Novo recorde de dificuldade</span></label>
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyRental" checked style="width:auto;"> <span data-i18n="alertas_ev_rental">Rental prestes a terminar</span></label>
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyDrop" checked style="width:auto;"> <span data-i18n="alertas_ev_queda">Queda súbita de hashrate</span></label>
+        </div>
+
+        <div class="power-actions-row">
+          <button class="power-save-btn" onclick="saveAlertsConfig()"><span data-i18n="guardar_alertas">💾 Guardar Alertas</span></button>
+          <button class="ls-viewall-btn" onclick="testAlerts()"><span data-i18n="testar_alertas">🔔 Enviar Teste</span></button>
+        </div>
+        <div class="power-live-error" id="alertsLiveError" style="display:none;"></div>
+        <div class="power-live-error" id="alertsLiveOk" style="display:none; color:var(--green);"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="tab-thermal" class="tab-content">
     <div class="blocks-container">
       <div class="panel thermal-protection-panel" style="margin-bottom:18px;">
@@ -3855,6 +3914,17 @@ const I18N_DICT = {
   "renting_hint_atualiza": { pt: `Atualiza automaticamente a cada 30 segundos enquanto esta aba estiver aberta.`, en: `Automatically refreshes every 30 seconds while this tab is open.`, es: `Se actualiza automáticamente cada 30 segundos mientras esta pestaña esté abierta.`, fr: `Se met à jour automatiquement toutes les 30 secondes tant que cet onglet est ouvert.` },
   "renting_sem_dados": { pt: `Configura a ligação acima para veres as tuas rentals aqui.`, en: `Set up the connection above to see your rentals here.`, es: `Configura la conexión arriba para ver tus rentals aquí.`, fr: `Configure la connexion ci-dessus pour voir tes locations ici.` },
   "ver_resposta_api": { pt: `Ver resposta bruta da API`, en: `View raw API response`, es: `Ver respuesta bruta de la API`, fr: `Voir la réponse brute de l'API` },
+  "alertas": { pt: `Alertas Telegram/Discord`, en: `Telegram/Discord Alerts`, es: `Alertas Telegram/Discord`, fr: `Alertes Telegram/Discord` },
+  "alertas_config_titulo": { pt: `Alertas — Telegram / Discord`, en: `Alerts — Telegram / Discord`, es: `Alertas — Telegram / Discord`, fr: `Alertes — Telegram / Discord` },
+  "alertas_hint": { pt: `Recebe um aviso no telemóvel (via bot do Telegram e/ou webhook do Discord) quando uma máquina fica offline, bate um recorde, uma rental está prestes a terminar, ou o hashrate cai muito de repente. As credenciais ficam guardadas apenas no teu servidor local.`, en: `Get a phone alert (via Telegram bot and/or Discord webhook) when a machine goes offline, hits a new record, a rental is about to end, or hashrate suddenly drops. Credentials are stored only on your local server.`, es: `Recibe un aviso en el móvil (vía bot de Telegram y/o webhook de Discord) cuando una máquina se desconecta, bate un récord, una rental está por terminar, o el hashrate cae de repente. Las credenciales solo se guardan en tu servidor local.`, fr: `Reçois une alerte sur ton téléphone (via bot Telegram et/ou webhook Discord) quand une machine se déconnecte, bat un record, une location va bientôt se terminer, ou le hashrate chute brusquement. Les identifiants restent sur ton serveur local.` },
+  "alertas_queda_hashrate": { pt: `Queda de hashrate que dispara aviso (%)`, en: `Hashrate drop that triggers alert (%)`, es: `Caída de hashrate que dispara aviso (%)`, fr: `Chute de hashrate qui déclenche l'alerte (%)` },
+  "alertas_telegram_ajuda": { pt: `Para o Telegram: cria um bot com o @BotFather, copia o token, envia-lhe uma mensagem qualquer e usa https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates para descobrires o teu Chat ID.`, en: `For Telegram: create a bot with @BotFather, copy the token, send it any message and use https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates to find your Chat ID.`, es: `Para Telegram: crea un bot con @BotFather, copia el token, envíale un mensaje cualquiera y usa https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates para encontrar tu Chat ID.`, fr: `Pour Telegram : crée un bot avec @BotFather, copie le token, envoie-lui un message et utilise https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates pour trouver ton Chat ID.` },
+  "alertas_ev_offline": { pt: `Máquina offline`, en: `Machine offline`, es: `Máquina desconectada`, fr: `Machine hors ligne` },
+  "alertas_ev_recorde": { pt: `Novo recorde de dificuldade`, en: `New difficulty record`, es: `Nuevo récord de dificultad`, fr: `Nouveau record de difficulté` },
+  "alertas_ev_rental": { pt: `Rental prestes a terminar`, en: `Rental ending soon`, es: `Rental por terminar`, fr: `Location bientôt terminée` },
+  "alertas_ev_queda": { pt: `Queda súbita de hashrate`, en: `Sudden hashrate drop`, es: `Caída súbita de hashrate`, fr: `Chute soudaine de hashrate` },
+  "guardar_alertas": { pt: `Guardar Alertas`, en: `Save Alerts`, es: `Guardar Alertas`, fr: `Enregistrer les Alertes` },
+  "testar_alertas": { pt: `Enviar Teste`, en: `Send Test`, es: `Enviar Prueba`, fr: `Envoyer un Test` },
   "best_diff_ao_vivo": { pt: `Best Diff ao Vivo`, en: `Live Best Diff`, es: `Best Diff en Vivo`, fr: `Best Diff en Direct` },
   "melhor_diff": { pt: `Melhor Diff`, en: `Best Diff`, es: `Mejor Diff`, fr: `Meilleur Diff` },
   "registos": { pt: `Registos`, en: `Records`, es: `Registros`, fr: `Records` },
@@ -4412,11 +4482,19 @@ function t(key) {
   return entry[currentLang] || entry.pt || key;
 }
 
+// Os botões do menu já têm o seu próprio ícone animado num <span class="tab-icon">
+// separado - por isso, ao aplicar a tradução, tira-se qualquer emoji que a
+// própria string traduzida ainda traga à frente, para não aparecer duplicado.
+function stripLeadingIcon(text) {
+  return text.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, '');
+}
+
 function applyTranslations() {
   document.documentElement.lang = currentLang === 'pt' ? 'pt-PT' : currentLang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
-    el.textContent = t(key);
+    const text = t(key);
+    el.textContent = el.closest('.tab-btn') ? stripLeadingIcon(text) : text;
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     const key = el.getAttribute('data-i18n-placeholder');
@@ -4575,7 +4653,8 @@ const TAB_LABEL_KEYS = {
   donate: 'apoiar_doar',
   supporters: 'apoiantes',
   support: 'suporte',
-  renting: 'renting'
+  renting: 'renting',
+  alerts: 'alertas'
 };
 function getTabLabel(tabName) {
   const key = TAB_LABEL_KEYS[tabName];
@@ -4647,6 +4726,9 @@ function switchTab(tabName, btnEl) {
     initRentingTab();
   } else {
     stopRentingAutoRefresh();
+  }
+  if(tabName === 'alerts') {
+    loadAlertsConfig();
   }
 }
 
@@ -7466,6 +7548,9 @@ async function pollOneDevice(dev){
       logEvent(`Novo recorde de dificuldade! ${fmt.value} ${fmt.unit}`, 'new', dev.name, dev.id);
       addNotification('best', `Novo Recorde de Dificuldade: ${fmt.value} ${fmt.unit}`, `A máquina alcançou um novo best diff de ${currentBest.toLocaleString()} na sessão.`, dev.name);
       recordBestDiffEvent(dev, currentBest, Date.now());
+      if(alertsConfig.notify_record){
+        sendAlert(`🏆 ${dev.name} bateu um novo recorde: ${fmt.value} ${fmt.unit}`);
+      }
     }
 
     if(hasBaseline && blocksFoundVal > oldBlocks) {
@@ -7476,6 +7561,23 @@ async function pollOneDevice(dev){
     }
 
     recordShareDelta(dev, reading, oldReading, hasBaseline);
+
+    // Alerta de queda de hashrate: compara a leitura atual com a média das
+    // últimas amostras ANTES desta (por isso lido com o array antes de lhe
+    // adicionar a leitura atual). Só dispara com histórico suficiente para
+    // não reagir a uma única flutuação normal.
+    if(hasBaseline && alertsConfig.notify_hashrate_drop && reading.hashrate > 0){
+      const prevHistory = (histories[dev.id] || []).filter(h => h.hashrate > 0);
+      if(prevHistory.length >= 6){
+        const recentSamples = prevHistory.slice(-12);
+        const avgHashrate = recentSamples.reduce((sum, h) => sum + h.hashrate, 0) / recentSamples.length;
+        const dropPct = alertsConfig.hashrate_drop_pct || 30;
+        if(avgHashrate > 0 && reading.hashrate < avgHashrate * (1 - dropPct / 100)){
+          const pctDrop = Math.round((1 - reading.hashrate / avgHashrate) * 100);
+          sendAlert(`📉 ${dev.name}: hashrate caiu ${pctDrop}% face à média recente (agora ${reading.hashrate.toFixed(1)} GH/s).`, `hashdrop-${dev.id}`);
+        }
+      }
+    }
 
     consecutiveFails[dev.id] = 0;
     baselineSeen[dev.id] = true;
@@ -7497,6 +7599,9 @@ async function pollOneDevice(dev){
     readings[dev.id] = { ...(readings[dev.id] || {}), online: false };
     if(wasOnline !== false) {
       logEvent(`Falha de comunicação com o dispositivo.`, 'error', dev.name, dev.id);
+      if(alertsConfig.notify_offline){
+        sendAlert(`⚠️ ${dev.name} ficou offline (falha de comunicação).`, `offline-${dev.id}`);
+      }
     }
     if(thermalCriticalState[dev.id]){
       thermalCriticalState[dev.id] = { since: null, alarmed: false };
@@ -7836,3 +7941,1039 @@ function drawAmberChart(svgId, vals, formatter, isHashrate = true){
     <path class="chart-line-draw" fill="none" stroke="#ffb020" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow_${svgId})" d="M${ptsString}"></path>
     <path class="chart-flow-overlay" fill="none" stroke="#fff6de" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="0.5 16" d="M${ptsString}"></path>
     <circle class="chart-end-dot" cx="${lastPt.x}" cy="${lastPt.y}" r="4.5" fill="#ffb020" stroke="#0d1a26" stroke-width="2"/>
+
+    <g id="tooltip_${svgId}" style="display:none;">
+      <line x1="0" y1="0" x2="0" y2="${h}" stroke="#ffb02088" stroke-dasharray="3,3" stroke-width="1"></line>
+      <circle r="4" fill="#ffb020" stroke="#060d14" stroke-width="2"></circle>
+    </g>
+  `;
+
+  const linePath = svg.querySelector('.chart-line-draw');
+  if(linePath){
+    try{
+      const len = linePath.getTotalLength();
+      linePath.style.strokeDasharray = len;
+      linePath.style.strokeDashoffset = len;
+      linePath.getBoundingClientRect(); // força reflow para a transição arrancar
+      linePath.style.transition = 'stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)';
+      requestAnimationFrame(() => { linePath.style.strokeDashoffset = '0'; });
+    } catch(e){}
+  }
+  
+  svg.onmousemove = (e) => {
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+    
+    let closest = pts[0];
+    let minDist = Infinity;
+    for(const p of pts){
+      const dist = Math.abs(p.x - mouseX);
+      if(dist < minDist){ minDist = dist; closest = p; }
+    }
+    
+    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    if(tip){
+      tip.style.display = 'block';
+      tip.setAttribute('transform', `translate(${closest.x}, 0)`);
+      tip.querySelector('circle').setAttribute('cy', closest.y);
+      
+      const res = formatter(closest.val);
+      if(isHashrate) {
+        $('valHashrate').textContent = `${res.value} ${res.unit}`;
+      } else {
+        $('valBest').textContent = `${res.value}${res.unit}`;
+      }
+    }
+  };
+  
+  svg.onmouseleave = () => {
+    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    if(tip) tip.style.display = 'none';
+    const res = formatter(vals[vals.length - 1]);
+    if(isHashrate) {
+      $('valHashrate').textContent = `${res.value} ${res.unit}`;
+    } else {
+      $('valBest').textContent = `${res.value}${res.unit}`;
+    }
+  };
+}
+
+// --- Perfis de Energia (MQTT / Home Assistant) ---------------------------
+let powerProfiles = [];
+let powerConfigLoaded = false;
+
+function emptyPowerProfile(){
+  return { name: '', min_solar: '', max_tariff: '', frequency: '', coreVoltage: '' };
+}
+
+async function loadPowerConfig(){
+  try {
+    const res = await fetch('http://localhost:8765/api/power/config');
+    const cfg = await res.json();
+    $('pwHost').value = cfg.mqtt.host || '';
+    $('pwPort').value = cfg.mqtt.port || 1883;
+    $('pwUser').value = cfg.mqtt.username || '';
+    $('pwPass').placeholder = cfg.mqtt.password_set ? '•••••••• (já definida — deixa em branco para manter)' : 'deixa em branco para manter';
+    $('pwTopicSolar').value = cfg.mqtt.topic_solar || '';
+    $('pwTopicTariff').value = cfg.mqtt.topic_tariff || '';
+    powerProfiles = Array.isArray(cfg.profiles) && cfg.profiles.length ? cfg.profiles : [];
+    renderPowerProfilesForm();
+    powerConfigLoaded = true;
+  } catch(e) {
+    $('powerLiveError').style.display = 'block';
+    $('powerLiveError').textContent = 'Não foi possível carregar a configuração de energia do servidor local.';
+  }
+}
+
+function renderPowerProfilesForm(){
+  const el = $('powerProfilesList');
+  if(!powerProfiles.length){
+    el.innerHTML = `<div class="hint">Ainda não tens perfis definidos. Clica em "+ Adicionar Perfil".</div>`;
+    return;
+  }
+  el.innerHTML = powerProfiles.map((p, i) => `
+    <div class="power-profile-row">
+      <div class="priority-num">#${i+1}</div>
+      <label><span class="field-label">Nome</span><input type="text" value="${p.name ?? ''}" placeholder="ex: Turbo" oninput="powerProfiles[${i}].name=this.value"></label>
+      <label><span class="field-label">Solar mín. (W)</span><input type="number" value="${p.min_solar ?? ''}" placeholder="sem mínimo" oninput="powerProfiles[${i}].min_solar=this.value"></label>
+      <label><span class="field-label">Tarifa máx. (€/kWh)</span><input type="number" step="0.01" value="${p.max_tariff ?? ''}" placeholder="sem máximo" oninput="powerProfiles[${i}].max_tariff=this.value"></label>
+      <label><span class="field-label">Frequência (MHz)</span><input type="number" value="${p.frequency ?? ''}" placeholder="ex: 550" oninput="powerProfiles[${i}].frequency=this.value"></label>
+      <label><span class="field-label">CoreVoltage (mV)</span><input type="number" value="${p.coreVoltage ?? ''}" placeholder="ex: 1150" oninput="powerProfiles[${i}].coreVoltage=this.value"></label>
+      <div class="power-profile-row-actions">
+        <button title="Subir prioridade" onclick="movePowerProfile(${i}, -1)" ${i===0 ? 'disabled' : ''}>↑</button>
+        <button title="Descer prioridade" onclick="movePowerProfile(${i}, 1)" ${i===powerProfiles.length-1 ? 'disabled' : ''}>↓</button>
+        <button class="remove" title="Remover" onclick="removePowerProfile(${i})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addPowerProfile(){
+  powerProfiles.push(emptyPowerProfile());
+  renderPowerProfilesForm();
+}
+
+function removePowerProfile(i){
+  powerProfiles.splice(i, 1);
+  renderPowerProfilesForm();
+}
+
+function movePowerProfile(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= powerProfiles.length) return;
+  [powerProfiles[i], powerProfiles[j]] = [powerProfiles[j], powerProfiles[i]];
+  renderPowerProfilesForm();
+}
+
+function sanitizedPowerProfiles(){
+  return powerProfiles
+    .filter(p => (p.name || '').trim())
+    .map(p => {
+      const out = { name: p.name.trim() };
+      if(p.min_solar !== '' && p.min_solar != null) out.min_solar = Number(p.min_solar);
+      if(p.max_tariff !== '' && p.max_tariff != null) out.max_tariff = Number(p.max_tariff);
+      if(p.frequency !== '' && p.frequency != null) out.frequency = Number(p.frequency);
+      if(p.coreVoltage !== '' && p.coreVoltage != null) out.coreVoltage = Number(p.coreVoltage);
+      return out;
+    });
+}
+
+// --- Renting (MiningRigRentals) ---------------------------------------------
+let rentingRefreshTimer = null;
+let mrrConfigured = false;
+let lastMrrRawResponse = null;
+
+function toggleMrrRawDebug(){
+  const el = $('mrrRawDebug');
+  if(!el) return;
+  const showing = el.style.display !== 'none';
+  if(showing){
+    el.style.display = 'none';
+  } else {
+    el.textContent = lastMrrRawResponse ? JSON.stringify(lastMrrRawResponse, null, 2) : 'Ainda sem resposta guardada — abre a aba Renting para ir buscar dados primeiro.';
+    el.style.display = 'block';
+  }
+}
+
+function startRentingAutoRefresh(){
+  stopRentingAutoRefresh();
+  rentingRefreshTimer = setInterval(fetchRentingList, 30000);
+}
+function stopRentingAutoRefresh(){
+  if(rentingRefreshTimer){ clearInterval(rentingRefreshTimer); rentingRefreshTimer = null; }
+}
+
+function initRentingTab(){
+  fetchMrrStatus();
+  fetchRentingList();
+  startRentingAutoRefresh();
+}
+
+async function saveMrrConfig(){
+  const body = { api_key: $('mrrApiKey').value.trim() };
+  if($('mrrApiSecret').value) body.api_secret = $('mrrApiSecret').value;
+  try {
+    const res = await fetch('http://localhost:8765/api/mrr/config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(data.ok){
+      $('mrrApiSecret').value = '';
+      logEvent('Ligação à MiningRigRentals guardada.', 'new', 'Sistema', 'sys');
+      $('mrrLiveError').style.display = 'none';
+    } else {
+      throw new Error('save failed');
+    }
+  } catch(e) {
+    $('mrrLiveError').style.display = 'block';
+    $('mrrLiveError').textContent = 'Falha ao guardar a ligação à MiningRigRentals.';
+  }
+  fetchMrrStatus();
+  fetchRentingList();
+}
+
+async function fetchMrrStatus(){
+  const dot = $('mrrStatusDot');
+  const label = $('mrrConnLabel');
+  try {
+    const res = await fetch('http://localhost:8765/api/mrr/status');
+    const data = await res.json();
+    mrrConfigured = !!data.configured;
+    if(dot) dot.className = 'power-status-dot ' + (mrrConfigured ? 'connected' : 'disconnected');
+    if(label) label.textContent = mrrConfigured ? 'Credenciais configuradas' : 'Sem credenciais configuradas';
+    // Pré-preenche a API Key (nunca o secret) para não parecer que as
+    // credenciais não ficaram guardadas só por o campo aparecer vazio.
+    const keyInput = $('mrrApiKey');
+    if(keyInput && document.activeElement !== keyInput && data.api_key){
+      keyInput.value = data.api_key;
+    }
+    const secretInput = $('mrrApiSecret');
+    if(secretInput && document.activeElement !== secretInput){
+      secretInput.placeholder = data.has_secret ? '•••••••• (já configurado, deixa em branco para manter)' : 'a tua API Secret da MiningRigRentals';
+    }
+  } catch(e) {
+    mrrConfigured = false;
+    if(dot) dot.className = 'power-status-dot disconnected';
+    if(label) label.textContent = 'Servidor local indisponível';
+  }
+}
+
+// A API da MiningRigRentals ainda está em beta e os nomes exatos dos campos
+// de /rental podem variar por conta/tipo de rig; por isso vamos buscar o
+// valor pela primeira chave que existir numa lista de alternativas, em vez
+// de assumir uma única estrutura fixa.
+function pickField(obj, paths){
+  for(const path of paths){
+    const parts = path.split('.');
+    let cur = obj;
+    let ok = true;
+    for(const p of parts){
+      if(cur && typeof cur === 'object' && p in cur){ cur = cur[p]; }
+      else { ok = false; break; }
+    }
+    if(ok && cur !== null && cur !== undefined && cur !== '') return cur;
+  }
+  return null;
+}
+
+function rentingStatusClass(statusText){
+  const s = String(statusText || '').toLowerCase();
+  if(s.includes('active') || s.includes('rent') || s.includes('running')) return 'active';
+  if(s.includes('expir') || s.includes('end') || s.includes('cancel') || s.includes('complete')) return 'expired';
+  return 'other';
+}
+
+function rentingFormatTime(val){
+  if(val === null || val === undefined || val === '') return '—';
+  if(typeof val === 'number'){
+    const ms = val < 2e10 ? val * 1000 : val; // segundos vs milissegundos
+    const d = new Date(ms);
+    if(!isNaN(d.getTime())) return d.toLocaleString();
+  }
+  return String(val);
+}
+
+async function fetchRentingList(){
+  const listEl = $('rentingList');
+  if(!listEl) return;
+
+  if(!mrrConfigured){
+    listEl.innerHTML = `<div class="renting-empty">${t('renting_sem_dados')}</div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch('http://localhost:8765/api/mrr/rentals');
+    const data = await res.json();
+    lastMrrRawResponse = data;
+    if($('mrrLastUpdate')) $('mrrLastUpdate').textContent = new Date().toLocaleTimeString();
+
+    if(!data || data.success === false){
+      listEl.innerHTML = `<div class="renting-empty">Falha ao obter rentals: ${(data && data.error) || 'erro desconhecido'}.</div>`;
+      return;
+    }
+
+    let rentals = data.data;
+    if(rentals && !Array.isArray(rentals)){
+      // Vários endpoints da MRR (ex: /rig) envolvem a lista dentro de
+      // 'records'; tenta isso primeiro antes de recorrer a Object.values
+      // (que misturava campos como 'total'/'stats' com a lista real e
+      // fazia aparecer sempre "5 rentals desconhecidas").
+      if(Array.isArray(rentals.records)) rentals = rentals.records;
+      else if(Array.isArray(rentals.rentals)) rentals = rentals.rentals;
+      else if(Array.isArray(rentals.data)) rentals = rentals.data;
+      else rentals = Object.values(rentals);
+    }
+    if(!Array.isArray(rentals) || rentals.length === 0){
+      listEl.innerHTML = `<div class="renting-empty">Não tens nenhuma rig alugada neste momento.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = rentals.map(r => {
+      const idVal = pickField(r, ['id', 'rental_id', 'rentalid']);
+      const name = pickField(r, ['rig.name', 'name', 'rigname']);
+      const statusRaw = pickField(r, ['status.status', 'status', 'state']);
+      const recognized = idVal !== null || statusRaw !== null || name !== null;
+
+      if(!recognized){
+        // Não reconheço nenhum campo esperado nesta estrutura — mostra os
+        // dados originais tal como vieram da API em vez de "desconhecido",
+        // para se poder ver os nomes reais dos campos.
+        return `<div class="renting-card">
+          <div class="renting-card-head">
+            <div class="renting-card-title">Rental (estrutura não reconhecida)</div>
+          </div>
+          <pre style="white-space:pre-wrap; font-size:11px; color:var(--muted); margin:0; overflow-x:auto;">${JSON.stringify(r, null, 2)}</pre>
+        </div>`;
+      }
+
+      const statusText = statusRaw || '—';
+      const cls = rentingStatusClass(statusText);
+      // Só esconde quando o estado claramente indica que já acabou -
+      // se o texto do estado não bater com nenhuma palavra-chave conhecida,
+      // mostra na mesma (mais seguro do que arriscar esconder uma rental
+      // ativa só por não reconhecer a palavra usada).
+      if(cls === 'expired') return '';
+      const algo = pickField(r, ['type', 'rig.type', 'algo']);
+      const hashrate = pickField(r, ['hashrate.advertised.nice', 'hashrate.nice', 'rig.hashrate.advertised.nice']);
+      const price = pickField(r, ['price.paid', 'price.amount', 'price']);
+      const currency = pickField(r, ['price.currency', 'currency']);
+      const started = pickField(r, ['start', 'starts', 'time.start', 'created']);
+      const ends = pickField(r, ['end', 'expires', 'time.end']);
+
+      // Alerta de rental prestes a terminar (dentro de 30 min), com
+      // cooldown por rental para não repetir o aviso a cada refresh de 30s.
+      if(alertsConfig.notify_rental_ending && ends){
+        const endsMs = typeof ends === 'number' ? (ends < 2e10 ? ends * 1000 : ends) : new Date(ends).getTime();
+        if(!isNaN(endsMs)){
+          const minsLeft = (endsMs - Date.now()) / 60000;
+          if(minsLeft > 0 && minsLeft <= 30){
+            sendAlert(`⏳ A rental "${name || idVal}" termina em cerca de ${Math.round(minsLeft)} min.`, `rental-ending-${idVal || name}`);
+          }
+        }
+      }
+
+      const fields = [
+        ['Estado', statusText],
+        algo ? ['Algo', algo] : null,
+        hashrate ? ['Hashrate', hashrate] : null,
+        price ? ['Preço', `${price}${currency ? ' ' + currency : ''}`] : null,
+        started ? ['Início', rentingFormatTime(started)] : null,
+        ends ? ['Termina', rentingFormatTime(ends)] : null,
+      ].filter(Boolean);
+
+      return `<div class="renting-card">
+        <div class="renting-card-head">
+          <div class="renting-card-title">${name || `Rental #${idVal}`}</div>
+          <div class="renting-status-pill ${cls}">${statusText}</div>
+        </div>
+        <div class="renting-grid">
+          ${fields.map(([label, val]) => `
+            <div>
+              <div class="renting-field-label">${label}</div>
+              <div class="renting-field-val">${val}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    }).filter(html => html !== '').join('');
+
+    if(!listEl.innerHTML.trim()){
+      listEl.innerHTML = `<div class="renting-empty">Não tens nenhuma rental ativa neste momento.</div>`;
+    }
+  } catch(e) {
+    listEl.innerHTML = `<div class="renting-empty">Não foi possível ligar ao servidor local.</div>`;
+  }
+}
+
+// --- Alertas (Telegram / Discord) -------------------------------------------
+let alertCooldowns = {}; // chave -> timestamp do último alerta enviado (evita spam)
+const ALERT_COOLDOWN_MS = 10 * 60 * 1000; // 10 min por tipo/máquina
+let alertsConfig = { notify_offline: true, notify_record: true, notify_rental_ending: true, notify_hashrate_drop: true, hashrate_drop_pct: 30 };
+
+async function sendAlert(message, cooldownKey){
+  if(cooldownKey){
+    const last = alertCooldowns[cooldownKey] || 0;
+    if(Date.now() - last < ALERT_COOLDOWN_MS) return;
+    alertCooldowns[cooldownKey] = Date.now();
+  }
+  try {
+    await fetch('http://localhost:8765/api/alerts/notify', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message })
+    });
+  } catch(e) { /* falha silenciosa - não bloqueia o resto do dashboard */ }
+}
+
+async function loadAlertsConfig(){
+  try {
+    const res = await fetch('http://localhost:8765/api/alerts/config');
+    const cfg = await res.json();
+    alertsConfig = {
+      notify_offline: cfg.notify_offline !== false,
+      notify_record: cfg.notify_record !== false,
+      notify_rental_ending: cfg.notify_rental_ending !== false,
+      notify_hashrate_drop: cfg.notify_hashrate_drop !== false,
+      hashrate_drop_pct: cfg.hashrate_drop_pct || 30,
+    };
+    if($('alTgChatId')) $('alTgChatId').value = cfg.telegram_chat_id || '';
+    if($('alHashDropPct')) $('alHashDropPct').value = cfg.hashrate_drop_pct || 30;
+    if($('alNotifyOffline')) $('alNotifyOffline').checked = alertsConfig.notify_offline;
+    if($('alNotifyRecord')) $('alNotifyRecord').checked = alertsConfig.notify_record;
+    if($('alNotifyRental')) $('alNotifyRental').checked = alertsConfig.notify_rental_ending;
+    if($('alNotifyDrop')) $('alNotifyDrop').checked = alertsConfig.notify_hashrate_drop;
+    // token/webhook nunca voltam do servidor completos por serem segredos -
+    // só se sabe se já estão configurados através do placeholder.
+    if($('alTgToken')) $('alTgToken').placeholder = cfg.telegram_bot_token ? '•••••••• (já configurado, deixa em branco para manter)' : 'ex: 123456:ABC-DEF...';
+    if($('alDiscordWebhook')) $('alDiscordWebhook').placeholder = cfg.discord_webhook_url ? '•••••••• (já configurado, deixa em branco para manter)' : 'https://discord.com/api/webhooks/...';
+  } catch(e) { /* servidor local pode estar indisponível */ }
+}
+
+async function saveAlertsConfig(){
+  const body = {
+    telegram_chat_id: $('alTgChatId').value.trim(),
+    hashrate_drop_pct: parseInt($('alHashDropPct').value, 10) || 30,
+    notify_offline: $('alNotifyOffline').checked,
+    notify_record: $('alNotifyRecord').checked,
+    notify_rental_ending: $('alNotifyRental').checked,
+    notify_hashrate_drop: $('alNotifyDrop').checked,
+  };
+  if($('alTgToken').value.trim()) body.telegram_bot_token = $('alTgToken').value.trim();
+  if($('alDiscordWebhook').value.trim()) body.discord_webhook_url = $('alDiscordWebhook').value.trim();
+
+  const errEl = $('alertsLiveError');
+  const okEl = $('alertsLiveOk');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  try {
+    const res = await fetch('http://localhost:8765/api/alerts/config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(data.ok){
+      $('alTgToken').value = '';
+      $('alDiscordWebhook').value = '';
+      okEl.textContent = 'Configuração de alertas guardada.';
+      okEl.style.display = 'block';
+      loadAlertsConfig();
+    } else {
+      throw new Error('save failed');
+    }
+  } catch(e) {
+    errEl.textContent = 'Falha ao guardar a configuração de alertas.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function testAlerts(){
+  const errEl = $('alertsLiveError');
+  const okEl = $('alertsLiveOk');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+  try {
+    const res = await fetch('http://localhost:8765/api/alerts/test', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
+    const data = await res.json();
+    if(data.ok){
+      okEl.textContent = 'Teste enviado! Verifica o Telegram/Discord.';
+      okEl.style.display = 'block';
+    } else {
+      errEl.textContent = (data.errors && data.errors.join(' | ')) || 'Nenhum canal configurado.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Não foi possível ligar ao servidor local.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function savePowerMqttConfig(){
+  const body = {
+    mqtt: {
+      host: $('pwHost').value.trim(),
+      port: Number($('pwPort').value) || 1883,
+      username: $('pwUser').value.trim(),
+      topic_solar: $('pwTopicSolar').value.trim(),
+      topic_tariff: $('pwTopicTariff').value.trim(),
+    }
+  };
+  if($('pwPass').value) body.mqtt.password = $('pwPass').value;
+  try {
+    const res = await fetch('http://localhost:8765/api/power/config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(data.ok){
+      $('pwPass').value = '';
+      logEvent('Configuração MQTT de energia guardada.', 'new', 'Sistema', 'sys');
+    }
+  } catch(e) {
+    $('powerLiveError').style.display = 'block';
+    $('powerLiveError').textContent = 'Falha ao guardar a configuração MQTT.';
+  }
+  pollPowerStatus();
+}
+
+async function savePowerProfiles(){
+  try {
+    const res = await fetch('http://localhost:8765/api/power/config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ profiles: sanitizedPowerProfiles() })
+    });
+    const data = await res.json();
+    if(data.ok) logEvent('Perfis de energia guardados.', 'new', 'Sistema', 'sys');
+  } catch(e) {
+    $('powerLiveError').style.display = 'block';
+    $('powerLiveError').textContent = 'Falha ao guardar os perfis de energia.';
+  }
+  pollPowerStatus();
+}
+
+let lastSuggestedProfile = null;
+
+async function pollPowerStatus(){
+  try {
+    const res = await fetch('http://localhost:8765/api/power/status');
+    const st = await res.json();
+
+    const dots = [$('powerStatusDot'), $('powerStatusDotInline')];
+    dots.forEach(d => { if(d) d.classList.remove('connected', 'disconnected'); d?.classList.add(st.connected ? 'connected' : 'disconnected'); });
+    $('powerConnLabel').textContent = st.connected ? 'MQTT ligado' : 'MQTT desligado';
+
+    $('powerSolarVal').textContent = st.solar != null ? `${st.solar.toFixed(0)} W` : '—';
+    $('powerTariffVal').textContent = st.tariff != null ? `${st.tariff.toFixed(3)} €/kWh` : '—';
+    $('powerLastUpdate').textContent = st.last_update ? new Date(st.last_update * 1000).toLocaleTimeString('pt-PT') : '—';
+
+    const errEl = $('powerLiveError');
+    if(st.error && !st.connected){
+      errEl.style.display = 'block';
+      errEl.textContent = st.mqtt_available === false
+        ? 'A biblioteca paho-mqtt não está instalada no ambiente que corre o app.py — instala-a com "pip install paho-mqtt" e reinicia o Centro de Comando.'
+        : st.error;
+    } else {
+      errEl.style.display = 'none';
+    }
+
+    lastSuggestedProfile = st.suggested_profile || null;
+    if(lastSuggestedProfile){
+      $('powerSuggestedName').textContent = lastSuggestedProfile.name;
+      const parts = [];
+      if(lastSuggestedProfile.frequency != null) parts.push(`${lastSuggestedProfile.frequency} MHz`);
+      if(lastSuggestedProfile.coreVoltage != null) parts.push(`${lastSuggestedProfile.coreVoltage} mV`);
+      parts.push(`solar: ${st.solar != null ? st.solar.toFixed(0)+' W' : '—'}`, `tarifa: ${st.tariff != null ? st.tariff.toFixed(3)+' €/kWh' : '—'}`);
+      $('powerSuggestedMeta').textContent = parts.join(' · ');
+    } else {
+      $('powerSuggestedName').textContent = 'Sem sugestão disponível';
+      $('powerSuggestedMeta').textContent = 'Configura o MQTT e pelo menos um perfil para começar a receber sugestões.';
+    }
+    renderPowerDevicesApply();
+  } catch(e) {
+    // servidor local indisponível - ignora silenciosamente neste ciclo
+  }
+}
+
+function renderPowerDevicesApply(){
+  const el = $('powerDevicesApply');
+  const allBtn = $('powerApplyAllBtn');
+  if(!devices.length){
+    el.innerHTML = `<div class="hint">Adiciona máquinas no separador "Dashboard Geral" para poderes aplicar perfis.</div>`;
+    allBtn.disabled = true;
+    return;
+  }
+  allBtn.disabled = !lastSuggestedProfile;
+  el.innerHTML = devices.map(d => {
+    const r = readings[d.id];
+    const current = r ? `atual: ${r.frequency || '—'} MHz` : 'sem leitura';
+    return `
+      <div class="power-device-apply-row">
+        <div>
+          <div class="dname">${d.name}</div>
+          <div class="dcurrent">${d.ip} · ${current}</div>
+        </div>
+        <button class="power-apply-btn" ${lastSuggestedProfile ? '' : 'disabled'} onclick="applySuggestedProfileToDevice('${d.id}')">Aplicar "${lastSuggestedProfile ? lastSuggestedProfile.name : '—'}"</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function applySuggestedProfileToDevice(devId){
+  if(!lastSuggestedProfile) return;
+  const dev = devices.find(d => d.id === devId);
+  if(!dev) return;
+  const payload = { ip: dev.ip };
+  if(lastSuggestedProfile.frequency != null) payload.frequency = lastSuggestedProfile.frequency;
+  if(lastSuggestedProfile.coreVoltage != null) payload.coreVoltage = lastSuggestedProfile.coreVoltage;
+  try {
+    const res = await fetch('http://localhost:8765/api/apply-profile', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(data.ok){
+      logEvent(`Perfil "${lastSuggestedProfile.name}" aplicado com sucesso.`, 'new', dev.name, dev.id);
+    } else {
+      logEvent(`Falha ao aplicar perfil: ${data.error || 'erro desconhecido'}`, 'error', dev.name, dev.id);
+    }
+  } catch(e) {
+    logEvent(`Falha ao aplicar perfil "${lastSuggestedProfile.name}".`, 'error', dev.name, dev.id);
+  }
+}
+
+async function applySuggestedProfileToAll(){
+  for(const d of devices){
+    await applySuggestedProfileToDevice(d.id);
+  }
+}
+
+// --- Assistente (agente IA local, sem chave/API) -------------------------
+// Responde a perguntas frequentes sobre as funcionalidades do painel a
+// partir de uma base de conhecimento local, com correspondência simples
+// por palavras-chave. Não faz chamadas externas nem precisa de ligação
+// à internet.
+
+const AI_KB = [
+  { key: 'best_diff', kw: ['best diff','melhor dif','bestdiff','dificuldade','best share','best difficulty','efficiency record'],
+    q: { pt: `O que é o Best Diff / Melhor Dif.?`, en: `What is Best Diff?`, es: `¿Qué es el Best Diff / Mejor Dif.?`, fr: `Qu'est-ce que le Best Diff ?` },
+    a: { pt: `O "Melhor Dif." (Best Diff) é a maior dificuldade de share que a tua máquina já encontrou. Quanto mais alto, mais perto (em termos de sorte) estiveste de encontrar um bloco a solo. É um recorde acumulado desde que o ASIC arrancou.`,
+         en: `"Best Diff" is the highest share difficulty your machine has ever found. The higher it is, the closer (in terms of luck) you have been to finding a solo block. It is a record that accumulates since the ASIC started.`,
+         es: `El "Mejor Dif." (Best Diff) es la mayor dificultad de share que tu máquina ha encontrado. Cuanto más alto, más cerca (en términos de suerte) has estado de encontrar un bloque en solitario. Es un récord acumulado desde que el ASIC arrancó.`,
+         fr: `Le « Best Diff » est la plus grande difficulté de share que ta machine ait jamais trouvée. Plus il est élevé, plus tu as été proche (en termes de chance) de trouver un bloc en solo. C'est un record cumulé depuis le démarrage de l'ASIC.` } },
+  { key: 'eficiencia', kw: ['eficiencia','eficiência','j/th','joules','efficiency'],
+    q: { pt: `O que significa Eficiência (J/Th)?`, en: `What does Efficiency (J/Th) mean?`, es: `¿Qué significa Eficiencia (J/Th)?`, fr: `Que signifie l'Efficacité (J/Th) ?` },
+    a: { pt: `A eficiência em J/Th indica quantos Joules de energia a máquina gasta por cada Terahash de poder de processamento. Quanto MENOR o valor, mais eficiente é o ASIC (menos energia gasta pelo mesmo hashrate).`,
+         en: `Efficiency in J/Th indicates how many Joules of energy the machine spends per Terahash of processing power. The LOWER the value, the more efficient the ASIC is (less energy spent for the same hashrate).`,
+         es: `La eficiencia en J/Th indica cuántos Julios de energía gasta la máquina por cada Terahash de potencia de procesamiento. Cuanto MENOR sea el valor, más eficiente es el ASIC (menos energía gastada por el mismo hashrate).`,
+         fr: `L'efficacité en J/Th indique combien de Joules d'énergie la machine consomme par Terahash de puissance de traitement. Plus la valeur est BASSE, plus l'ASIC est efficace (moins d'énergie dépensée pour le même hashrate).` } },
+  { key: 'hashrate', kw: ['hashrate','hash rate','th/s'],
+    q: { pt: `O que é o Hashrate?`, en: `What is Hashrate?`, es: `¿Qué es el Hashrate?`, fr: `Qu'est-ce que le Hashrate ?` },
+    a: { pt: `O Hashrate mede quantos cálculos (hashes) o ASIC faz por segundo, normalmente em TH/s (terahashes por segundo). Quanto mais alto, maior a tua parte do poder computacional da rede.`,
+         en: `Hashrate measures how many calculations (hashes) the ASIC performs per second, usually in TH/s (terahashes per second). The higher it is, the bigger your share of the network's computing power.`,
+         es: `El Hashrate mide cuántos cálculos (hashes) realiza el ASIC por segundo, normalmente en TH/s (terahashes por segundo). Cuanto más alto, mayor es tu parte del poder computacional de la red.`,
+         fr: `Le Hashrate mesure combien de calculs (hashes) l'ASIC effectue par seconde, généralement en TH/s (térahashes par seconde). Plus il est élevé, plus grande est ta part de puissance de calcul du réseau.` } },
+  { key: 'frequencia_undervolt', kw: ['frequencia','frequência','undervolt','corevoltage','mhz','voltagem','voltage','frequency'],
+    q: { pt: `Como funciona a Frequência e o Undervolt?`, en: `How do Frequency and Undervolt work?`, es: `¿Cómo funcionan la Frecuencia y el Undervolt?`, fr: `Comment fonctionnent la Fréquence et l'Undervolt ?` },
+    a: { pt: `A Frequência (MHz) e a Voltagem do núcleo (coreVoltage) controlam o desempenho do chip ASIC: mais frequência = mais hashrate mas mais calor e consumo. O undervolt reduz a voltagem para poupar energia e baixar temperatura, geralmente à custa de algum hashrate.`,
+         en: `Frequency (MHz) and core voltage (coreVoltage) control the ASIC chip's performance: more frequency means more hashrate but more heat and consumption. Undervolting lowers the voltage to save energy and reduce temperature, usually at the cost of some hashrate.`,
+         es: `La Frecuencia (MHz) y el Voltaje del núcleo (coreVoltage) controlan el rendimiento del chip ASIC: más frecuencia significa más hashrate pero más calor y consumo. El undervolt reduce el voltaje para ahorrar energía y bajar la temperatura, normalmente a costa de algo de hashrate.`,
+         fr: `La Fréquence (MHz) et la Tension du cœur (coreVoltage) contrôlent la performance de la puce ASIC : plus de fréquence signifie plus de hashrate mais plus de chaleur et de consommation. L'undervolt réduit la tension pour économiser l'énergie et baisser la température, généralement au prix d'un peu de hashrate.` } },
+  { key: 'perfis_energia', kw: ['perfil de energia','perfis de energia','mqtt','home assistant','solar','tarifa','power profile'],
+    q: { pt: `O que são os Perfis de Energia?`, en: `What are Power Profiles?`, es: `¿Qué son los Perfiles de Energía?`, fr: `Que sont les Profils d'Énergie ?` },
+    a: { pt: `Os Perfis de Energia (separador "☀️ Perfis de Energia") ligam-se ao teu broker MQTT (ex: Home Assistant) para ler produção solar e tarifa elétrica. Com base nesses valores, o painel SUGERE um perfil de frequência/undervolt mais adequado — mas a aplicação é sempre manual, nunca automática.`,
+         en: `Power Profiles (the "Power Profiles" tab) connect to your MQTT broker (e.g. Home Assistant) to read solar production and electricity rate. Based on those values, the dashboard SUGGESTS a more suitable frequency/undervolt profile - but applying it is always manual, never automatic.`,
+         es: `Los Perfiles de Energía (pestaña "Perfiles de Energía") se conectan a tu broker MQTT (ej: Home Assistant) para leer la producción solar y la tarifa eléctrica. Según esos valores, el panel SUGIERE un perfil de frecuencia/undervolt más adecuado - pero la aplicación siempre es manual, nunca automática.`,
+         fr: `Les Profils d'Énergie (onglet « Profils d'Énergie ») se connectent à ton broker MQTT (ex : Home Assistant) pour lire la production solaire et le tarif électrique. En fonction de ces valeurs, le panneau SUGGÈRE un profil de fréquence/undervolt plus adapté - mais l'application est toujours manuelle, jamais automatique.` } },
+  { key: 'adicionar_maquina_faq', kw: ['adicionar maquina','adicionar máquina','registar maquina','novo asic','ip','add machine'],
+    q: { pt: `Como adiciono uma máquina?`, en: `How do I add a machine?`, es: `¿Cómo añado una máquina?`, fr: `Comment ajouter une machine ?` },
+    a: { pt: `No painel "Dashboard Geral", usa os campos "Apelido" e "IP" no topo do painel de Máquinas e clica em "Adicionar máquina". É preciso o servidor local (app.py / nerdqaxe_server.py) estar a correr em localhost:8765.`,
+         en: `In the "General Dashboard" panel, use the "Nickname" and "IP" fields at the top of the Machines panel and click "Add machine". The local server (app.py / nerdqaxe_server.py) needs to be running on localhost:8765.`,
+         es: `En el panel "Panel General", usa los campos "Apodo" e "IP" en la parte superior del panel de Máquinas y haz clic en "Añadir máquina". Es necesario que el servidor local (app.py / nerdqaxe_server.py) esté ejecutándose en localhost:8765.`,
+         fr: `Dans le panneau « Tableau de Bord Général », utilise les champs « Surnom » et « IP » en haut du panneau des Machines et clique sur « Ajouter une machine ». Le serveur local (app.py / nerdqaxe_server.py) doit être actif sur localhost:8765.` } },
+  { key: 'aceites_rejeitadas', kw: ['aceites','rejeitadas','shares','accepted','rejected'],
+    q: { pt: `O que são Aceites/Rejeitadas?`, en: `What are Accepted/Rejected shares?`, es: `¿Qué son Aceptadas/Rechazadas?`, fr: `Que sont les shares Acceptées/Rejetées ?` },
+    a: { pt: `São o número de shares (unidades de trabalho) que a tua pool aceitou vs. rejeitou. Uma taxa de rejeição alta pode indicar problemas de rede, latência ou instabilidade na ligação à pool.`,
+         en: `These are the number of shares (units of work) your pool has accepted vs. rejected. A high rejection rate can indicate network problems, latency, or instability in the pool connection.`,
+         es: `Son el número de shares (unidades de trabajo) que tu pool ha aceptado frente a las que ha rechazado. Una tasa de rechazo alta puede indicar problemas de red, latencia o inestabilidad en la conexión al pool.`,
+         fr: `C'est le nombre de shares (unités de travail) que ton pool a acceptées vs rejetées. Un taux de rejet élevé peut indiquer des problèmes réseau, de latence ou une instabilité de la connexion au pool.` } },
+  { key: 'distribuicao_hashrate_faq', kw: ['distribuicao','distribuição','donut','distribution'],
+    q: { pt: `O que é a Distribuição de Hashrate?`, en: `What is the Hashrate Distribution?`, es: `¿Qué es la Distribución de Hashrate?`, fr: `Qu'est-ce que la Répartition du Hashrate ?` },
+    a: { pt: `É um gráfico que mostra a fatia de hashrate total que cada máquina está a contribuir, para veres rapidamente se alguma está com desempenho abaixo do esperado.`,
+         en: `It is a chart that shows the slice of total hashrate each machine is contributing, so you can quickly see if any of them is underperforming.`,
+         es: `Es un gráfico que muestra la parte del hashrate total que aporta cada máquina, para que veas rápidamente si alguna tiene un rendimiento por debajo de lo esperado.`,
+         fr: `C'est un graphique qui montre la part du hashrate total que chaque machine apporte, pour repérer rapidement si l'une d'elles est sous-performante.` } },
+  { key: 'latencia_faq', kw: ['latencia','latência','ping','perda','latency'],
+    q: { pt: `O que é a Latência / Ping ao Pool?`, en: `What is Latency / Pool Ping?`, es: `¿Qué es la Latencia / Ping al Pool?`, fr: `Qu'est-ce que la Latence / le Ping au Pool ?` },
+    a: { pt: `"Ping ao Pool" mede o tempo de resposta entre a tua máquina e o servidor da pool de mineração — valores altos ou perda de pacotes podem causar mais shares rejeitadas. "Latência Local" mede a resposta do próprio ASIC na tua rede.`,
+         en: `"Pool Ping" measures the response time between your machine and the mining pool server - high values or packet loss can cause more rejected shares. "Local Latency" measures the response of the ASIC itself on your network.`,
+         es: `"Ping al Pool" mide el tiempo de respuesta entre tu máquina y el servidor del pool de minería - valores altos o pérdida de paquetes pueden causar más shares rechazadas. "Latencia Local" mide la respuesta del propio ASIC en tu red.`,
+         fr: `« Ping au Pool » mesure le temps de réponse entre ta machine et le serveur du pool de minage - des valeurs élevées ou une perte de paquets peuvent causer plus de shares rejetées. « Latence Locale » mesure la réponse de l'ASIC lui-même sur ton réseau.` } },
+  { key: 'saude_termica_faq', kw: ['termica','térmica','temperatura','saude','saúde','sobreaquecimento','thermal'],
+    q: { pt: `O que faz a saúde térmica preditiva?`, en: `What does predictive thermal health do?`, es: `¿Qué hace la salud térmica predictiva?`, fr: `À quoi sert la santé thermique prédictive ?` },
+    a: { pt: `A funcionalidade de saúde térmica acompanha o histórico de temperatura de cada máquina e tenta prever tendências de sobreaquecimento antes que aconteçam, permitindo agir com antecedência (ex: aplicar undervolt).`,
+         en: `The thermal health feature tracks each machine's temperature history and tries to predict overheating trends before they happen, letting you act ahead of time (e.g. applying undervolt).`,
+         es: `La función de salud térmica sigue el historial de temperatura de cada máquina e intenta predecir tendencias de sobrecalentamiento antes de que ocurran, permitiéndote actuar con antelación (ej: aplicar undervolt).`,
+         fr: `La fonctionnalité de santé thermique suit l'historique de température de chaque machine et essaie de prédire les tendances de surchauffe avant qu'elles ne surviennent, te permettant d'agir à l'avance (ex : appliquer un undervolt).` } },
+  { key: 'simulador_faq', kw: ['simulador','bloco','probabilidade','ajuste de dificuldade','simulator'],
+    q: { pt: `Como funciona o simulador de bloco?`, en: `How does the block simulator work?`, es: `¿Cómo funciona el simulador de bloque?`, fr: `Comment fonctionne le simulateur de bloc ?` },
+    a: { pt: `O simulador cruza o teu hashrate atual com os dados em tempo real da rede Bitcoin para estimar o impacto do próximo ajuste de dificuldade (a cada 2016 blocos) na tua probabilidade teórica de encontrar um bloco a solo.`,
+         en: `The simulator combines your current hashrate with real-time Bitcoin network data to estimate the impact of the next difficulty adjustment (every 2016 blocks) on your theoretical probability of finding a solo block.`,
+         es: `El simulador cruza tu hashrate actual con los datos en tiempo real de la red Bitcoin para estimar el impacto del próximo ajuste de dificultad (cada 2016 bloques) en tu probabilidad teórica de encontrar un bloque en solitario.`,
+         fr: `Le simulateur croise ton hashrate actuel avec les données en temps réel du réseau Bitcoin pour estimer l'impact du prochain ajustement de difficulté (tous les 2016 blocs) sur ta probabilité théorique de trouver un bloc en solo.` } },
+  { key: 'configuracao_faq', kw: ['configuracao','configuração','ficheiro','power_profiles','gravar','guardar','config file'],
+    q: { pt: `Onde fica guardada a configuração?`, en: `Where is the configuration stored?`, es: `¿Dónde se guarda la configuración?`, fr: `Où est stockée la configuration ?` },
+    a: { pt: `A configuração dos Perfis de Energia fica em power_profiles.json, ao lado do executável ou do app.py. As máquinas registadas e outras preferências ficam guardadas no localStorage do teu browser.`,
+         en: `The Power Profiles configuration is stored in power_profiles.json, next to the executable or app.py. Registered machines and other preferences are stored in your browser's localStorage.`,
+         es: `La configuración de los Perfiles de Energía se guarda en power_profiles.json, junto al ejecutable o a app.py. Las máquinas registradas y otras preferencias se guardan en el localStorage de tu navegador.`,
+         fr: `La configuration des Profils d'Énergie est stockée dans power_profiles.json, à côté de l'exécutable ou de app.py. Les machines enregistrées et les autres préférences sont stockées dans le localStorage de ton navigateur.` } },
+];
+
+function getAiGreeting() { return t('ai_greeting'); }
+function getAiFallback() { return t('ai_fallback'); }
+
+function aiNormalize(str){
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function aiFindAnswer(question){
+  const norm = aiNormalize(question);
+  let best = null, bestScore = 0;
+  for(const entry of AI_KB){
+    let score = 0;
+    for(const kw of entry.kw){
+      if(norm.includes(aiNormalize(kw))) score += kw.length;
+    }
+    if(score > bestScore){ bestScore = score; best = entry; }
+  }
+  return best ? (best.a[currentLang] || best.a.pt) : getAiFallback();
+}
+
+function aiAppendMsg(text, who){
+  const log = $('aiChatLog');
+  const div = document.createElement('div');
+  div.className = `ai-msg ${who}`;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function aiAsk(question){
+  const q = (question || '').trim();
+  if(!q) return;
+  aiAppendMsg(q, 'user');
+  const answer = aiFindAnswer(q);
+  setTimeout(() => aiAppendMsg(answer, 'bot'), 250);
+}
+
+function aiRenderSuggestions(){
+  const box = $('aiSuggestions');
+  if(!box) return;
+  box.innerHTML = '';
+  const sample = AI_KB.slice(0, 4);
+  sample.forEach(entry => {
+    const btn = document.createElement('button');
+    btn.className = 'ai-chip';
+    const question = entry.q[currentLang] || entry.q.pt;
+    btn.textContent = question;
+    btn.onclick = () => aiAsk(question);
+    box.appendChild(btn);
+  });
+}
+
+function initAiAgent(){
+  aiAppendMsg(getAiGreeting(), 'bot');
+  aiRenderSuggestions();
+  $('aiSendBtn').onclick = () => {
+    const input = $('aiInput');
+    aiAsk(input.value);
+    input.value = '';
+  };
+  $('aiInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      const input = $('aiInput');
+      aiAsk(input.value);
+      input.value = '';
+    }
+  });
+}
+
+$('addBtn').onclick = () => { 
+  const ip = $('ipInput').value.trim();
+  if(ip) {
+    addDevice($('nameInput').value.trim(), ip);
+    $('ipInput').value = '';
+    $('nameInput').value = '';
+  }
+};
+
+// --- Localizar máquinas na rede (scan de subrede) ---
+let scanInFlight = false;
+
+function openScanModal(){
+  $('scanModalOverlay').classList.add('open');
+  runNetworkScan();
+}
+
+function closeScanModal(){
+  $('scanModalOverlay').classList.remove('open');
+}
+
+async function runNetworkScan(){
+  if(scanInFlight) return;
+  scanInFlight = true;
+  const body = $('scanModalBody');
+  const status = $('scanStatus');
+  const addAllBtn = $('scanAddAllBtn');
+  addAllBtn.style.display = 'none';
+  body.innerHTML = `<div class="scan-empty"><span class="scan-spinner"></span><span data-i18n="a_procurar_maquinas_na_rede">A procurar máquinas na rede local...</span></div>`;
+  if(typeof applyTranslations === 'function') applyTranslations();
+  status.textContent = '';
+  $('scanBtn').disabled = true;
+
+  try {
+    const resp = await fetch('/api/scan');
+    if(!resp.ok) throw new Error('scan failed');
+    const data = await resp.json();
+    renderScanResults(data.devices || [], data.subnet || '');
+  } catch(e){
+    body.innerHTML = `<div class="scan-error" data-i18n="erro_ao_procurar_maquinas_na_rede">Não foi possível concluir o scan da rede. Confirma que o servidor local está a correr.</div>`;
+    if(typeof applyTranslations === 'function') applyTranslations();
+  } finally {
+    scanInFlight = false;
+    $('scanBtn').disabled = false;
+  }
+}
+
+function renderScanResults(found, subnet){
+  const body = $('scanModalBody');
+  const status = $('scanStatus');
+  const addAllBtn = $('scanAddAllBtn');
+  const existingIps = new Set(devices.map(d => d.ip));
+  const newOnes = found.filter(d => !existingIps.has(d.ip));
+
+  status.textContent = subnet ? `${subnet}.0/24` : '';
+
+  if(found.length === 0){
+    body.innerHTML = `<div class="scan-empty" data-i18n="nenhuma_maquina_encontrada_na_rede">Nenhuma máquina encontrada na rede local.</div>`;
+    if(typeof applyTranslations === 'function') applyTranslations();
+    addAllBtn.style.display = 'none';
+    return;
+  }
+
+  body.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'scan-device-list';
+
+  found.forEach(dev => {
+    const already = existingIps.has(dev.ip);
+    const row = document.createElement('div');
+    row.className = 'scan-device-row';
+    const meta = [dev.model, dev.protocol === 'cgminer' ? 'cgminer/LuxOS' : null].filter(Boolean).join(' · ');
+    row.innerHTML = `
+      <div class="scan-device-info">
+        <div class="scan-device-name">${escapeHtml(dev.hostname || dev.ip)}</div>
+        <div class="scan-device-meta">${escapeHtml(dev.ip)}${meta ? ' · ' + escapeHtml(meta) : ''}</div>
+      </div>
+    `;
+    if(already){
+      const tag = document.createElement('span');
+      tag.className = 'scan-device-added';
+      tag.textContent = '✓ já adicionada';
+      row.appendChild(tag);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'scan-device-add-btn';
+      btn.textContent = 'Adicionar';
+      btn.onclick = () => {
+        addDevice(dev.hostname && dev.hostname !== dev.ip ? dev.hostname : '', dev.ip);
+        existingIps.add(dev.ip);
+        renderScanResults(found, subnet);
+      };
+      row.appendChild(btn);
+    }
+    list.appendChild(row);
+  });
+
+  body.appendChild(list);
+  if(typeof applyTranslations === 'function') applyTranslations();
+  addAllBtn.style.display = newOnes.length > 0 ? 'inline-block' : 'none';
+  addAllBtn.onclick = () => {
+    newOnes.forEach(dev => {
+      addDevice(dev.hostname && dev.hostname !== dev.ip ? dev.hostname : '', dev.ip);
+    });
+    renderScanResults(found, subnet);
+  };
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+$('scanBtn').onclick = openScanModal;
+$('scanModalCloseBtn').onclick = closeScanModal;
+$('scanModalOverlay').addEventListener('click', (e) => {
+  if(e.target === $('scanModalOverlay')) closeScanModal();
+});
+
+$('ratesRefreshBtn').onclick = () => fetchRates(true);
+
+$('clearLogBtn').onclick = () => { 
+  $('eventLog').innerHTML = ''; 
+  logEvent('Log limpo.', '', 'Sistema', 'sys');
+};
+
+// --- Holofote que segue o rato pelo painel principal + ripple nos botões
+// --- para o painel parecer mais reativo ao toque/rato. --------------------
+(function(){
+  const frameEl = document.querySelector('.frame');
+  if(frameEl){
+    frameEl.addEventListener('mousemove', (e) => {
+      const r = frameEl.getBoundingClientRect();
+      frameEl.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+      frameEl.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
+    }, { passive: true });
+  }
+
+  const RIPPLE_SELECTOR = 'button, .tab-btn, .scan-device-add-btn, .btc-unit-btn';
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest ? e.target.closest(RIPPLE_SELECTOR) : null;
+    if(!btn) return;
+    const cs = getComputedStyle(btn);
+    if(cs.position === 'static') btn.style.position = 'relative';
+    const prevOverflow = btn.style.overflow;
+    btn.style.overflow = 'hidden';
+    const r = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    const size = Math.max(r.width, r.height) * 1.4;
+    ripple.className = 'ui-ripple';
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - r.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - r.top - size / 2) + 'px';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', () => {
+      ripple.remove();
+      btn.style.overflow = prevOverflow;
+    });
+  });
+})();
+
+loadTheme();
+loadLanguage();
+initKioskMode();
+(async () => {
+  await loadDevices();
+  loadNotifications();
+  updateToastToggleBtn();
+  loadThermalHistory();
+  loadMaintenanceLog();
+  loadThermalProtectionSettings();
+  loadAchievements();
+  updateAchvBadge();
+  devices.forEach(d => { thermalAlertState[d.id] = computeThermalHealth(d.id).status; });
+  updateThermalBadge();
+  updateNotifBadge();
+  updateLogMachineDropdown();
+  renderAll();
+  checkForUpdate();
+})();
+logEvent(t('painel_iniciado_com_alertas'), 'new', 'Sistema', 'sys');
+// pollAll() e pollPowerStatus() já não têm setInterval próprio aqui - são
+// despoletados pelo Web Worker do heartbeat (ver abaixo), para não
+// sofrerem o throttling de abas em segundo plano.
+pollAll();
+fetchRecentBlocks();
+startBlocksAutoRefresh();
+
+loadPowerConfig();
+pollPowerStatus();
+loadAlertsConfig();
+
+initAiAgent();
+
+// --- Fecho total automático -------------------------------------------
+// Avisa o servidor local (app.py) de que este separador/janela continua
+// aberto. Se isto parar de chegar (X premido, browser fechado, etc.), o
+// backend desliga-se por completo ao fim de algum tempo.
+//
+// IMPORTANTE: os browsers "atrasam" (throttle) de propósito os
+// setInterval() de uma página quando a janela é minimizada, quando outra
+// aba fica em foco, ou quando o browser descarta/congela abas em segundo
+// plano para poupar bateria/memória ("Memory Saver"/"Efficiency mode").
+// Isto fazia o heartbeat parar de chegar mesmo com o painel só minimizado
+// (não fechado), levando o servidor a desligar-se por engano. Um Web
+// Worker corre num thread à parte e não sofre este throttling da mesma
+// forma, por isso o heartbeat é enviado a partir dele em vez do thread
+// principal da página.
+function sendHeartbeat() {
+  fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+}
+
+// IMPORTANTE (continuação): o mesmo throttling que afetava o heartbeat
+// também afeta QUALQUER setInterval() no thread principal da página -
+// incluindo o pollAll() que atualiza os dados das máquinas. Descobrimos
+// isto pelos logs: mesmo com o heartbeat a salvo no worker, o polling das
+// máquinas continuava a saltar para ~60s de intervalo (throttling
+// "intensivo" do Chrome) sempre que a janela ficava em segundo plano
+// durante uns minutos, e a certa altura parava por completo durante
+// dezenas de minutos até a aba "acordar". Por isso o pollAll() (e o
+// pollPowerStatus()) passam também a ser despoletados a partir do worker,
+// tal como o heartbeat - só assim as máquinas continuam a atualizar-se
+// mesmo com o painel minimizado ou noutro separador.
+let _heartbeatWorker = null;
+try {
+  const workerCode = `
+    setInterval(() => { postMessage('heartbeat'); }, 3000);
+    setInterval(() => { postMessage('poll'); }, 5000);
+  `;
+  const blob = new Blob([workerCode], { type: 'application/javascript' });
+  _heartbeatWorker = new Worker(URL.createObjectURL(blob));
+  _heartbeatWorker.onmessage = (e) => {
+    if (e.data === 'heartbeat') sendHeartbeat();
+    else if (e.data === 'poll') { pollAll(); pollPowerStatus(); }
+  };
+} catch (e) {
+  // Fallback (browsers muito antigos/sem suporte a Worker): pelo menos o
+  // heartbeat, pollAll e pollPowerStatus normais continuam a funcionar
+  // enquanto a aba estiver em primeiro plano.
+  setInterval(sendHeartbeat, 3000);
+  setInterval(pollAll, 5000);
+  setInterval(pollPowerStatus, 5000);
+}
+
+// Também manda logo um heartbeat sempre que a aba volta a ficar visível,
+// para "recuperar" imediatamente sem esperar pelo próximo tick do worker.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) sendHeartbeat();
+});
+
+sendHeartbeat();
+
+// Ao fechar mesmo o separador/janela (não apenas minimizar ou trocar de
+// separador), avisa o servidor de imediato para ele se desligar logo,
+// em vez de esperar até 90s sem heartbeat. sendBeacon é usado porque
+// continua a funcionar mesmo durante o descarregamento da página
+// (um fetch normal seria cancelado nesse momento).
+window.addEventListener('pagehide', (event) => {
+  if (event.persisted) return; // página só foi para bfcache, não fechou
+  try { navigator.sendBeacon('/api/close'); } catch (e) {}
+});
+
+// Mostra a versão instalada (independente de internet, ao contrário da
+// verificação de atualizações que consulta o GitHub).
+(async () => {
+  try {
+    const res = await fetch('/api/version');
+    const data = await res.json();
+    const tag = $('versionTag');
+    if (data.version) appVersion = data.version;
+    if (tag && data.version) tag.textContent = `· v${data.version}`;
+  } catch (e) {}
+})();
+
+// Fecho garantido e imediato, independente de qualquer comportamento do
+// browser ao fechar separador/janela (que por vezes não dispara a tempo,
+// deixando o servidor a correr até 90s em segundo plano). Este botão
+// chama /api/close diretamente, sem depender do evento pagehide.
+function shutdownServer() {
+  if (!confirm(t('confirm_desligar_servidor'))) return;
+  if (_heartbeatWorker) _heartbeatWorker.terminate(); // para não cancelar o próprio pedido de fecho
+  fetch('/api/close', { method: 'POST' }).catch(() => {});
+  document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:JetBrains Mono,monospace;color:var(--muted);font-size:14px;">${t('servidor_desligado_msg')}</div>`;
+}
+</script>
+</body>
+</html>
