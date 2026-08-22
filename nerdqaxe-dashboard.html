@@ -648,6 +648,23 @@
     padding:2px 6px; border-radius:6px;
   }
   .scan-modal-close:hover{color:var(--text); background:var(--panel-2);}
+  .scan-modal-subnet{
+    padding:12px 18px; border-bottom:1px solid var(--line);
+  }
+  .scan-modal-subnet label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:6px;}
+  .scan-modal-subnet-row{display:flex; gap:8px;}
+  .scan-modal-subnet-row input{
+    flex:1; background:var(--panel-2); border:1px solid var(--line-strong); border-radius:8px;
+    color:var(--text); padding:8px 10px; font-family:'JetBrains Mono', monospace; font-size:12px;
+  }
+  .scan-modal-subnet-row input:focus{outline:none; border-color:var(--cyan);}
+  .scan-modal-subnet-row button{
+    background:var(--panel-2); border:1px solid var(--line-strong); border-radius:8px;
+    color:var(--cyan); padding:8px 14px; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  .scan-modal-subnet-row button:hover{background:#0d2530; border-color:var(--cyan);}
+  .scan-modal-subnet-row button:disabled{opacity:.5; cursor:default;}
+  .scan-modal-subnet .hint{font-size:10px; color:var(--muted); margin-top:6px; line-height:1.4;}
   .scan-modal-body{padding:14px 18px; overflow-y:auto; flex:1;}
   .scan-modal-footer{
     padding:12px 18px; border-top:1px solid var(--line);
@@ -755,6 +772,7 @@
   .machine-card:hover{border-color:var(--line-strong); transform: translateY(-5px) rotateX(2.5deg) rotateY(-2deg); box-shadow: 0 18px 34px -12px #000d, 0 0 0 1px var(--line-strong);}
   .machine-card.selected{border-color:var(--green); box-shadow:0 0 0 1px var(--green-dim), 0 8px 20px -6px #0008;}
   .machine-card.offline { border-left: 3px solid var(--red); opacity: 0.85; }
+  .machine-card.portal-mode { border-left: 3px solid var(--amber); }
   .machine-card.card-enter{ animation: cardEnter .5s cubic-bezier(.16,1,.3,1) both; }
   @keyframes cardEnter{
     from{ opacity:0; transform:translateY(16px) scale(.97); }
@@ -2799,7 +2817,7 @@
   <header>
     <div>
       <h1><span data-i18n="centro_de_comando">Centro de Comando</span></h1>
-      <div class="subtitle" id="modeLabel"><span data-i18n="sistema_ativo_com_alertas_sonoros">sistema ativo com alertas sonoros</span> <span id="versionTag" style="opacity:0.6; margin-left:6px;"></span></div>
+      <div class="subtitle" id="modeLabel"><span data-i18n="sistema_ativo_com_alertas_sonoros">sistema ativo com alertas sonoros</span> <span id="versionTag" style="opacity:0.6; margin-left:6px;"></span> <span id="installsTag" style="opacity:0.6; margin-left:6px;"></span></div>
     </div>
     <div class="header-actions">
       <select class="theme-select" id="langSelect" onchange="setLanguage(this.value)" title="Language / Idioma / Langue">
@@ -3658,6 +3676,14 @@
       <span class="title" data-i18n="localizar_maquinas_na_rede">Localizar máquinas na rede</span>
       <button class="scan-modal-close" id="scanModalCloseBtn">✕</button>
     </div>
+    <div class="scan-modal-subnet">
+      <label data-i18n="sub_rede_a_pesquisar">Sub-rede a pesquisar</label>
+      <div class="scan-modal-subnet-row">
+        <input type="text" id="scanSubnetInput" placeholder="ex: 192.168.25">
+        <button id="scanRescanBtn" data-i18n="pesquisar">Pesquisar</button>
+      </div>
+      <div class="hint" data-i18n="sub_rede_hint">Se as tuas máquinas estiverem numa rede WiFi diferente da deste computador (ex: 192.168.25.x em vez de 192.168.1.x), escreve aqui os 3 primeiros números do IP delas.</div>
+    </div>
     <div class="scan-modal-body" id="scanModalBody">
       <div class="scan-empty" data-i18n="a_iniciar_scan">A iniciar scan...</div>
     </div>
@@ -3682,6 +3708,9 @@ const I18N_DICT = {
   "apoiar_o_desenvolvimento": { pt: `APOIAR O DESENVOLVIMENTO`, en: `SUPPORT DEVELOPMENT`, es: `APOYAR EL DESARROLLO`, fr: `SOUTENIR LE DÉVELOPPEMENT` },
   "adicionar_maquina": { pt: `Adicionar máquina`, en: `Add machine`, es: `Añadir máquina`, fr: `Ajouter une machine` },
   "localizar_maquinas_na_rede": { pt: `Localizar máquinas na rede`, en: `Find machines on network`, es: `Buscar máquinas en la red`, fr: `Trouver des machines sur le réseau` },
+  "sub_rede_a_pesquisar": { pt: `Sub-rede a pesquisar`, en: `Subnet to search`, es: `Subred a buscar`, fr: `Sous-réseau à rechercher` },
+  "pesquisar": { pt: `Pesquisar`, en: `Search`, es: `Buscar`, fr: `Rechercher` },
+  "sub_rede_hint": { pt: `Se as tuas máquinas estiverem numa rede WiFi diferente da deste computador (ex: 192.168.25.x em vez de 192.168.1.x), escreve aqui os 3 primeiros números do IP delas.`, en: `If your machines are on a different WiFi network from this computer (e.g. 192.168.25.x instead of 192.168.1.x), type the first 3 numbers of their IP here.`, es: `Si tus máquinas están en una red WiFi diferente a la de este ordenador (ej: 192.168.25.x en vez de 192.168.1.x), escribe aquí los 3 primeros números de su IP.`, fr: `Si tes machines sont sur un réseau WiFi différent de cet ordinateur (ex : 192.168.25.x au lieu de 192.168.1.x), écris ici les 3 premiers chiffres de leur IP.` },
   "a_iniciar_scan": { pt: `A iniciar scan...`, en: `Starting scan...`, es: `Iniciando escaneo...`, fr: `Démarrage du scan...` },
   "a_procurar_maquinas_na_rede": { pt: `A procurar máquinas na rede local...`, en: `Searching for machines on the local network...`, es: `Buscando máquinas en la red local...`, fr: `Recherche de machines sur le réseau local...` },
   "erro_ao_procurar_maquinas_na_rede": { pt: `Não foi possível concluir o scan da rede. Confirma que o servidor local está a correr.`, en: `Could not complete the network scan. Make sure the local server is running.`, es: `No se pudo completar el escaneo de la red. Confirma que el servidor local está en ejecución.`, fr: `Impossible de terminer le scan réseau. Vérifie que le serveur local est en cours d'exécution.` },
@@ -3934,6 +3963,8 @@ const I18N_DICT = {
   "latencia_local": { pt: `Latência Local`, en: `Local Latency`, es: `Latencia Local`, fr: `Latence Locale` },
   "offline": { pt: `Offline`, en: `Offline`, es: `Desconectado`, fr: `Hors ligne` },
   "desligada_sem_sinal": { pt: `Desligada / Sem Sinal`, en: `Off / No Signal`, es: `Apagada / Sin Señal`, fr: `Éteinte / Sans Signal` },
+  "modo_config_wifi": { pt: `⚙️ Modo Config. WiFi`, en: `⚙️ WiFi Setup Mode`, es: `⚙️ Modo Config. WiFi`, fr: `⚙️ Mode Config. WiFi` },
+  "modo_config_wifi_hint": { pt: `A máquina respondeu com a página de configuração em vez de dados - provavelmente perdeu a ligação WiFi normal e caiu para o modo de configuração (captive portal). Verifica a rede WiFi da máquina.`, en: `The machine replied with the setup page instead of data - it likely lost its normal WiFi connection and fell back into setup mode (captive portal). Check the machine's WiFi network.`, es: `La máquina respondió con la página de configuración en vez de datos - probablemente perdió la conexión WiFi normal y cayó al modo de configuración (portal cautivo). Revisa la red WiFi de la máquina.`, fr: `La machine a répondu avec la page de configuration au lieu de données - elle a probablement perdu sa connexion WiFi normale et est repassée en mode configuration (portail captif). Vérifie le réseau WiFi de la machine.` },
   "perda": { pt: `perda`, en: `loss`, es: `pérdida`, fr: `perte` },
   "nd_pelo_pool": { pt: `N/D pelo pool`, en: `N/A from pool`, es: `N/D por el pool`, fr: `N/D par le pool` },
   "remover_maquina": { pt: `Remover máquina`, en: `Remove machine`, es: `Eliminar máquina`, fr: `Supprimer la machine` },
@@ -6350,167 +6381,6 @@ function renderPoolTab(){
   });
 }
 
-// --- Troca Automática de Pool (fee + latência) -----------------------------
-let poolsCatalogCache = [];
-let poolsConfigCache = { btc_address: '', worker_suffix: '', min_gain_percent: 5, eval_interval_minutes: 15 };
-
-async function loadPoolsConfig(){
-  try{
-    const res = await fetch('http://localhost:8765/api/pools/config');
-    const cfg = await res.json();
-    poolsConfigCache = Object.assign({ btc_address: '', worker_suffix: '', min_gain_percent: 5, eval_interval_minutes: 15 }, cfg);
-  } catch(e){}
-  const addrEl = $('poolBtcAddress'), sufEl = $('poolWorkerSuffix'), gainEl = $('poolMinGain'), intEl = $('poolEvalInterval');
-  if(addrEl) addrEl.value = poolsConfigCache.btc_address || '';
-  if(sufEl) sufEl.value = poolsConfigCache.worker_suffix || '';
-  if(gainEl) gainEl.value = poolsConfigCache.min_gain_percent ?? 5;
-  if(intEl) intEl.value = poolsConfigCache.eval_interval_minutes ?? 15;
-}
-
-function markPoolConfigDirty(){
-  const hint = $('poolConfigSavedHint');
-  if(hint) hint.style.display = 'none';
-}
-
-async function savePoolsConfig(){
-  const payload = {
-    btc_address: ($('poolBtcAddress').value || '').trim(),
-    worker_suffix: ($('poolWorkerSuffix').value || '').trim(),
-    min_gain_percent: Number($('poolMinGain').value) || 0,
-    eval_interval_minutes: Number($('poolEvalInterval').value) || 15,
-  };
-  try{
-    const res = await fetch('http://localhost:8765/api/pools/config', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if(data.ok){
-      poolsConfigCache = Object.assign(poolsConfigCache, payload);
-      const hint = $('poolConfigSavedHint');
-      if(hint){ hint.style.display = 'inline'; setTimeout(() => { hint.style.display = 'none'; }, 2500); }
-      logEvent('Definições de troca automática de pool guardadas.', '', 'Sistema', 'sys');
-    }
-  } catch(e){}
-}
-
-function scorePoolClient(p){
-  const fee = p.fee_percent || 0;
-  if(p.latencyMs == null) return fee + 1000;
-  return fee + (p.latencyMs / 100) * 0.5;
-}
-
-async function fetchPoolsCatalog(force){
-  try{
-    const res = await fetch(`http://localhost:8765/api/pools/catalog${force ? '?force=1' : ''}`);
-    const data = await res.json();
-    poolsCatalogCache = Array.isArray(data.pools) ? data.pools : [];
-  } catch(e){}
-  renderPoolCatalogTable();
-}
-
-function renderPoolCatalogTable(){
-  const el = $('poolCatalogTable');
-  if(!el) return;
-  if(!poolsCatalogCache.length){ el.innerHTML = `<div class="pool-empty">A medir latência das pools...</div>`; return; }
-  const scored = poolsCatalogCache.map(p => Object.assign({}, p, { _score: scorePoolClient(p) }));
-  scored.sort((a, b) => a._score - b._score);
-  const bestId = scored[0] ? scored[0].id : null;
-  el.innerHTML = scored.map(p => `
-    <div class="pool-row">
-      <span>${p.id === bestId ? '⭐ ' : ''}<b style="color:var(--text);">${p.name}</b> <span style="color:var(--muted-2); font-size:10px;">${p.host}:${p.port}</span></span>
-      <b>${p.fee_percent.toFixed(1)}% · ${p.latencyMs != null ? p.latencyMs.toFixed(0) + ' ms' : 'sem resposta'}</b>
-    </div>
-  `).join('');
-}
-
-function poolSelectOptionsHtml(){
-  return poolsCatalogCache.map(p => `<option value="${p.id}">${p.name} (${p.fee_percent.toFixed(1)}%${p.latencyMs != null ? ', ' + p.latencyMs.toFixed(0) + 'ms' : ''})</option>`).join('');
-}
-
-function renderPoolAutoDevices(){
-  const el = $('poolAutoDevicesList');
-  if(!el) return;
-  if(!devices.length){ el.innerHTML = `<div class="pool-empty">${t('pool_sem_dados')}</div>`; return; }
-  el.innerHTML = devices.map(dev => {
-    const r = readings[dev.id];
-    const rawUrl = r && r.poolInfo && r.poolInfo.primary ? r.poolInfo.primary.url : (r ? r.pool : null);
-    const currentPool = (rawUrl || '—').replace(/^stratum\+tcp:\/\//, '');
-    return `
-    <div class="power-device-apply-row" data-dev="${dev.id}">
-      <div>
-        <div class="dname">${dev.name}</div>
-        <div class="dcurrent">Atual: ${currentPool}</div>
-      </div>
-      <label class="protection-toggle" style="font-size:11px;">
-        <input type="checkbox" ${dev.poolAuto ? 'checked' : ''} onchange="togglePoolAuto('${dev.id}', this.checked)">
-        Auto
-      </label>
-      <select id="poolManualSelect_${dev.id}" style="background:#081119; border:1px solid var(--line-strong); color:var(--text); font-family:inherit; font-size:11px; padding:5px 8px; border-radius:6px;">
-        ${poolSelectOptionsHtml()}
-      </select>
-      <button class="power-apply-btn" onclick="manualSwitchPool('${dev.id}')">Trocar agora</button>
-    </div>
-    `;
-  }).join('');
-}
-
-async function togglePoolAuto(devId, checked){
-  const dev = devices.find(d => d.id === devId);
-  if(!dev) return;
-  dev.poolAuto = checked;
-  await saveDevices();
-  logEvent(`Troca automática de pool ${checked ? 'ativada' : 'desativada'} para "${dev.name}".`, '', dev.name, dev.id);
-}
-
-async function manualSwitchPool(devId){
-  const dev = devices.find(d => d.id === devId);
-  if(!dev) return;
-  const sel = $('poolManualSelect_' + devId);
-  const poolId = sel ? sel.value : null;
-  if(!poolId) return;
-  try{
-    const res = await fetch('http://localhost:8765/api/switch-pool', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ ip: dev.ip, poolId })
-    });
-    const data = await res.json();
-    if(data.ok){
-      logEvent(`Pool trocada manualmente para "${dev.name}".`, 'new', dev.name, dev.id);
-    } else {
-      logEvent(`Falha ao trocar pool de "${dev.name}": ${data.message || data.error || 'erro desconhecido'}`, 'error', dev.name, dev.id);
-    }
-  } catch(e){
-    logEvent(`Falha ao trocar pool de "${dev.name}": ${e}`, 'error', dev.name, dev.id);
-  }
-  fetchPoolSwitchLog();
-}
-
-async function fetchPoolSwitchLog(){
-  try{
-    const res = await fetch('http://localhost:8765/api/pools/log');
-    const data = await res.json();
-    renderPoolSwitchLog(Array.isArray(data.log) ? data.log : []);
-  } catch(e){}
-}
-
-function renderPoolSwitchLog(entries){
-  const el = $('poolSwitchLog');
-  if(!el) return;
-  if(!entries.length){ el.innerHTML = `<div class="hint">Ainda sem trocas de pool registadas.</div>`; return; }
-  el.innerHTML = entries.slice(0, 15).map(e => {
-    const dt = new Date(e.ts * 1000).toLocaleString();
-    const okIcon = e.ok ? '✅' : '❌';
-    const autoTag = e.automatic ? '🤖 auto' : '🖐️ manual';
-    return `<div class="pool-row"><span>${okIcon} ${autoTag} — <b style="color:var(--text);">${e.device}</b> → ${e.pool}</span><span style="color:var(--muted-2); font-size:10px;">${dt}</span></div>`;
-  }).join('');
-}
-
-function refreshPoolAutoPanel(){
-  fetchPoolsCatalog();
-  renderPoolAutoDevices();
-  fetchPoolSwitchLog();
-}
-
 function drawPingChart(svgId, vals){
   const svg = $(svgId);
   vals = (vals || []).filter(v => v != null);
@@ -7469,7 +7339,19 @@ async function pollOneDevice(dev){
     const res = await fetch(`http://localhost:8765/api/proxy?ip=${encodeURIComponent(dev.ip)}`, { signal: controller.signal });
     clearTimeout(timeoutId);
 
-    if(!res.ok) throw new Error();
+    if(!res.ok) {
+      // Lê o corpo do erro (quando existe) para saber se a causa é a
+      // máquina estar em modo de configuração WiFi/captive portal, em vez
+      // de simplesmente marcar "offline" sem mais informação.
+      let portalMode = false;
+      try {
+        const errBody = await res.json();
+        portalMode = !!errBody.portal_mode;
+      } catch(_) { /* corpo não veio em JSON - ignora */ }
+      const err = new Error();
+      err.portalMode = portalMode;
+      throw err;
+    }
     const d = await res.json();
     const localLatencyMs = Math.round(performance.now() - pingStart);
     const { ping: poolPingVal, loss: poolLossVal } = extractPoolPingLoss(d);
@@ -7488,6 +7370,8 @@ async function pollOneDevice(dev){
       const hashrateTH = hashrateVal / 1000;
       if(hashrateTH > 0) efficiencyVal = powerVal / hashrateTH;
     }
+
+    const firmwareVal = d.firmwareVersion ?? d.version ?? d.axeOSVersion ?? (d.protocol === 'cgminer' ? d.ASICModel : null) ?? '—';
 
     const poolUrlVal = d.stratumURL ?? d.poolUrl ?? '—';
     const currentBest = Number(d.bestSessionDiff ?? d.bestDiff ?? 0);
@@ -7519,6 +7403,7 @@ async function pollOneDevice(dev){
       rejected: Number(rejectedVal) || 0,
       efficiency: Number(efficiencyVal) || 0,
       pool: poolUrlVal,
+      firmware: firmwareVal,
       poolInfo: extractPoolInfo(d),
       blocksFound: blocksFoundVal,
       poolPing: poolPingVal,
@@ -7596,11 +7481,18 @@ async function pollOneDevice(dev){
     if(fails < 2) return;
 
     const wasOnline = readings[dev.id]?.online;
-    readings[dev.id] = { ...(readings[dev.id] || {}), online: false };
+    readings[dev.id] = { ...(readings[dev.id] || {}), online: false, portalMode: !!e.portalMode };
     if(wasOnline !== false) {
-      logEvent(`Falha de comunicação com o dispositivo.`, 'error', dev.name, dev.id);
-      if(alertsConfig.notify_offline){
-        sendAlert(`⚠️ ${dev.name} ficou offline (falha de comunicação).`, `offline-${dev.id}`);
+      if(e.portalMode) {
+        logEvent(`Máquina caiu para o modo de configuração WiFi (captive portal) - verifica a ligação WiFi.`, 'error', dev.name, dev.id);
+        if(alertsConfig.notify_offline){
+          sendAlert(`⚙️ ${dev.name} caiu para o modo de configuração WiFi (captive portal) - verifica a ligação.`, `offline-${dev.id}`);
+        }
+      } else {
+        logEvent(`Falha de comunicação com o dispositivo.`, 'error', dev.name, dev.id);
+        if(alertsConfig.notify_offline){
+          sendAlert(`⚠️ ${dev.name} ficou offline (falha de comunicação).`, `offline-${dev.id}`);
+        }
       }
     }
     if(thermalCriticalState[dev.id]){
@@ -7776,6 +7668,10 @@ function renderAll(){
             <span class="metric-label">🖧 ${t('latencia_local')}</span>
             <span class="metric-value" data-f="locallat"></span>
           </div>
+          <div class="metric-row">
+            <span class="metric-label">🧩 Firmware</span>
+            <span class="metric-value" style="font-size:11px;" data-f="firmware"></span>
+          </div>
         </div>
       `;
       card.onclick = (e) => { if(!e.target.closest('.remove')){ selectedId = dev.id; renderAll(); } };
@@ -7790,6 +7686,7 @@ function renderAll(){
 
     card.classList.toggle('selected', dev.id === selectedId);
     card.classList.toggle('offline', !online && !!r);
+    card.classList.toggle('portal-mode', !online && !!r?.portalMode);
 
     card.querySelector('[data-f="name"]').textContent = dev.name;
     card.querySelector('[data-f="ip"]').textContent = dev.ip;
@@ -7811,6 +7708,8 @@ function renderAll(){
     if(online){
       hashEl.innerHTML = '';
       animateNumberTo(hashEl, r.hashrate, (v) => `${formatHashrate(v).value} ${formatHashrate(v).unit}`);
+    } else if(r?.portalMode) {
+      setTextWithFlash(hashEl, `<span style="color:var(--amber);" title="${t('modo_config_wifi_hint')}">${t('modo_config_wifi')}</span>`, true);
     } else {
       setTextWithFlash(hashEl, `<span style="color:var(--red);">${t('desligada_sem_sinal')}</span>`, true);
     }
@@ -7851,6 +7750,9 @@ function renderAll(){
     pingEl.className = 'metric-value ' + (online ? getLatencyRiskClass(r.poolPing) : '');
 
     setTextWithFlash(card.querySelector('[data-f="locallat"]'), localLatencyVal);
+
+    const firmwareVal = online ? (r.firmware || '—') : '—';
+    setTextWithFlash(card.querySelector('[data-f="firmware"]'), firmwareVal);
   });
 
   // remove cartões de máquinas que já não existem
@@ -8718,16 +8620,27 @@ async function runNetworkScan(){
   const body = $('scanModalBody');
   const status = $('scanStatus');
   const addAllBtn = $('scanAddAllBtn');
+  const subnetInput = $('scanSubnetInput');
   addAllBtn.style.display = 'none';
   body.innerHTML = `<div class="scan-empty"><span class="scan-spinner"></span><span data-i18n="a_procurar_maquinas_na_rede">A procurar máquinas na rede local...</span></div>`;
   if(typeof applyTranslations === 'function') applyTranslations();
   status.textContent = '';
   $('scanBtn').disabled = true;
+  $('scanRescanBtn').disabled = true;
 
   try {
-    const resp = await fetch('/api/scan');
+    // Se o campo já tiver algo escrito (o utilizador editou-o, ou é um
+    // novo pedido de pesquisa), usa isso; senão deixa o backend detetar
+    // sozinho a sub-rede deste computador (comportamento original).
+    const customSubnet = subnetInput.value.trim();
+    const url = customSubnet ? `/api/scan?subnet=${encodeURIComponent(customSubnet)}` : '/api/scan';
+    const resp = await fetch(url);
     if(!resp.ok) throw new Error('scan failed');
     const data = await resp.json();
+    // Preenche o campo com a sub-rede que foi de facto usada (útil na
+    // primeira pesquisa, quando o campo ainda estava vazio e o backend
+    // é quem escolheu automaticamente).
+    if(!customSubnet && data.subnet) subnetInput.value = data.subnet;
     renderScanResults(data.devices || [], data.subnet || '');
   } catch(e){
     body.innerHTML = `<div class="scan-error" data-i18n="erro_ao_procurar_maquinas_na_rede">Não foi possível concluir o scan da rede. Confirma que o servidor local está a correr.</div>`;
@@ -8735,6 +8648,7 @@ async function runNetworkScan(){
   } finally {
     scanInFlight = false;
     $('scanBtn').disabled = false;
+    $('scanRescanBtn').disabled = false;
   }
 }
 
@@ -8805,6 +8719,19 @@ function escapeHtml(str){
 
 $('scanBtn').onclick = openScanModal;
 $('scanModalCloseBtn').onclick = closeScanModal;
+$('scanRescanBtn').onclick = () => {
+  // aceita que a pessoa escreva "192.168.25", "192.168.25.0" ou
+  // "192.168.25.0/24" - normaliza tudo para o formato "192.168.25" que
+  // o backend espera (só os 3 primeiros números, sem barra nem 4º número)
+  const raw = $('scanSubnetInput').value.trim().replace(/\/\d+$/, '');
+  const parts = raw.split('.').filter(p => p !== '');
+  const cleaned = (parts.length > 3 ? parts.slice(0, 3) : parts).join('.');
+  $('scanSubnetInput').value = cleaned;
+  runNetworkScan();
+};
+$('scanSubnetInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') { e.preventDefault(); $('scanRescanBtn').click(); }
+});
 $('scanModalOverlay').addEventListener('click', (e) => {
   if(e.target === $('scanModalOverlay')) closeScanModal();
 });
@@ -8961,6 +8888,20 @@ window.addEventListener('pagehide', (event) => {
     const tag = $('versionTag');
     if (data.version) appVersion = data.version;
     if (tag && data.version) tag.textContent = `· v${data.version}`;
+  } catch (e) {}
+})();
+
+// Mostra o nº de instalações únicas do Centro de Comando (contador global,
+// só soma uma vez por PC - não conta cada vez que a app é aberta/fechada).
+(async () => {
+  try {
+    const res = await fetch('/api/usage-count');
+    const data = await res.json();
+    const tag = $('installsTag');
+    if (tag && data.unique_installs != null) {
+      tag.textContent = `· ${data.unique_installs} instalações`;
+      tag.title = 'Nº de instalações únicas do Centro de Comando (contador global)';
+    }
   } catch (e) {}
 })();
 
