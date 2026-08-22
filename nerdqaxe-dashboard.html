@@ -4876,6 +4876,66 @@ function renderRecentBlocks(blocks) {
   });
 }
 
+// --- Blocos em tempo real (WebSocket) -----------------------------------
+// O poll a cada 60s (via Web Worker, acima) garante que os blocos nunca
+// ficam "presos" com a aba em segundo plano, mas continua a ter até 60s
+// de atraso. Para mostrar um bloco novo no instante em que a rede o
+// confirma, ligamos também ao WebSocket público do mempool.space, que
+// empurra o bloco assim que é minado - sem termos de esperar pelo
+// próximo tick do poll.
+let blocksSocket = null;
+let blocksSocketRetryMs = 2000;
+let blocksSocketRetryTimer = null;
+
+function connectBlocksWebSocket() {
+  if (blocksSocketRetryTimer) { clearTimeout(blocksSocketRetryTimer); blocksSocketRetryTimer = null; }
+  try {
+    if (blocksSocket) {
+      try { blocksSocket.onclose = null; blocksSocket.close(); } catch(e) {}
+    }
+    blocksSocket = new WebSocket('wss://mempool.space/api/v1/ws');
+    blocksSocket.onopen = () => {
+      blocksSocketRetryMs = 2000; // repõe o backoff assim que liga com sucesso
+      try { blocksSocket.send(JSON.stringify({ action: 'want', data: ['blocks'] })); } catch(e) {}
+    };
+    blocksSocket.onmessage = (ev) => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch(e) { return; }
+      if (msg && msg.block) onNewBlockPushed(msg.block);
+    };
+    blocksSocket.onerror = () => {};
+    blocksSocket.onclose = scheduleBlocksWebSocketReconnect;
+  } catch(e) {
+    scheduleBlocksWebSocketReconnect();
+  }
+}
+
+function scheduleBlocksWebSocketReconnect() {
+  if (blocksSocketRetryTimer) return;
+  blocksSocketRetryTimer = setTimeout(() => {
+    blocksSocketRetryTimer = null;
+    connectBlocksWebSocket();
+  }, blocksSocketRetryMs);
+  blocksSocketRetryMs = Math.min(blocksSocketRetryMs * 2, 30000); // backoff até 30s
+}
+
+function onNewBlockPushed(block) {
+  if (!lastFetchedBlocks) { fetchRecentBlocks(); return; }
+  if (lastFetchedBlocks.some(b => b.height === block.height)) return; // já o tínhamos
+  const maxLen = lastFetchedBlocks.length || 15;
+  lastFetchedBlocks = [block, ...lastFetchedBlocks].slice(0, maxLen);
+  renderRecentBlocks(lastFetchedBlocks);
+  const hint = $('blocksRefreshHint');
+  if (hint) {
+    const localeMap = { pt: 'pt-PT', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+    hint.textContent = t('blocos_atualizado_em') + ' ' + new Date().toLocaleTimeString(localeMap[currentLang] || 'pt-PT');
+  }
+  // O bloco empurrado pelo WebSocket pode ainda não trazer todos os campos
+  // (ex: taxa média/pool) tão afinados como o endpoint REST. Poucos
+  // segundos depois, confirmamos/corrigimos com um fetch normal.
+  setTimeout(fetchRecentBlocks, 4000);
+}
+
 let difficultyData = null;
 let simRefreshTimer = null;
 
@@ -8841,12 +8901,12 @@ initKioskMode();
   checkForUpdate();
 })();
 logEvent(t('painel_iniciado_com_alertas'), 'new', 'Sistema', 'sys');
-// pollAll() e pollPowerStatus() já não têm setInterval próprio aqui - são
-// despoletados pelo Web Worker do heartbeat (ver abaixo), para não
-// sofrerem o throttling de abas em segundo plano.
+// pollAll(), pollPowerStatus() e fetchRecentBlocks() já não têm setInterval
+// próprio aqui - são despoletados pelo Web Worker do heartbeat (ver abaixo),
+// para não sofrerem o throttling de abas em segundo plano.
 pollAll();
 fetchRecentBlocks();
-startBlocksAutoRefresh();
+connectBlocksWebSocket();
 
 loadPowerConfig();
 pollPowerStatus();
@@ -8888,26 +8948,39 @@ try {
   const workerCode = `
     setInterval(() => { postMessage('heartbeat'); }, 3000);
     setInterval(() => { postMessage('poll'); }, 5000);
+    setInterval(() => { postMessage('blocks'); }, 60000);
   `;
   const blob = new Blob([workerCode], { type: 'application/javascript' });
   _heartbeatWorker = new Worker(URL.createObjectURL(blob));
   _heartbeatWorker.onmessage = (e) => {
     if (e.data === 'heartbeat') sendHeartbeat();
     else if (e.data === 'poll') { pollAll(); pollPowerStatus(); }
+    else if (e.data === 'blocks') fetchRecentBlocks();
   };
 } catch (e) {
   // Fallback (browsers muito antigos/sem suporte a Worker): pelo menos o
-  // heartbeat, pollAll e pollPowerStatus normais continuam a funcionar
-  // enquanto a aba estiver em primeiro plano.
+  // heartbeat, pollAll, pollPowerStatus e fetchRecentBlocks normais
+  // continuam a funcionar enquanto a aba estiver em primeiro plano.
   setInterval(sendHeartbeat, 3000);
   setInterval(pollAll, 5000);
   setInterval(pollPowerStatus, 5000);
+  startBlocksAutoRefresh();
 }
 
 // Também manda logo um heartbeat sempre que a aba volta a ficar visível,
 // para "recuperar" imediatamente sem esperar pelo próximo tick do worker.
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) sendHeartbeat();
+  if (!document.hidden) {
+    sendHeartbeat();
+    // O portátil pode ter suspendido a ligação WebSocket enquanto a aba
+    // esteve em segundo plano (ex: PC foi para hibernação) - ao voltar,
+    // religa se necessário e faz logo um fetch normal para apanhar
+    // qualquer bloco que tenha passado ao lado enquanto isso.
+    if (!blocksSocket || blocksSocket.readyState === WebSocket.CLOSED || blocksSocket.readyState === WebSocket.CLOSING) {
+      connectBlocksWebSocket();
+    }
+    fetchRecentBlocks();
+  }
 });
 
 sendHeartbeat();
