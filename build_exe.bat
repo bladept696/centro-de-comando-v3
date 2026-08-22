@@ -28,6 +28,7 @@ python -m PyInstaller --noconfirm --onefile --windowed ^
     --add-data "nerdqaxe-dashboard.html;." ^
     --add-data "overlay-obs.html;." ^
     --add-data "bitminer33-banner.png;." ^
+    --add-data "baroneclub-banner.png;." ^
     --add-data "lightning-qrcode.png;." ^
     --add-data "app_icon.ico;." ^
     --hidden-import "paho.mqtt.client" ^

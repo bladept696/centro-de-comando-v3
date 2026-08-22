@@ -43,6 +43,7 @@ executável final fica em `dist/CentroDeComando.exe`.
 - `app.py` — servidor local + launcher
 - `nerdqaxe-dashboard.html` — o painel/dashboard
 - `bitminer33-banner.png` — banner do separador "Apoiantes"
+- `baroneclub-banner.png` — banner do separador "Apoiantes"
 - `lightning-qrcode.png` — QR code Lightning para doações
 - `app_icon.ico` — ícone do executável
 - `build_exe.bat` — script que gera o .exe
