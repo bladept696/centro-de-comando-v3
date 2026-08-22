@@ -39,7 +39,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.2.1"
+APP_VERSION = "3.3.0"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -348,6 +348,16 @@ DEFAULT_POWER_CONFIG = {
         "api_key": "",
         "api_secret": "",
     },
+    "alerts": {
+        "telegram_bot_token": "",
+        "telegram_chat_id": "",
+        "discord_webhook_url": "",
+        "hashrate_drop_pct": 30,
+        "notify_offline": True,
+        "notify_record": True,
+        "notify_rental_ending": True,
+        "notify_hashrate_drop": True,
+    },
 }
 
 # Cache do endpoint que funcionou da última vez para cada IP ('info',
@@ -503,6 +513,7 @@ def load_power_config():
         cfg["profiles"] = data.get("profiles", []) or []
         cfg["devices"] = data.get("devices", []) or []
         cfg["mrr"].update(data.get("mrr", {}) or {})
+        cfg["alerts"].update(data.get("alerts", {}) or {})
         return cfg
     except Exception:
         return copy.deepcopy(DEFAULT_POWER_CONFIG)
@@ -518,6 +529,58 @@ def save_power_config(cfg):
 
 
 power_config = load_power_config()
+
+
+# --- Alertas (Telegram / Discord) -------------------------------------------
+def send_telegram_alert(bot_token, chat_id, message):
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = json.dumps({"chat_id": chat_id, "text": message}).encode('utf-8')
+    req = urllib.request.Request(url, data=payload, method='POST', headers={'Content-Type': 'application/json'})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        return json.loads(resp.read().decode('utf-8'))
+
+
+def send_discord_alert(webhook_url, message):
+    payload = json.dumps({"content": message}).encode('utf-8')
+    req = urllib.request.Request(
+        webhook_url,
+        data=payload,
+        method='POST',
+        headers={
+            'Content-Type': 'application/json',
+            # O Discord bloqueia (403) pedidos com o User-Agent padrão do
+            # urllib ("Python-urllib/3.x"); um User-Agent "normal" resolve.
+            'User-Agent': 'Mozilla/5.0 (compatible; CentroDeComando/1.0)',
+        },
+    )
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        resp.read()
+        return True
+
+
+def broadcast_alert(message):
+    """Envia a mesma mensagem a todos os canais configurados. Devolve uma
+    lista de erros (vazia se tudo correu bem ou nada estiver configurado)."""
+    with POWER_CONFIG_LOCK:
+        alerts_cfg = copy.deepcopy(power_config.get("alerts", {}) or {})
+
+    errors = []
+    bot_token = alerts_cfg.get("telegram_bot_token", "").strip()
+    chat_id = alerts_cfg.get("telegram_chat_id", "").strip()
+    if bot_token and chat_id:
+        try:
+            send_telegram_alert(bot_token, chat_id, message)
+        except Exception as e:
+            errors.append(f"Telegram: {e}")
+
+    webhook_url = alerts_cfg.get("discord_webhook_url", "").strip()
+    if webhook_url:
+        try:
+            send_discord_alert(webhook_url, message)
+        except Exception as e:
+            errors.append(f"Discord: {e}")
+
+    return errors
 
 
 # --- MiningRigRentals (aba "Renting") --------------------------------------
@@ -1082,6 +1145,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"devices": devices}).encode('utf-8'))
             return
 
+        if path == '/api/alerts/config':
+            with POWER_CONFIG_LOCK:
+                alerts_cfg = copy.deepcopy(power_config.get("alerts", {}) or {})
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(alerts_cfg, ensure_ascii=False).encode('utf-8'))
+            return
+
         if path == '/api/mrr/status':
             with POWER_CONFIG_LOCK:
                 mrr_cfg = copy.deepcopy(power_config.get("mrr", {}) or {})
@@ -1089,7 +1161,14 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
-            self.wfile.write(json.dumps({"configured": configured}).encode('utf-8'))
+            # devolve a api_key (não o secret) para se poder pré-preencher o
+            # campo no browser - assim não parece que "não gravou" só por o
+            # campo aparecer vazio ao reabrir a aba.
+            self.wfile.write(json.dumps({
+                "configured": configured,
+                "api_key": mrr_cfg.get("api_key", ""),
+                "has_secret": bool(mrr_cfg.get("api_secret")),
+            }).encode('utf-8'))
             return
 
         if path == '/api/mrr/rentals':
@@ -1279,7 +1358,67 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
             return
 
-        if path == '/api/apply-profile':
+        if path == '/api/alerts/config':
+            with POWER_CONFIG_LOCK:
+                existing = copy.deepcopy(power_config.get("alerts", {}) or {})
+
+            # Mesmo tratamento que a MRR: campos de segredo (bot token,
+            # webhook) só são substituídos se vierem preenchidos - deixados
+            # em branco no formulário significa "manter o atual".
+            def keep_or_update(key):
+                if key in body and str(body.get(key) or "").strip() != "":
+                    return str(body.get(key)).strip()
+                return existing.get(key, "")
+
+            new_alerts = {
+                "telegram_bot_token": keep_or_update("telegram_bot_token"),
+                "telegram_chat_id": str(body.get("telegram_chat_id", existing.get("telegram_chat_id", ""))).strip(),
+                "discord_webhook_url": keep_or_update("discord_webhook_url"),
+                "hashrate_drop_pct": int(body.get("hashrate_drop_pct", existing.get("hashrate_drop_pct", 30)) or 30),
+                "notify_offline": bool(body.get("notify_offline", existing.get("notify_offline", True))),
+                "notify_record": bool(body.get("notify_record", existing.get("notify_record", True))),
+                "notify_rental_ending": bool(body.get("notify_rental_ending", existing.get("notify_rental_ending", True))),
+                "notify_hashrate_drop": bool(body.get("notify_hashrate_drop", existing.get("notify_hashrate_drop", True))),
+            }
+
+            with POWER_CONFIG_LOCK:
+                new_cfg = copy.deepcopy(power_config)
+                new_cfg["alerts"] = new_alerts
+                saved = save_power_config(new_cfg)
+                if saved:
+                    power_config = new_cfg
+
+            self.send_response(200 if saved else 500)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
+            return
+
+        if path == '/api/alerts/notify':
+            message = str(body.get("message") or "").strip()
+            if not message:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": False, "error": "mensagem vazia"}).encode('utf-8'))
+                return
+            errors = broadcast_alert(message)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": len(errors) == 0, "errors": errors}, ensure_ascii=False).encode('utf-8'))
+            return
+
+        if path == '/api/alerts/test':
+            errors = broadcast_alert("🔔 Teste do Centro de Comando: os alertas estão a funcionar!")
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": len(errors) == 0, "errors": errors}, ensure_ascii=False).encode('utf-8'))
+            return
             target_ip = (body.get("ip") or "").strip()
             payload = {}
             if "frequency" in body:
