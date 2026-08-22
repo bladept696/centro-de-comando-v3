@@ -10,14 +10,28 @@
   "profiles": [],
   "devices": [
     {
-      "id": "m_ukyvp3t",
-      "name": "bitaxe",
-      "ip": "192.168.1.38"
+      "id": "m_29qfpm6",
+      "name": "BITAXE",
+      "ip": "192.168.25.38"
     },
     {
-      "id": "m_v26mjsi",
-      "name": "nerqaxe6th",
-      "ip": "192.168.1.163"
+      "id": "m_tq0o5nl",
+      "name": "nerdqaxe6th",
+      "ip": "192.168.25.163"
     }
-  ]
+  ],
+  "mrr": {
+    "api_key": "0786e276a7fa2c41138fab0498011dc45cd60bd47163844c1bff2390497b593a",
+    "api_secret": "4a83e013724e57c27976041271ef47840181bc3aff3210e24bacd28fba4cf426"
+  },
+  "alerts": {
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
+    "discord_webhook_url": "https://discord.com/api/webhooks/1522041080290345000/6Vtz6sdAeCr3G0fiyvlafgtD3HhBjATe6DH8eECqJ8tuzpmI86bPfJtdy1FR55Fnm4rw",
+    "hashrate_drop_pct": 30,
+    "notify_offline": true,
+    "notify_record": true,
+    "notify_rental_ending": true,
+    "notify_hashrate_drop": true
+  }
 }
