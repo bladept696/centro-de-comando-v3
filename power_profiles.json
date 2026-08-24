@@ -33,5 +33,11 @@
     "notify_record": true,
     "notify_rental_ending": true,
     "notify_hashrate_drop": true
+  },
+  "pools": {
+    "btc_address": "",
+    "worker_suffix": "",
+    "min_gain_percent": 5,
+    "eval_interval_minutes": 15
   }
 }

@@ -115,8 +115,7 @@
   body::before, body::after{
     content:''; position:fixed; z-index:-1; pointer-events:none;
     border-radius:50%; filter:blur(90px); opacity:.55; mix-blend-mode:screen;
-  }
-  body::before{
+  }  body::before{
     width:520px; height:520px; top:-180px; left:-140px;
     background:radial-gradient(circle, var(--glow-1), transparent 70%);
     animation: driftBlobA 24s ease-in-out infinite;
@@ -137,6 +136,104 @@
   @media (prefers-reduced-motion: reduce){
     body::before, body::after{ animation: none; }
   }
+
+  /* Camada de chuva Matrix, agora dentro da própria .frame (por trás de
+     todo o conteúdo, preenchendo os espaços entre painéis e o cabeçalho)
+     — cobre a altura toda da frame, ajustada dinamicamente por JS. */
+  #bodyMatrixCanvas{
+    position:absolute; inset:0; z-index:0; pointer-events:none;
+    width:100%; height:100%; opacity:.5;
+  }
+  @media (prefers-reduced-motion: reduce){
+    #bodyMatrixCanvas{ display:none; }
+  }
+
+  /* Faixa HUD com piso 3D tipo "grelha synthwave" a fugir para o horizonte,
+     logo abaixo do cabeçalho — elemento visual próprio (não escondido atrás
+     de nada opaco), com brilho de horizonte pulsante. */
+  #gridFloor{
+    position:relative; z-index:1; height:150px; overflow:hidden;
+    perspective:220px; perspective-origin:50% 0%; pointer-events:none;
+    border-bottom:1px solid var(--line-strong);
+    background:linear-gradient(180deg, var(--frame-top), var(--bg));
+  }
+  #gridFloor .grid-plane{
+    position:absolute; left:-60%; top:0; width:220%; height:340px;
+    background-image:
+      linear-gradient(var(--green-dim) 1px, transparent 1px),
+      linear-gradient(90deg, var(--green-dim) 1px, transparent 1px);
+    background-size: 44px 44px;
+    opacity:.6;
+    transform-origin:top; transform:rotateX(74deg);
+    animation: gridFloorScrollDown 3.2s linear infinite;
+  }
+  @keyframes gridFloorScrollDown{
+    from{ background-position: 0 0, 0 0; }
+    to{ background-position: 0 44px, 0 0; }
+  }
+  #gridFloor .horizon-glow{
+    position:absolute; left:0; right:0; top:0; height:1px;
+    background:linear-gradient(90deg, transparent, var(--green) 20%, var(--cyan) 50%, var(--green) 80%, transparent);
+    box-shadow: 0 0 12px 2px var(--green-dim), 0 0 40px 8px var(--green-dim);
+    opacity:.5;
+    animation: horizonPulse 4.5s ease-in-out infinite;
+  }
+  @keyframes horizonPulse{
+    0%,100%{ opacity:.35; box-shadow: 0 0 10px 2px var(--green-dim), 0 0 30px 6px var(--green-dim); }
+    50%{ opacity:.7; box-shadow: 0 0 18px 4px var(--green-dim), 0 0 55px 12px var(--green-dim); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #gridFloor{ display:none; }
+  }
+
+  /* Banner do título sobre a grelha 3D — logótipo Bitcoin oficial (laranja
+     #F7931A, símbolo ₿ a branco) + nome do painel, sobre o verde cyberpunk
+     da grelha. */
+  .grid-banner{
+    position:absolute; inset:0; z-index:2;
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    pointer-events:none;
+  }
+  .grid-banner-coin{
+    width:46px; height:46px; border-radius:50%; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 28%, #ffb454, #F7931A 60%, #c9720a 100%);
+    color:#fff; font-size:26px; font-weight:800; font-family:'Space Grotesk', sans-serif;
+    text-shadow: 1px 1px 0 #00000055;
+    box-shadow: 0 0 14px 2px #F7931A66, 0 0 34px 8px #F7931A44, inset 0 -3px 6px #0004, inset 0 2px 3px #ffffff55;
+    border:1px solid #ffcb8a;
+    animation: coinFloat 3.6s ease-in-out infinite;
+  }
+  @keyframes coinFloat{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-4px) rotate(6deg); }
+  }
+  .grid-banner-title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:30px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    background:linear-gradient(90deg, #F7931A, var(--text) 45%, var(--green) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 24px var(--green-dim);
+    filter:drop-shadow(0 0 10px #00000088);
+    animation: bannerFlicker 6s ease-in-out infinite;
+  }
+  @keyframes bannerFlicker{
+    0%,93%,100%{ opacity:1; }
+    94%{ opacity:.55; }
+    95%{ opacity:1; }
+    96%{ opacity:.7; }
+    97%{ opacity:1; }
+  }
+  @media (max-width: 640px){
+    .grid-banner-title{ font-size:16px; letter-spacing:.08em; }
+    .grid-banner-coin{ width:32px; height:32px; font-size:17px; }
+    .grid-banner{ gap:8px; }
+  }
+
+
 
   .frame{
     max-width:1500px;
@@ -175,6 +272,59 @@
 
   @media (prefers-reduced-motion: reduce){
     .frame::before{ animation:none; }
+  }
+
+  /* Easter eggs sazonais — puramente decorativos: um pequeno ícone junto
+     ao título e partículas suaves a flutuar (neve no Natal, morcegos no
+     Halloween). Nada disto tem qualquer efeito funcional; é só um toque
+     de carinho para quem passa por aqui numa data especial. */
+  .seasonal-particle-layer{
+    position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden;
+  }
+  .seasonal-particle{
+    position:absolute; top:-8%; will-change:transform; user-select:none;
+  }
+  .seasonal-snow{
+    color:var(--cyan);
+    animation-name: seasonalSnowFall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  .seasonal-bat{
+    color:var(--muted);
+    animation-name: seasonalBatDrift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+  .seasonal-pizza{
+    animation-name: seasonalPizzaFall;
+    animation-timing-function: ease-in;
+    animation-iteration-count: infinite;
+  }
+  @keyframes seasonalSnowFall{
+    0%{ transform: translateY(-10vh) translateX(0); }
+    100%{ transform: translateY(110vh) translateX(24px); }
+  }
+  @keyframes seasonalBatDrift{
+    0%, 100%{ transform: translate(0,0); }
+    50%{ transform: translate(-38vw, 18px); }
+  }
+  @keyframes seasonalPizzaFall{
+    0%{ transform: translateY(-10vh) rotate(0deg); }
+    100%{ transform: translateY(110vh) rotate(360deg); }
+  }
+  #seasonalIcon{
+    display:inline-block;
+    filter: drop-shadow(0 0 6px var(--green-dim));
+    animation: seasonalIconBob 3.4s ease-in-out infinite;
+  }
+  @keyframes seasonalIconBob{
+    0%, 100%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-2px) rotate(-4deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .seasonal-particle-layer{ display:none; }
+    #seasonalIcon{ animation:none; }
   }
 
   header{
@@ -423,6 +573,168 @@
     font-weight: 600;
   }
   .kiosk-toggle-btn:hover { border-color: var(--cyan); }
+  .layout-edit-toggle-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .layout-edit-toggle-btn:hover { border-color: var(--green); }
+  .layout-edit-toggle-btn.active {
+    background: var(--green-dim);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .layout-reset-btn {
+    display: none;
+    background: transparent;
+    border: 1px solid #ff5d5d55;
+    color: var(--red);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .layout-reset-btn:hover { background: #ff5d5d1a; }
+  body.layout-edit-mode .layout-reset-btn { display: inline-flex; }
+
+  /* --- Botão de Ajuda (FAQ) ---------------------------------------------- */
+  .help-toggle-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .help-toggle-btn:hover { border-color: var(--amber); }
+
+  /* --- Modal de Ajuda / FAQ ----------------------------------------------- */
+  .help-modal-card { width: min(560px, 100%); max-height: min(78vh, 680px); }
+  .help-modal-body {
+    flex: 1; overflow-y: auto; padding: 14px 16px; display: flex;
+    flex-direction: column; gap: 8px;
+  }
+  .help-tour-again {
+    background: transparent; border: 1px solid var(--line-strong); color: var(--muted);
+    font-family: inherit; font-size: 10.5px; font-weight: 600; padding: 5px 12px;
+    border-radius: 20px; cursor: pointer; white-space: nowrap;
+  }
+  .help-tour-again:hover { border-color: var(--green); color: var(--green); }
+  .help-faq-item {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden;
+  }
+  .help-faq-item summary {
+    padding: 11px 13px; cursor: pointer; font-size: 12px; font-weight: 700;
+    color: var(--text); list-style: none; display: flex; align-items: center; gap: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .help-faq-item summary::-webkit-details-marker { display: none; }
+  .help-faq-item summary::before { content: '▸'; color: var(--green); flex: 0 0 auto; transition: transform .15s ease; }
+  .help-faq-item[open] summary::before { transform: rotate(90deg); }
+  .help-faq-item .help-faq-answer {
+    padding: 0 13px 13px 31px; font-size: 11.5px; line-height: 1.6; color: var(--muted);
+  }
+  .help-faq-answer code {
+    background: #000a; border: 1px solid var(--line-strong); border-radius: 4px;
+    padding: 1px 5px; font-size: 11px; color: var(--green);
+  }
+  .help-faq-footer {
+    padding: 10px 16px; border-top: 1px solid var(--line); font-size: 10.5px;
+    color: var(--muted-2); text-align: center;
+  }
+
+  /* --- Tour guiado --------------------------------------------------------- */
+  #tourLayer { display: none; }
+  .tour-highlight {
+    position: fixed; z-index: 20001; border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.78);
+    border: 2px solid var(--green);
+    pointer-events: none;
+    transition: left .25s ease, top .25s ease, width .25s ease, height .25s ease;
+  }
+  .tour-tooltip {
+    position: fixed; z-index: 20002; width: 280px; max-width: calc(100vw - 24px);
+    background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 12px;
+    padding: 14px 16px; box-shadow: 0 20px 60px #000c;
+    font-size: 12px; line-height: 1.55; color: var(--muted);
+    transition: left .25s ease, top .25s ease;
+  }
+  .tour-tooltip-title {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px;
+    color: var(--green); margin-bottom: 6px;
+  }
+  .tour-tooltip-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; gap: 8px;
+  }
+  .tour-skip-btn {
+    background: none; border: none; color: var(--muted-2); font-size: 10.5px;
+    cursor: pointer; font-family: inherit; padding: 0;
+  }
+  .tour-skip-btn:hover { color: var(--text); }
+  .tour-step-counter { font-size: 10px; color: var(--muted-2); white-space: nowrap; }
+  .tour-next-btn {
+    background: var(--green); color: #04150a; border: none; border-radius: 7px;
+    padding: 6px 14px; font-size: 11px; font-weight: 700; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; white-space: nowrap;
+  }
+  .tour-next-btn:hover { filter: brightness(1.1); }
+  @media (max-width: 640px) {
+    .tour-tooltip { width: 240px; padding: 12px 14px; }
+  }
+
+  /* Modo de edição de layout: cada bloco marcado com data-layout-id fica
+     arrastável. Um contorno tracejado + um "pega" (⠿) no canto indicam
+     que dá para reordenar; o resto do painel comporta-se como sempre. */
+  body.layout-edit-mode [data-layout-id]{
+    position: relative;
+    cursor: grab;
+    outline: 1px dashed var(--line-strong);
+    outline-offset: 3px;
+    transition: outline-color .15s ease, opacity .15s ease, transform .12s ease;
+  }
+  body.layout-edit-mode [data-layout-id]:hover{ outline-color: var(--green); }
+  body.layout-edit-mode [data-layout-id]::after{
+    content: '⠿ arrastar';
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 10px;
+    letter-spacing: .04em;
+    color: var(--green);
+    background: var(--panel);
+    border: 1px solid var(--green-dim);
+    border-radius: 6px;
+    padding: 2px 7px;
+    pointer-events: none;
+    z-index: 6;
+    opacity: .85;
+  }
+  [data-layout-id].layout-dragging{
+    opacity: .35;
+    cursor: grabbing;
+    transform: scale(.98);
+  }
+  [data-layout-id].layout-drop-target{
+    outline-color: var(--cyan) !important;
+    outline-style: solid !important;
+  }
+  @media(max-width:900px){
+    body.layout-edit-mode [data-layout-id]::after{ font-size:9px; padding:1px 5px; }
+  }
+
   .tab-btn {
     background: transparent;
     border: none;
@@ -1435,6 +1747,22 @@
   }
   .chart-meta-row span b { color: var(--text); font-family: 'Space Grotesk', sans-serif; }
 
+  .peak-diff-big {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--amber);
+  }
+  .peak-diff-big .peak-diff-unit {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-left: 2px;
+  }
+  .peak-diff-svg {
+    height: 172px !important;
+  }
+
   .chart-container-svg {
     position: relative;
     width: 100%;
@@ -1466,8 +1794,56 @@
     50%{ filter: drop-shadow(0 0 6px #ffb020); }
     100%{ filter: drop-shadow(0 0 0 #ffb020); }
   }
+  /* Anel "ao vivo" que expande e desvanece continuamente a partir do último ponto */
+  .chart-end-ring{
+    transform-box: fill-box; transform-origin: center;
+    animation: chartEndRing 2.2s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes chartEndRing{
+    0%{ transform: scale(0.3); opacity: .55; }
+    70%{ opacity: 0; }
+    100%{ transform: scale(2.6); opacity: 0; }
+  }
+  /* Cometa: pequena partícula brilhante que percorre a linha em loop, dando
+     sensação de fluxo contínuo de dados em vez de uma imagem estática. */
+  .chart-comet{
+    filter: drop-shadow(0 0 4px #fff2cf) drop-shadow(0 0 8px #ffb020);
+  }
+  /* Pontos de dados: entram com um pequeno "pop" escalonado no tempo */
+  .chart-point{
+    transform-box: fill-box; transform-origin: center;
+    animation: chartPointPop .5s cubic-bezier(.34,1.56,.64,1) backwards;
+  }
+  @keyframes chartPointPop{
+    0%{ transform: scale(0); opacity: 0; }
+    60%{ transform: scale(1.4); opacity: 1; }
+    100%{ transform: scale(1); opacity: 1; }
+  }
+  /* Linhas de grade horizontais: desenham-se suavemente e respiram */
+  .chart-grid-line{
+    stroke-dasharray: 320;
+    animation: chartGridDraw 1.2s ease-out forwards, chartGridBreathe 4s ease-in-out .8s infinite;
+  }
+  @keyframes chartGridDraw{ from{ stroke-dashoffset: 320; } to{ stroke-dashoffset: 0; } }
+  @keyframes chartGridBreathe{ 0%,100%{ opacity: .18; } 50%{ opacity: .38; } }
+  /* Preenchimento da área: brilho a respirar lentamente, como um pulso vital */
+  .chart-area-fill{
+    animation: chartAreaBreathe 4.5s ease-in-out infinite;
+    transform-origin: center bottom;
+  }
+  @keyframes chartAreaBreathe{ 0%,100%{ opacity: .85; } 50%{ opacity: 1; } }
+  /* Números que mudam de valor: pequeno destaque de cor ao atualizar */
+  .chart-val-pulse{ animation: chartValPulse .6s ease-out; }
+  @keyframes chartValPulse{
+    0%{ color: #fff6de; text-shadow: 0 0 8px #ffb020cc; }
+    100%{ color: inherit; text-shadow: none; }
+  }
   @media (prefers-reduced-motion: reduce){
-    .chart-flow-overlay{ animation: none; opacity: 0; }
+    .chart-flow-overlay, .chart-end-ring, .chart-comet, .chart-grid-line,
+    .chart-area-fill, .chart-point{ animation: none; }
+    .chart-flow-overlay{ opacity: 0; }
+    .chart-comet{ display: none; }
   }
 
   .chart-footer-row {
@@ -2014,6 +2390,9 @@
   .btn-hidelogs:hover { background: #203548; }
   .btn-scroll { background: #241d0c; color: var(--amber); border-color: #ffb02055; }
   .btn-scroll:hover { background: #33280f; }
+  .btn-matrix { background: #08150d; color: #6f95a3; border-color: var(--line-strong); }
+  .btn-matrix:hover { background: #0d1f14; }
+  .btn-matrix.active { background: #061a0e; color: var(--green); border-color: #21ffb055; text-shadow: 0 0 6px #21ffb088; }
   
   .logs-toolbar select#logMachineSelect {
     background: #0d222b;
@@ -2046,18 +2425,33 @@
   .btn-download { background: #0d222b; color: var(--cyan); border-color: #4fd6ff55; width: 100%; }
   .btn-download:hover { background: #12313d; }
 
+  .console-wrap {
+    position: relative;
+    height: 540px;
+    border-radius: 8px;
+  }
   .console-screen {
     background: #020508;
     border: 1px solid #142836;
     border-radius: 8px;
     padding: 16px;
-    height: 540px;
+    height: 100%;
     overflow-y: auto;
     font-family: 'JetBrains Mono', monospace;
     font-size: 11.5px;
     line-height: 1.7;
     color: #9cbccb;
     box-shadow: inset 0 2px 8px #000c;
+  }
+  .console-screen.matrix-mode .console-line { display: none; }
+  #matrixCanvas {
+    display: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    pointer-events: none;
   }
   .console-line { 
     white-space: pre-wrap; 
@@ -2129,6 +2523,10 @@
     border-left-color: var(--cyan);
     background: linear-gradient(90deg, #0a1f2b, var(--panel-2) 40%);
   }
+  .notif-item.type-offline {
+    border-left-color: var(--red);
+    background: linear-gradient(90deg, #2b120a, var(--panel-2) 40%);
+  }
   .notif-info {
     display: flex;
     flex-direction: column;
@@ -2151,6 +2549,7 @@
   .notif-tag.thermal-critical { background: #2b0d0d; color: var(--red); border: 1px solid #ff5d5d55; }
   .notif-tag.thermal-warning { background: #2b220d; color: var(--amber); border: 1px solid #ffb02055; }
   .notif-tag.achievement { background: #0d232b; color: var(--cyan); border: 1px solid #4fd6ff55; }
+  .notif-tag.offline { background: #2b0d0d; color: var(--red); border: 1px solid #ff5d5d55; }
   .notif-machine { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; color: var(--text); }
   .notif-text { font-size: 12px; color: var(--muted); }
   .notif-time { font-size: 10px; color: var(--muted-2); font-family: monospace; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
@@ -2213,6 +2612,10 @@
     border-left-color: var(--cyan);
     background: linear-gradient(90deg, #0a1f2b, var(--panel-2) 45%);
   }
+  .toast-item.type-offline {
+    border-left-color: var(--red);
+    background: linear-gradient(90deg, #2b120a, var(--panel-2) 45%);
+  }
   .toast-icon { font-size: 18px; line-height: 1; margin-top: 1px; }
   .toast-body { flex: 1; min-width: 0; }
   .toast-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 2px; }
@@ -2267,10 +2670,17 @@
   .update-banner .close-update:hover { color: var(--text); }
 
   .footer-bar{
+    position:relative;
+    overflow:hidden;
     padding:10px 22px; border-top:1px solid var(--line-strong);
     background:#0a1620; font-size:11px; color:var(--muted);
     display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
   }
+  #footerMatrixCanvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    pointer-events:none; opacity:0.55; z-index:0;
+  }
+  .footer-bar > span{ position:relative; z-index:1; }
 
   /* --- Celebração de Bloco Encontrado --------------------------------- */
   .block-celebration{
@@ -2835,11 +3245,71 @@
   </div>
 </div>
 
-<div class="frame">
+<div class="ls-full-modal" id="helpModal" onclick="if(event.target===this) closeHelpModal()">
+  <div class="ls-full-card help-modal-card">
+    <div class="ls-full-header">
+      <div class="ls-full-title" data-i18n="ajuda_faq_titulo">❓ Ajuda &amp; Perguntas Frequentes</div>
+      <button class="ls-full-close" onclick="closeHelpModal()">✕</button>
+    </div>
+    <div class="help-modal-body">
+      <details class="help-faq-item">
+        <summary data-i18n="faq_mqtt_titulo">A biblioteca MQTT não está instalada</summary>
+        <div class="help-faq-answer" data-i18n="faq_mqtt_resposta">Se aparecer um erro a mencionar "paho-mqtt", os perfis de energia automáticos e a integração com Home Assistant não vão funcionar até instalares essa biblioteca. Abre um terminal na pasta do projeto, corre "pip install paho-mqtt" e reinicia o Centro de Comando.</div>
+      </details>
+      <details class="help-faq-item">
+        <summary data-i18n="faq_offline_titulo">Uma máquina aparece sempre offline</summary>
+        <div class="help-faq-answer" data-i18n="faq_offline_resposta">Confirma primeiro que o IP da máquina não mudou (muitos routers atribuem IPs dinâmicos). Verifica se está na mesma rede/sub-rede deste computador — se estiver numa rede WiFi diferente, usa a pesquisa de rede no separador "Adicionar máquina" com a sub-rede correta. Confirma também que a página web da própria máquina (LuxOS/NerdQAxe) abre normalmente no browser a partir desse IP.</div>
+      </details>
+      <details class="help-faq-item">
+        <summary data-i18n="faq_servidor_titulo">O servidor local não arranca ou a porta está ocupada</summary>
+        <div class="help-faq-answer" data-i18n="faq_servidor_resposta">Isto normalmente acontece quando já existe uma instância do Centro de Comando a correr em segundo plano (por exemplo, se o fecho anterior não foi limpo). Usa o botão "Fechar Tudo" nesta janela se conseguires abri-la, ou termina o processo app.py / o executável nas Tarefas do Windows e volta a abrir a aplicação.</div>
+      </details>
+      <details class="help-faq-item">
+        <summary data-i18n="faq_alertas_titulo">Os alertas do Telegram ou Discord não chegam</summary>
+        <div class="help-faq-answer" data-i18n="faq_alertas_resposta">O motivo mais comum é um token de bot, chat ID ou webhook incorreto nas definições de alertas. Confirma que copiaste os valores sem espaços extra e que o bot do Telegram já teve pelo menos uma conversa iniciada contigo (envia-lhe uma mensagem antes de o usares). Verifica também a ligação à internet no computador onde o servidor está a correr.</div>
+      </details>
+      <details class="help-faq-item">
+        <summary data-i18n="faq_termica_titulo">Onde vejo o histórico térmico e as previsões</summary>
+        <div class="help-faq-answer" data-i18n="faq_termica_resposta">No menu de navegação, abre a secção "Saúde Térmica" — encontras aí o histórico de temperaturas por máquina, o estado da proteção térmica e a previsão/forecast com gráfico.</div>
+      </details>
+      <details class="help-faq-item">
+        <summary data-i18n="faq_hashrate_titulo">O hashrate ou a eficiência parecem errados</summary>
+        <div class="help-faq-answer" data-i18n="faq_hashrate_resposta">Dá alguns minutos ao dashboard — os valores estabilizam depois das primeiras leituras. Se o problema persistir, confirma o overclock/undervolt aplicado a essa máquina (frequência e voltagem do núcleo), já que valores muito agressivos podem causar leituras instáveis.</div>
+      </details>
+    </div>
+    <div class="help-faq-footer">
+      <button class="help-tour-again" onclick="closeHelpModal(); startTour();" data-i18n="rever_tour">🧭 Rever o tour guiado</button>
+    </div>
+  </div>
+</div>
+
+<div id="tourLayer">
+  <div class="tour-highlight" id="tourHighlight"></div>
+  <div class="tour-tooltip" id="tourTooltip">
+    <div class="tour-tooltip-title" id="tourTitle"></div>
+    <div id="tourText"></div>
+    <div class="tour-tooltip-actions">
+      <button class="tour-skip-btn" onclick="skipTour()" data-i18n="saltar_tour">Saltar tour</button>
+      <span class="tour-step-counter" id="tourCounter"></span>
+      <button class="tour-next-btn" id="tourNextBtn" onclick="nextTourStep()"></button>
+    </div>
+  </div>
+</div>
+
+<div class="frame" id="mainFrame">
+
+  <div id="gridFloor" aria-hidden="true">
+    <div class="grid-plane"></div>
+    <div class="horizon-glow"></div>
+    <div class="grid-banner">
+      <span class="grid-banner-coin">₿</span>
+      <span class="grid-banner-title">Centro de Comando</span>
+    </div>
+  </div>
+  <canvas id="bodyMatrixCanvas"></canvas>
 
   <header>
     <div>
-      <h1><span data-i18n="centro_de_comando">Centro de Comando</span></h1>
       <div class="subtitle" id="modeLabel"><span data-i18n="sistema_ativo_com_alertas_sonoros">sistema ativo com alertas sonoros</span> <span id="versionTag" style="opacity:0.6; margin-left:6px;"></span></div>
     </div>
     <div class="header-actions">
@@ -2860,6 +3330,15 @@
       </button>
       <button class="kiosk-toggle-btn" id="kioskToggleBtn" onclick="toggleKioskMode()" title="Modo ecrã grande, sem menus - ideal para uma TV dedicada">
         <span data-i18n="modo_kiosk">🖥️ Kiosk</span>
+      </button>
+      <button class="layout-edit-toggle-btn" id="layoutEditBtn" onclick="toggleLayoutEditMode()" title="Arrastar e reordenar os painéis do Dashboard Geral">
+        <span data-i18n="editar_layout">🧩 Editar Layout</span>
+      </button>
+      <button class="layout-reset-btn" id="layoutResetBtn" onclick="resetLayout()" title="Repor a ordem original dos painéis">
+        <span data-i18n="repor_layout">↺ Repor</span>
+      </button>
+      <button class="help-toggle-btn" id="helpBtn" onclick="openHelpModal()" title="Ajuda e perguntas frequentes">
+        <span data-i18n="ajuda">❓ Ajuda</span>
       </button>
       <button class="config ghost" id="shutdownBtn" onclick="shutdownServer()" title="Desliga o servidor local por completo, de forma garantida (não depende do browser)" style="padding: 6px 12px; font-size: 10px; border-color:#ff5d5d55; color:var(--red);"><span data-i18n="fechar_tudo">⏻ Fechar Tudo</span></button>
       <div class="status-pill"><div class="dot" id="statusDot"></div><span id="statusText"><span data-i18n="sistema_pronto">Sistema pronto</span></span></div>
@@ -2925,7 +3404,7 @@
 
     <div class="body-grid">
       <div class="sidebar">
-        <div class="gauge">
+        <div class="gauge" data-layout-id="gauge-hashrate">
           <div class="gauge-left">
             <div class="label"><span data-i18n="hashrate_total">Hashrate Total</span></div>
             <div class="unit" id="sHashrateUnit">GH/s</div>
@@ -2935,7 +3414,7 @@
           </div>
         </div>
 
-        <div class="gauge amber-bar">
+        <div class="gauge amber-bar" data-layout-id="gauge-best">
           <div class="gauge-left">
             <div class="label"><span data-i18n="melhor_share">Melhor Share</span></div>
             <div class="unit" id="sBestUnit"><span data-i18n="global">Global</span></div>
@@ -2945,7 +3424,7 @@
           </div>
         </div>
 
-        <div class="gauge cyan-bar">
+        <div class="gauge cyan-bar" data-layout-id="gauge-temp">
           <div class="gauge-left">
             <div class="label"><span data-i18n="temp_maxima">Temp. Máxima</span></div>
             <div class="unit">°C</div>
@@ -2955,7 +3434,7 @@
           </div>
         </div>
 
-        <div class="gauge cyan-bar">
+        <div class="gauge cyan-bar" data-layout-id="gauge-fan">
           <div class="gauge-left">
             <div class="label"><span data-i18n="velocidade_fans">Velocidade Fans</span></div>
             <div class="unit">RPM</div>
@@ -2965,7 +3444,7 @@
           </div>
         </div>
 
-        <div class="gauge">
+        <div class="gauge" data-layout-id="gauge-power">
           <div class="gauge-left">
             <div class="label"><span data-i18n="potencia_total">Potência Total</span></div>
             <div class="unit">Watts</div>
@@ -2975,7 +3454,7 @@
           </div>
         </div>
 
-        <div class="gauge">
+        <div class="gauge" data-layout-id="gauge-count">
           <div class="gauge-left">
             <div class="label"><span data-i18n="maquinas">Máquinas</span></div>
             <div class="unit"><span data-i18n="registadas">Registadas</span></div>
@@ -2985,7 +3464,7 @@
           </div>
         </div>
 
-        <div class="panel ai-agent-panel">
+        <div class="panel ai-agent-panel" data-layout-id="gauge-ai">
           <div class="ai-agent-header">
             <span class="ai-agent-title"><span class="ai-agent-dot"></span> <span data-i18n="assistente">🤖 Assistente</span></span>
           </div>
@@ -2999,7 +3478,7 @@
       </div>
 
       <div class="main">
-        <div class="panel">
+        <div class="panel" data-layout-id="main-machines">
           <p class="panel-title"><span data-i18n="maquinas">Máquinas</span></p>
           <div class="config" style="margin-bottom:12px;">
             <input class="name" id="nameInput" placeholder="Apelido (ex: Máquina 01)" data-i18n-placeholder="ph_apelido_ex_maquina_01">
@@ -3011,8 +3490,8 @@
           <div class="machine-grid" id="machineGrid"></div>
         </div>
 
-        <div class="charts">
-          <div class="chart-box">
+        <div class="charts" data-layout-id="main-charts">
+          <div class="chart-box" data-layout-id="chart-hashrate">
             <div class="chart-header">
               <div class="chart-title-group">
                 <span style="font-size:12px;">📈</span>
@@ -3037,23 +3516,26 @@
             </div>
           </div>
 
-          <div class="chart-box">
+          <div class="chart-box" data-layout-id="chart-best">
             <div class="chart-header">
               <div class="chart-title-group">
                 <span style="font-size:12px;">🏆</span>
-                <span class="chart-title"><span data-i18n="best_share_historico">Best Share Histórico</span></span>
+                <span class="chart-title"><span data-i18n="peak_share_difficulty">Peak Share Difficulty</span></span>
+              </div>
+              <div class="chart-time-buttons" id="peakDiffRangeButtons">
+                <button class="time-btn active" data-range="24h">24H</button>
+                <button class="time-btn" data-range="3d">3D</button>
+                <button class="time-btn" data-range="7d">7D</button>
               </div>
             </div>
-            <div class="chart-meta-row" style="visibility: hidden;"><span><span data-i18n="60_min">-60 min</span></span><span><span data-i18n="peak_2">peak —</span></span></div>
-            <div class="chart-container-svg">
-              <svg class="chart" id="chartBest" viewBox="0 0 300 130" preserveAspectRatio="none"></svg>
+            <div class="chart-meta-row">
+              <span id="valPeakDiffBig" class="peak-diff-big">—</span>
             </div>
-            <div class="chart-footer-row">
-              <div class="chart-footer-left"><span data-i18n="sessao">sessão</span> <b id="valBestMeta">—</b></div>
-              <div class="chart-footer-right"><span data-i18n="atual_2">atual</span> <b id="valBest">—</b></div>
+            <div class="chart-container-svg peak-diff-svg">
+              <svg class="chart" id="chartPeakDiff" viewBox="0 0 600 170" preserveAspectRatio="none"></svg>
             </div>
           </div>
-          <div class="chart-box" style="grid-column: 1 / -1;">
+          <div class="chart-box" style="grid-column: 1 / -1;" data-layout-id="chart-donut">
             <div class="chart-header">
               <div class="chart-title-group">
                 <span style="font-size:12px;">🥧</span>
@@ -3068,7 +3550,7 @@
 
         </div>
 
-        <div class="event-log-panel">
+        <div class="event-log-panel" data-layout-id="main-eventlog">
           <div class="chart-header" style="margin-bottom: 10px;">
             <span class="chart-title"><span data-i18n="log_de_eventos">Log de Eventos</span></span>
             <button id="clearLogBtn" class="config ghost" style="padding:2px 8px; font-size:9px; border-radius:5px;"><span data-i18n="limpar">limpar</span></button>
@@ -3086,6 +3568,7 @@
         <button class="btn-realtime" id="toggleRealtimeBtn" onclick="toggleRealtimeLogs()"><span data-i18n="realtime_logs">🟢 Realtime Logs</span></button>
         <button class="btn-hidelogs" onclick="clearConsoleView()"><span data-i18n="ocultar_vista">🧹 Ocultar Vista</span></button>
         <button class="btn-scroll" id="scrollLockBtn" onclick="toggleScrollLock()"><span data-i18n="stop_scroll">📌 Stop Scroll</span></button>
+        <button class="btn-matrix" id="matrixModeBtn" onclick="toggleMatrixMode()"><span data-i18n="modo_matrix">🐇 Modo Matrix</span></button>
         
         <select id="logMachineSelect" onchange="renderConsoleLogs()">
           <option value="all" data-i18n="todas_as_maquinas">🌐 Todas as Máquinas</option>
@@ -3097,7 +3580,10 @@
         <button class="btn-clear" onclick="wipeConsoleLogs()"><span data-i18n="limpar_filtro">🗑 Limpar Filtro</span></button>
         <button class="btn-download" onclick="downloadLogs()"><span data-i18n="descarregar_txt">⬇ Descarregar TXT</span></button>
       </div>
-      <div class="console-screen" id="consoleScreen"></div>
+      <div class="console-wrap" id="consoleWrap">
+        <div class="console-screen" id="consoleScreen"></div>
+        <canvas id="matrixCanvas"></canvas>
+      </div>
     </div>
   </div>
 
@@ -3704,7 +4190,8 @@
     </div>
   </div>
 
-  <div class="footer-bar">
+  <div class="footer-bar" id="footerBar">
+    <canvas id="footerMatrixCanvas"></canvas>
     <span id="footerAlert"></span>
     <span id="footerStamp">—</span>
   </div>
@@ -3795,11 +4282,45 @@ const I18N_DICT = {
   "a_carregar_conquistas": { pt: `A carregar conquistas...`, en: `Loading achievements...`, es: `Cargando logros...`, fr: `Chargement des succès...` },
   "baseline_historico": { pt: `Baseline histórico:`, en: `Historical baseline:`, es: `Línea base histórica:`, fr: `Référence historique :` },
   "best_share_historico": { pt: `Best Share Histórico`, en: `Historical Best Share`, es: `Mejor Share Histórico`, fr: `Meilleur Share Historique` },
+  "peak_share_difficulty": { pt: `Peak Share Difficulty`, en: `Peak Share Difficulty`, es: `Peak Share Difficulty`, fr: `Peak Share Difficulty` },
+  "peak_diff_best_of": { pt: `melhor`, en: `best`, es: `mejor`, fr: `meilleur` },
   "bloco_atual": { pt: `Bloco Atual`, en: `Current Block`, es: `Bloque Actual`, fr: `Bloc Actuel` },
   "blocos_ate_ao_ajuste": { pt: `Blocos Até ao Ajuste`, en: `Blocks Until Adjustment`, es: `Bloques Hasta el Ajuste`, fr: `Blocs Avant l'Ajustement` },
   "blocos_ate_ao_halving": { pt: `Blocos Até ao Halving`, en: `Blocks Until Halving`, es: `Bloques Hasta el Halving`, fr: `Blocs Avant le Halving` },
   "canais_de_youtube_e_criadores_de_conteud": { pt: `Canais de YouTube e criadores de conteúdo que apoiam este projeto.`, en: `YouTube channels and content creators who support this project.`, es: `Canales de YouTube y creadores de contenido que apoyan este proyecto.`, fr: `Chaînes YouTube et créateurs de contenu qui soutiennent ce projet.` },
   "centro_de_comando": { pt: `Centro de Comando`, en: `Command Center`, es: `Centro de Comando`, fr: `Centre de Commande` },
+  "ajuda": { pt: `❓ Ajuda`, en: `❓ Help`, es: `❓ Ayuda`, fr: `❓ Aide` },
+  "ajuda_faq_titulo": { pt: `❓ Ajuda & Perguntas Frequentes`, en: `❓ Help & FAQ`, es: `❓ Ayuda y Preguntas Frecuentes`, fr: `❓ Aide et FAQ` },
+  "rever_tour": { pt: `🧭 Rever o tour guiado`, en: `🧭 Replay the guided tour`, es: `🧭 Repetir el tour guiado`, fr: `🧭 Revoir la visite guidée` },
+  "saltar_tour": { pt: `Saltar tour`, en: `Skip tour`, es: `Saltar tour`, fr: `Passer la visite` },
+  "tour_seguinte": { pt: `Seguinte`, en: `Next`, es: `Siguiente`, fr: `Suivant` },
+  "tour_concluir": { pt: `Concluir`, en: `Finish`, es: `Finalizar`, fr: `Terminer` },
+  "faq_mqtt_titulo": { pt: `A biblioteca MQTT não está instalada`, en: `The MQTT library is not installed`, es: `La biblioteca MQTT no está instalada`, fr: `La bibliothèque MQTT n'est pas installée` },
+  "faq_mqtt_resposta": { pt: `Se aparecer um erro a mencionar "paho-mqtt", os perfis de energia automáticos e a integração com Home Assistant não vão funcionar até instalares essa biblioteca. Abre um terminal na pasta do projeto, corre "pip install paho-mqtt" e reinicia o Centro de Comando.`, en: `If you see an error mentioning "paho-mqtt", automatic power profiles and the Home Assistant integration won't work until you install that library. Open a terminal in the project folder, run "pip install paho-mqtt" and restart Command Center.`, es: `Si aparece un error que menciona "paho-mqtt", los perfiles de energía automáticos y la integración con Home Assistant no funcionarán hasta que instales esa biblioteca. Abre una terminal en la carpeta del proyecto, ejecuta "pip install paho-mqtt" y reinicia el Centro de Comando.`, fr: `Si une erreur mentionne "paho-mqtt", les profils d'énergie automatiques et l'intégration Home Assistant ne fonctionneront pas tant que cette bibliothèque n'est pas installée. Ouvre un terminal dans le dossier du projet, lance "pip install paho-mqtt" puis redémarre le Centre de Commande.` },
+  "faq_offline_titulo": { pt: `Uma máquina aparece sempre offline`, en: `A machine always shows as offline`, es: `Una máquina siempre aparece sin conexión`, fr: `Une machine apparaît toujours hors ligne` },
+  "faq_offline_resposta": { pt: `Confirma primeiro que o IP da máquina não mudou (muitos routers atribuem IPs dinâmicos). Verifica se está na mesma rede/sub-rede deste computador — se estiver numa rede WiFi diferente, usa a pesquisa de rede no separador "Adicionar máquina" com a sub-rede correta. Confirma também que a página web da própria máquina (LuxOS/NerdQAxe) abre normalmente no browser a partir desse IP.`, en: `First confirm the machine's IP hasn't changed (many routers assign dynamic IPs). Check it's on the same network/subnet as this computer — if it's on a different WiFi network, use the network scan in the "Add machine" tab with the correct subnet. Also confirm the machine's own web page (LuxOS/NerdQAxe) opens normally in the browser from that IP.`, es: `Confirma primero que la IP de la máquina no ha cambiado (muchos routers asignan IPs dinámicas). Verifica que está en la misma red/subred que este ordenador — si está en una red WiFi diferente, usa la búsqueda de red en la pestaña "Añadir máquina" con la subred correcta. Confirma también que la página web de la propia máquina (LuxOS/NerdQAxe) abre con normalidad en el navegador desde esa IP.`, fr: `Vérifie d'abord que l'IP de la machine n'a pas changé (de nombreux routeurs attribuent des IP dynamiques). Vérifie qu'elle est sur le même réseau/sous-réseau que cet ordinateur — si elle est sur un réseau WiFi différent, utilise la recherche réseau dans l'onglet "Ajouter une machine" avec le bon sous-réseau. Vérifie aussi que la page web de la machine (LuxOS/NerdQAxe) s'ouvre normalement dans le navigateur depuis cette IP.` },
+  "faq_servidor_titulo": { pt: `O servidor local não arranca ou a porta está ocupada`, en: `The local server won't start or the port is busy`, es: `El servidor local no arranca o el puerto está ocupado`, fr: `Le serveur local ne démarre pas ou le port est occupé` },
+  "faq_servidor_resposta": { pt: `Isto normalmente acontece quando já existe uma instância do Centro de Comando a correr em segundo plano (por exemplo, se o fecho anterior não foi limpo). Usa o botão "Fechar Tudo" nesta janela se conseguires abri-la, ou termina o processo app.py / o executável nas Tarefas do Windows e volta a abrir a aplicação.`, en: `This usually happens when another Command Center instance is already running in the background (for example if the previous shutdown wasn't clean). Use the "Shut Down" button in this window if you can open it, or end the app.py process / executable in the Windows Task Manager and reopen the app.`, es: `Esto suele ocurrir cuando ya hay una instancia del Centro de Comando ejecutándose en segundo plano (por ejemplo, si el cierre anterior no fue limpio). Usa el botón "Apagar Todo" en esta ventana si consigues abrirla, o termina el proceso app.py / el ejecutable en el Administrador de Tareas de Windows y vuelve a abrir la aplicación.`, fr: `Cela arrive généralement quand une autre instance du Centre de Commande tourne déjà en arrière-plan (par exemple si la fermeture précédente ne s'est pas bien passée). Utilise le bouton "Tout Éteindre" dans cette fenêtre si tu peux l'ouvrir, ou termine le processus app.py / l'exécutable dans le Gestionnaire des tâches Windows puis rouvre l'application.` },
+  "faq_alertas_titulo": { pt: `Os alertas do Telegram ou Discord não chegam`, en: `Telegram or Discord alerts aren't arriving`, es: `Las alertas de Telegram o Discord no llegan`, fr: `Les alertes Telegram ou Discord n'arrivent pas` },
+  "faq_alertas_resposta": { pt: `O motivo mais comum é um token de bot, chat ID ou webhook incorreto nas definições de alertas. Confirma que copiaste os valores sem espaços extra e que o bot do Telegram já teve pelo menos uma conversa iniciada contigo (envia-lhe uma mensagem antes de o usares). Verifica também a ligação à internet no computador onde o servidor está a correr.`, en: `The most common cause is an incorrect bot token, chat ID or webhook in the alert settings. Confirm you copied the values without extra spaces and that the Telegram bot already had a conversation started with you (send it a message before using it). Also check the internet connection on the computer running the server.`, es: `El motivo más común es un token de bot, chat ID o webhook incorrecto en los ajustes de alertas. Confirma que copiaste los valores sin espacios extra y que el bot de Telegram ya tuvo al menos una conversación iniciada contigo (envíale un mensaje antes de usarlo). Verifica también la conexión a internet del ordenador donde corre el servidor.`, fr: `La cause la plus fréquente est un token de bot, un chat ID ou un webhook incorrect dans les réglages d'alertes. Vérifie que tu as copié les valeurs sans espaces superflus et que le bot Telegram a déjà eu une conversation démarrée avec toi (envoie-lui un message avant de l'utiliser). Vérifie aussi la connexion internet de l'ordinateur qui fait tourner le serveur.` },
+  "faq_termica_titulo": { pt: `Onde vejo o histórico térmico e as previsões`, en: `Where do I see thermal history and forecasts`, es: `Dónde veo el historial térmico y las previsiones`, fr: `Où voir l'historique thermique et les prévisions` },
+  "faq_termica_resposta": { pt: `No menu de navegação, abre a secção "Saúde Térmica" — encontras aí o histórico de temperaturas por máquina, o estado da proteção térmica e a previsão/forecast com gráfico.`, en: `In the navigation menu, open the "Thermal Health" section — you'll find temperature history per machine, thermal protection status, and the forecast chart there.`, es: `En el menú de navegación, abre la sección "Salud Térmica" — allí encontrarás el historial de temperaturas por máquina, el estado de la protección térmica y la previsión con gráfico.`, fr: `Dans le menu de navigation, ouvre la section "Santé Thermique" — tu y trouveras l'historique des températures par machine, l'état de la protection thermique et le graphique de prévision.` },
+  "faq_hashrate_titulo": { pt: `O hashrate ou a eficiência parecem errados`, en: `Hashrate or efficiency look wrong`, es: `El hashrate o la eficiencia parecen incorrectos`, fr: `Le hashrate ou l'efficacité semblent faux` },
+  "faq_hashrate_resposta": { pt: `Dá alguns minutos ao dashboard — os valores estabilizam depois das primeiras leituras. Se o problema persistir, confirma o overclock/undervolt aplicado a essa máquina (frequência e voltagem do núcleo), já que valores muito agressivos podem causar leituras instáveis.`, en: `Give the dashboard a few minutes — values stabilize after the first readings. If the problem persists, check the overclock/undervolt applied to that machine (frequency and core voltage), since overly aggressive values can cause unstable readings.`, es: `Dale unos minutos al panel — los valores se estabilizan tras las primeras lecturas. Si el problema persiste, revisa el overclock/undervolt aplicado a esa máquina (frecuencia y voltaje de núcleo), ya que valores muy agresivos pueden causar lecturas inestables.`, fr: `Laisse quelques minutes au tableau de bord — les valeurs se stabilisent après les premières lectures. Si le problème persiste, vérifie l'overclock/undervolt appliqué à cette machine (fréquence et tension du cœur), des valeurs trop agressives pouvant causer des lectures instables.` },
+  "tour_nav_titulo": { pt: `🧭 Navegação`, en: `🧭 Navigation`, es: `🧭 Navegación`, fr: `🧭 Navigation` },
+  "tour_nav_texto": { pt: `Aqui trocas entre o Dashboard Geral e as outras secções — Saúde Térmica, Renting, Conquistas e mais.`, en: `Here you switch between the General Dashboard and the other sections — Thermal Health, Renting, Achievements and more.`, es: `Aquí cambias entre el Panel General y las demás secciones — Salud Térmica, Renting, Logros y más.`, fr: `Ici tu passes du Tableau de Bord Général aux autres sections — Santé Thermique, Renting, Succès et plus.` },
+  "tour_lang_titulo": { pt: `🌐 Idioma`, en: `🌐 Language`, es: `🌐 Idioma`, fr: `🌐 Langue` },
+  "tour_lang_texto": { pt: `Muda o idioma do painel a qualquer momento (PT, EN, ES, FR).`, en: `Change the panel's language at any time (PT, EN, ES, FR).`, es: `Cambia el idioma del panel en cualquier momento (PT, EN, ES, FR).`, fr: `Change la langue du panneau à tout moment (PT, EN, ES, FR).` },
+  "tour_tema_titulo": { pt: `🎨 Tema Visual`, en: `🎨 Visual Theme`, es: `🎨 Tema Visual`, fr: `🎨 Thème Visuel` },
+  "tour_tema_texto": { pt: `Escolhe entre os temas disponíveis — Padrão, Cyberpunk, Matrix ou OLED Black.`, en: `Choose between the available themes — Default, Cyberpunk, Matrix or OLED Black.`, es: `Elige entre los temas disponibles — Predeterminado, Cyberpunk, Matrix u OLED Black.`, fr: `Choisis parmi les thèmes disponibles — Par défaut, Cyberpunk, Matrix ou OLED Black.` },
+  "tour_kiosk_titulo": { pt: `🖥️ Modo Kiosk`, en: `🖥️ Kiosk Mode`, es: `🖥️ Modo Kiosk`, fr: `🖥️ Mode Kiosque` },
+  "tour_kiosk_texto": { pt: `Ecrã grande, sem menus — ideal para deixar o painel numa TV ou monitor dedicado.`, en: `Big screen, no menus — ideal for leaving the dashboard on a TV or dedicated monitor.`, es: `Pantalla grande, sin menús — ideal para dejar el panel en una TV o monitor dedicado.`, fr: `Grand écran, sans menus — idéal pour laisser le tableau de bord sur une TV ou un moniteur dédié.` },
+  "tour_layout_titulo": { pt: `🧩 Editar Layout`, en: `🧩 Edit Layout`, es: `🧩 Editar Diseño`, fr: `🧩 Modifier la Disposition` },
+  "tour_layout_texto": { pt: `Arrasta e reordena os painéis do Dashboard Geral como preferires.`, en: `Drag and reorder the General Dashboard panels however you like.`, es: `Arrastra y reordena los paneles del Panel General como prefieras.`, fr: `Fais glisser et réorganise les panneaux du Tableau de Bord Général comme tu veux.` },
+  "tour_ajuda_titulo": { pt: `❓ Ajuda`, en: `❓ Help`, es: `❓ Ayuda`, fr: `❓ Aide` },
+  "tour_ajuda_texto": { pt: `Sempre que tiveres uma dúvida, aqui encontras respostas às perguntas mais comuns.`, en: `Whenever you have a question, you'll find answers to the most common ones here.`, es: `Cuando tengas una duda, aquí encontrarás respuestas a las preguntas más comunes.`, fr: `Chaque fois que tu as une question, tu trouveras ici les réponses aux plus fréquentes.` },
+  "tour_status_titulo": { pt: `🟢 Estado do Sistema`, en: `🟢 System Status`, es: `🟢 Estado del Sistema`, fr: `🟢 État du Système` },
+  "tour_status_texto": { pt: `Este indicador mostra se o sistema está ativo e ligado às tuas máquinas.`, en: `This indicator shows whether the system is active and connected to your machines.`, es: `Este indicador muestra si el sistema está activo y conectado a tus máquinas.`, fr: `Cet indicateur montre si le système est actif et connecté à tes machines.` },
   "configura_o_mqtt_e_pelo_menos_um_perfil_": { pt: `Configura o MQTT e pelo menos um perfil para começar a receber sugestões.`, en: `Set up MQTT and at least one profile to start receiving suggestions.`, es: `Configura el MQTT y al menos un perfil para empezar a recibir sugerencias.`, fr: `Configure le MQTT et au moins un profil pour commencer à recevoir des suggestions.` },
   "copiar_endereco_bitcoin": { pt: `Copiar Endereço Bitcoin`, en: `Copy Bitcoin Address`, es: `Copiar Dirección Bitcoin`, fr: `Copier l'Adresse Bitcoin` },
   "copiar_endereco_lightning": { pt: `Copiar Endereço Lightning`, en: `Copy Lightning Address`, es: `Copiar Dirección Lightning`, fr: `Copier l'Adresse Lightning` },
@@ -3912,6 +4433,7 @@ const I18N_DICT = {
   "guardar_ligacao_mqtt": { pt: `💾 Guardar Ligação MQTT`, en: `💾 Save MQTT Connection`, es: `💾 Guardar Conexión MQTT`, fr: `💾 Enregistrer la Connexion MQTT` },
   "guardar_perfis": { pt: `💾 Guardar Perfis`, en: `💾 Save Profiles`, es: `💾 Guardar Perfiles`, fr: `💾 Enregistrer les Profils` },
   "stop_scroll": { pt: `📌 Stop Scroll`, en: `📌 Stop Scroll`, es: `📌 Detener Scroll`, fr: `📌 Arrêter le Défilement` },
+  "modo_matrix": { pt: `🐇 Modo Matrix`, en: `🐇 Matrix Mode`, es: `🐇 Modo Matrix`, fr: `🐇 Mode Matrix` },
   "latencia": { pt: `📡 Latência`, en: `📡 Latency`, es: `📡 Latencia`, fr: `📡 Latence` },
   "ping_ao_pool_em_tempo_real_dados_reporta": { pt: `📡 Ping ao Pool em Tempo Real (dados reportados pelo dispositivo)`, en: `📡 Real-Time Pool Ping (data reported by the device)`, es: `📡 Ping al Pool en Tiempo Real (datos reportados por el dispositivo)`, fr: `📡 Ping au Pool en Temps Réel (données rapportées par l'appareil)` },
   "silenciar": { pt: `🔇 Silenciar`, en: `🔇 Mute`, es: `🔇 Silenciar`, fr: `🔇 Couper le Son` },
@@ -4016,6 +4538,10 @@ const I18N_DICT = {
   "servidor_desligado_msg": { pt: `Centro de Comando desligado. Podes fechar esta janela.`, en: `Command Center shut down. You can close this window.`, es: `Centro de Comando apagado. Puedes cerrar esta ventana.`, fr: `Centre de Commande éteint. Vous pouvez fermer cette fenêtre.` },
   "ai_greeting": { pt: `Olá! Eu sou o assistente do Centro de Comando. Pergunta-me sobre hashrate, eficiência, perfis de energia, MQTT ou qualquer outra funcionalidade do painel.`, en: `Hi! I'm the Command Center assistant. Ask me about hashrate, efficiency, power profiles, MQTT, or any other feature of the dashboard.`, es: `¡Hola! Soy el asistente del Centro de Comando. Pregúntame sobre hashrate, eficiencia, perfiles de energía, MQTT o cualquier otra función del panel.`, fr: `Bonjour ! Je suis l'assistant du Centre de Commande. Demande-moi n'importe quoi sur le hashrate, l'efficacité, les profils d'énergie, le MQTT ou toute autre fonctionnalité du panneau.` },
   "ai_fallback": { pt: `Ainda não sei responder a isso. Tenta perguntar sobre: hashrate, eficiência, best diff, perfis de energia, undervolt/frequência, ou como adicionar uma máquina.`, en: `I don't know how to answer that yet. Try asking about: hashrate, efficiency, best diff, power profiles, undervolt/frequency, or how to add a machine.`, es: `Todavía no sé responder a eso. Intenta preguntar sobre: hashrate, eficiencia, best diff, perfiles de energía, undervolt/frecuencia, o cómo añadir una máquina.`, fr: `Je ne sais pas encore répondre à ça. Essaie de demander : hashrate, efficacité, best diff, profils d'énergie, undervolt/fréquence, ou comment ajouter une machine.` },
+  "editar_layout": { pt: `🧩 Editar Layout`, en: `🧩 Edit Layout`, es: `🧩 Editar Diseño`, fr: `🧩 Modifier la Disposition` },
+  "repor_layout": { pt: `↺ Repor`, en: `↺ Reset`, es: `↺ Restablecer`, fr: `↺ Réinitialiser` },
+  "layout_edicao_ativada": { pt: `Modo de edição de layout ativado - arrasta os painéis pelo canto "⠿ arrastar" para reordenar.`, en: `Layout edit mode enabled - drag panels by the "⠿ drag" corner to reorder them.`, es: `Modo de edición de diseño activado - arrastra los paneles por la esquina "⠿ arrastrar" para reordenarlos.`, fr: `Mode d'édition de la disposition activé - fais glisser les panneaux par le coin "⠿ glisser" pour les réordonner.` },
+  "confirm_repor_layout": { pt: `Repor a ordem original dos painéis do Dashboard Geral?`, en: `Reset the original panel order of the General Dashboard?`, es: `¿Restablecer el orden original de los paneles del Panel General?`, fr: `Réinitialiser l'ordre original des panneaux du Tableau de bord général ?` },
 };
 
 const $ = id => document.getElementById(id);
@@ -4455,15 +4981,43 @@ function playSound(type) {
       osc.start(now);
       osc.stop(now + 0.5);
     } else if(type === 'best') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(659.25, now + 0.12);
-      
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-      
+      // "Moeda a tilintar" — arpejo rápido tipo coin de jogo retro.
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(988, now);
+      osc.frequency.setValueAtTime(1319, now + 0.08);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
       osc.start(now);
-      osc.stop(now + 0.35);
+      osc.stop(now + 0.28);
+
+      // Segunda "moeda" a cair logo a seguir, para dar sensação de tilintar.
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(1175, now + 0.09);
+      osc2.frequency.setValueAtTime(1568, now + 0.17);
+      gain2.gain.setValueAtTime(0.14, now + 0.09);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc2.start(now + 0.09);
+      osc2.stop(now + 0.4);
+    } else if(type === 'offline') {
+      // Alarme grave e lento — só para máquina offline, para se distinguir
+      // claramente dos outros avisos (mais agudos/rápidos).
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.setValueAtTime(98, now + 0.35);
+      osc.frequency.setValueAtTime(110, now + 0.7);
+
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.setValueAtTime(0.22, now + 0.9);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+
+      osc.start(now);
+      osc.stop(now + 1.0);
     } else if(type === 'thermal' || type === 'thermal-warning') {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(type === 'thermal' ? 300 : 380, now);
@@ -4702,6 +5256,111 @@ function showKioskFloatBar() {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && kioskActive) exitKioskMode();
 });
+
+// --- Editor de layout (arrastar e reordenar painéis) -----------------
+// Marca-se cada painel/card reordenável no HTML com data-layout-id="...".
+// Dentro de cada "grupo" (um contentor direto, ex: .sidebar, .main,
+// .charts) os filhos marcados podem ser arrastados entre si. A ordem
+// final é gravada por grupo no localStorage (mesmo padrão já usado para
+// tema/idioma/kiosk) e reaplicada no arranque seguinte. Nada disto toca
+// em dados - é só a ordem visual dos blocos.
+const LAYOUT_GROUPS = [
+  { key: 'nerdqaxe:layout-sidebar', selector: '.sidebar' },
+  { key: 'nerdqaxe:layout-main', selector: '.main' },
+  { key: 'nerdqaxe:layout-charts', selector: '.charts' },
+];
+let _layoutDragEl = null;
+
+function layoutGroupItems(container){
+  return [...container.children].filter(el => el.dataset && el.dataset.layoutId);
+}
+
+function applySavedLayoutOrder(container, storageKey){
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch(e){ saved = null; }
+  if(!Array.isArray(saved) || !saved.length) return;
+  const map = new Map(layoutGroupItems(container).map(el => [el.dataset.layoutId, el]));
+  saved.forEach(id => { const el = map.get(id); if(el) container.appendChild(el); });
+}
+
+function saveLayoutOrder(container, storageKey){
+  const ids = layoutGroupItems(container).map(el => el.dataset.layoutId);
+  try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch(e){}
+}
+
+function layoutElementAfterPoint(container, x, y){
+  // Escolhe, de entre os blocos do grupo (exceto o que está a ser
+  // arrastado), qual deve ficar IMEDIATAMENTE A SEGUIR ao ponto onde o
+  // rato/dedo está agora - baseado no centro vertical de cada bloco.
+  // Funciona bem para os grupos verticais (.sidebar, .main); em .charts
+  // (grid 2 colunas) o resultado é uma aproximação razoável.
+  const els = layoutGroupItems(container).filter(el => el !== _layoutDragEl);
+  let closest = { offset: -Infinity, element: null };
+  for(const el of els){
+    const box = el.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if(offset < 0 && offset > closest.offset){
+      closest = { offset, element: el };
+    }
+  }
+  return closest.element;
+}
+
+function wireLayoutGroup(container, storageKey){
+  container.addEventListener('dragstart', (e) => {
+    if(!document.body.classList.contains('layout-edit-mode')) { e.preventDefault(); return; }
+    const item = e.target.closest('[data-layout-id]');
+    if(!item || item.parentElement !== container) return;
+    _layoutDragEl = item;
+    item.classList.add('layout-dragging');
+    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.dataset.layoutId); } catch(err){}
+  });
+
+  container.addEventListener('dragend', () => {
+    if(_layoutDragEl) _layoutDragEl.classList.remove('layout-dragging');
+    container.querySelectorAll('.layout-drop-target').forEach(el => el.classList.remove('layout-drop-target'));
+    _layoutDragEl = null;
+    saveLayoutOrder(container, storageKey);
+  });
+
+  container.addEventListener('dragover', (e) => {
+    if(!_layoutDragEl || _layoutDragEl.parentElement !== container) return;
+    e.preventDefault();
+    const after = layoutElementAfterPoint(container, e.clientX, e.clientY);
+    container.querySelectorAll('.layout-drop-target').forEach(el => el.classList.remove('layout-drop-target'));
+    if(after){
+      after.classList.add('layout-drop-target');
+      container.insertBefore(_layoutDragEl, after);
+    } else {
+      container.appendChild(_layoutDragEl);
+    }
+  });
+}
+
+function initLayoutEditor(){
+  LAYOUT_GROUPS.forEach(g => {
+    const container = document.querySelector(g.selector);
+    if(!container) return;
+    applySavedLayoutOrder(container, g.key);
+    wireLayoutGroup(container, g.key);
+  });
+}
+
+function toggleLayoutEditMode(){
+  const on = document.body.classList.toggle('layout-edit-mode');
+  document.querySelectorAll('[data-layout-id]').forEach(el => {
+    el.setAttribute('draggable', on ? 'true' : 'false');
+  });
+  const btn = $('layoutEditBtn');
+  if(btn) btn.classList.toggle('active', on);
+  if(on) logEvent(t('layout_edicao_ativada'), '', 'Sistema', 'sys');
+}
+
+function resetLayout(){
+  if(!confirm(t('confirm_repor_layout'))) return;
+  LAYOUT_GROUPS.forEach(g => { try { localStorage.removeItem(g.key); } catch(e){} });
+  location.reload();
+}
 
 function initKioskMode() {
   let urlKiosk = false;
@@ -5701,6 +6360,7 @@ const TOAST_STYLES = {
   'thermal-warning': { itemClass: 'type-thermal-warning',    icon: '🧬' },
   critical:          { itemClass: 'type-critical',           icon: '🛡️' },
   achievement:       { itemClass: 'type-achievement',        icon: '🏅' },
+  offline:           { itemClass: 'type-offline',             icon: '⚠️' },
 };
 
 function toastsEnabled() {
@@ -5776,7 +6436,10 @@ function triggerTestNotifications() {
     addNotification('block', 'Bloco Encontrado com Sucesso! (TESTE)', 'Simulação de bloco minerado com sucesso na rede.', randomMachine.name, { diff: 45230100 });
     celebrateBlockFound(randomMachine.name, 45230100);
   }, 600);
-  
+  setTimeout(() => {
+    addNotification('offline', 'Máquina Offline (TESTE)', `${randomMachine.name} ficou offline (falha de comunicação) - simulação.`, randomMachine.name);
+  }, 1300);
+
   logEvent('Notificações de teste geradas com som.', 'new', randomMachine.name, randomMachine.id || 'sys');
 }
 
@@ -5812,6 +6475,7 @@ function renderNotifications() {
     'thermal-warning':{ itemClass: 'type-thermal-warning',    tagClass: 'thermal-warning',   label: '🧬 Manutenção Preditiva' },
     critical:         { itemClass: 'type-thermal',            tagClass: 'thermal-critical',  label: '🛡️ Overheating Crítico' },
     achievement:      { itemClass: 'type-achievement',         tagClass: 'achievement',       label: '🏅 Conquista Desbloqueada' },
+    offline:          { itemClass: 'type-offline',              tagClass: 'offline',           label: '⚠️ Máquina Offline' },
   };
 
   list.innerHTML = '';
@@ -7271,6 +7935,423 @@ function downloadLogs() {
   URL.revokeObjectURL(url);
 }
 
+// --- Modo "Matrix" (chuva de código) na consola de logs -------------------
+// Efeito visual tipo Matrix sobre a consola, mas em vez de puro ruído
+// aleatório, de vez em quando uma coluna "materializa" um dado real (hashrate,
+// best diff, shares, nome da máquina) tirado do estado atual das máquinas.
+let matrixModeActive = false;
+let matrixAnimId = null;
+let matrixCols = [];
+const MATRIX_FONT_SIZE = 14;
+const MATRIX_CHARSET = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ$#@%&*+-/=<>[]{}アイウエオカキクケコサシスセソタチツテト';
+
+function getMatrixRealSnippets(){
+  const snippets = [];
+  (devices || []).forEach(d => {
+    const r = readings[d.id];
+    if(!r) return;
+    if(r.online){
+      const hr = formatHashrate(r.hashrate);
+      snippets.push(`${d.name}:${hr.value}${hr.unit}`);
+      if(r.best > 0){
+        const fmt = formatDiff(r.best);
+        snippets.push(`BEST_DIFF:${fmt.value}${fmt.unit}`);
+      }
+      snippets.push(`ACCEPTED:${r.accepted || 0}`);
+      if(r.temp != null) snippets.push(`TEMP:${r.temp.toFixed(1)}C`);
+    } else {
+      snippets.push(`${d.name}:OFFLINE`);
+    }
+  });
+  if(snippets.length === 0) snippets.push('CENTRO_DE_COMANDO');
+  return snippets;
+}
+
+function initMatrixCanvas(){
+  const canvas = $('matrixCanvas');
+  const screenEl = $('consoleScreen');
+  if(!canvas || !screenEl) return false;
+  const rect = screenEl.getBoundingClientRect();
+  if(!rect.width || !rect.height) return false;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#020508';
+  ctx.fillRect(0, 0, rect.width, rect.height);
+
+  const colCount = Math.max(1, Math.floor(rect.width / MATRIX_FONT_SIZE));
+  matrixCols = Array.from({ length: colCount }, () => ({
+    y: Math.random() * rect.height,
+    speed: 0.5 + Math.random() * 1.1,
+    streamText: null,
+    streamIdx: 0
+  }));
+
+  // desenha logo um frame cheio de caracteres, para haver feedback visual
+  // imediato mesmo que, por algum motivo, o loop de animação seguinte falhe
+  try {
+    ctx.font = `${MATRIX_FONT_SIZE}px 'JetBrains Mono', monospace`;
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(33, 255, 176, 0.75)';
+    matrixCols.forEach((col, i) => {
+      const ch = MATRIX_CHARSET[Math.floor(Math.random() * MATRIX_CHARSET.length)];
+      ctx.fillText(ch, i * MATRIX_FONT_SIZE, col.y);
+    });
+  } catch(e){ console.error('Matrix mode: erro no frame inicial', e); }
+
+  return true;
+}
+
+function drawMatrixFrame(){
+  if(!matrixModeActive) return;
+  try {
+    const canvas = $('matrixCanvas');
+    if(!canvas){ matrixAnimId = null; return; }
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+
+    // rasto semitransparente por cima do frame anterior — dá o efeito de
+    // desvanecimento típico do Matrix, sem ter de limpar tudo a cada frame
+    ctx.fillStyle = 'rgba(2, 5, 8, 0.14)';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.font = `${MATRIX_FONT_SIZE}px 'JetBrains Mono', monospace`;
+    ctx.textBaseline = 'top';
+
+    matrixCols.forEach((col, i) => {
+      const x = i * MATRIX_FONT_SIZE;
+      let ch;
+
+      if(col.streamText && col.streamIdx < col.streamText.length){
+        // a "materializar" um dado real desta mina, carácter a carácter
+        ch = col.streamText[col.streamIdx];
+        col.streamIdx++;
+        ctx.fillStyle = '#eafff2';
+        ctx.shadowColor = '#21ffb0';
+        ctx.shadowBlur = 6;
+      } else {
+        if(col.streamText) col.streamText = null;
+        ch = MATRIX_CHARSET[Math.floor(Math.random() * MATRIX_CHARSET.length)];
+        ctx.fillStyle = 'rgba(33, 255, 176, 0.75)';
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.fillText(ch, x, col.y);
+      ctx.shadowBlur = 0;
+
+      col.y += MATRIX_FONT_SIZE * col.speed * 0.5;
+
+      if(col.y > rect.height && Math.random() > 0.975){
+        col.y = Math.random() * -100;
+        col.speed = 0.5 + Math.random() * 1.1;
+        // ~1 em cada 7 colunas que reinicia passa a "puxar" um dado real
+        if(Math.random() < 0.14){
+          const pool = getMatrixRealSnippets();
+          col.streamText = pool[Math.floor(Math.random() * pool.length)] + '  ';
+          col.streamIdx = 0;
+        }
+      }
+    });
+  } catch(e){
+    console.error('Matrix mode: erro a desenhar frame, a parar animação', e);
+    matrixModeActive = false;
+    matrixAnimId = null;
+    return;
+  }
+
+  matrixAnimId = requestAnimationFrame(drawMatrixFrame);
+}
+
+function toggleMatrixMode(){
+  matrixModeActive = !matrixModeActive;
+  const btn = $('matrixModeBtn');
+  const canvas = $('matrixCanvas');
+  const screenEl = $('consoleScreen');
+  if(!btn || !canvas || !screenEl){
+    console.error('Matrix mode: elementos em falta no DOM', { btn: !!btn, canvas: !!canvas, screenEl: !!screenEl });
+    matrixModeActive = false;
+    return;
+  }
+
+  if(matrixModeActive){
+    btn.classList.add('active');
+    canvas.style.display = 'block';
+    screenEl.classList.add('matrix-mode');
+    const ready = initMatrixCanvas();
+    if(!ready){
+      // a aba pode ainda não estar totalmente pintada (0×0) no instante do
+      // clique — tenta de novo no próximo frame antes de desistir
+      requestAnimationFrame(() => {
+        if(matrixModeActive) initMatrixCanvas();
+        if(matrixAnimId) cancelAnimationFrame(matrixAnimId);
+        drawMatrixFrame();
+      });
+    } else {
+      if(matrixAnimId) cancelAnimationFrame(matrixAnimId);
+      drawMatrixFrame();
+    }
+  } else {
+    btn.classList.remove('active');
+    canvas.style.display = 'none';
+    screenEl.classList.remove('matrix-mode');
+    if(matrixAnimId){ cancelAnimationFrame(matrixAnimId); matrixAnimId = null; }
+    if(autoScroll) screenEl.scrollTop = screenEl.scrollHeight;
+  }
+}
+
+window.addEventListener('resize', () => { if(matrixModeActive) initMatrixCanvas(); });
+
+// --- Efeito Matrix decorativo, sempre ativo, no rodapé da dashboard -------
+// Versão mais lenta e discreta do "Modo Matrix" da consola: menos colunas,
+// menos brilho e velocidade bem reduzida, para servir de fundo ambiente
+// sem competir com o texto do rodapé (footerAlert / footerStamp).
+let footerMatrixCols = [];
+let footerMatrixAnimId = null;
+let footerMatrixLastTs = 0;
+const FOOTER_MATRIX_FONT_SIZE = 12;
+const FOOTER_MATRIX_FRAME_INTERVAL = 90; // ms entre frames (a consola usa ~16ms via rAF puro)
+
+function initFooterMatrix(){
+  const canvas = $('footerMatrixCanvas');
+  const wrap = $('footerBar');
+  if(!canvas || !wrap) return false;
+  const rect = wrap.getBoundingClientRect();
+  if(!rect.width || !rect.height) return false;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#0a1620';
+  ctx.fillRect(0, 0, rect.width, rect.height);
+
+  const colCount = Math.max(1, Math.floor(rect.width / FOOTER_MATRIX_FONT_SIZE));
+  footerMatrixCols = Array.from({ length: colCount }, () => ({
+    y: Math.random() * rect.height,
+    speed: 0.15 + Math.random() * 0.25, // bem mais lento que os 0.5-1.6 da consola
+    streamText: null,
+    streamIdx: 0
+  }));
+
+  return true;
+}
+
+function drawFooterMatrixFrame(ts){
+  const canvas = $('footerMatrixCanvas');
+  if(!canvas){ footerMatrixAnimId = null; return; }
+
+  if(!footerMatrixLastTs) footerMatrixLastTs = ts;
+  if(ts - footerMatrixLastTs < FOOTER_MATRIX_FRAME_INTERVAL){
+    footerMatrixAnimId = requestAnimationFrame(drawFooterMatrixFrame);
+    return;
+  }
+  footerMatrixLastTs = ts;
+
+  try {
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = 'rgba(10, 22, 32, 0.16)';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.font = `${FOOTER_MATRIX_FONT_SIZE}px 'JetBrains Mono', monospace`;
+    ctx.textBaseline = 'top';
+
+    footerMatrixCols.forEach((col, i) => {
+      const x = i * FOOTER_MATRIX_FONT_SIZE;
+      let ch;
+
+      if(col.streamText && col.streamIdx < col.streamText.length){
+        ch = col.streamText[col.streamIdx];
+        col.streamIdx++;
+        ctx.fillStyle = '#eafff2';
+        ctx.shadowColor = '#21ffb0';
+        ctx.shadowBlur = 5;
+      } else {
+        if(col.streamText) col.streamText = null;
+        ch = MATRIX_CHARSET[Math.floor(Math.random() * MATRIX_CHARSET.length)];
+        ctx.fillStyle = 'rgba(33, 255, 176, 0.5)';
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.fillText(ch, x, col.y);
+      ctx.shadowBlur = 0;
+
+      col.y += FOOTER_MATRIX_FONT_SIZE * col.speed;
+
+      if(col.y > rect.height && Math.random() > 0.985){
+        col.y = Math.random() * -80;
+        col.speed = 0.15 + Math.random() * 0.25;
+        if(Math.random() < 0.1){
+          const pool = getMatrixRealSnippets();
+          col.streamText = pool[Math.floor(Math.random() * pool.length)] + '  ';
+          col.streamIdx = 0;
+        }
+      }
+    });
+  } catch(e){
+    console.error('Matrix rodapé: erro a desenhar frame, a parar', e);
+    footerMatrixAnimId = null;
+    return;
+  }
+
+  footerMatrixAnimId = requestAnimationFrame(drawFooterMatrixFrame);
+}
+
+function startFooterMatrix(){
+  const ready = initFooterMatrix();
+  if(footerMatrixAnimId) cancelAnimationFrame(footerMatrixAnimId);
+  footerMatrixLastTs = 0;
+  if(!ready){
+    // o rodapé pode ainda não ter dimensões (0×0) no arranque da página
+    requestAnimationFrame(() => {
+      if(initFooterMatrix()) footerMatrixAnimId = requestAnimationFrame(drawFooterMatrixFrame);
+    });
+    return;
+  }
+  footerMatrixAnimId = requestAnimationFrame(drawFooterMatrixFrame);
+}
+
+window.addEventListener('resize', () => { initFooterMatrix(); });
+
+// --- Mesma chuva Matrix decorativa, mas a cobrir toda a página (fixo, por
+// trás do .frame) para aparecer também nas laterais/topo/fundo do ecrã, não
+// só dentro do rodapé. Usa os mesmos parâmetros lentos do rodapé.
+let bodyMatrixCols = [];
+let bodyMatrixAnimId = null;
+let bodyMatrixLastTs = 0;
+const BODY_MATRIX_FONT_SIZE = 13;
+const BODY_MATRIX_FRAME_INTERVAL = 90;
+
+function initBodyMatrix(){
+  const canvas = $('bodyMatrixCanvas');
+  const frame = $('mainFrame');
+  if(!canvas || !frame) return false;
+  const w = frame.offsetWidth;
+  const h = frame.scrollHeight;
+  if(!w || !h) return false;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(w * dpr));
+  canvas.height = Math.max(1, Math.round(h * dpr));
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const colCount = Math.max(1, Math.floor(w / BODY_MATRIX_FONT_SIZE));
+  bodyMatrixCols = Array.from({ length: colCount }, () => ({
+    y: Math.random() * h,
+    speed: 0.15 + Math.random() * 0.25,
+    streamText: null,
+    streamIdx: 0
+  }));
+
+  return true;
+}
+
+function drawBodyMatrixFrame(ts){
+  const canvas = $('bodyMatrixCanvas');
+  const frame = $('mainFrame');
+  if(!canvas || !frame){ bodyMatrixAnimId = null; return; }
+
+  if(!bodyMatrixLastTs) bodyMatrixLastTs = ts;
+  if(ts - bodyMatrixLastTs < BODY_MATRIX_FRAME_INTERVAL){
+    bodyMatrixAnimId = requestAnimationFrame(drawBodyMatrixFrame);
+    return;
+  }
+  bodyMatrixLastTs = ts;
+
+  try {
+    const w = frame.offsetWidth;
+    const h = frame.scrollHeight;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = 'rgba(5, 11, 16, 0.16)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = `${BODY_MATRIX_FONT_SIZE}px 'JetBrains Mono', monospace`;
+    ctx.textBaseline = 'top';
+
+    bodyMatrixCols.forEach((col, i) => {
+      const x = i * BODY_MATRIX_FONT_SIZE;
+      let ch;
+
+      if(col.streamText && col.streamIdx < col.streamText.length){
+        ch = col.streamText[col.streamIdx];
+        col.streamIdx++;
+        ctx.fillStyle = '#eafff2';
+        ctx.shadowColor = '#21ffb0';
+        ctx.shadowBlur = 5;
+      } else {
+        if(col.streamText) col.streamText = null;
+        ch = MATRIX_CHARSET[Math.floor(Math.random() * MATRIX_CHARSET.length)];
+        ctx.fillStyle = 'rgba(33, 255, 176, 0.45)';
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.fillText(ch, x, col.y);
+      ctx.shadowBlur = 0;
+
+      col.y += BODY_MATRIX_FONT_SIZE * col.speed;
+
+      if(col.y > h && Math.random() > 0.985){
+        col.y = Math.random() * -80;
+        col.speed = 0.15 + Math.random() * 0.25;
+        if(Math.random() < 0.1){
+          const pool = getMatrixRealSnippets();
+          col.streamText = pool[Math.floor(Math.random() * pool.length)] + '  ';
+          col.streamIdx = 0;
+        }
+      }
+    });
+  } catch(e){
+    console.error('Matrix fundo página: erro a desenhar frame, a parar', e);
+    bodyMatrixAnimId = null;
+    return;
+  }
+
+  bodyMatrixAnimId = requestAnimationFrame(drawBodyMatrixFrame);
+}
+
+function startBodyMatrix(){
+  const ready = initBodyMatrix();
+  if(bodyMatrixAnimId) cancelAnimationFrame(bodyMatrixAnimId);
+  bodyMatrixLastTs = 0;
+  if(!ready){
+    requestAnimationFrame(() => {
+      if(initBodyMatrix()) bodyMatrixAnimId = requestAnimationFrame(drawBodyMatrixFrame);
+    });
+    return;
+  }
+  bodyMatrixAnimId = requestAnimationFrame(drawBodyMatrixFrame);
+}
+
+window.addEventListener('resize', () => { initBodyMatrix(); });
+
+// A altura da .frame muda com frequência (trocar de aba, adicionar/remover
+// máquinas, expandir listas, etc.) — um ResizeObserver mantém o canvas
+// sempre do tamanho certo sem depender só do resize da janela.
+if(window.ResizeObserver){
+  const frameEl = document.getElementById('mainFrame');
+  if(frameEl){
+    let resizeDebounce = null;
+    new ResizeObserver(() => {
+      clearTimeout(resizeDebounce);
+      resizeDebounce = setTimeout(() => initBodyMatrix(), 150);
+    }).observe(frameEl);
+  }
+}
+
 function logEvent(msg, cls='', devName='', devId='sys'){
   const logContainer = $('eventLog');
   if(logContainer) {
@@ -7648,11 +8729,13 @@ async function pollOneDevice(dev){
     if(wasOnline !== false) {
       if(e.portalMode) {
         logEvent(`Máquina caiu para o modo de configuração WiFi (captive portal) - verifica a ligação WiFi.`, 'error', dev.name, dev.id);
+        addNotification('offline', `Máquina em Modo de Configuração`, `${dev.name} caiu para o modo captive portal (WiFi) e precisa de reconfiguração.`, dev.name);
         if(alertsConfig.notify_offline){
           sendAlert(`⚙️ ${dev.name} caiu para o modo de configuração WiFi (captive portal) - verifica a ligação.`, `offline-${dev.id}`);
         }
       } else {
         logEvent(`Falha de comunicação com o dispositivo.`, 'error', dev.name, dev.id);
+        addNotification('offline', `Máquina Offline`, `${dev.name} ficou offline (falha de comunicação).`, dev.name);
         if(alertsConfig.notify_offline){
           sendAlert(`⚠️ ${dev.name} ficou offline (falha de comunicação).`, `offline-${dev.id}`);
         }
@@ -7926,15 +9009,15 @@ function renderAll(){
   const selDev = devices.find(d => d.id === selectedId);
   if(selDev){
     drawAmberChart('chartHashrate', (histories[selDev.id]||[]).map(x=>x?.hashrate), (val) => formatHashrate(val), true);
-    drawAmberChart('chartBest', (histories[selDev.id]||[]).map(x=>x?.best), (val) => formatDiff(val), false);
+    updatePeakDiffPanel(selDev);
   } else {
     $('chartHashrate').innerHTML = '';
-    $('chartBest').innerHTML = '';
+    $('chartPeakDiff').innerHTML = '';
     $('valHashrate').textContent = '—';
     $('valPeak').textContent = '—';
     $('valAvg').textContent = '—';
-    $('valBest').textContent = '—';
-    $('valBestMeta').textContent = '—';
+    $('valPeakDiffBig').textContent = '—';
+    _peakDiffState.ip = null;
   }
 
   const latTab = $('tab-latency');
@@ -7945,6 +9028,35 @@ function renderAll(){
 
   const thermalTab = $('tab-thermal');
   if(thermalTab && thermalTab.classList.contains('active')) renderThermalTab();
+}
+
+// Anima um valor de texto a "contar" suavemente entre o antigo e o novo,
+// em vez de trocar instantaneamente — dá a sensação de dado vivo a mexer.
+function _animateChartValue(el, value, unit, sep = ' '){
+  if(!el) return;
+  const prevNum = parseFloat(el.dataset.rawVal);
+  const nextNum = parseFloat(String(value).replace(',', '.'));
+  el.dataset.rawVal = value;
+
+  const decimals = (String(value).split('.')[1] || '').length;
+  const render = (n) => `${n.toFixed(decimals)}${sep}${unit}`;
+
+  if(isNaN(prevNum) || isNaN(nextNum) || prevNum === nextNum){
+    el.textContent = render(isNaN(nextNum) ? value : nextNum);
+  } else {
+    if(el._chartValRaf) cancelAnimationFrame(el._chartValRaf);
+    const dur = 500, start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = render(prevNum + (nextNum - prevNum) * eased);
+      if(t < 1) el._chartValRaf = requestAnimationFrame(step);
+    };
+    el._chartValRaf = requestAnimationFrame(step);
+  }
+  el.classList.remove('chart-val-pulse');
+  void el.offsetWidth;
+  el.classList.add('chart-val-pulse');
 }
 
 function drawAmberChart(svgId, vals, formatter, isHashrate = true){
@@ -7960,20 +9072,13 @@ function drawAmberChart(svgId, vals, formatter, isHashrate = true){
   const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
   const latest = vals[vals.length - 1];
   
-  if(isHashrate) {
-    const latFmt = formatter(latest);
-    const peakFmt = formatter(max);
-    const avgFmt = formatter(avg);
-    
-    $('valHashrate').textContent = `${latFmt.value} ${latFmt.unit}`;
-    $('valPeak').textContent = `${peakFmt.value} ${peakFmt.unit}`;
-    $('valAvg').textContent = `${avgFmt.value} ${avgFmt.unit}`;
-  } else {
-    const latFmt = formatter(latest);
-    const peakFmt = formatter(max);
-    $('valBest').textContent = `${latFmt.value}${latFmt.unit}`;
-    $('valBestMeta').textContent = `${peakFmt.value}${peakFmt.unit}`;
-  }
+  const latFmt = formatter(latest);
+  const peakFmt = formatter(max);
+  const avgFmt = formatter(avg);
+
+  _animateChartValue($('valHashrate'), latFmt.value, latFmt.unit);
+  $('valPeak').textContent = `${peakFmt.value} ${peakFmt.unit}`;
+  $('valAvg').textContent = `${avgFmt.value} ${avgFmt.unit}`;
   
   const paddingY = 16;
   const w = 300, h = 130;
@@ -7988,6 +9093,20 @@ function drawAmberChart(svgId, vals, formatter, isHashrate = true){
   const ptsString = pts.map(p => `${p.x},${p.y}`).join(' L');
   const avgY = h - paddingY - ((avg - min) / range) * usableH;
   const lastPt = pts[pts.length - 1];
+
+  // Grade horizontal subtil (topo, meio, fundo da faixa de valores) — dá
+  // profundidade e um ponto de referência visual sem poluir o gráfico.
+  const gridYs = [paddingY, h / 2, h - paddingY];
+  const gridLines = gridYs.map((gy, i) => `<line class="chart-grid-line" x1="10" y1="${gy}" x2="290" y2="${gy}" stroke="#4a6975" stroke-width="1" style="animation-delay:${i*0.12}s, ${0.8 + i*0.12}s"/>`).join('');
+
+  // Pontos ao longo da linha, a aparecer em sequência da esquerda para a
+  // direita — reforça a ideia de série temporal a "chegar" em tempo real.
+  const pointDots = pts.map((p, i) => {
+    const isLast = i === pts.length - 1;
+    if(isLast) return '';
+    const delay = (i / pts.length) * 0.6;
+    return `<circle class="chart-point" cx="${p.x}" cy="${p.y}" r="2" fill="#ffb020" fill-opacity="0.7" style="animation-delay:${delay}s"/>`;
+  }).join('');
   
   svg.innerHTML = `
     <defs>
@@ -8000,11 +9119,20 @@ function drawAmberChart(svgId, vals, formatter, isHashrate = true){
         <feComposite in="SourceGraphic" in2="glow" operator="over" />
       </filter>
     </defs>
-    
+
+    ${gridLines}
     <line x1="10" y1="${avgY}" x2="290" y2="${avgY}" stroke="#ffb02066" stroke-dasharray="4,4" stroke-width="1"/>
-    <path d="M${pts[0].x},${h} L${ptsString} L${pts[pts.length-1].x},${h} Z" fill="url(#amber_grad_${svgId})"></path>
+    <path class="chart-area-fill" d="M${pts[0].x},${h} L${ptsString} L${pts[pts.length-1].x},${h} Z" fill="url(#amber_grad_${svgId})"></path>
     <path class="chart-line-draw" fill="none" stroke="#ffb020" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow_${svgId})" d="M${ptsString}"></path>
     <path class="chart-flow-overlay" fill="none" stroke="#fff6de" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="0.5 16" d="M${ptsString}"></path>
+    ${pointDots}
+
+    <circle class="chart-comet" r="2.6" fill="#fff6de">
+      <animateMotion dur="3.2s" repeatCount="indefinite" path="M${ptsString}" rotate="auto"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.9;1" dur="3.2s" repeatCount="indefinite"/>
+    </circle>
+
+    <circle class="chart-end-ring" cx="${lastPt.x}" cy="${lastPt.y}" r="5" fill="none" stroke="#ffb020" stroke-width="1.5"/>
     <circle class="chart-end-dot" cx="${lastPt.x}" cy="${lastPt.y}" r="4.5" fill="#ffb020" stroke="#0d1a26" stroke-width="2"/>
 
     <g id="tooltip_${svgId}" style="display:none;">
@@ -8043,11 +9171,7 @@ function drawAmberChart(svgId, vals, formatter, isHashrate = true){
       tip.querySelector('circle').setAttribute('cy', closest.y);
       
       const res = formatter(closest.val);
-      if(isHashrate) {
-        $('valHashrate').textContent = `${res.value} ${res.unit}`;
-      } else {
-        $('valBest').textContent = `${res.value}${res.unit}`;
-      }
+      $('valHashrate').textContent = `${res.value} ${res.unit}`;
     }
   };
   
@@ -8055,12 +9179,149 @@ function drawAmberChart(svgId, vals, formatter, isHashrate = true){
     const tip = svg.querySelector(`#tooltip_${svgId}`);
     if(tip) tip.style.display = 'none';
     const res = formatter(vals[vals.length - 1]);
-    if(isHashrate) {
-      $('valHashrate').textContent = `${res.value} ${res.unit}`;
-    } else {
-      $('valBest').textContent = `${res.value}${res.unit}`;
-    }
+    $('valHashrate').textContent = `${res.value} ${res.unit}`;
   };
+}
+
+// --- Painel "Peak Share Difficulty" (barras, escala log, 24H/3D/7D) -------
+// Substitui o antigo gráfico de linha "Best Share Histórico". Os dados vêm
+// do backend (/api/diff-buckets), que guarda o melhor "best diff" visto por
+// bucket de 15 min (agregado em janelas maiores para 3D/7D) — ver app.py.
+const _peakDiffState = { ip: null, range: '24h', lastFetchAt: 0, lastKey: null };
+
+function setupPeakDiffRangeButtons(){
+  const wrap = $('peakDiffRangeButtons');
+  if(!wrap) return;
+  wrap.querySelectorAll('.time-btn').forEach(btn => {
+    btn.onclick = () => {
+      const range = btn.dataset.range;
+      if(range === _peakDiffState.range) return;
+      wrap.querySelectorAll('.time-btn').forEach(b => b.classList.toggle('active', b === btn));
+      _peakDiffState.range = range;
+      fetchAndRenderPeakDiff(_peakDiffState.ip, range, true);
+    };
+  });
+}
+
+function updatePeakDiffPanel(selDev){
+  if(!selDev || !selDev.ip) return;
+  _peakDiffState.ip = selDev.ip;
+  const now = Date.now();
+  // evita martelar o backend a cada poll (12s) — refresca no máx. a cada 30s,
+  // ou de imediato se a máquina selecionada mudou.
+  const key = `${selDev.ip}|${_peakDiffState.range}`;
+  const force = key !== _peakDiffState.lastKey;
+  if(force || (now - _peakDiffState.lastFetchAt) >= 30000){
+    fetchAndRenderPeakDiff(selDev.ip, _peakDiffState.range, force);
+  }
+}
+
+async function fetchAndRenderPeakDiff(ip, range, force){
+  if(!ip) return;
+  const key = `${ip}|${range}`;
+  _peakDiffState.lastFetchAt = Date.now();
+  _peakDiffState.lastKey = key;
+  try{
+    const res = await fetch(`/api/diff-buckets?ip=${encodeURIComponent(ip)}&range=${encodeURIComponent(range)}`);
+    const data = await res.json();
+    // ignora respostas atrasadas de um pedido antigo (máquina/aba já trocou)
+    if(_peakDiffState.lastKey !== key) return;
+    drawPeakDiffBarChart(data.buckets || [], data.peak || 0, range);
+  } catch(e){
+    if(force) $('chartPeakDiff').innerHTML = '<text x="50%" y="50%" fill="#5a7482" font-size="15" text-anchor="middle">—</text>';
+  }
+}
+
+function drawPeakDiffBarChart(buckets, peak, range){
+  const svg = $('chartPeakDiff');
+  const bigEl = $('valPeakDiffBig');
+  if(!svg) return;
+
+  if(!buckets || buckets.length === 0){
+    svg.innerHTML = '<text x="50%" y="50%" fill="#5a7482" font-size="15" text-anchor="middle">A recolher amostras (aparece em breve)...</text>';
+    if(bigEl) bigEl.textContent = '—';
+    return;
+  }
+
+  const rangeLabel = { '24h': '24h', '3d': '3d', '7d': '7d' }[range] || range;
+  if(bigEl){
+    const peakFmt = formatDiff(peak);
+    const bestWord = t('peak_diff_best_of');
+    bigEl.innerHTML = `${peakFmt.value}${peakFmt.unit} <span class="peak-diff-unit">${bestWord} · ${rangeLabel}</span>`;
+  }
+
+  const w = 600, h = 170;
+  const padL = 46, padR = 8, padT = 10, padB = 22;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  // escala logarítmica no eixo Y (os best diffs variam facilmente por 2-3
+  // ordens de grandeza entre barras vizinhas)
+  const values = buckets.map(b => Math.max(1, b.value));
+  const maxV = Math.max(...values);
+  const minV = Math.min(...values);
+  const logMax = Math.log10(maxV * 1.15);
+  const logMin = Math.log10(Math.max(1, minV) / 3);
+  const logRange = (logMax - logMin) || 1;
+
+  const yForVal = (v) => padT + plotH - ((Math.log10(Math.max(1, v)) - logMin) / logRange) * plotH;
+
+  // ~5 linhas de grade / labels do eixo Y, espaçadas uniformemente na escala log
+  const tickCount = 5;
+  const gridLines = [];
+  const yLabels = [];
+  for(let i = 0; i < tickCount; i++){
+    const logV = logMin + (logRange * i / (tickCount - 1));
+    const v = Math.pow(10, logV);
+    const y = yForVal(v);
+    const fmt = formatDiff(v);
+    gridLines.push(`<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="#1c2b38" stroke-width="1"/>`);
+    yLabels.push(`<text x="${padL-6}" y="${y+3}" fill="#5a7482" font-size="9" text-anchor="end">${fmt.value}${fmt.unit}</text>`);
+  }
+
+  const barW = buckets.length === 1 ? plotW * 0.12 : Math.max(1.5, (plotW / buckets.length) * 0.62);
+  const step = plotW / buckets.length;
+  const bars = buckets.map((b, i) => {
+    const x = padL + i * step + (step - barW) / 2;
+    const y = yForVal(b.value);
+    const barH = Math.max(1, (padT + plotH) - y);
+    const fmt = formatDiff(b.value);
+    const valueLabel = `${fmt.value}${fmt.unit}`;
+    // título nativo do SVG: aparece ao passar o rato mesmo sem JS de tooltip
+    const titleEl = `<title>${valueLabel}</title>`;
+    // label de texto só quando a barra é larga o suficiente para caber sem
+    // se sobrepor às vizinhas; caso contrário fica só no <title> (hover)
+    const canFitLabel = barW >= 26;
+    const labelY = Math.max(padT + 9, y - 4);
+    const labelEl = canFitLabel
+      ? `<text x="${(x + barW/2).toFixed(1)}" y="${labelY.toFixed(1)}" fill="#ffd27a" font-size="9.5" font-weight="600" text-anchor="middle">${valueLabel}</text>`
+      : '';
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" fill="#ffb020" fill-opacity="0.85" rx="1">${titleEl}</rect>${labelEl}`;
+  }).join('');
+
+  // labels de hora no eixo X — só ~6 para não sobrepor
+  const xLabelCount = Math.min(6, buckets.length);
+  const xLabels = [];
+  for(let i = 0; i < xLabelCount; i++){
+    const idx = xLabelCount > 1 ? Math.round(i * (buckets.length - 1) / (xLabelCount - 1)) : 0;
+    const b = buckets[idx];
+    const d = new Date(b.ts * 1000);
+    const label = range === '24h'
+      ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleDateString([], { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit' });
+    const x = padL + idx * step + step / 2;
+    xLabels.push(`<text x="${x.toFixed(1)}" y="${h-6}" fill="#5a7482" font-size="9" text-anchor="middle">${label}</text>`);
+  }
+
+  svg.innerHTML = `
+    ${gridLines.join('')}
+    ${yLabels.join('')}
+    ${bars}
+    ${xLabels.join('')}
+  `;
+
+  svg.onmousemove = null;
+  svg.onmouseleave = null;
 }
 
 // --- Perfis de Energia (MQTT / Home Assistant) ---------------------------
@@ -8941,9 +10202,86 @@ $('clearLogBtn').onclick = () => {
   });
 })();
 
+// --- Easter eggs sazonais -------------------------------------------
+// Puramente cosmético: consoante a data de hoje, junta um pequeno ícone
+// ao título e (se a pessoa não pediu movimento reduzido) uma camada de
+// partículas suaves a flutuar pelo ecrã. Não altera dados, não guarda
+// nada, não faz pedidos ao servidor - é só um sorriso escondido para
+// quem tiver o painel aberto numa data especial.
+function initSeasonalEasterEggs(){
+  try{
+    const now = new Date();
+    const m = now.getMonth() + 1; // 1-12
+    const d = now.getDate();
+    const reduceMotion = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let icon = '';
+    let particle = null; // { emoji, count, cls }
+
+    if((m === 12) || (m === 1 && d <= 6)){
+      // Época natalícia / passagem de ano - floquinhos de neve a cair
+      icon = '🎄';
+      particle = { emoji: '❄', count: 16, cls: 'seasonal-snow' };
+    } else if(m === 10 && d >= 24){
+      // Halloween - morcegos a pairar
+      icon = '🎃';
+      particle = { emoji: '🦇', count: 6, cls: 'seasonal-bat' };
+    } else if(m === 5 && d === 22){
+      // Bitcoin Pizza Day - 22 mai 2010, os famosos 10.000 BTC por 2 pizzas.
+      // Homenagem óbvia num painel de mineração :)
+      icon = '🍕';
+      particle = { emoji: '🍕', count: 10, cls: 'seasonal-pizza' };
+    } else if(m === 6 && d >= 10 && d <= 24){
+      // Santos Populares - só o ícone, sem partículas
+      icon = '🎉';
+    } else if(m === 4 && d === 1){
+      // Dia das mentiras - piscadela de olho, sem nenhuma funcionalidade falsa
+      icon = '🤖';
+    }
+
+    if(icon && !$('seasonalIcon')){
+      const h1 = document.querySelector('header h1');
+      if(h1){
+        const span = document.createElement('span');
+        span.id = 'seasonalIcon';
+        span.style.marginLeft = '8px';
+        span.textContent = icon;
+        h1.appendChild(span);
+      }
+    }
+
+    if(particle && !reduceMotion){
+      const layer = document.createElement('div');
+      layer.className = 'seasonal-particle-layer';
+      layer.setAttribute('aria-hidden', 'true');
+      for(let i = 0; i < particle.count; i++){
+        const p = document.createElement('span');
+        p.className = 'seasonal-particle ' + particle.cls;
+        p.textContent = particle.emoji;
+        p.style.left = (Math.random() * 100).toFixed(1) + '%';
+        p.style.top = (Math.random() * 20).toFixed(1) + '%';
+        p.style.fontSize = (10 + Math.random() * 10).toFixed(0) + 'px';
+        p.style.opacity = (0.2 + Math.random() * 0.35).toFixed(2);
+        p.style.animationDuration = (10 + Math.random() * 12).toFixed(1) + 's';
+        p.style.animationDelay = (Math.random() * 12).toFixed(1) + 's';
+        layer.appendChild(p);
+      }
+      document.body.appendChild(layer);
+    }
+  }catch(e){
+    // Falha silenciosa - isto é só decoração, nunca deve quebrar o painel.
+  }
+}
+
 loadTheme();
 loadLanguage();
 initKioskMode();
+initLayoutEditor();
+initSeasonalEasterEggs();
+setupPeakDiffRangeButtons();
+startFooterMatrix();
+startBodyMatrix();
 (async () => {
   await loadDevices();
   loadNotifications();
@@ -9066,6 +10404,104 @@ window.addEventListener('pagehide', (event) => {
     if (tag && data.version) tag.textContent = `· v${data.version}`;
   } catch (e) {}
 })();
+
+// --- Ajuda / FAQ ------------------------------------------------------------
+function openHelpModal(){
+  document.getElementById('helpModal')?.classList.add('open');
+}
+function closeHelpModal(){
+  document.getElementById('helpModal')?.classList.remove('open');
+}
+
+// --- Tour guiado (primeira utilização) --------------------------------------
+// Percorre os botões/áreas principais do cabeçalho com um spotlight + balão
+// de texto. Corre automaticamente na primeira visita (flag em localStorage)
+// e pode ser relançado a qualquer momento a partir do modal de Ajuda.
+const TOUR_DONE_KEY = 'nerdqaxe:tour-done';
+
+const TOUR_STEPS = [
+  { selector: '#navMenu', titleKey: 'tour_nav_titulo', textKey: 'tour_nav_texto' },
+  { selector: '#langSelect', titleKey: 'tour_lang_titulo', textKey: 'tour_lang_texto' },
+  { selector: '#themeSelect', titleKey: 'tour_tema_titulo', textKey: 'tour_tema_texto' },
+  { selector: '#kioskToggleBtn', titleKey: 'tour_kiosk_titulo', textKey: 'tour_kiosk_texto' },
+  { selector: '#layoutEditBtn', titleKey: 'tour_layout_titulo', textKey: 'tour_layout_texto' },
+  { selector: '#helpBtn', titleKey: 'tour_ajuda_titulo', textKey: 'tour_ajuda_texto' },
+  { selector: '#statusDot', titleKey: 'tour_status_titulo', textKey: 'tour_status_texto' },
+];
+
+let tourStepIndex = 0;
+let tourResizeHandlerBound = false;
+
+function positionTourStep(){
+  const step = TOUR_STEPS[tourStepIndex];
+  if (!step) { endTour(); return; }
+  const target = document.querySelector(step.selector);
+  if (!target || target.offsetParent === null) { nextTourStep(); return; }
+
+  const highlight = document.getElementById('tourHighlight');
+  const tooltip = document.getElementById('tourTooltip');
+  const rect = target.getBoundingClientRect();
+  const pad = 6;
+
+  highlight.style.left = Math.max(4, rect.left - pad) + 'px';
+  highlight.style.top = Math.max(4, rect.top - pad) + 'px';
+  highlight.style.width = (rect.width + pad * 2) + 'px';
+  highlight.style.height = (rect.height + pad * 2) + 'px';
+
+  document.getElementById('tourTitle').textContent = t(step.titleKey);
+  document.getElementById('tourText').textContent = t(step.textKey);
+  document.getElementById('tourCounter').textContent = (tourStepIndex + 1) + ' / ' + TOUR_STEPS.length;
+  document.getElementById('tourNextBtn').textContent = (tourStepIndex === TOUR_STEPS.length - 1) ? t('tour_concluir') : t('tour_seguinte');
+
+  const tw = tooltip.offsetWidth || 280;
+  let top = rect.bottom + 14;
+  let left = rect.left;
+  if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+  if (left < 12) left = 12;
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+  const th = tooltip.offsetHeight || 140;
+  if (top + th > window.innerHeight - 12) {
+    top = rect.top - th - 14;
+    if (top < 12) top = 12;
+    tooltip.style.top = top + 'px';
+  }
+
+  target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function startTour(){
+  tourStepIndex = 0;
+  const layer = document.getElementById('tourLayer');
+  if (!layer) return;
+  layer.style.display = 'block';
+  if (!tourResizeHandlerBound) {
+    window.addEventListener('resize', positionTourStep);
+    tourResizeHandlerBound = true;
+  }
+  setTimeout(positionTourStep, 260);
+}
+
+function nextTourStep(){
+  tourStepIndex++;
+  if (tourStepIndex >= TOUR_STEPS.length) { endTour(); return; }
+  positionTourStep();
+}
+
+function skipTour(){ endTour(); }
+
+function endTour(){
+  const layer = document.getElementById('tourLayer');
+  if (layer) layer.style.display = 'none';
+  try { localStorage.setItem(TOUR_DONE_KEY, '1'); } catch(e){}
+}
+
+function maybeAutoStartTour(){
+  let done = false;
+  try { done = localStorage.getItem(TOUR_DONE_KEY) === '1'; } catch(e){}
+  if (!done) setTimeout(startTour, 900);
+}
+maybeAutoStartTour();
 
 // Fecho garantido e imediato, independente de qualquer comportamento do
 // browser ao fechar separador/janela (que por vezes não dispara a tempo,
