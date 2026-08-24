@@ -49,7 +49,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.5.2"
+APP_VERSION = "3.5.3"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -701,6 +701,108 @@ def record_diff_history(ip, best_diff):
             save_diff_history()
 
 
+# --- Peak Share Difficulty (buckets finos para o gráfico de barras) -------
+# Guarda, por IP e por "bucket" de 15 min (timestamp UNIX arredondado, como
+# chave string), o maior "best diff" visto nesse intervalo. Alimentado a
+# cada leitura bem-sucedida via cache_reading(), tal como o diff_history
+# diário acima. Mantém só os últimos 7 dias por IP (retenção), para servir
+# o painel "Peak Share Difficulty" com as abas 24H/3D/7D.
+DIFF_BUCKETS_FILENAME = 'diff_buckets.json'
+DIFF_BUCKET_SECONDS = 15 * 60
+DIFF_BUCKETS_MAX_AGE = 7 * 86400
+_diff_buckets_lock = threading.Lock()
+_diff_buckets_cache = None
+
+
+def diff_buckets_path():
+    return os.path.join(writable_dir(), DIFF_BUCKETS_FILENAME)
+
+
+def load_diff_buckets():
+    global _diff_buckets_cache
+    if _diff_buckets_cache is not None:
+        return _diff_buckets_cache
+    try:
+        with open(diff_buckets_path(), 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        _diff_buckets_cache = data if isinstance(data, dict) else {}
+    except Exception:
+        _diff_buckets_cache = {}
+    return _diff_buckets_cache
+
+
+def save_diff_buckets():
+    try:
+        with open(diff_buckets_path(), 'w', encoding='utf-8') as f:
+            json.dump(_diff_buckets_cache or {}, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def record_diff_bucket(ip, best_diff):
+    if not best_diff:
+        return
+    try:
+        best_diff = float(best_diff)
+    except (TypeError, ValueError):
+        return
+    if best_diff <= 0:
+        return
+    now = time.time()
+    bucket_key = str(int(now // DIFF_BUCKET_SECONDS) * DIFF_BUCKET_SECONDS)
+    with _diff_buckets_lock:
+        buckets = load_diff_buckets()
+        by_bucket = buckets.setdefault(ip, {})
+        changed = False
+        if best_diff > by_bucket.get(bucket_key, 0):
+            by_bucket[bucket_key] = best_diff
+            changed = True
+        # limpa buckets fora da janela de retenção desta máquina
+        cutoff = now - DIFF_BUCKETS_MAX_AGE
+        stale = [k for k in by_bucket if float(k) < cutoff]
+        for k in stale:
+            del by_bucket[k]
+            changed = True
+        if changed:
+            save_diff_buckets()
+
+
+# Janela total e largura de agregação de bucket por aba do frontend. Os
+# buckets ficam sempre gravados a 15 min (acima); aqui só agregamos (por
+# máximo) em intervalos maiores para 3D/7D, para o gráfico não ter barras
+# a mais.
+DIFF_BUCKETS_RANGES = {
+    '24h': (86400, 15 * 60),
+    '3d': (3 * 86400, 60 * 60),
+    '7d': (7 * 86400, 3 * 60 * 60),
+}
+
+
+def get_diff_buckets(ip, range_key):
+    window_seconds, agg_seconds = DIFF_BUCKETS_RANGES.get(range_key, DIFF_BUCKETS_RANGES['24h'])
+    now = time.time()
+    cutoff = now - window_seconds
+    with _diff_buckets_lock:
+        buckets = load_diff_buckets()
+        by_bucket = dict(buckets.get(ip, {}))
+
+    agg = {}
+    for k, v in by_bucket.items():
+        try:
+            ts = float(k)
+        except (TypeError, ValueError):
+            continue
+        if ts < cutoff:
+            continue
+        agg_ts = int(ts // agg_seconds) * agg_seconds
+        if v > agg.get(agg_ts, 0):
+            agg[agg_ts] = v
+
+    result = [{"ts": ts, "value": v} for ts, v in sorted(agg.items())]
+    peak = max((b["value"] for b in result), default=0)
+    return result, peak
+
+
 # --- Gestão Dinâmica de Perfil de Alimentação (MQTT / Home Assistant) -----
 # Cruza dados de produção solar / tarifa dinâmica (via MQTT, tipicamente
 # publicados pelo Home Assistant) com perfis de frequência/undervolt para
@@ -1033,6 +1135,18 @@ def cache_reading(ip, data):
         record_diff_history(ip, best)
     except Exception:
         pass
+    try:
+        best = data.get("bestSessionDiff") or data.get("bestDiff")
+        record_diff_bucket(ip, best)
+    except Exception as e:
+        # diagnóstico temporário: se o bucket falhar, regista o motivo num
+        # ficheiro em vez de engolir o erro em silêncio (ajuda a apanhar
+        # bugs que só acontecem no .exe empacotado, não em dev).
+        try:
+            with open(os.path.join(writable_dir(), 'diff_buckets_error.log'), 'a', encoding='utf-8') as f:
+                f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} ip={ip} best={best!r} error={e!r}\n")
+        except Exception:
+            pass
 
 
 def build_overlay_snapshot():
@@ -1618,6 +1732,24 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({"ip": ip_param, "history": by_day}).encode('utf-8'))
+            return
+
+        if path == '/api/diff-buckets':
+            ip_param = (query_params.get('ip') or [''])[0].strip()
+            range_param = (query_params.get('range') or ['24h'])[0].strip().lower()
+            if range_param not in DIFF_BUCKETS_RANGES:
+                range_param = '24h'
+            if ip_param:
+                buckets, peak = get_diff_buckets(ip_param, range_param)
+            else:
+                buckets, peak = [], 0
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "ip": ip_param, "range": range_param, "buckets": buckets, "peak": peak,
+            }).encode('utf-8'))
             return
 
         if path == '/api/mrr/status':
