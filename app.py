@@ -17,6 +17,7 @@ import http.server
 import socketserver
 import urllib.request
 import urllib.parse
+import urllib.error
 import json
 import gzip
 import io
@@ -49,7 +50,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.5.3"
+APP_VERSION = "3.5.4"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -58,6 +59,17 @@ _update_cache_lock = threading.Lock()
 BINANCE_RATES_CACHE_SECONDS = 20  # não martela a API da Binance
 _rates_cache = {"ts": 0, "data": None}
 _rates_cache_lock = threading.Lock()
+
+# --- Parasite Pool (parasite.space) — dados oficiais por endereço ----------
+# parasite.wtf:42069 é só o stratum (protocolo de mineração); o site e a
+# API pública com estatísticas por endereço vivem em parasite.space. Como
+# a Parasite Pool não documenta um contrato de API estável, fetch_parasite_
+# stats() tenta várias rotas plausíveis e fica pela primeira que devolver
+# dados reconhecíveis (ver função para detalhes).
+PARASITE_POOL_BASE_URL = "https://parasite.space"
+PARASITE_STATS_CACHE_SECONDS = 30
+_parasite_stats_cache = {}
+_parasite_stats_cache_lock = threading.Lock()
 
 # --- Contador de utilizadores (nº de arranques da app) ----------------------
 # Serviço gratuito e sem registo (countapi.xyz): cada arranque da app soma
@@ -976,6 +988,378 @@ def fetch_binance_rates(force=False):
     return result
 
 
+def _parse_ckpool_hashrate_to_ths(value):
+    """Converte uma string de hashrate no formato do ckpool (ex: '3.91T',
+    '182P', '950G', '4.5K') para um valor numérico em TH/s. Devolve None se
+    não conseguir interpretar o valor.
+
+    IMPORTANTE: o ckpool (e o fork usado pela Parasite Pool) devolve estes
+    campos SEMPRE como string com sufixo de unidade (ex: '925G', '3.11T').
+    Um número puro (int/float) nunca é o formato real de hashrate do
+    ckpool - normalmente é sinal de termos apanhado um campo com o mesmo
+    nome mas de outra origem (ex: hashrate da rede em H/s, ou um endpoint
+    que não é realmente o que procurávamos). Por isso, um valor numérico
+    puro é rejeitado aqui em vez de ser assumido como já estando em TH/s -
+    isso é o que causava valores absurdos tipo '978000000.00 PH/s'."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    multipliers = {'K': 1e-9, 'M': 1e-6, 'G': 1e-3, 'T': 1.0, 'P': 1e3, 'E': 1e6}
+    suffix = s[-1].upper()
+    try:
+        if suffix in multipliers:
+            return float(s[:-1]) * multipliers[suffix]
+        return None
+    except (ValueError, TypeError):
+        return None
+
+
+def _parse_difficulty_value(value):
+    """Converte um valor de 'best difficulty' para float. Ao contrário do
+    hashrate, aqui um número puro É válido (é o formato usado nos workers
+    individuais, ex: '5716906'). Quando vem com sufixo de unidade ckpool
+    (ex: '37.1G', '2.4M', visto na rota /api/user/...), aplica o
+    multiplicador antes de devolver."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    s = str(value).strip()
+    if not s:
+        return None
+    multipliers = {'K': 1e3, 'M': 1e6, 'G': 1e9, 'T': 1e12, 'P': 1e15, 'E': 1e18}
+    suffix = s[-1].upper()
+    try:
+        if suffix in multipliers:
+            return float(s[:-1]) * multipliers[suffix]
+        return float(s)
+    except (ValueError, TypeError):
+        return None
+
+
+def _try_json_get(url, timeout=6):
+    """Faz um GET a um URL e devolve (status, dados_json_ou_None, texto_bruto,
+    erro_ou_None). Nunca levanta exceção - todos os problemas (rede, HTTP,
+    JSON inválido) vêm refletidos nos valores de retorno, para permitir
+    tentar vários candidatos de URL em sequência sem travar a meio."""
+    req = urllib.request.Request(
+        url,
+        headers={'User-Agent': 'CentroDeComando-ParasiteCheck', 'Accept': 'application/json'}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            status = resp.status
+            raw = resp.read().decode('utf-8', errors='ignore')
+    except urllib.error.HTTPError as he:
+        status = he.code
+        raw = he.read().decode('utf-8', errors='ignore') if he.fp else ''
+        return status, None, raw, None
+    except urllib.error.URLError as ue:
+        return None, None, '', str(ue.reason)
+    except Exception as e:
+        return None, None, '', str(e)
+
+    try:
+        data = json.loads(raw)
+        return status, data, raw, None
+    except json.JSONDecodeError:
+        return status, None, raw, None
+
+
+def fetch_parasite_stats(address, force=False, debug=False):
+    """Consulta a API pública da Parasite Pool (parasite.space - o site
+    oficial da pool; parasite.wtf é só o endereço de stratum usado pelos
+    mineradores, não serve a API/website) para o endereço Bitcoin indicado.
+
+    A Parasite Pool não documenta publicamente um contrato de API estável,
+    por isso esta função tenta, em sequência, um conjunto de rotas
+    plausíveis (baseadas em projetos open-source da comunidade que já leem
+    estes dados) e fica pela primeira que devolver JSON reconhecível. Se
+    nenhuma resultar, o campo "error" fica com o detalhe de cada tentativa,
+    para ser fácil de diagnosticar e ajustar depois.
+    """
+    address = (address or "").strip()
+    if not address:
+        return {"error": "Endereço em falta"}
+
+    cache_key = address
+    with _parasite_stats_cache_lock:
+        entry = _parasite_stats_cache.get(cache_key)
+        if entry and not force and not debug and (time.time() - entry["ts"]) < PARASITE_STATS_CACHE_SECONDS:
+            return entry["data"]
+
+    result = {
+        "hashrate_ths": None,
+        "hashrate_formatted": None,
+        "best_difficulty": None,
+        "best_difficulty_formatted": None,
+        "workers_count": None,
+        "rank": None,
+        "pool_hashrate_phs": None,
+        "pool_hashrate_formatted": None,
+        "error": None,
+    }
+
+    encoded_addr = urllib.parse.quote(address, safe='')
+    personal_candidates = [
+        # Estes dois primeiros correspondem à base de API documentada por
+        # um dashboard de terceiros já a usar a Parasite Pool em produção
+        # (parasite_api_base = "https://parasite.space/api"), por isso vão
+        # primeiro na lista de tentativas.
+        f"{PARASITE_POOL_BASE_URL}/api/{encoded_addr}",
+        f"{PARASITE_POOL_BASE_URL}/api/users/{encoded_addr}",
+        f"{PARASITE_POOL_BASE_URL}/api/miner/{encoded_addr}",
+        f"{PARASITE_POOL_BASE_URL}/api/miners/{encoded_addr}",
+        f"{PARASITE_POOL_BASE_URL}/api/user/{encoded_addr}",
+        f"{PARASITE_POOL_BASE_URL}/api/address/{encoded_addr}",
+        f"{PARASITE_POOL_BASE_URL}/api/stats/{encoded_addr}",
+        f"{PARASITE_POOL_BASE_URL}/api/worker/{encoded_addr}",
+    ]
+
+    attempts_log = []
+    merged = None
+    matched_url = None
+
+    for url in personal_candidates:
+        status, data, raw, net_err = _try_json_get(url)
+        if net_err:
+            attempts_log.append(f"{url} -> falha de ligação: {net_err}")
+            continue
+        if data is None:
+            attempts_log.append(f"{url} -> HTTP {status}, resposta não é JSON ({raw[:120]!r})")
+            continue
+        # Junta tudo num só dicionário para procurar os campos
+        # independentemente de a resposta ser um objeto único, um array
+        # de objetos, ou um objeto com uma chave "data"/"result" aninhada.
+        candidate_merged = {}
+        if isinstance(data, dict):
+            candidate_merged.update(data)
+            for nested_key in ('data', 'result', 'miner', 'user'):
+                nested = data.get(nested_key)
+                if isinstance(nested, dict):
+                    candidate_merged.update(nested)
+        elif isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    candidate_merged.update(item)
+
+        # Só aceita este candidato se reconhecer pelo menos DOIS campos
+        # relevantes (não um só) - um único campo genérico como "hashrate"
+        # pode pertencer a uma resposta completamente diferente (ex: stats
+        # da pool inteira, ou de outro endpoint) e não a dados pessoais
+        # deste endereço. Exigir dois reduz falsos positivos que geravam
+        # números sem sentido.
+        recognisable_keys = (
+            'hashrate1hr', 'hashrate5m', 'hashrate1m', 'hashrate', 'hashRate',
+            'bestshare', 'bestever', 'best_difficulty', 'bestDifficulty',
+            'workers', 'Workers', 'worker_count', 'workerCount', 'rank'
+        )
+        matched_keys = [k for k in recognisable_keys if k in candidate_merged]
+        if len(matched_keys) >= 2:
+            merged = candidate_merged
+            matched_url = url
+            break
+        attempts_log.append(f"{url} -> HTTP {status}, JSON válido mas com poucos campos reconhecidos ({matched_keys}): {str(data)[:150]}")
+
+    if debug:
+        result["debug_attempts"] = attempts_log
+        result["debug_matched_url"] = matched_url
+        result["debug_raw_merged"] = merged
+
+    if merged is None:
+        result["error"] = (
+            "Não foi encontrada nenhuma rota de API válida para este endereço em "
+            f"{PARASITE_POOL_BASE_URL}. Tentativas: " + " | ".join(attempts_log)
+        )
+        if not debug:
+            with _parasite_stats_cache_lock:
+                _parasite_stats_cache[cache_key] = {"ts": time.time(), "data": result}
+        return result
+
+    hashrate_raw = (
+        merged.get('hashrate1hr') or merged.get('hashrate5m') or merged.get('hashrate1m')
+        or merged.get('hashrate') or merged.get('hashRate')
+    )
+    hashrate_ths = _parse_ckpool_hashrate_to_ths(hashrate_raw)
+    if hashrate_ths is None and isinstance(hashrate_raw, (int, float)) and hashrate_raw > 0:
+        # A rota /api/user/<endereço> da Parasite Pool (ao contrário do
+        # formato ckpool clássico) devolve 'hashrate' como número puro em
+        # H/s, não como string com sufixo. Convertemos para TH/s aqui.
+        hashrate_ths = hashrate_raw / 1e12
+    if hashrate_ths is not None:
+        result["hashrate_ths"] = hashrate_ths
+        result["hashrate_formatted"] = (
+            f"{hashrate_ths / 1000:.2f} PH/s" if hashrate_ths >= 1000 else f"{hashrate_ths:.2f} TH/s"
+        )
+
+    best_share = merged.get('bestshare') or merged.get('bestever') or merged.get('best_difficulty') or merged.get('bestDifficulty')
+    if best_share is not None:
+        best_share_num = _parse_difficulty_value(best_share)
+        if best_share_num is not None:
+            result["best_difficulty"] = best_share_num
+            result["best_difficulty_formatted"] = f"{best_share_num:,.0f}".replace(",", " ")
+
+    workers = merged.get('Workers')
+    if workers is None:
+        workers = merged.get('workers')
+    if workers is None:
+        workers = merged.get('worker_count')
+    if workers is None:
+        workers = merged.get('workerCount')
+    if workers is not None:
+        try:
+            result["workers_count"] = int(workers)
+        except (ValueError, TypeError):
+            pass
+
+    rank = merged.get('rank')
+    if rank is not None:
+        try:
+            result["rank"] = int(rank)
+        except (ValueError, TypeError):
+            pass
+
+    # Hashrate global da pool + ranking: a resposta de /api/user/<endereço>
+    # (confirmada em 2026-08-25 via debug real) NÃO traz estes dois campos -
+    # só traz hashrate/workers/bestDifficulty/uptime/workerData do próprio
+    # endereço. Por isso tentamos endpoints separados que costumam existir
+    # em sites deste tipo (leaderboard / lista de todos os mineradores) e,
+    # se vier uma lista, calculamos o ranking nós mesmos pela posição do
+    # endereço nessa lista ordenada por hashrate.
+    pool_candidates = [
+        # Confirmado via DevTools do site oficial em 2026-08-25: devolve
+        # {"uptime","lastBlockTime","lastBlockHash","highestDifficulty",
+        # "hashrate" (número puro em H/s), "users","workers",
+        # "workSinceLastBlock"}.
+        f"{PARASITE_POOL_BASE_URL}/api/pool-stats",
+        f"{PARASITE_POOL_BASE_URL}/api/pool",
+        f"{PARASITE_POOL_BASE_URL}/api/stats",
+        f"{PARASITE_POOL_BASE_URL}/api/hashrate",
+        # Confirmado via DevTools: o leaderboard real aceita parâmetros -
+        # com limit=99 (em vez do limit=9 default) há mais hipótese do
+        # nosso endereço aparecer e termos um "rank" real.
+        f"{PARASITE_POOL_BASE_URL}/api/leaderboard?type=difficulty&limit=99&round=current",
+        f"{PARASITE_POOL_BASE_URL}/api/leaderboard",
+        f"{PARASITE_POOL_BASE_URL}/api/pool/hashrate",
+        f"{PARASITE_POOL_BASE_URL}/api/pool/info",
+        f"{PARASITE_POOL_BASE_URL}/api/info",
+        f"{PARASITE_POOL_BASE_URL}/api/summary",
+        f"{PARASITE_POOL_BASE_URL}/api/overview",
+        f"{PARASITE_POOL_BASE_URL}/api/miners",
+        f"{PARASITE_POOL_BASE_URL}/api/top",
+        f"{PARASITE_POOL_BASE_URL}/api/rankings",
+        f"{PARASITE_POOL_BASE_URL}/api/network",
+        f"{PARASITE_POOL_BASE_URL}/api/global",
+        f"{PARASITE_POOL_BASE_URL}/api/pool/stats",
+    ]
+    pool_attempts_log = []
+    pool_matched_url = None
+    for url in pool_candidates:
+        status, data, raw, net_err = _try_json_get(url, timeout=5)
+        if net_err:
+            pool_attempts_log.append(f"{url} -> falha de ligação: {net_err}")
+            continue
+        if data is None:
+            pool_attempts_log.append(f"{url} -> HTTP {status}, resposta não é JSON")
+            continue
+
+        # Caso A: resposta é uma lista de mineradores/entradas de ranking.
+        # Formato REAL confirmado em /api/leaderboard (2026-08-25):
+        #   {"id": 2529, "address": "bc1q...858s", "diff": 55271806598360,
+        #    "total_blocks": 70049, "diff_rank": 11, "loyalty_rank": 7,
+        #    "combined_score": 9, "claimed": false}
+        # Só tem os TOP N (ex: 9) por dificuldade - não é a lista completa
+        # de todos os mineradores, e o endereço vem mascarado (só início e
+        # fim visíveis) por privacidade. Não tem campo de hashrate por
+        # entrada, por isso esta lista NÃO serve para somar o hashrate
+        # total da pool - só para descobrir o "diff_rank" se o nosso
+        # endereço aparecer nesse top N (a maioria dos mineradores, com
+        # dificuldade normal, não vai aparecer aqui - isso é esperado, não
+        # é bug, e nesse caso o ranking fica mesmo por preencher).
+        entries = None
+        if isinstance(data, list):
+            entries = [e for e in data if isinstance(e, dict)]
+        elif isinstance(data, dict):
+            for list_key in ('miners', 'workers', 'leaderboard', 'entries', 'data', 'results'):
+                nested = data.get(list_key)
+                if isinstance(nested, list):
+                    entries = [e for e in nested if isinstance(e, dict)]
+                    break
+
+        if entries:
+            addr_lower = address.lower()
+            addr_prefix = addr_lower[:6]
+            addr_suffix = addr_lower[-4:]
+
+            def _entry_addr(e):
+                return str(e.get('address') or e.get('id') or e.get('user') or '').lower()
+
+            def _addr_matches(entry_addr):
+                # Endereço mascarado tipo "bc1q...858s" - compara início e
+                # fim, já que o meio não vem na resposta.
+                if not entry_addr:
+                    return False
+                if entry_addr == addr_lower:
+                    return True
+                if '...' in entry_addr:
+                    pre, _, suf = entry_addr.partition('...')
+                    return addr_prefix.startswith(pre) and addr_lower.endswith(suf)
+                return False
+
+            my_entry = next((e for e in entries if _addr_matches(_entry_addr(e))), None)
+            if my_entry is not None:
+                rank_val = my_entry.get('diff_rank') or my_entry.get('rank') or my_entry.get('loyalty_rank')
+                if rank_val is not None:
+                    try:
+                        result["rank"] = int(rank_val)
+                    except (ValueError, TypeError):
+                        pass
+                pool_matched_url = url
+                break
+
+            pool_attempts_log.append(
+                f"{url} -> lista com {len(entries)} itens (formato leaderboard/diff_rank), "
+                f"mas o endereço {addr_prefix}...{addr_suffix} não está nela (normal se não "
+                f"estiveres no top desse ranking)."
+            )
+            if debug:
+                result["debug_pool_raw_entries"] = entries
+            continue
+
+        # Caso B: resposta é um objeto único com o hashrate total já
+        # agregado (sem lista de mineradores) - não dá para calcular
+        # ranking, mas dá para preencher o hashrate da pool.
+        pool_merged = data if isinstance(data, dict) else {}
+        pool_hashrate_raw = (
+            pool_merged.get('hashrate1hr') or pool_merged.get('hashrate5m')
+            or pool_merged.get('hashrate') or pool_merged.get('poolHashrate')
+        )
+        pool_hashrate_ths = _parse_ckpool_hashrate_to_ths(pool_hashrate_raw)
+        if pool_hashrate_ths is None and isinstance(pool_hashrate_raw, (int, float)) and pool_hashrate_raw > 0:
+            pool_hashrate_ths = pool_hashrate_raw / 1e12
+        if pool_hashrate_ths is not None:
+            result["pool_hashrate_phs"] = pool_hashrate_ths / 1000
+            result["pool_hashrate_formatted"] = (
+                f"{pool_hashrate_ths / 1000:.2f} PH/s" if pool_hashrate_ths >= 1000 else f"{pool_hashrate_ths:.2f} TH/s"
+            )
+            pool_matched_url = url
+            break
+        pool_attempts_log.append(f"{url} -> HTTP {status}, JSON válido mas sem campos reconhecidos: {str(data)[:150]}")
+
+    if debug:
+        result["debug_pool_attempts"] = pool_attempts_log
+        result["debug_pool_matched_url"] = pool_matched_url
+
+    if not debug:
+        with _parasite_stats_cache_lock:
+            _parasite_stats_cache[cache_key] = {"ts": time.time(), "data": result}
+    return result
+
+
 def writable_dir():
     """Pasta onde a app pode gravar configuração de forma persistente.
     Ao contrário de resource_dir(), que em modo .exe aponta para uma
@@ -1619,6 +2003,24 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(rates).encode('utf-8'))
+            return
+
+        if path == '/api/parasite-stats':
+            address = query_params.get('address', [''])[0].strip()
+            force = query_params.get('force', ['0'])[0] == '1'
+            debug = query_params.get('debug', ['0'])[0] == '1'
+            if not address:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Endereço em falta"}).encode('utf-8'))
+                return
+            result = fetch_parasite_stats(address, force=force, debug=debug)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
             return
 
         if path == '/api/power/config':
