@@ -10,14 +10,16 @@
   "profiles": [],
   "devices": [
     {
-      "id": "m_29qfpm6",
-      "name": "BITAXE",
-      "ip": "192.168.25.38"
+      "id": "m_szw5xkk",
+      "name": "bitaxe",
+      "ip": "192.168.25.38",
+      "poolAuto": false
     },
     {
-      "id": "m_tq0o5nl",
+      "id": "m_76dnqiv",
       "name": "nerdqaxe6th",
-      "ip": "192.168.25.163"
+      "ip": "192.168.25.163",
+      "poolAuto": false
     }
   ],
   "mrr": {
@@ -32,12 +34,17 @@
     "notify_offline": true,
     "notify_record": true,
     "notify_rental_ending": true,
-    "notify_hashrate_drop": true
+    "notify_hashrate_drop": true,
+    "notify_windows_toast": true
   },
   "pools": {
     "btc_address": "",
     "worker_suffix": "",
     "min_gain_percent": 5,
     "eval_interval_minutes": 15
+  },
+  "security": {
+    "https_enabled": false,
+    "restrict_proxy_to_known_ips": true
   }
 }
