@@ -24,6 +24,9 @@ import io
 import copy
 import hmac
 import hashlib
+import re
+import ssl
+import ipaddress
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
@@ -43,6 +46,13 @@ except ImportError:
     ImageDraw = None
     TRAY_AVAILABLE = False
 
+try:
+    from winotify import Notification as _WinToastNotification
+    WINDOWS_TOAST_AVAILABLE = (sys.platform == 'win32')
+except ImportError:
+    _WinToastNotification = None
+    WINDOWS_TOAST_AVAILABLE = False
+
 PORT = 8765
 SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
@@ -50,7 +60,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.5.4"
+APP_VERSION = "3.5.5"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -70,6 +80,20 @@ PARASITE_POOL_BASE_URL = "https://parasite.space"
 PARASITE_STATS_CACHE_SECONDS = 30
 _parasite_stats_cache = {}
 _parasite_stats_cache_lock = threading.Lock()
+
+# --- Parasite Pool Refinery (aluguer de hashrate) ---------------------------
+# Mesma lógica de "tentar várias rotas plausíveis" usada acima para as
+# estatísticas pessoais - a Refinery (mercado de aluguer de hashrate da
+# Parasite Pool, em beta) também não tem contrato de API público
+# documentado. fetch_parasite_refinery() tenta rotas candidatas e fica pela
+# primeira que devolver dados reconhecíveis.
+PARASITE_REFINERY_CACHE_SECONDS = 30
+_parasite_refinery_cache = {}
+_parasite_refinery_cache_lock = threading.Lock()
+
+PARASITE_REFINERY_STATUS_CACHE_SECONDS = 20
+_parasite_refinery_status_cache = {"ts": 0, "data": None}
+_parasite_refinery_status_cache_lock = threading.Lock()
 
 # --- Contador de utilizadores (nº de arranques da app) ----------------------
 # Serviço gratuito e sem registo (countapi.xyz): cada arranque da app soma
@@ -849,12 +873,33 @@ DEFAULT_POWER_CONFIG = {
         "notify_record": True,
         "notify_rental_ending": True,
         "notify_hashrate_drop": True,
+        # Toast nativo do Windows - além do Telegram/Discord, útil para
+        # quando a app está aberta mas não estás a olhar para o browser.
+        # Fica sem efeito (silenciosamente) fora do Windows ou sem o
+        # pacote 'winotify' instalado.
+        "notify_windows_toast": True,
     },
     "pools": {
         "btc_address": "",
         "worker_suffix": "",
         "min_gain_percent": 5,
         "eval_interval_minutes": 15,
+    },
+    "security": {
+        # HTTPS local com certificado autoassinado. Desligado por omissão
+        # para não quebrar quem já tem atalhos/bookmarks em http://; ativar
+        # requer reiniciar a app (o servidor só troca de protocolo no
+        # arranque). O browser vai mostrar um aviso de certificado não
+        # confiável na primeira visita - é normal e esperado (o certificado
+        # é gerado localmente, não é assinado por nenhuma autoridade
+        # pública), só serve para cifrar o tráfego dentro da tua rede.
+        "https_enabled": False,
+        # Restringe o /api/proxy (e o /api/restart-machine) a só aceitarem
+        # como alvo os IPs das máquinas já registadas em "devices", para
+        # que outro dispositivo na rede local não possa abusar do servidor
+        # como proxy genérico para qualquer host/porta. Ligado por omissão;
+        # só vale a pena desligar em cenários de depuração.
+        "restrict_proxy_to_known_ips": True,
     },
 }
 
@@ -1360,6 +1405,220 @@ def fetch_parasite_stats(address, force=False, debug=False):
     return result
 
 
+def _format_compact_number(value, units=('', 'K', 'M', 'G', 'T', 'P', 'E', 'Z'), base=1000.0):
+    """Formata um número grande com sufixo K/M/G/T/P/E, ex: 37114266368 ->
+    '37.1G'. Mesma convenção usada em formatDiff() no frontend."""
+    if value is None:
+        return None
+    try:
+        v = float(value)
+    except (ValueError, TypeError):
+        return None
+    i = 0
+    while v >= base and i < len(units) - 1:
+        v /= base
+        i += 1
+    decimals = 0 if (v >= 100 or i == 0) else 1
+    return f"{v:.{decimals}f}{units[i]}"
+
+
+def _format_hash_days(raw):
+    """Converte o valor bruto de 'requested_hash_days' / 'delivered_hash_days'
+    devolvido pela API da Refinery para um texto tipo '1.00 PHd' / '25.0 PHd'
+    / '1.00 EHd'.
+
+    Confirmado por inspeção real da API (2026-08-26): uma encomenda de
+    1 PHd (confirmada pelo próprio utilizador, que alugou exatamente 1 PHd)
+    tem requested_hash_days = 1000000000000000 (1e15). Ou seja, 1 PHd
+    (petahash-dia) = 1e15 nestas unidades brutas — o que também bate certo
+    com a Capacidade total da pool (1e18 -> 1000 PHd = 1.00 EHd)."""
+    if raw is None:
+        return None, None
+    try:
+        raw = float(raw)
+    except (ValueError, TypeError):
+        return None, None
+    phd = raw / 1e15
+    units = ['Hd', 'KHd', 'MHd', 'GHd', 'THd', 'PHd', 'EHd', 'ZHd']
+    idx = 5  # começa em PHd
+    v = phd
+    while v >= 1000 and idx < len(units) - 1:
+        v /= 1000
+        idx += 1
+    while 0 < v < 1 and idx > 0:
+        v *= 1000
+        idx -= 1
+    decimals = 0 if v >= 100 else 2
+    return v, f"{v:.{decimals}f} {units[idx]}"
+
+
+def fetch_parasite_refinery_status(force=False, debug=False):
+    """Consulta os totais globais da Refinery (Capacity / Used / Hashprice,
+    independentes de endereço). Endpoint confirmado por inspeção direta da
+    API em 2026-08-26 (DevTools, pedido "status" na lista de rede):
+        GET https://parasite.space/api/router/status
+    Devolve, entre outros campos: total_capacity_hash_days,
+    used_capacity_hash_days, hash_price (sats/PHd)."""
+    with _parasite_refinery_status_cache_lock:
+        cached = _parasite_refinery_status_cache
+        if cached["data"] is not None and not force and not debug and (time.time() - cached["ts"]) < PARASITE_REFINERY_STATUS_CACHE_SECONDS:
+            return cached["data"]
+
+    out = {
+        "capacity_ehd": None, "capacity_formatted": None,
+        "used_phd": None, "used_formatted": None,
+        "hashprice_sats_phd": None, "hashprice_formatted": None,
+        "error": None,
+    }
+    url = f"{PARASITE_POOL_BASE_URL}/api/router/status"
+    status, data, raw, net_err = _try_json_get(url)
+    if debug:
+        out["debug_matched_url"] = url
+        out["debug_status"] = status
+        out["debug_net_err"] = net_err
+    if net_err:
+        out["error"] = f"Falha de ligação a {url}: {net_err}"
+        return out
+    if not isinstance(data, dict):
+        out["error"] = f"{url} -> HTTP {status}, resposta inesperada ({str(raw)[:150]!r})"
+        return out
+
+    cap_phd, cap_text = _format_hash_days(data.get('total_capacity_hash_days'))
+    if cap_phd is not None:
+        out["capacity_ehd"] = cap_phd / 1000.0
+        out["capacity_formatted"] = cap_text
+
+    used_phd, used_text = _format_hash_days(data.get('used_capacity_hash_days'))
+    if used_phd is not None:
+        out["used_phd"] = used_phd
+        out["used_formatted"] = used_text
+
+    hp = data.get('hash_price')
+    if hp is not None:
+        try:
+            hp = float(hp)
+            out["hashprice_sats_phd"] = hp
+            out["hashprice_formatted"] = f"{hp:,.0f}".replace(",", " ") + " sats/PHd"
+        except (ValueError, TypeError):
+            pass
+
+    if not debug:
+        with _parasite_refinery_status_cache_lock:
+            _parasite_refinery_status_cache["ts"] = time.time()
+            _parasite_refinery_status_cache["data"] = out
+    return out
+
+
+def fetch_parasite_refinery(address=None, force=False, debug=False):
+    """Consulta a funcionalidade Refinery (beta) da Parasite Pool - o
+    mercado onde é possível alugar hashrate - e devolve as encomendas
+    (orders) associadas ao endereço Bitcoin indicado.
+
+    Endpoint confirmado por inspeção direta da API em 2026-08-26 (DevTools):
+        GET https://parasite.space/api/router/orders?address=<endereço>
+    Devolve uma lista JSON simples de encomendas, cada uma com:
+        id, status ('expired'/'fulfilled'/...), review, endpoint, username,
+        requested_hash_days, hashrate, delivered_hash_days, best_share.
+
+    Não existe (ainda) confirmação de um endpoint para os totais globais
+    "Capacity / Used / Hashprice" mostrados no topo da página Refinery -
+    esses campos ficam a None até termos esse endpoint confirmado também.
+    """
+    address = (address or "").strip()
+    cache_key = address or "__global__"
+    with _parasite_refinery_cache_lock:
+        entry = _parasite_refinery_cache.get(cache_key)
+        if entry and not force and not debug and (time.time() - entry["ts"]) < PARASITE_REFINERY_CACHE_SECONDS:
+            return entry["data"]
+
+    result = {
+        "capacity_ehd": None,
+        "capacity_formatted": None,
+        "used_phd": None,
+        "used_formatted": None,
+        "hashprice_sats_phd": None,
+        "hashprice_formatted": None,
+        "orders": [],
+        "error": None,
+    }
+
+    if not address:
+        result["error"] = "Endereço em falta."
+        return result
+
+    status_data = fetch_parasite_refinery_status(force=force, debug=debug)
+    result["capacity_ehd"] = status_data.get("capacity_ehd")
+    result["capacity_formatted"] = status_data.get("capacity_formatted")
+    result["used_phd"] = status_data.get("used_phd")
+    result["used_formatted"] = status_data.get("used_formatted")
+    result["hashprice_sats_phd"] = status_data.get("hashprice_sats_phd")
+    result["hashprice_formatted"] = status_data.get("hashprice_formatted")
+    if debug:
+        result["debug_status_endpoint"] = status_data
+
+    encoded_addr = urllib.parse.quote(address, safe='')
+    url = f"{PARASITE_POOL_BASE_URL}/api/router/orders?address={encoded_addr}"
+    status, data, raw, net_err = _try_json_get(url)
+
+    if debug:
+        result["debug_matched_url"] = url
+        result["debug_status"] = status
+        result["debug_net_err"] = net_err
+        result["debug_raw"] = raw[:2000] if isinstance(raw, str) else raw
+
+    if net_err:
+        result["error"] = f"Falha de ligação a {url}: {net_err}"
+        return result
+    if data is None:
+        result["error"] = f"{url} -> HTTP {status}, resposta não é JSON ({str(raw)[:150]!r})"
+        return result
+    if not isinstance(data, list):
+        result["error"] = f"{url} -> resposta JSON inesperada (esperava uma lista): {str(data)[:200]}"
+        return result
+
+    orders_out = []
+    for o in data:
+        if not isinstance(o, dict):
+            continue
+        requested_raw = o.get('requested_hash_days')
+        delivered_raw = o.get('delivered_hash_days')
+        _, req_text = _format_hash_days(requested_raw)
+
+        status_str = str(o.get('status') or '').lower() or None
+        if status_str == 'fulfilled':
+            progress_pct = 100.0
+        elif requested_raw and delivered_raw is not None:
+            try:
+                progress_pct = max(0.0, min(100.0, float(delivered_raw) / float(requested_raw) * 100.0))
+            except (ValueError, TypeError, ZeroDivisionError):
+                progress_pct = 0.0
+        else:
+            progress_pct = 0.0
+
+        hashrate_val = o.get('hashrate')
+        hashrate_text = f"{_format_compact_number(hashrate_val) or '0'} H/s" if hashrate_val is not None else '0 H/s'
+
+        best_share_raw = o.get('best_share')
+        best_share_text = _format_compact_number(best_share_raw) if best_share_raw is not None else None
+
+        orders_out.append({
+            "id": o.get('id'),
+            "status": status_str,
+            "requested_formatted": req_text,
+            "hashrate": hashrate_text,
+            "best_share": best_share_raw,
+            "best_share_formatted": best_share_text,
+            "progress_pct": progress_pct,
+        })
+
+    result["orders"] = orders_out
+
+    if not debug:
+        with _parasite_refinery_cache_lock:
+            _parasite_refinery_cache[cache_key] = {"ts": time.time(), "data": result}
+    return result
+
+
 def writable_dir():
     """Pasta onde a app pode gravar configuração de forma persistente.
     Ao contrário de resource_dir(), que em modo .exe aponta para uma
@@ -1385,6 +1644,7 @@ def load_power_config():
         cfg["mrr"].update(data.get("mrr", {}) or {})
         cfg["alerts"].update(data.get("alerts", {}) or {})
         cfg["pools"].update(data.get("pools", {}) or {})
+        cfg["security"].update(data.get("security", {}) or {})
         return cfg
     except Exception:
         return copy.deepcopy(DEFAULT_POWER_CONFIG)
@@ -1429,9 +1689,35 @@ def send_discord_alert(webhook_url, message):
         return True
 
 
-def broadcast_alert(message):
+def send_windows_toast(title, message):
+    """Mostra uma notificação nativa do Windows (toast), para quando a app
+    está aberta mas o utilizador não está a olhar para o browser. Falha
+    sempre em silêncio (nunca levanta exceção) se não estiver no Windows ou
+    se faltar o pacote 'winotify' (pip install winotify / incluir no build
+    do PyInstaller) - os outros canais (Telegram/Discord) continuam a
+    funcionar normalmente independentemente disto."""
+    if not WINDOWS_TOAST_AVAILABLE:
+        return
+    try:
+        icon_path = os.path.join(resource_dir(), TRAY_ICON_FILENAME)
+        toast = _WinToastNotification(
+            app_id="Centro de Comando",
+            title=title,
+            msg=message,
+            icon=icon_path if os.path.exists(icon_path) else "",
+            duration="short",
+        )
+        toast.show()
+    except Exception as e:
+        print(f"[toast] falha ao mostrar notificação: {e}", flush=True)
+
+
+def broadcast_alert(message, title="🔔 Centro de Comando"):
     """Envia a mesma mensagem a todos os canais configurados. Devolve uma
-    lista de erros (vazia se tudo correu bem ou nada estiver configurado)."""
+    lista de erros (vazia se tudo correu bem ou nada estiver configurado).
+    O toast do Windows não entra nesta lista de erros mesmo se falhar -
+    é um canal local "de bónus", não um serviço externo que o utilizador
+    configurou explicitamente e cujo falha vale a pena reportar."""
     with POWER_CONFIG_LOCK:
         alerts_cfg = copy.deepcopy(power_config.get("alerts", {}) or {})
 
@@ -1450,6 +1736,9 @@ def broadcast_alert(message):
             send_discord_alert(webhook_url, message)
         except Exception as e:
             errors.append(f"Discord: {e}")
+
+    if alerts_cfg.get("notify_windows_toast", True):
+        send_windows_toast(title, message)
 
     return errors
 
@@ -1531,6 +1820,8 @@ def cache_reading(ip, data):
                 f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} ip={ip} best={best!r} error={e!r}\n")
         except Exception:
             pass
+
+
 
 
 def build_overlay_snapshot():
@@ -1751,6 +2042,111 @@ def get_local_ip():
     return ip
 
 
+# --- Firewall simples de IPs para o /api/proxy -------------------------------
+# O /api/proxy encaminha pedidos para o IP dado em ?ip=... . Sem restrição,
+# qualquer outro dispositivo na rede local podia usar este servidor como
+# proxy genérico (pedir-lhe para contactar qualquer IP/porta em nome dele).
+# Para evitar isso, só deixamos passar pedidos cujo IP de destino já esteja
+# registado em power_config["devices"] (as máquinas que o próprio utilizador
+# adicionou ao painel). Pode ser desligado em power_config["security"]
+# ["restrict_proxy_to_known_ips"] para depuração.
+def _known_device_ips():
+    with POWER_CONFIG_LOCK:
+        devices = power_config.get("devices", []) or []
+    return {str(d.get("ip", "")).strip() for d in devices if d.get("ip")}
+
+
+def is_proxy_target_allowed(ip):
+    with POWER_CONFIG_LOCK:
+        restrict = bool(power_config.get("security", {}).get("restrict_proxy_to_known_ips", True))
+    if not restrict:
+        return True
+    return ip in _known_device_ips()
+
+
+# --- HTTPS local com certificado autoassinado --------------------------------
+TLS_CERT_FILENAME = "server_cert.pem"
+TLS_KEY_FILENAME = "server_key.pem"
+
+
+def _tls_cert_paths():
+    return (
+        os.path.join(writable_dir(), TLS_CERT_FILENAME),
+        os.path.join(writable_dir(), TLS_KEY_FILENAME),
+    )
+
+
+def ensure_self_signed_cert():
+    """Garante que existe um par certificado/chave autoassinado para o modo
+    HTTPS opcional. Gera um novo par (RSA 2048, válido 10 anos, só para uso
+    local) na primeira vez que é preciso e reaproveita sempre o mesmo depois
+    disso - assim o aviso de "certificado não confiável" que o browser
+    mostra na primeira visita só acontece uma vez por instalação, não a
+    cada arranque.
+
+    Requer o pacote 'cryptography' (pip install cryptography / incluir no
+    build do PyInstaller). Se não estiver disponível, devolve None e quem
+    chamar esta função deve cair de volta para HTTP normal em vez de
+    rebentar o arranque da app."""
+    cert_path, key_path = _tls_cert_paths()
+    if os.path.exists(cert_path) and os.path.exists(key_path):
+        return cert_path, key_path
+
+    try:
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+        import datetime
+
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Centro de Comando (rede local)")])
+
+        san_entries = [x509.DNSName("localhost")]
+        for candidate_ip in ("127.0.0.1", "::1", get_local_ip()):
+            try:
+                san_entries.append(x509.IPAddress(ipaddress.ip_address(candidate_ip)))
+            except Exception:
+                pass
+
+        now = datetime.datetime.utcnow()
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(name)
+            .issuer_name(name)
+            .public_key(key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(now - datetime.timedelta(days=1))
+            .not_valid_after(now + datetime.timedelta(days=3650))
+            .add_extension(x509.SubjectAlternativeName(san_entries), critical=False)
+            .sign(key, hashes.SHA256())
+        )
+
+        with open(key_path, "wb") as f:
+            f.write(key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption(),
+            ))
+        with open(cert_path, "wb") as f:
+            f.write(cert.public_bytes(serialization.Encoding.PEM))
+
+        print(f"[tls] certificado autoassinado gerado em {cert_path}", flush=True)
+        return cert_path, key_path
+    except ModuleNotFoundError:
+        print("[tls] pacote 'cryptography' não instalado - modo HTTPS indisponível "
+              "(a app continua a funcionar normalmente em HTTP).", flush=True)
+        return None
+    except Exception as e:
+        print(f"[tls] falha ao gerar certificado autoassinado: {e}", flush=True)
+        return None
+
+
+def dashboard_url_scheme():
+    with POWER_CONFIG_LOCK:
+        return "https" if power_config.get("security", {}).get("https_enabled") else "http"
+
+
 def probe_ip(ip):
     for path in ('/api/system/info', '/api/system'):
         try:
@@ -1814,6 +2210,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             target_ip = ip_list[0].strip()
+
+            if not is_proxy_target_allowed(target_ip):
+                self.send_response(403)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "error": "IP não reconhecido - adiciona esta máquina ao painel antes de a consultar"
+                }).encode('utf-8'))
+                return
 
             # Tenta primeiro o endpoint que se sabe (de um pedido anterior)
             # que esta máquina usa, para não perder tempo a sondar os
@@ -2023,6 +2429,24 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(result).encode('utf-8'))
             return
 
+        if path == '/api/parasite-refinery':
+            address = query_params.get('address', [''])[0].strip()
+            force = query_params.get('force', ['0'])[0] == '1'
+            debug = query_params.get('debug', ['0'])[0] == '1'
+            if not address:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Endereço em falta"}).encode('utf-8'))
+                return
+            result = fetch_parasite_refinery(address=address, force=force, debug=debug)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
         if path == '/api/power/config':
             with POWER_CONFIG_LOCK:
                 cfg = copy.deepcopy(power_config)
@@ -2089,10 +2513,22 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
         if path == '/api/alerts/config':
             with POWER_CONFIG_LOCK:
                 alerts_cfg = copy.deepcopy(power_config.get("alerts", {}) or {})
+            alerts_cfg["toast_available"] = WINDOWS_TOAST_AVAILABLE
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(alerts_cfg, ensure_ascii=False).encode('utf-8'))
+            return
+
+        if path == '/api/security/config':
+            with POWER_CONFIG_LOCK:
+                security_cfg = copy.deepcopy(power_config.get("security", {}) or {})
+            cert_path, key_path = _tls_cert_paths()
+            security_cfg["cert_ready"] = os.path.exists(cert_path) and os.path.exists(key_path)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(security_cfg, ensure_ascii=False).encode('utf-8'))
             return
 
         if path == '/api/pools/catalog':
@@ -2445,6 +2881,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 "notify_record": bool(body.get("notify_record", existing.get("notify_record", True))),
                 "notify_rental_ending": bool(body.get("notify_rental_ending", existing.get("notify_rental_ending", True))),
                 "notify_hashrate_drop": bool(body.get("notify_hashrate_drop", existing.get("notify_hashrate_drop", True))),
+                "notify_windows_toast": bool(body.get("notify_windows_toast", existing.get("notify_windows_toast", True))),
             }
 
             with POWER_CONFIG_LOCK:
@@ -2459,6 +2896,44 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
+            return
+
+        if path == '/api/security/config':
+            with POWER_CONFIG_LOCK:
+                existing = copy.deepcopy(power_config.get("security", {}) or {})
+
+            https_enabled = bool(body.get("https_enabled", existing.get("https_enabled", False)))
+            restrict = bool(body.get("restrict_proxy_to_known_ips", existing.get("restrict_proxy_to_known_ips", True)))
+
+            cert_ok = True
+            if https_enabled:
+                # Gera o certificado já agora (em vez de só no arranque) para
+                # dar feedback imediato ao utilizador se faltar o pacote
+                # 'cryptography', em vez de ele só descobrir ao reiniciar.
+                cert_ok = ensure_self_signed_cert() is not None
+
+            new_security = {
+                "https_enabled": https_enabled and cert_ok,
+                "restrict_proxy_to_known_ips": restrict,
+            }
+
+            with POWER_CONFIG_LOCK:
+                new_cfg = copy.deepcopy(power_config)
+                new_cfg["security"] = new_security
+                saved = save_power_config(new_cfg)
+                if saved:
+                    power_config = new_cfg
+
+            self.send_response(200 if saved else 500)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "ok": saved,
+                "https_enabled": new_security["https_enabled"],
+                "cert_ready": cert_ok,
+                "restart_required": https_enabled != bool(existing.get("https_enabled", False)),
+            }).encode('utf-8'))
             return
 
         if path == '/api/alerts/notify':
@@ -2534,6 +3009,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "IP em falta"}).encode('utf-8'))
                 return
 
+            if not is_proxy_target_allowed(target_ip):
+                self.send_response(403)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "error": "IP não reconhecido - adiciona esta máquina ao painel antes de a reiniciar"
+                }).encode('utf-8'))
+                return
+
             try:
                 req = urllib.request.Request(
                     f"http://{target_ip}/api/system/restart",
@@ -2604,7 +3089,7 @@ def _load_tray_image():
 
 
 def _tray_abrir_painel(icon=None, item=None):
-    webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
+    webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
 
 
 def _tray_sair(icon=None, item=None):
@@ -2670,6 +3155,25 @@ class QuietThreadingTCPServer(socketserver.ThreadingTCPServer):
 
 def start_server():
     with QuietThreadingTCPServer(("", PORT), NerdQaxeProxyHandler) as httpd:
+        with POWER_CONFIG_LOCK:
+            https_wanted = bool(power_config.get("security", {}).get("https_enabled"))
+
+        if https_wanted:
+            cert_paths = ensure_self_signed_cert()
+            if cert_paths:
+                cert_path, key_path = cert_paths
+                try:
+                    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                    ctx.load_cert_chain(certfile=cert_path, keyfile=key_path)
+                    httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+                    print("[tls] servidor a correr em HTTPS (certificado autoassinado).", flush=True)
+                except Exception as e:
+                    # Nunca deixa uma falha de TLS impedir a app de arrancar -
+                    # cai de volta para HTTP simples e regista o motivo.
+                    print(f"[tls] falha ao ativar HTTPS, a continuar em HTTP: {e}", flush=True)
+            else:
+                print("[tls] HTTPS pedido mas sem certificado disponível - a continuar em HTTP.", flush=True)
+
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
@@ -2699,7 +3203,7 @@ def main():
         # sem disparar o pagehide.
         start_tray_icon()
 
-        webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
+        webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
 
         # Mantém o processo vivo enquanto o servidor corre em background
         # (o watchdog acima é quem trata do fecho total quando for preciso)
@@ -2710,7 +3214,7 @@ def main():
         # reaproveita esse servidor e abre mais um separador. Este processo
         # não é dono de nada, por isso não deve ficar escondido em segundo
         # plano depois disto.
-        webbrowser.open(f'http://localhost:{PORT}/nerdqaxe-dashboard.html')
+        webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
 
 
 if __name__ == '__main__':
