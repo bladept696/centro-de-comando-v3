@@ -3493,6 +3493,7 @@
 <div class="update-banner" id="updateBanner">
   <span class="dot"></span>
   <span id="updateBannerText"></span>
+  <button class="close-update" id="updateBannerInstall" title="Descarregar e instalar" style="margin-left:8px;">⬇️ Atualizar agora</button>
   <button class="close-update" id="updateBannerClose" title="Fechar" aria-label="Fechar aviso de atualização">✕</button>
 </div>
 
@@ -9527,8 +9528,18 @@ async function checkForUpdate(){
 
     text.innerHTML = `Está disponível a versão <b>v${data.latest_version}</b> ` +
       `(tens a v${data.current_version}). ` +
-      `<a href="${data.release_url}" target="_blank" rel="noopener">Ver e descarregar</a>`;
+      `<a href="${data.release_url}" target="_blank" rel="noopener">Ver notas da versão</a>`;
     banner.classList.add('show');
+
+    const installBtn = $('updateBannerInstall');
+    if(installBtn) {
+      // Só mostra o botão de atualização automática se a release tiver
+      // mesmo um instalador (.exe) anexado - senão só resta o link manual.
+      installBtn.style.display = data.installer_url ? '' : 'none';
+      installBtn.disabled = false;
+      installBtn.textContent = '⬇️ Atualizar agora';
+      installBtn.onclick = () => startAutoUpdate(installBtn, text);
+    }
 
     $('updateBannerClose').onclick = () => {
       banner.classList.remove('show');
@@ -9539,6 +9550,54 @@ async function checkForUpdate(){
   }
 }
 
+async function startAutoUpdate(installBtn, text){
+  installBtn.disabled = true;
+  installBtn.textContent = 'A descarregar…';
+  try {
+    const res = await fetch('/api/update/install', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({silent: true})
+    });
+    const data = await res.json();
+    if(!data.ok) {
+      installBtn.disabled = false;
+      installBtn.textContent = '⬇️ Atualizar agora';
+      text.textContent = 'Falha ao descarregar a atualização: ' + (data.error || 'erro desconhecido') + '. Tenta pelo link manual acima.';
+      return;
+    }
+    text.textContent = 'A instalar a nova versão… a app vai fechar-se sozinha e a janela do instalador vai abrir a seguir.';
+    pollUpdateStatus(installBtn, text);
+  } catch(e) {
+    installBtn.disabled = false;
+    installBtn.textContent = '⬇️ Atualizar agora';
+    text.textContent = 'Não foi possível contactar o servidor local para atualizar.';
+  }
+}
+
+function pollUpdateStatus(installBtn, text){
+  const iv = setInterval(async () => {
+    try {
+      const res = await fetch('/api/update/status');
+      const data = await res.json();
+      if(data.status === 'error') {
+        clearInterval(iv);
+        installBtn.disabled = false;
+        installBtn.textContent = '⬇️ Atualizar agora';
+        text.textContent = 'Falha na atualização: ' + (data.error || 'erro desconhecido');
+      } else if(data.status === 'launching' || data.status === 'done') {
+        clearInterval(iv);
+        text.textContent = 'Instalador lançado. Se não aparecer nenhuma janela, o painel deixou de responder porque a app já fechou - normal, é só continuar no instalador.';
+      }
+      // 'downloading' - continua a mostrar o texto atual, só faz polling.
+    } catch(e) {
+      // a app pode já ter fechado (server desligado a meio do processo) -
+      // isso é o comportamento esperado, por isso para o polling em silêncio.
+      clearInterval(iv);
+    }
+  }, 1500);
+}
+
 function loadDevicesFromLocalStorage(){
   try {
     const res = localStorage.getItem(DEVICES_KEY);
@@ -9546,7 +9605,7 @@ function loadDevicesFromLocalStorage(){
   } catch(e) { return []; }
 }
 
-// As máquinas registadas ficam gravadas no servidor (power_profiles.json),
+// As máquinas registadas ficam gravadas no servidor (config.json),
 // para não se perderem se limpares o cache do browser ou abrires o painel
 // noutro PC. Na primeira vez que o servidor não tem nada gravado, migra
 // automaticamente o que já estava no localStorage deste browser.
@@ -11151,12 +11210,12 @@ const AI_KB = [
          en: `The simulator combines your current hashrate with real-time Bitcoin network data to estimate the impact of the next difficulty adjustment (every 2016 blocks) on your theoretical probability of finding a solo block.`,
          es: `El simulador cruza tu hashrate actual con los datos en tiempo real de la red Bitcoin para estimar el impacto del próximo ajuste de dificultad (cada 2016 bloques) en tu probabilidad teórica de encontrar un bloque en solitario.`,
          fr: `Le simulateur croise ton hashrate actuel avec les données en temps réel du réseau Bitcoin pour estimer l'impact du prochain ajustement de difficulté (tous les 2016 blocs) sur ta probabilité théorique de trouver un bloc en solo.` } },
-  { key: 'configuracao_faq', kw: ['configuracao','configuração','ficheiro','power_profiles','gravar','guardar','config file'],
+  { key: 'configuracao_faq', kw: ['configuracao','configuração','ficheiro','config.json','power_profiles','gravar','guardar','config file'],
     q: { pt: `Onde fica guardada a configuração?`, en: `Where is the configuration stored?`, es: `¿Dónde se guarda la configuración?`, fr: `Où est stockée la configuration ?` },
-    a: { pt: `A configuração dos Perfis de Energia fica em power_profiles.json, ao lado do executável ou do app.py. As máquinas registadas e outras preferências ficam guardadas no localStorage do teu browser.`,
-         en: `The Power Profiles configuration is stored in power_profiles.json, next to the executable or app.py. Registered machines and other preferences are stored in your browser's localStorage.`,
-         es: `La configuración de los Perfiles de Energía se guarda en power_profiles.json, junto al ejecutable o a app.py. Las máquinas registradas y otras preferencias se guardan en el localStorage de tu navegador.`,
-         fr: `La configuration des Profils d'Énergie est stockée dans power_profiles.json, à côté de l'exécutable ou de app.py. Les machines enregistrées et les autres préférences sont stockées dans le localStorage de ton navigateur.` } },
+    a: { pt: `Tudo o que interessa manter entre atualizações - MQTT, IPs/nomes das máquinas, perfis de energia e alertas - fica gravado em config.json, ao lado do executável (não dentro dele), por isso sobrevive a reinstalações. Versões antigas usavam o nome power_profiles.json; é migrado automaticamente na primeira vez que abres a nova versão. O browser guarda só uma cópia de reserva no localStorage, para o painel continuar a funcionar mesmo que o servidor esteja indisponível.`,
+         en: `Everything worth keeping across updates - MQTT, machine IPs/names, power profiles and alerts - is saved to config.json, next to the executable (not inside it), so it survives reinstalls. Older versions used the name power_profiles.json; it's migrated automatically the first time you open the new version. The browser only keeps a backup copy in localStorage, so the panel keeps working even if the server is unavailable.`,
+         es: `Todo lo que interesa mantener entre actualizaciones - MQTT, IPs/nombres de las máquinas, perfiles de energía y alertas - se guarda en config.json, junto al ejecutable (no dentro de él), por lo que sobrevive a reinstalaciones. Las versiones antiguas usaban el nombre power_profiles.json; se migra automáticamente la primera vez que abres la nueva versión. El navegador solo guarda una copia de reserva en localStorage.`,
+         fr: `Tout ce qu'il vaut la peine de conserver entre les mises à jour - MQTT, IP/noms des machines, profils d'énergie et alertes - est enregistré dans config.json, à côté de l'exécutable (pas à l'intérieur), donc ça survit aux réinstallations. Les anciennes versions utilisaient le nom power_profiles.json ; il est migré automatiquement à la première ouverture de la nouvelle version. Le navigateur ne garde qu'une copie de secours dans le localStorage.` } },
 ];
 
 function getAiGreeting() { return t('ai_greeting'); }

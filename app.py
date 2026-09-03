@@ -27,6 +27,8 @@ import hashlib
 import re
 import ssl
 import ipaddress
+import subprocess
+import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
@@ -60,7 +62,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.5.5"
+APP_VERSION = "3.6.0"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -846,7 +848,11 @@ def get_diff_buckets(ip, range_key):
 # aplica automaticamente nenhuma alteração ao hardware — quem decide
 # aplicar (ou não) o perfil sugerido é sempre a pessoa, a partir do painel.
 
-POWER_CONFIG_FILENAME = 'power_profiles.json'
+POWER_CONFIG_FILENAME = 'config.json'
+# Nome antigo (versões <= 3.5.5). Mantido só para migração automática: se
+# config.json ainda não existir mas power_profiles.json existir, o conteúdo
+# é lido de lá uma única vez e logo a seguir gravado em config.json.
+LEGACY_POWER_CONFIG_FILENAME = 'power_profiles.json'
 POWER_CONFIG_LOCK = threading.Lock()
 
 DEFAULT_POWER_CONFIG = {
@@ -958,6 +964,9 @@ def check_for_update(force=False):
         "update_available": False,
         "release_url": None,
         "release_notes": None,
+        "installer_url": None,
+        "installer_name": None,
+        "installer_size": None,
         "error": None,
     }
     try:
@@ -978,6 +987,25 @@ def check_for_update(force=False):
         notes = data.get('body') or ''
         result["release_notes"] = notes[:2000]  # evita respostas gigantes
         result["update_available"] = _parse_version(tag) > _parse_version(APP_VERSION)
+
+        # Procura, entre os anexos da release, o instalador a descarregar
+        # automaticamente. Prefere um nome que pareça um instalador
+        # ("setup"/"instalador"); cai para o primeiro .exe se não encontrar.
+        assets = data.get('assets') or []
+        best = None
+        for a in assets:
+            name = (a.get('name') or '')
+            if not name.lower().endswith('.exe'):
+                continue
+            if best is None:
+                best = a
+            if 'setup' in name.lower() or 'instalador' in name.lower():
+                best = a
+                break
+        if best:
+            result["installer_url"] = best.get('browser_download_url')
+            result["installer_name"] = best.get('name')
+            result["installer_size"] = best.get('size')
     except Exception as e:
         result["error"] = str(e)
 
@@ -985,6 +1013,86 @@ def check_for_update(force=False):
         _update_cache["ts"] = time.time()
         _update_cache["data"] = result
     return result
+
+
+UPDATE_DOWNLOAD_MAX_BYTES = 300 * 1024 * 1024  # trava de segurança (300 MB)
+_update_install_state = {"status": "idle", "error": None}
+_update_install_lock = threading.Lock()
+
+
+def update_download_dir():
+    d = os.path.join(writable_dir(), "updates")
+    try:
+        os.makedirs(d, exist_ok=True)
+    except Exception:
+        pass
+    return d
+
+
+def _do_download_and_launch_installer(url, name, silent):
+    """Corre numa thread própria: descarrega o instalador da release mais
+    recente, lança-o (silencioso ou não) e fecha esta app logo a seguir,
+    para o instalador poder substituir o .exe sem ficheiros em uso."""
+    global _update_install_state
+    try:
+        with _update_install_lock:
+            _update_install_state = {"status": "downloading", "error": None}
+
+        dest = os.path.join(update_download_dir(), name or "CentroDeComando-Setup.exe")
+        req = urllib.request.Request(url, headers={'User-Agent': 'CentroDeComando-UpdateDownload'})
+        total = 0
+        with urllib.request.urlopen(req, timeout=15) as resp, open(dest, 'wb') as f:
+            while True:
+                chunk = resp.read(1024 * 256)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > UPDATE_DOWNLOAD_MAX_BYTES:
+                    raise RuntimeError("instalador excede o tamanho máximo esperado")
+                f.write(chunk)
+
+        with _update_install_lock:
+            _update_install_state = {"status": "launching", "error": None}
+
+        args = [dest]
+        if silent:
+            args.append('/VERYSILENT')
+        args.append('/SP-')  # não pergunta "deseja continuar" do Inno Setup
+        subprocess.Popen(args, close_fds=True, shell=False)
+
+        with _update_install_lock:
+            _update_install_state = {"status": "done", "error": None}
+
+        # Dá tempo à resposta HTTP chegar ao browser antes de fechar tudo.
+        time.sleep(1.5)
+        os._exit(0)
+    except Exception as e:
+        with _update_install_lock:
+            _update_install_state = {"status": "error", "error": str(e)}
+
+
+def start_update_install(silent=True):
+    """Dispara o download+instalação em segundo plano. Devolve de imediato;
+    o progresso fica disponível em /api/update/status."""
+    info = check_for_update(force=True)
+    if not info.get("installer_url"):
+        with _update_install_lock:
+            _update_install_state_local = {
+                "status": "error",
+                "error": info.get("error") or "Não foi encontrado nenhum instalador (.exe) na última release.",
+            }
+        global _update_install_state
+        with _update_install_lock:
+            _update_install_state = _update_install_state_local
+        return False, _update_install_state_local["error"]
+
+    t = threading.Thread(
+        target=_do_download_and_launch_installer,
+        args=(info["installer_url"], info.get("installer_name"), silent),
+        daemon=True,
+    )
+    t.start()
+    return True, None
 
 
 def fetch_binance_rates(force=False):
@@ -1633,9 +1741,21 @@ def power_config_path():
     return os.path.join(writable_dir(), POWER_CONFIG_FILENAME)
 
 
+def legacy_power_config_path():
+    return os.path.join(writable_dir(), LEGACY_POWER_CONFIG_FILENAME)
+
+
 def load_power_config():
+    path = power_config_path()
+    migrating = False
+    if not os.path.exists(path) and os.path.exists(legacy_power_config_path()):
+        # Primeira vez a arrancar depois do update que passou a chamar-se
+        # config.json - lê o ficheiro antigo e migra o conteúdo, sem o
+        # utilizador perder MQTT, IPs das máquinas, perfis, etc.
+        path = legacy_power_config_path()
+        migrating = True
     try:
-        with open(power_config_path(), 'r', encoding='utf-8') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         cfg = copy.deepcopy(DEFAULT_POWER_CONFIG)
         cfg["mqtt"].update(data.get("mqtt", {}) or {})
@@ -1645,6 +1765,9 @@ def load_power_config():
         cfg["alerts"].update(data.get("alerts", {}) or {})
         cfg["pools"].update(data.get("pools", {}) or {})
         cfg["security"].update(data.get("security", {}) or {})
+        if migrating:
+            save_power_config(cfg)
+            print(f"[config] migrado {LEGACY_POWER_CONFIG_FILENAME} -> {POWER_CONFIG_FILENAME}", flush=True)
         return cfg
     except Exception:
         return copy.deepcopy(DEFAULT_POWER_CONFIG)
@@ -2480,6 +2603,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(result).encode('utf-8'))
             return
 
+        if path == '/api/update/status':
+            with _update_install_lock:
+                state = dict(_update_install_state)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(state).encode('utf-8'))
+            return
+
         if path == '/api/version':
             # Endpoint simples e sem dependência de internet, só para o
             # frontend mostrar a versão instalada (ao contrário de
@@ -2704,6 +2836,25 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 t.daemon = True
                 _pending_close_timer["timer"] = t
                 t.start()
+            return
+
+        if path == '/api/update/install':
+            silent = bool(body.get("silent", True))
+            with _update_install_lock:
+                already_running = _update_install_state.get("status") in ("downloading", "launching")
+            if already_running:
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": True, "already_running": True}).encode('utf-8'))
+                return
+            ok, error = start_update_install(silent=silent)
+            self.send_response(200 if ok else 500)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": ok, "error": error}).encode('utf-8'))
             return
 
         if path == '/api/power/config':
