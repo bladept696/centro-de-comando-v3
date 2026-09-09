@@ -62,7 +62,7 @@ SCAN_MAX_WORKERS = 60
 # --- Versão da app / auto-update -------------------------------------------
 # Atualiza este número a cada release publicada no GitHub (a tag da release
 # deve começar por "v", ex: "v3.1" -> APP_VERSION = "3.1").
-APP_VERSION = "3.6.0"
+APP_VERSION = "3.7.0"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30  # não martela a API do GitHub
 _update_cache = {"ts": 0, "data": None}
@@ -467,6 +467,145 @@ def fetch_cgminer_full(ip, port=None):
         "protocol": "cgminer",
     }
 
+# --- Suporte a Goldshell (API própria, "Goldshell Hub") --------------------
+# As Goldshell (Byte, Mini-DOGE, KD-Box, HS-Box, etc.) NÃO falam o protocolo
+# cgminer clássico (nem por socket na porta 4028, nem por JSON-RPC padrão
+# STATUS/SUMMARY/DEVS) - têm a sua própria API HTTP, servida pela interface
+# web "Goldshell Hub" em /mcb/cgminer?cgminercmd=<comando> (confirmado a
+# inspecionar o separador Rede do browser: o caminho real leva o prefixo
+# "/mcb/", sem ele dá 404). O JSON de resposta também tem forma própria,
+# nada a ver com o cgminer normal - exemplo real (comando "devs") de uma
+# Goldshell Byte com uma placa DG-CARD (Scrypt/LTC) instalada:
+#
+#   {"status":2,"minfos":[{"name":"scrypt(LTC)","infos":[{
+#       "av_hashrate":82.089,"hashrate":80.658,"accepted":3416,
+#       "rejected":7,"hwerrors":1918,"hwerr_ration":0.007833,
+#       "fanspeed":"3180 rpm","temp":"79.7 °C / 69.2 °C","power":"62.00",
+#       "time":369,"id":1, ...}]}]}
+#
+# "minfos" tem uma entrada por algoritmo/card instalada (a Byte suporta 2
+# cards simultâneas - AE e DG); cada uma tem uma lista "infos" com uma
+# entrada por placa. Números como temperatura/ventoinha/potência vêm como
+# texto com unidade incluída (ex: "3180 rpm"), por isso são extraídos com
+# regex em vez de lidos diretamente como número.
+
+GOLDSHELL_HTTP_TIMEOUT = 2.5
+GOLDSHELL_HTTP_SCAN_TIMEOUT = 0.6
+_GOLDSHELL_NUMBER_RE = re.compile(r'[-+]?\d*\.?\d+')
+
+
+def fetch_goldshell_devs(ip, timeout=GOLDSHELL_HTTP_TIMEOUT):
+    """Consulta /mcb/cgminer?cgminercmd=devs na Goldshell e devolve o JSON
+    tal como vem (formato próprio da Goldshell - ver comentário acima),
+    ou None em caso de falha/timeout/resposta inválida."""
+    try:
+        url = f"http://{ip}/mcb/cgminer?cgminercmd=devs"
+        req = urllib.request.Request(
+            url, headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Accept': 'application/json'}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read()
+        return json.loads(raw.decode('utf-8', errors='ignore'))
+    except Exception:
+        return None
+
+
+def probe_goldshell_http(ip):
+    """Testa se o IP responde à API própria da Goldshell. Usado no scan de
+    rede, tal como probe_cgminer faz para os Antminers/LuxOS."""
+    data = fetch_goldshell_devs(ip, timeout=GOLDSHELL_HTTP_SCAN_TIMEOUT)
+    if not data or 'minfos' not in data:
+        return None
+    algo_names = [m.get('name') for m in (data.get('minfos') or []) if m.get('name')]
+    return {
+        "ip": ip,
+        "hostname": ip,
+        "model": ", ".join(algo_names) or "Goldshell",
+        "protocol": "goldshell-http",
+    }
+
+
+def _goldshell_parse_numbers(text):
+    """Extrai todos os números de uma string tipo '79.7 °C / 69.2 °C' ou
+    '3180 rpm' - os campos da Goldshell vêm como texto com a unidade
+    incluída, em vez de número "solto" como no cgminer clássico."""
+    if text is None:
+        return []
+    try:
+        return [float(x) for x in _GOLDSHELL_NUMBER_RE.findall(str(text))]
+    except Exception:
+        return []
+
+
+def fetch_goldshell_http_full(ip):
+    """Consulta /mcb/cgminer?cgminercmd=devs da Goldshell e normaliza os
+    dados (um "minfos" por algoritmo/card, um "infos" por placa dentro de
+    cada) para o mesmo formato JSON que o resto do painel já usa para
+    NerdQAxe/Antminer, somando os valores de todas as cards instaladas."""
+    data = fetch_goldshell_devs(ip)
+    if not data or 'minfos' not in data:
+        return None
+
+    minfos = data.get('minfos') or []
+    algo_names = []
+    all_infos = []
+    for m in minfos:
+        if m.get('name'):
+            algo_names.append(m['name'])
+        all_infos.extend(m.get('infos') or [])
+
+    if not all_infos:
+        return None
+
+    temps, fans, powers = [], [], []
+    hashrate_mhs_total = 0.0
+    accepted_total = 0
+    rejected_total = 0
+    uptime_minutes_max = 0.0
+
+    for entry in all_infos:
+        temps.extend(_goldshell_parse_numbers(entry.get('temp')))
+        fans.extend(_goldshell_parse_numbers(entry.get('fanspeed')))
+        powers.extend(_goldshell_parse_numbers(entry.get('power')))
+        try:
+            hashrate_mhs_total += float(entry.get('hashrate') or entry.get('av_hashrate') or 0)
+        except (TypeError, ValueError):
+            pass
+        try:
+            accepted_total += int(entry.get('accepted') or 0)
+        except (TypeError, ValueError):
+            pass
+        try:
+            rejected_total += int(entry.get('rejected') or 0)
+        except (TypeError, ValueError):
+            pass
+        try:
+            uptime_minutes_max = max(uptime_minutes_max, float(entry.get('time') or 0))
+        except (TypeError, ValueError):
+            pass
+
+    return {
+        "hostname": ip,
+        "ASICModel": ", ".join(algo_names) or "Goldshell",
+        "firmwareVersion": None,
+        "hashRate": hashrate_mhs_total / 1000,  # MH/s -> GH/s (mesma unidade do resto do painel)
+        "temp": max(temps) if temps else None,
+        "fanrpm": max(fans) if fans else 0,
+        "frequency": 0,
+        "power": sum(powers) if powers else None,
+        "sharesAccepted": accepted_total,
+        "sharesRejected": rejected_total,
+        "bestDiff": 0,
+        "bestSessionDiff": 0,
+        "stratumURL": "—",
+        # NOTA/assunção: o campo "time" da Goldshell parece vir em MINUTOS
+        # (369 bateu certo com os "0d 5h54m" ~354min mostrados no painel da
+        # própria Goldshell pouco antes). Se o tempo de atividade aparecer
+        # errado, é provavelmente esta unidade - confirma no painel nativo.
+        "uptimeSeconds": uptime_minutes_max * 60,
+        "protocol": "goldshell-http",
+    }
+
 # --- Troca Automática de Pool (fee + latência) ------------------------------
 # Catálogo estático das pools SHA-256 mais conhecidas (não é preciso o
 # utilizador andar a configurar isto à mão). fee_percent é aproximado e
@@ -606,6 +745,13 @@ def switch_device_pool(ip, pool, btc_address, worker_suffix, device_name):
         if not switch_result:
             return False, "Falha ao ativar a pool adicionada (switchpool)"
         return True, "ok"
+
+    if protocol == 'goldshell-http':
+        # Goldshell (cgminer sobre HTTP): a troca automática de pool ainda
+        # não está implementada para este protocolo - por agora só
+        # monitorização. Devolve um erro claro em vez de tentar o PATCH da
+        # AxeOS abaixo, que não faria sentido para esta máquina.
+        return False, "Troca automática de pool ainda não suportada para Goldshell"
 
     # AxeOS (NerdQAxe/Bitaxe): PATCH /api/system com os campos da stratum.
     try:
@@ -917,7 +1063,7 @@ DEFAULT_POWER_CONFIG = {
 # timeout de 3.5s do frontend e aparecerem como offline quase sempre,
 # mesmo estando online.
 endpoint_cache_lock = threading.Lock()
-endpoint_cache = {}  # ip -> 'info' | 'system' | 'cgminer'
+endpoint_cache = {}  # ip -> 'info' | 'system' | 'cgminer' | 'goldshell-http'
 
 
 mqtt_state_lock = threading.Lock()
@@ -2296,7 +2442,13 @@ def probe_ip(ip):
             continue
     # Não é uma NerdQAxe++ (ou similar baseada em HTTP) — tenta a API
     # cgminer/LuxOS (Antminer e derivados) antes de desistir deste IP.
-    return probe_cgminer(ip)
+    result = probe_cgminer(ip)
+    if result:
+        return result
+
+    # Nem NerdQAxe/Bitaxe nem Antminer/LuxOS — tenta a API cgminer sobre
+    # HTTP usada pelas Goldshell (Byte, Mini-DOGE, KD-Box, etc.).
+    return probe_goldshell_http(ip)
 
 
 def scan_subnet(subnet):
@@ -2352,7 +2504,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             # backend sequer lá chegar.
             with endpoint_cache_lock:
                 preferred = endpoint_cache.get(target_ip, 'info')
-            order = [preferred] + [m for m in ('info', 'system', 'cgminer') if m != preferred]
+            order = [preferred] + [m for m in ('info', 'system', 'cgminer', 'goldshell-http') if m != preferred]
 
             last_error = None
             for method in order:
@@ -2420,6 +2572,19 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                             self.end_headers()
                             self.wfile.write(data)
                             return
+                    elif method == 'goldshell-http':
+                        goldshell_data = fetch_goldshell_http_full(target_ip)
+                        if goldshell_data is not None:
+                            cache_reading(target_ip, goldshell_data)
+                            with endpoint_cache_lock:
+                                endpoint_cache[target_ip] = 'goldshell-http'
+                            self.send_response(200)
+                            self.send_header('Access-Control-Allow-Origin', '*')
+                            self.send_header('Content-Type', 'application/json; charset=utf-8')
+                            self.end_headers()
+                            self.wfile.write(json.dumps(goldshell_data).encode('utf-8'))
+                            return
+                        last_error = Exception("goldshell-http: sem resposta")
                     else:  # cgminer
                         cgminer_data = fetch_cgminer_full(target_ip)
                         if cgminer_data is not None:
@@ -2772,7 +2937,39 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": False, "error": str(e)}, ensure_ascii=False).encode('utf-8'))
             return
 
+        if self._try_serve_writable_asset(path):
+            return
         super().do_GET()
+
+    def _try_serve_writable_asset(self, path):
+        """Serve um ficheiro estático a partir de writable_dir() (a pasta ao
+        lado do .exe/script) se existir lá, ANTES de cair no resource_dir()
+        (que em modo .exe é a pasta temporária _MEIPASS, reconstruída a
+        partir do que foi empacotado no build - ficheiros novos colocados
+        pelo utilizador ao lado do .exe, como um avatar personalizado, nunca
+        lá aparecem sem recompilar). Isto permite adicionar/substituir
+        ficheiros (ex: diag-avatar.jpg) sem precisar de recompilar a app.
+        Devolve True se serviu o ficheiro, False para seguir o fluxo normal."""
+        rel = urllib.parse.unquote(path.lstrip('/'))
+        if not rel or '..' in rel.split('/'):
+            return False
+        full_path = os.path.normpath(os.path.join(writable_dir(), rel))
+        if not full_path.startswith(os.path.normpath(writable_dir()) + os.sep):
+            return False
+        if not os.path.isfile(full_path):
+            return False
+        try:
+            ctype = self.guess_type(full_path)
+            with open(full_path, 'rb') as f:
+                data = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', ctype)
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return True
+        except Exception:
+            return False
 
     def do_POST(self):
         global power_config
