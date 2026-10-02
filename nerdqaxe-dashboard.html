@@ -1310,6 +1310,71 @@
   .scan-device-add-btn:hover{background:#0d2530;}
   .scan-device-add-btn:active{transform:scale(.94);}
 
+  /* --- Scanner de rede 2.0 ---------------------------------------------- */
+  .scan-summary-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;}
+  .scan-summary-main{font-size:10px;color:var(--muted);}
+  .scan-summary-main b{color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;}
+  .scan-filter-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .scan-filter-row input,.scan-filter-row select{background:#081119;border:1px solid var(--line-strong);color:var(--text);font-family:inherit;font-size:10px;padding:6px 8px;border-radius:6px;outline:none;}
+  .scan-filter-row input{min-width:150px;flex:1;}
+  .scan-filter-row input:focus,.scan-filter-row select:focus{border-color:var(--cyan);}
+  .scan-result-extra{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:3px;}
+  .scan-tag{font-size:8px;border:1px solid var(--line-strong);color:var(--muted);border-radius:10px;padding:2px 6px;white-space:nowrap;}
+  .scan-tag.protocol{color:var(--cyan);border-color:#4fd6ff55;}
+  .scan-tag.compat{color:var(--green);border-color:#21ffb055;}
+  .scan-tag.added{color:var(--amber);border-color:#ffb02055;}
+  .scan-device-row.scan-hidden{display:none;}
+
+  /* --- Mapa visual da rede --------------------------------------------- */
+  .network-map-panel{position:relative;overflow:hidden;}
+  .network-map-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .network-map-controls{display:flex;gap:6px;flex-wrap:wrap;}
+  .network-map-btn{background:var(--panel-2);border:1px solid var(--line-strong);color:var(--muted);font-family:inherit;font-size:10px;font-weight:600;padding:6px 10px;border-radius:6px;cursor:pointer;}
+  .network-map-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .network-map-btn.active{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+  .network-map-legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:9px;color:var(--muted);}
+  .network-map-legend span{display:inline-flex;align-items:center;gap:4px;}
+  .network-map-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .network-map-dot.online{background:var(--green);box-shadow:0 0 7px var(--green);}
+  .network-map-dot.offline{background:var(--red);box-shadow:0 0 7px var(--red);}
+  .network-map-dot.center{background:var(--cyan);box-shadow:0 0 7px var(--cyan);}
+  .network-map-wrap{position:relative;min-height:430px;border:1px solid var(--line);border-radius:12px;background:radial-gradient(circle at center,var(--glow-1),transparent 34%),linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:auto,36px 36px,36px 36px;overflow:hidden;}
+  .network-map-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .network-map-edge{stroke:var(--line-strong);stroke-width:1.5;opacity:.75;vector-effect:non-scaling-stroke;}
+  .network-map-edge.online{stroke:var(--green-dim);}
+  .network-map-edge.pool{stroke:var(--cyan);stroke-dasharray:5 4;opacity:.45;}
+  .network-map-nodes{position:absolute;inset:0;}
+  .network-node{position:absolute;width:150px;transform:translate(-50%,-50%);padding:9px 10px;background:linear-gradient(135deg,var(--panel-2),var(--deep));border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 12px 28px -12px #000c;cursor:pointer;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;}
+  .network-node:hover{transform:translate(-50%,-50%) scale(1.04);border-color:var(--cyan);box-shadow:0 0 0 1px #4fd6ff22,0 15px 30px -12px #000c;}
+  .network-node.center{width:170px;border-color:#4fd6ff66;background:radial-gradient(circle at 50% 25%,#103544,var(--panel-2));cursor:default;}
+  .network-node.pool{width:150px;border-color:#4fd6ff55;background:linear-gradient(135deg,#0c2530,var(--panel-2));}
+  .network-node-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .network-node-name{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .network-node-status{width:7px;height:7px;border-radius:50%;flex:0 0 auto;}
+  .network-node-status.online{background:var(--green);box-shadow:0 0 7px var(--green);}
+  .network-node-status.offline{background:var(--red);box-shadow:0 0 7px var(--red);}
+  .network-node-meta{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.4;}
+  .network-node-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px;}
+  .network-node-stat{background:#0005;border:1px solid var(--line);border-radius:6px;padding:4px 5px;min-width:0;}
+  .network-node-stat span{display:block;font-size:7px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em;}
+  .network-node-stat b{display:block;font-size:9px;color:var(--text);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .network-map-empty{display:flex;align-items:center;justify-content:center;min-height:430px;color:var(--muted);font-size:11px;text-align:center;padding:30px;}
+  .network-map-foot{margin-top:9px;font-size:9px;color:var(--muted-2);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  @media(max-width:900px){.network-map-wrap{min-height:500px;}.network-node{width:135px;}.network-node.center{width:155px;}}
+
+  /* --- Barra de ações rápidas ----------------------------------------- */
+  .quick-actions-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px;padding:8px;background:linear-gradient(180deg,var(--panel-2),transparent);border:1px solid var(--line);border-radius:9px;}
+  .quick-actions-label{font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-right:2px;}
+  .quick-action-btn{background:#081119;border:1px solid var(--line-strong);color:var(--text);font-family:inherit;font-size:9px;font-weight:700;padding:7px 9px;border-radius:6px;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;gap:5px;}
+  .quick-action-btn:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-1px);}
+  .quick-action-btn.green{color:var(--green);border-color:#21ffb044;background:#0b1d18;}
+  .quick-action-btn.green:hover{background:#0d2b22;border-color:var(--green);}
+  .quick-action-btn.amber{color:var(--amber);border-color:#ffb02044;background:#1f1608;}
+  .quick-action-btn.amber:hover{background:#2b1a0d;border-color:var(--amber);}
+  .quick-action-btn.red{color:var(--red);border-color:#ff5d5d44;background:#1e0d0d;}
+  .quick-action-btn.red:hover{background:#2b0d0d;border-color:var(--red);}
+  .quick-action-status{font-size:9px;color:var(--muted);margin-left:auto;min-width:180px;text-align:right;}
+
   .ai-agent-panel{
     display:flex; flex-direction:column;
   }
@@ -1362,6 +1427,21 @@
     font-family:inherit; font-size:12px; padding:8px 12px; border-radius:6px; cursor:pointer; flex:0 0 auto;
   }
   .ai-input-row button:hover{ background:#0f3a2c; }
+  .ai-agent-status-wrap{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--muted);}
+  .ai-agent-status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2);box-shadow:none;transition:all .2s ease;}
+  .ai-agent-status-dot.online{background:var(--green);box-shadow:0 0 9px var(--green);}
+  .ai-agent-status-dot.busy{background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:aiPulse .9s ease-in-out infinite;}
+  @keyframes aiPulse{50%{transform:scale(1.35);opacity:.65;}}
+  .ai-agent-controls{display:flex;gap:6px;align-items:center;margin:8px 0 7px;}
+  .ai-mode-btn,.ai-clear-btn,#aiIntervalSelect{background:#081119;border:1px solid var(--line-strong);color:var(--muted);font:600 9.5px inherit;padding:6px 8px;border-radius:6px;cursor:pointer;}
+  .ai-mode-btn{flex:1;text-align:left;color:var(--amber);border-color:#ffb02044;}
+  .ai-mode-btn.active{color:var(--green);border-color:var(--green-dim);background:#0d2b22;}
+  .ai-clear-btn{flex:0 0 auto;}
+  #aiIntervalSelect{width:58px;padding-left:6px;padding-right:4px;}
+  .ai-agent-safety{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;color:var(--muted-2);font-size:8.5px;}
+  .ai-agent-safety label{display:flex;align-items:center;gap:3px;white-space:nowrap;}
+  .ai-agent-safety input[type=checkbox]{accent-color:var(--green);}
+  .ai-agent-safety input[type=number]{width:42px;background:#081119;border:1px solid var(--line-strong);color:var(--text);font:inherit;padding:2px 4px;border-radius:4px;}
 
   .machine-grid{
     display:grid;
@@ -4039,12 +4119,31 @@
         <div class="panel ai-agent-panel" data-layout-id="gauge-ai">
           <div class="ai-agent-header">
             <span class="ai-agent-title"><span class="ai-agent-dot"></span> <span data-i18n="assistente">🤖 Assistente</span></span>
+            <div class="ai-agent-status-wrap">
+              <span class="ai-agent-status-dot" id="aiAgentStatusDot"></span>
+              <span id="aiAgentStatusText">Manual</span>
+            </div>
+          </div>
+          <div class="ai-agent-controls">
+            <button class="ai-mode-btn" id="aiAutonomousBtn" type="button">⚡ Modo autónomo: OFF</button>
+            <select id="aiIntervalSelect" title="Intervalo do agente">
+              <option value="5000">5s</option>
+              <option value="10000" selected>10s</option>
+              <option value="30000">30s</option>
+              <option value="60000">60s</option>
+            </select>
+            <button class="ai-clear-btn" id="aiClearBtn" type="button">Limpar</button>
+          </div>
+          <div class="ai-agent-safety">
+            <label><input type="checkbox" id="aiAllowProfilesCheck" checked> aplicar perfis seguros</label>
+            <label><input type="checkbox" id="aiAllowRestartCheck"> permitir reinício automático crítico</label>
+            <label>limite <input type="number" id="aiSafetyTemp" min="50" max="95" step="1" value="75"> °C</label>
           </div>
           <div class="ai-chat-log" id="aiChatLog"></div>
           <div class="ai-suggestions" id="aiSuggestions"></div>
           <div class="ai-input-row">
-            <input type="text" id="aiInput" placeholder="Pergunta sobre o painel..." data-i18n-placeholder="ph_pergunta_sobre_o_painel">
-            <button id="aiSendBtn">➤</button>
+            <input type="text" id="aiInput" placeholder="Diz o que queres que eu faça..." data-i18n-placeholder="ph_pergunta_sobre_o_painel">
+            <button id="aiSendBtn" title="Executar comando">➤</button>
           </div>
         </div>
       </div>
@@ -4059,8 +4158,28 @@
             <button id="addBtn"><span data-i18n="adicionar_maquina">Adicionar máquina</span></button>
             <button id="scanBtn" class="cyan-outline">🔍 <span data-i18n="localizar_maquinas_na_rede">Localizar máquinas na rede</span></button>
           </div>
+          <div class="quick-actions-bar" data-layout-id="quick-actions">
+            <span class="quick-actions-label">⚡ Ações rápidas</span>
+            <button class="quick-action-btn green" id="quickRefreshBtn">⟳ Atualizar</button>
+            <button class="quick-action-btn" id="quickScanBtn">🔍 Scanner</button>
+            <button class="quick-action-btn" id="quickOcBtn">🔧 Overclock</button>
+            <button class="quick-action-btn green" id="quickEcoBtn">🌿 Eco · todas</button>
+            <button class="quick-action-btn amber" id="quickTurboBtn">🚀 Turbo · todas</button>
+            <button class="quick-action-btn red" id="quickRestartBtn">🔄 Reiniciar · todas</button>
+            <span class="quick-action-status" id="quickActionStatus">Pronto.</span>
+          </div>
           <div class="hint" style="margin-bottom:12px;"><span data-i18n="requer_o_servidor_local_nerdqaxe_server_">Requer o servidor local (`nerdqaxe_server.py`) a correr em localhost:8765.</span></div>
           <div class="machine-grid" id="machineGrid"></div>
+        </div>
+
+        <div class="panel network-map-panel" data-layout-id="network-map">
+          <div class="panel-title"><span>🌐 Mapa da Rede</span><span id="networkMapCount" style="font-size:9px;color:var(--muted-2);">0 dispositivos</span></div>
+          <div class="network-map-toolbar">
+            <div class="network-map-legend"><span><i class="network-map-dot center"></i> Centro de comando</span><span><i class="network-map-dot online"></i> Online</span><span><i class="network-map-dot offline"></i> Offline</span></div>
+            <div class="network-map-controls"><button class="network-map-btn active" id="networkMapAutoBtn">↻ Auto</button><button class="network-map-btn" id="networkMapRefreshBtn">⟳ Atualizar mapa</button></div>
+          </div>
+          <div class="network-map-wrap" id="networkMapWrap"><svg class="network-map-svg" id="networkMapSvg" viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true"></svg><div class="network-map-nodes" id="networkMapNodes"></div></div>
+          <div class="network-map-foot"><span id="networkMapFootLeft">Clique numa máquina para a selecionar.</span><span id="networkMapFootRight">—</span></div>
         </div>
 
         <div class="charts" data-layout-id="main-charts">
@@ -4927,6 +5046,10 @@
         <button id="scanRescanBtn" data-i18n="pesquisar">Pesquisar</button>
       </div>
       <div class="hint" data-i18n="sub_rede_hint">Se as tuas máquinas estiverem numa rede WiFi diferente da deste computador (ex: 192.168.25.x em vez de 192.168.1.x), escreve aqui os 3 primeiros números do IP delas.</div>
+    </div>
+    <div class="scan-filter-row" style="padding:10px 18px 0;">
+      <input type="text" id="scanFilterInput" placeholder="Filtrar por nome, IP, modelo ou protocolo" autocomplete="off">
+      <select id="scanFilterSelect"><option value="all">Todos</option><option value="new">Só novos</option><option value="added">Já adicionadas</option><option value="compatible">Compatíveis</option></select>
     </div>
     <div class="scan-modal-body" id="scanModalBody">
       <div class="scan-empty" data-i18n="a_iniciar_scan">A iniciar scan...</div>
@@ -10461,6 +10584,7 @@ function renderAll(){
   animateNumberTo($('sPower'), totalPower, (v) => v.toFixed(1), '—');
   $('sCount').textContent = devices.length;
 
+  if(typeof networkMapAuto !== 'undefined' && networkMapAuto) renderNetworkMap();
   renderHashrateDonut(devices);
   renderSimulator();
 
@@ -11680,11 +11804,11 @@ const AI_KB = [
          fr: `Tout ce qu'il vaut la peine de conserver entre les mises à jour - MQTT, IP/noms des machines, profils d'énergie et alertes - est enregistré dans config.json, à côté de l'exécutable (pas à l'intérieur), donc ça survit aux réinstallations. Les anciennes versions utilisaient le nom power_profiles.json ; il est migré automatiquement à la première ouverture de la nouvelle version. Le navigateur ne garde qu'une copie de secours dans le localStorage.` } },
 ];
 
-function getAiGreeting() { return t('ai_greeting'); }
-function getAiFallback() { return t('ai_fallback'); }
+function getAiGreeting() { return '🤖 Agente ligado. Posso responder, alterar o painel e executar ações autorizadas. Escreve, por exemplo: “muda para Matrix”, “abre Saúde Térmica”, “aplica o perfil Eco à Máquina 1” ou “liga o modo autónomo”.'; }
+function getAiFallback() { return 'Não reconheci esse pedido. Experimenta pedir uma alteração concreta (tema, aba, layout, máquina, perfil, frequência/voltagem) ou pergunta pelo estado das máquinas.'; }
 
 function aiNormalize(str){
-  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function aiFindAnswer(question){
@@ -11700,8 +11824,56 @@ function aiFindAnswer(question){
   return best ? (best.a[currentLang] || best.a.pt) : getAiFallback();
 }
 
-function aiAppendMsg(text, who){
+const AI_AGENT_KEY = 'nerdqaxe:ai-agent';
+let aiAgentConfig = {
+  autonomous: false,
+  intervalMs: 10000,
+  allowProfiles: true,
+  allowRestart: false,
+  safetyTemp: 75
+};
+let aiAgentTimer = null;
+let aiAgentBusy = false;
+let aiAgentLastActions = {};
+
+function aiAgentLoadConfig(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(AI_AGENT_KEY) || 'null');
+    if(raw && typeof raw === 'object') aiAgentConfig = { ...aiAgentConfig, ...raw };
+  }catch(e){}
+  aiAgentConfig.intervalMs = Math.max(5000, Math.min(120000, Number(aiAgentConfig.intervalMs) || 10000));
+  aiAgentConfig.safetyTemp = Math.max(50, Math.min(95, Number(aiAgentConfig.safetyTemp) || 75));
+  const modeBtn = $('aiAutonomousBtn');
+  const intSel = $('aiIntervalSelect');
+  const prof = $('aiAllowProfilesCheck');
+  const restart = $('aiAllowRestartCheck');
+  const temp = $('aiSafetyTemp');
+  if(intSel) intSel.value = String(aiAgentConfig.intervalMs);
+  if(prof) prof.checked = !!aiAgentConfig.allowProfiles;
+  if(restart) restart.checked = !!aiAgentConfig.allowRestart;
+  if(temp) temp.value = aiAgentConfig.safetyTemp;
+  aiAgentUpdateUI();
+}
+
+function aiAgentSaveConfig(){
+  try { localStorage.setItem(AI_AGENT_KEY, JSON.stringify(aiAgentConfig)); } catch(e){}
+}
+
+function aiAgentUpdateUI(){
+  const btn = $('aiAutonomousBtn');
+  const dot = $('aiAgentStatusDot');
+  const label = $('aiAgentStatusText');
+  if(btn){
+    btn.classList.toggle('active', aiAgentConfig.autonomous);
+    btn.textContent = aiAgentConfig.autonomous ? '⚡ Modo autónomo: ON' : '⚡ Modo autónomo: OFF';
+  }
+  if(dot) dot.className = 'ai-agent-status-dot ' + (aiAgentBusy ? 'busy' : (aiAgentConfig.autonomous ? 'online' : ''));
+  if(label) label.textContent = aiAgentBusy ? 'A analisar' : (aiAgentConfig.autonomous ? 'Autónomo' : 'Manual');
+}
+
+function aiAppendMsg(text, who='bot'){
   const log = $('aiChatLog');
+  if(!log) return;
   const div = document.createElement('div');
   div.className = `ai-msg ${who}`;
   div.textContent = text;
@@ -11709,44 +11881,329 @@ function aiAppendMsg(text, who){
   log.scrollTop = log.scrollHeight;
 }
 
-function aiAsk(question){
-  const q = (question || '').trim();
-  if(!q) return;
-  aiAppendMsg(q, 'user');
-  const answer = aiFindAnswer(q);
-  setTimeout(() => aiAppendMsg(answer, 'bot'), 250);
+function aiClearChat(){
+  const log = $('aiChatLog');
+  if(log) log.innerHTML = '';
+  aiAppendMsg(getAiGreeting(), 'bot');
+}
+
+function aiFindDevice(text){
+  const norm = aiNormalize(text);
+  let best = null, bestScore = -1;
+  (devices || []).forEach((d, i) => {
+    const n = aiNormalize(d.name || '');
+    const ip = aiNormalize(d.ip || '');
+    let score = 0;
+    if(n && norm.includes(n)) score = Math.max(score, 100 + n.length);
+    if(ip && norm.includes(ip)) score = Math.max(score, 90 + ip.length);
+    if(new RegExp(`\\b(maquina|máquina|rig|asic)\\s*0*${i+1}\\b`, 'i').test(text)) score = Math.max(score, 80);
+    if(score > bestScore){ best = d; bestScore = score; }
+  });
+  return best;
+}
+
+function aiFindProfile(text){
+  const norm = aiNormalize(text);
+  const exact = (powerProfiles || []).find(p => p.name && norm.includes(aiNormalize(p.name)));
+  if(exact) return exact;
+  if(/eco|segur|safe|conserv/.test(norm)) return (powerProfiles || []).find(p => /eco|segur|safe|conserv/i.test(p.name || '')) || null;
+  if(/turbo|max|performance|desempenho/.test(norm)) return (powerProfiles || []).find(p => /turbo|max|performance|desempenho/i.test(p.name || '')) || null;
+  return null;
+}
+
+function aiFindTab(text){
+  const n = aiNormalize(text);
+  const aliases = {
+    dashboard:['dashboard','painel geral','inicio','maquinas'], logs:['logs','consola'], notifications:['notificacoes','notificações','avisos'], simulator:['simulador'], latency:['latencia','latência','ping'], pool:['pool'], parasite:['parasite'], thermal:['termica','térmica','temperatura','saude termica','saúde térmica'], achievements:['conquistas'], oc:['overclock','undervolt','oc'], converter:['conversor','btc'], donate:['doar','apoio'], supporters:['apoiantes'], support:['suporte'], renting:['renting','rental'], alerts:['alertas','telegram','discord'], diagnose:['diagnostico','diagnóstico','assistente diagnostico']
+  };
+  for(const [tab, words] of Object.entries(aliases)) if(words.some(w => n.includes(aiNormalize(w)))) return tab;
+  return null;
+}
+
+function aiMoveLayoutBlock(blockId, groupSelector, toTop=true){
+  const container=document.querySelector(groupSelector);
+  if(!container) return false;
+  const el=container.querySelector(`[data-layout-id="${blockId}"]`);
+  if(!el) return false;
+  if(toTop) container.insertBefore(el, container.firstElementChild);
+  else container.appendChild(el);
+  const group=LAYOUT_GROUPS.find(g=>g.selector===groupSelector);
+  if(group) saveLayoutOrder(container, group.key);
+  return true;
+}
+
+function aiFindLayoutBlock(text){
+  const n=aiNormalize(text);
+  if(/assistente|ia|agente/.test(n)) return {id:'gauge-ai',group:'.sidebar'};
+  if(/maquinas|maquinas principais|rigs/.test(n)) return {id:'main-machines',group:'.main'};
+  if(/graficos|graficos|charts/.test(n)) return {id:'main-charts',group:'.charts'};
+  if(/temperatura|termica/.test(n)) return {id:'gauge-temp',group:'.sidebar'};
+  if(/hashrate/.test(n)) return {id:'gauge-hash',group:'.sidebar'};
+  return null;
+}
+
+function aiSwitchTo(tab){
+  const btn = document.querySelector(`.tab-btn[onclick*="'${tab}'"]`);
+  if(!btn) return false;
+  switchTab(tab, btn);
+  return true;
+}
+
+function aiStatusSummary(){
+  const all = (devices || []).map(d => {
+    const r = readings[d.id] || {};
+    return `${d.name}: ${r.online ? 'online' : 'offline'}${r.hashrate != null ? ', ' + formatHashrate(r.hashrate).value + ' ' + formatHashrate(r.hashrate).unit : ''}${r.temp != null ? ', ' + Number(r.temp).toFixed(1) + '°C' : ''}`;
+  });
+  if(!all.length) return 'Ainda não há máquinas registadas.';
+  const online = devices.filter(d => readings[d.id]?.online).length;
+  return `Estado: ${online}/${devices.length} online.\n${all.join('\n')}`;
+}
+
+function aiSafeProfileFor(dev){
+  if(!aiAgentConfig.allowProfiles) return null;
+  const profiles = (powerProfiles || []).filter(p => p && p.name);
+  if(!profiles.length) return null;
+  const current = readings[dev.id] || {};
+  const safeNamed = profiles.filter(p => /eco|safe|segur|conserv/i.test(p.name));
+  const pool = safeNamed.length ? safeNamed : profiles;
+  const candidates = pool.filter(p => {
+    const fOk = p.frequency === '' || p.frequency == null || current.frequency == null || Number(p.frequency) <= Number(current.frequency);
+    const vOk = p.coreVoltage === '' || p.coreVoltage == null || current.coreVoltage == null || Number(p.coreVoltage) <= Number(current.coreVoltage);
+    return fOk && vOk;
+  });
+  candidates.sort((a,b) => {
+    const fa = a.frequency === '' || a.frequency == null ? Infinity : Number(a.frequency);
+    const fb = b.frequency === '' || b.frequency == null ? Infinity : Number(b.frequency);
+    return fa - fb;
+  });
+  return candidates[0] || null;
+}
+
+async function aiApplyProfile(profile, dev){
+  if(!profile || !dev) return { ok:false, error:'perfil ou máquina inválido' };
+  const payload = { ip: dev.ip };
+  if(profile.frequency !== '' && profile.frequency != null) payload.frequency = Number(profile.frequency);
+  if(profile.coreVoltage !== '' && profile.coreVoltage != null) payload.coreVoltage = Number(profile.coreVoltage);
+  if(!Object.keys(payload).some(k => k !== 'ip')) return { ok:false, error:'perfil sem frequência/voltagem' };
+  try{
+    const resp = await fetch(`${API_BASE}/api/apply-profile`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const data = await resp.json();
+    if(!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`);
+    logEvent(`🤖 IA: perfil "${profile.name}" aplicado em "${dev.name}".`, 'edit', dev.name, dev.id);
+    return { ok:true };
+  }catch(e){
+    logEvent(`🤖 IA: falha ao aplicar "${profile.name}" em "${dev.name}": ${e.message}`, 'error', dev.name, dev.id);
+    return { ok:false, error:e.message };
+  }
+}
+
+async function aiRestartDevice(dev, opts={}){
+  if(!dev) return {ok:false,error:'máquina não encontrada'};
+  if(opts.auto && !aiAgentConfig.allowRestart) return {ok:false,error:'reinício automático desativado nas proteções'};
+  try{
+    const resp = await fetch('/api/restart-machine', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ip:dev.ip}) });
+    const data = await resp.json();
+    if(!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`);
+    logEvent(`🤖 IA: reinício enviado para "${dev.name}".`, 'edit', dev.name, dev.id);
+    return {ok:true};
+  }catch(e){ return {ok:false,error:e.message}; }
+}
+
+async function aiExecuteCommand(question, opts={}){
+  const q = String(question || '').trim();
+  const n = aiNormalize(q);
+  const auto = !!opts.auto;
+
+  if(/(modo autonomo|modo automático|modo automatico|autonomo|autónomo|modo agente)/i.test(q) && /(liga|ativa|ativa|on|sim|começa|comeca)/i.test(q)){
+    aiSetAutonomous(true); return '⚡ Modo autónomo ligado.';
+  }
+  if(/(modo autonomo|modo automático|modo automatico|autonomo|autónomo|modo agente)/i.test(q) && /(desliga|desativa|off|para|parar)/i.test(q)){
+    aiSetAutonomous(false); return '🛑 Modo autónomo desligado.';
+  }
+
+  const themeMap = [['cyberpunk',['cyberpunk','cyber punk']],['matrix',['matrix']],['oled',['oled']],['glass',['glass','vidro']],['default',['default','padrao','padrão','normal']]];
+  for(const [theme, words] of themeMap){
+    if(words.some(w => n.includes(aiNormalize(w))) && /(tema|theme|muda|mude|usa|usar|fica|coloca)/i.test(q)){
+      setTheme(theme); logEvent(`🤖 IA: tema alterado para ${theme}.`, 'edit', 'Sistema', 'sys'); return `🎨 Tema alterado para ${theme}.`;
+    }
+  }
+
+  if(/kiosk|quiosque|ecrã inteiro|tela inteira|fullscreen/i.test(q) && /(liga|ativa|entra|usa|on)/i.test(q)){
+    enterKioskMode(true); return '🖥️ Modo kiosk ativado.';
+  }
+  if(/kiosk|quiosque|ecrã inteiro|tela inteira|fullscreen/i.test(q) && /(desliga|sai|exit|off)/i.test(q)){
+    exitKioskMode(); return '🖥️ Modo kiosk desativado.';
+  }
+  if(/(editar|modo de edicao|modo de edição|arrastar)/i.test(q) && /(layout|painel|bloco)/i.test(q)){
+    const on = document.body.classList.contains('layout-edit-mode');
+    if(!on) toggleLayoutEditMode();
+    return '🧩 Modo de edição do layout ativado. As alterações ficam guardadas neste navegador.';
+  }
+  if(/(repor|reset|restaurar).*(layout|painel)/i.test(q)){ resetLayout(); return '↩️ Pedi para repor o layout.'; }
+
+  if(/(coloca|põe|poe|move|mover|leva|levar|mete|meter)/i.test(q) && /(topo|primeiro|cima|inicio|início)/i.test(q)){
+    const block=aiFindLayoutBlock(q);
+    if(block && aiMoveLayoutBlock(block.id, block.group, true)){
+      logEvent(`🤖 IA: bloco "${block.id}" movido para o topo.`, 'edit', 'Sistema', 'sys');
+      renderAll();
+      return `🧩 ${block.id} movido para o topo.`;
+    }
+  }
+
+  const tab = aiFindTab(q);
+  if(tab && /(abre|abrir|vai|ir|mostra|mostrar|entra|navega|muda para|mudar para)/i.test(q)){
+    return aiSwitchTo(tab) ? `📂 Aberto: ${getTabLabel(tab)}.` : 'Não encontrei essa aba.';
+  }
+
+  if(/(estado|status|como est[aáo]|quantas.*online|maquinas.*online|máquinas.*online)/i.test(q)) return aiStatusSummary();
+
+  if(/(adiciona|adicionar|regista|registrar).*(maquina|máquina|rig|asic)/i.test(q)){
+    const ipMatch = q.match(/(?:ip\s*[:=]?\s*)?(\d{1,3}(?:\.\d{1,3}){3})/i);
+    const ip = ipMatch ? ipMatch[1] : '';
+    const nameMatch = q.match(/(?:maquina|máquina|rig|asic)\s*["']?([^"']+?)["']?\s+(?:ip\s*)?\d{1,3}(?:\.\d{1,3}){3}/i);
+    const name = nameMatch ? nameMatch[1].trim() : '';
+    if(!ip) return 'Preciso do IP para adicionar a máquina, por exemplo: “adiciona Máquina 2 com IP 192.168.1.20”.';
+    addDevice(name.replace(/^(com|ip)$/i,''), ip);
+    return `✅ Máquina ${name || ip} adicionada.`;
+  }
+
+  const dev = aiFindDevice(q);
+  const profile = aiFindProfile(q);
+  if(profile && /(aplica|aplicar|usa|usar|mete|coloca|ativa)/i.test(q)){
+    const targets = /todas|todos|all/i.test(q) ? devices : (dev ? [dev] : []);
+    if(!targets.length) return `Encontrei o perfil "${profile.name}", mas não identifiquei a máquina. Diz, por exemplo, “aplica ${profile.name} na Máquina 1” ou “aplica ${profile.name} em todas”.`;
+    const results=[];
+    for(const d of targets) results.push({d, res:await aiApplyProfile(profile,d)});
+    const ok=results.filter(x=>x.res.ok).length;
+    return `⚡ Perfil "${profile.name}": ${ok}/${targets.length} aplicação(ões) concluída(s).`;
+  }
+
+  const freqMatch = q.match(/(?:frequ[eê]ncia|freq)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(?:mhz)?/i);
+  const voltMatch = q.match(/(?:voltagem|voltage|corevoltage|core voltage)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(?:mv)?/i);
+  if(dev && (freqMatch || voltMatch) && /(define|definir|muda|mudar|ajusta|ajustar|coloca|set|usa)/i.test(q)){
+    const payload={ip:dev.ip};
+    if(freqMatch) payload.frequency=Number(freqMatch[1]);
+    if(voltMatch) payload.coreVoltage=Number(voltMatch[1]);
+    try{
+      const resp=await fetch(`${API_BASE}/api/apply-profile`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data=await resp.json();
+      if(!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`);
+      logEvent(`🤖 IA: definições manuais aplicadas em "${dev.name}".`, 'edit', dev.name, dev.id);
+      return `🔧 Alterações enviadas para ${dev.name}.`;
+    }catch(e){ return `❌ Não consegui aplicar em ${dev.name}: ${e.message}`; }
+  }
+
+  if(dev && /(reinicia|reiniciar|restart|reboot)/i.test(q)){
+    const r = await aiRestartDevice(dev);
+    return r.ok ? `🔄 Reinício enviado para ${dev.name}.` : `❌ Não consegui reiniciar ${dev.name}: ${r.error}`;
+  }
+
+  if(auto) return null;
+  return aiFindAnswer(q);
+}
+
+async function aiAutonomousCycle(){
+  if(!aiAgentConfig.autonomous || aiAgentBusy) return;
+  aiAgentBusy = true; aiAgentUpdateUI();
+  try{
+    if(typeof loadPowerConfig === 'function' && !powerConfigLoaded) await loadPowerConfig();
+    const now = Date.now();
+    let actions = [];
+    for(const dev of (devices || [])){
+      const r = readings[dev.id];
+      if(!r || !r.online) continue;
+      const temp = Number(r.temp);
+      if(Number.isFinite(temp) && temp >= aiAgentConfig.safetyTemp){
+        const safe = aiSafeProfileFor(dev);
+        const key = `${dev.id}:hot:${safe?.name || 'none'}`;
+        if(safe && key !== aiAgentLastActions[dev.id] && now - Number(aiAgentLastActions[key] || 0) > 60000){
+          const res = await aiApplyProfile(safe, dev);
+          aiAgentLastActions[dev.id] = key;
+          aiAgentLastActions[key] = now;
+          actions.push(res.ok ? `🛡️ ${dev.name}: temperatura ${temp.toFixed(1)}°C → perfil seguro "${safe.name}".` : `⚠️ ${dev.name}: não consegui aplicar o perfil seguro.`);
+        }
+        const criticalState = thermalCriticalState?.[dev.id];
+        const restartKey = `${dev.id}:critical-restart`;
+        if(aiAgentConfig.allowRestart && thermalProtectionSettings?.enabled && criticalState?.alarmed && now - Number(aiAgentLastActions[restartKey] || 0) > 15*60*1000){
+          const rr = await aiRestartDevice(dev, {auto:true});
+          aiAgentLastActions[restartKey] = now;
+          actions.push(rr.ok ? `🔄 ${dev.name}: alerta térmico crítico confirmado → reinício automático enviado.` : `⚠️ ${dev.name}: reinício automático falhou.`);
+        }
+        continue;
+      }
+
+      // Nunca aumenta frequência/voltagem por iniciativa própria.
+      // O agente só aplica automaticamente um perfil conservador já criado pelo utilizador.
+      const safe = aiSafeProfileFor(dev);
+      if(safe && aiAgentConfig.allowProfiles){
+        const currentFreq = Number(r.frequency);
+        const profileFreq = Number(safe.frequency);
+        const currentVolt = Number(r.coreVoltage);
+        const profileVolt = Number(safe.coreVoltage);
+        const isLower = (Number.isFinite(profileFreq) && Number.isFinite(currentFreq) && profileFreq < currentFreq) || (Number.isFinite(profileVolt) && Number.isFinite(currentVolt) && profileVolt < currentVolt);
+        const key=`${dev.id}:safe:${safe.name}`;
+        if(isLower && key !== aiAgentLastActions[dev.id] && now - Number(aiAgentLastActions[key] || 0) > 5*60*1000){
+          const res=await aiApplyProfile(safe,dev);
+          aiAgentLastActions[dev.id]=key; aiAgentLastActions[key]=now;
+          if(res.ok) actions.push(`⚙️ ${dev.name}: perfil conservador "${safe.name}" aplicado.`);
+        }
+      }
+    }
+    if(actions.length) aiAppendMsg('🤖 AUTONOMIA:\n' + actions.join('\n'), 'bot');
+  }catch(e){
+    aiAppendMsg(`⚠️ Agente autónomo: ${e.message}`, 'bot');
+  }finally{
+    aiAgentBusy=false; aiAgentUpdateUI();
+  }
+}
+
+function aiSetAutonomous(on){
+  aiAgentConfig.autonomous=!!on;
+  aiAgentSaveConfig();
+  if(aiAgentTimer){clearInterval(aiAgentTimer); aiAgentTimer=null;}
+  if(aiAgentConfig.autonomous){
+    aiAgentTimer=setInterval(aiAutonomousCycle, aiAgentConfig.intervalMs);
+    setTimeout(aiAutonomousCycle, 300);
+  }
+  aiAgentUpdateUI();
+  logEvent(`🤖 Modo autónomo ${aiAgentConfig.autonomous ? 'ativado' : 'desativado'}.`, 'edit', 'Sistema', 'sys');
 }
 
 function aiRenderSuggestions(){
-  const box = $('aiSuggestions');
-  if(!box) return;
-  box.innerHTML = '';
-  const sample = AI_KB.slice(0, 4);
-  sample.forEach(entry => {
-    const btn = document.createElement('button');
-    btn.className = 'ai-chip';
-    const question = entry.q[currentLang] || entry.q.pt;
-    btn.textContent = question;
-    btn.onclick = () => aiAsk(question);
-    box.appendChild(btn);
-  });
+  const box=$('aiSuggestions'); if(!box) return; box.innerHTML='';
+  const samples=[
+    'Mostra o estado das máquinas',
+    'Muda o tema para Matrix',
+    'Abre Saúde Térmica',
+    powerProfiles?.length ? `Aplica ${powerProfiles.find(p=>p?.name)?.name || 'o perfil Eco'} em todas as máquinas` : 'Liga o modo autónomo'
+  ];
+  samples.forEach(q=>{const btn=document.createElement('button');btn.className='ai-chip';btn.textContent=q;btn.onclick=()=>aiAsk(q);box.appendChild(btn);});
+}
+
+async function aiAsk(question){
+  const q=(question||'').trim(); if(!q) return;
+  aiAppendMsg(q,'user');
+  aiAgentBusy=true; aiAgentUpdateUI();
+  try{
+    const answer=await aiExecuteCommand(q,{auto:false});
+    if(answer) aiAppendMsg(answer,'bot');
+  }catch(e){ aiAppendMsg(`❌ ${e.message}`,'bot'); }
+  finally{ aiAgentBusy=false; aiAgentUpdateUI(); }
 }
 
 function initAiAgent(){
-  aiAppendMsg(getAiGreeting(), 'bot');
+  aiAgentLoadConfig();
+  aiAppendMsg(getAiGreeting(),'bot');
   aiRenderSuggestions();
-  $('aiSendBtn').onclick = () => {
-    const input = $('aiInput');
-    aiAsk(input.value);
-    input.value = '';
-  };
-  $('aiInput').addEventListener('keydown', (e) => {
-    if(e.key === 'Enter'){
-      const input = $('aiInput');
-      aiAsk(input.value);
-      input.value = '';
-    }
-  });
+  $('aiSendBtn').onclick=()=>{const input=$('aiInput');aiAsk(input.value);input.value='';};
+  $('aiInput').addEventListener('keydown',e=>{if(e.key==='Enter'){const input=$('aiInput');aiAsk(input.value);input.value='';}});
+  $('aiAutonomousBtn').onclick=()=>aiSetAutonomous(!aiAgentConfig.autonomous);
+  $('aiClearBtn').onclick=aiClearChat;
+  $('aiIntervalSelect').onchange=()=>{aiAgentConfig.intervalMs=Number($('aiIntervalSelect').value)||10000;aiAgentSaveConfig();if(aiAgentConfig.autonomous)aiSetAutonomous(true);};
+  $('aiAllowProfilesCheck').onchange=()=>{aiAgentConfig.allowProfiles=$('aiAllowProfilesCheck').checked;aiAgentSaveConfig();};
+  $('aiAllowRestartCheck').onchange=()=>{aiAgentConfig.allowRestart=$('aiAllowRestartCheck').checked;aiAgentSaveConfig();};
+  $('aiSafetyTemp').onchange=()=>{aiAgentConfig.safetyTemp=Math.max(50,Math.min(95,Number($('aiSafetyTemp').value)||75));aiAgentSaveConfig();};
+  if(aiAgentConfig.autonomous) aiSetAutonomous(true);
 }
 
 $('addBtn').onclick = () => { 
@@ -11890,6 +12347,254 @@ function renderScanResults(found, subnet){
 function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+
+// --- Scanner de rede 2.0: filtros, resumo e metadados ---------------------
+let scanResultsCache = [];
+let scanResultsSubnet = '';
+let scanFilterText = '';
+let scanFilterMode = 'all';
+
+function scanDeviceCompatible(dev){
+  return /cgminer|luxos|nerdqaxe|asic|minera/i.test(`${dev?.protocol||''} ${dev?.model||''} ${dev?.hostname||''}`);
+}
+
+function applyScanFilters(){
+  const rows = document.querySelectorAll('.scan-device-row');
+  const q = aiNormalize(scanFilterText || '');
+  const currentIps = new Set(devices.map(d => d.ip));
+  let visible = 0;
+  rows.forEach(row => {
+    const dev = scanResultsCache[Number(row.dataset.scanIndex || 0)];
+    if(!dev) return;
+    const already = currentIps.has(dev.ip);
+    const text = aiNormalize(`${dev.hostname||''} ${dev.ip||''} ${dev.model||''} ${dev.protocol||''}`);
+    let ok = !q || text.includes(q);
+    if(scanFilterMode === 'new') ok = ok && !already;
+    if(scanFilterMode === 'added') ok = ok && already;
+    if(scanFilterMode === 'compatible') ok = ok && scanDeviceCompatible(dev);
+    row.classList.toggle('scan-hidden', !ok);
+    if(ok) visible++;
+  });
+  const status = $('scanStatus');
+  if(status) status.textContent = `${visible}/${scanResultsCache.length} visíveis${scanResultsSubnet ? ' · '+scanResultsSubnet+'.0/24' : ''}`;
+}
+
+// Sobrescreve a versão simples do scanner criada originalmente, mantendo o
+// mesmo endpoint /api/scan mas tornando os resultados muito mais úteis.
+function renderScanResults(found, subnet){
+  const body = $('scanModalBody');
+  const status = $('scanStatus');
+  const addAllBtn = $('scanAddAllBtn');
+  if(!body || !status || !addAllBtn) return;
+
+  scanResultsCache = Array.isArray(found) ? found.slice() : [];
+  scanResultsSubnet = subnet || '';
+  scanFilterText = $('scanFilterInput')?.value || '';
+  scanFilterMode = $('scanFilterSelect')?.value || 'all';
+
+  body.innerHTML = '';
+  if(!scanResultsCache.length){
+    body.innerHTML = '<div class="scan-empty">Nenhuma máquina encontrada na rede local.</div>';
+    status.textContent = scanResultsSubnet ? `${scanResultsSubnet}.0/24 · 0 encontrados` : '0 encontrados';
+    addAllBtn.style.display = 'none';
+    return;
+  }
+
+  const existingIps = new Set(devices.map(d => d.ip));
+  const newCount = scanResultsCache.filter(d => !existingIps.has(d.ip)).length;
+  const compatibleCount = scanResultsCache.filter(scanDeviceCompatible).length;
+  const summary = document.createElement('div');
+  summary.className = 'scan-summary-bar';
+  summary.innerHTML = `<div class="scan-summary-main"><b>${scanResultsCache.length}</b> encontrados · <b>${newCount}</b> novos · <b>${compatibleCount}</b> compatíveis</div><div style="font-size:9px;color:var(--muted-2)">${escapeHtml(scanResultsSubnet ? scanResultsSubnet+'.0/24' : 'sub-rede automática')}</div>`;
+  body.appendChild(summary);
+
+  const list = document.createElement('div');
+  list.className = 'scan-device-list';
+  scanResultsCache.forEach((dev, i) => {
+    const already = existingIps.has(dev.ip);
+    const host = dev.hostname || dev.ip || 'dispositivo';
+    const model = dev.model || 'modelo não identificado';
+    const protocol = dev.protocol || 'protocolo desconhecido';
+    const latency = dev.latency ?? dev.ping ?? dev.response_ms ?? null;
+    const row = document.createElement('div');
+    row.className = 'scan-device-row';
+    row.dataset.scanIndex = String(i);
+    row.style.setProperty('--row-i', i);
+    const meta = document.createElement('div');
+    meta.className = 'scan-device-info';
+    meta.innerHTML = `<div class="scan-device-name"><span class="scan-live-dot"></span>${escapeHtml(host)}</div><div class="scan-device-meta">${escapeHtml(dev.ip || '—')}</div><div class="scan-result-extra"><span class="scan-tag protocol">${escapeHtml(protocol)}</span><span class="scan-tag">${escapeHtml(model)}</span>${latency != null ? `<span class="scan-tag">${escapeHtml(String(latency))} ms</span>` : ''}${scanDeviceCompatible(dev) ? '<span class="scan-tag compat">compatível</span>' : ''}${already ? '<span class="scan-tag added">já adicionada</span>' : ''}</div>`;
+    row.appendChild(meta);
+    if(already){
+      const tag = document.createElement('span');
+      tag.className = 'scan-device-added';
+      tag.textContent = '✓ já adicionada';
+      row.appendChild(tag);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'scan-device-add-btn';
+      btn.textContent = scanDeviceCompatible(dev) ? 'Adicionar' : 'Adicionar mesmo assim';
+      btn.onclick = () => {
+        addDevice(host !== dev.ip ? host : '', dev.ip);
+        renderScanResults(scanResultsCache, scanResultsSubnet);
+      };
+      row.appendChild(btn);
+    }
+    list.appendChild(row);
+  });
+  body.appendChild(list);
+
+  const newOnes = scanResultsCache.filter(dev => !existingIps.has(dev.ip));
+  addAllBtn.style.display = newOnes.length ? 'inline-block' : 'none';
+  addAllBtn.onclick = () => {
+    newOnes.forEach(dev => addDevice(dev.hostname && dev.hostname !== dev.ip ? dev.hostname : '', dev.ip));
+    renderScanResults(scanResultsCache, scanResultsSubnet);
+    renderNetworkMap();
+  };
+  status.textContent = `${scanResultsCache.length}/${scanResultsCache.length} visíveis${scanResultsSubnet ? ' · '+scanResultsSubnet+'.0/24' : ''}`;
+  applyScanFilters();
+}
+
+$('scanFilterInput')?.addEventListener('input', e => { scanFilterText = e.target.value; applyScanFilters(); });
+$('scanFilterSelect')?.addEventListener('change', e => { scanFilterMode = e.target.value; applyScanFilters(); });
+
+// --- Mapa visual da rede --------------------------------------------------
+let networkMapAuto = true;
+let networkMapResizeObserver = null;
+
+function networkMapNode(id, x, y, html, extraClass=''){
+  const node = document.createElement('div');
+  node.className = `network-node ${extraClass}`.trim();
+  node.style.left = `${x}%`;
+  node.style.top = `${y}%`;
+  node.dataset.mapId = id;
+  node.innerHTML = html;
+  return node;
+}
+
+function renderNetworkMap(){
+  const wrap = $('networkMapWrap');
+  const nodesEl = $('networkMapNodes');
+  const svg = $('networkMapSvg');
+  const countEl = $('networkMapCount');
+  const footLeft = $('networkMapFootLeft');
+  const footRight = $('networkMapFootRight');
+  if(!wrap || !nodesEl || !svg) return;
+  const list = Array.isArray(devices) ? devices : [];
+  const onlineCount = list.filter(d => readings[d.id]?.online).length;
+  if(countEl) countEl.textContent = `${list.length} dispositivo${list.length===1?'':'s'} · ${onlineCount} online`;
+  if(!list.length){
+    nodesEl.innerHTML = '<div class="network-map-empty">Nenhuma máquina registada.<br>Adiciona máquinas para construir o mapa da rede.</div>';
+    svg.innerHTML = '';
+    if(footLeft) footLeft.textContent = 'Sem dispositivos.';
+    if(footRight) footRight.textContent = '—';
+    return;
+  }
+
+  nodesEl.innerHTML = '';
+  svg.innerHTML = '';
+  const NS = 'http://www.w3.org/2000/svg';
+  const center = {x:50,y:45};
+  const centerNode = networkMapNode('center', center.x, center.y, `<div class="network-node-head"><div class="network-node-name">🖥️ Centro de Comando</div><span class="network-node-status online"></span></div><div class="network-node-meta">Servidor local · :8765</div><div class="network-node-stats"><div class="network-node-stat"><span>Máquinas</span><b>${list.length}</b></div><div class="network-node-stat"><span>Online</span><b>${onlineCount}/${list.length}</b></div></div>`, 'center');
+  nodesEl.appendChild(centerNode);
+
+  const radiusX = list.length <= 3 ? 31 : Math.min(41, 20 + list.length * 1.7);
+  const radiusY = list.length <= 3 ? 29 : Math.min(34, 18 + list.length * 1.4);
+  const machines = [];
+  list.forEach((dev,i) => {
+    const angle = (-Math.PI/2) + (i/Math.max(1,list.length))*Math.PI*2;
+    const x = center.x + Math.cos(angle)*radiusX;
+    const y = center.y + Math.sin(angle)*radiusY;
+    const r = readings[dev.id] || {};
+    const online = !!r.online;
+    const hr = r.hashrate != null ? (()=>{const f=formatHashrate(r.hashrate); return `${f.value} ${f.unit}`;})() : '—';
+    const temp = r.temp != null ? `${Number(r.temp).toFixed(1)}°C` : '—';
+    const ping = r.poolPing != null ? `${Number(r.poolPing).toFixed(0)} ms` : '—';
+    const node = networkMapNode(dev.id,x,y,`<div class="network-node-head"><div class="network-node-name">${escapeHtml(dev.name || dev.ip || 'Máquina')}</div><span class="network-node-status ${online?'online':'offline'}"></span></div><div class="network-node-meta">${escapeHtml(dev.ip || '—')}</div><div class="network-node-stats"><div class="network-node-stat"><span>Hashrate</span><b>${escapeHtml(hr)}</b></div><div class="network-node-stat"><span>Temp</span><b>${escapeHtml(temp)}</b></div><div class="network-node-stat"><span>Ping</span><b>${escapeHtml(ping)}</b></div><div class="network-node-stat"><span>Estado</span><b>${online?'ONLINE':'OFFLINE'}</b></div></div>`);
+    node.onclick = () => { selectedId = dev.id; renderAll(); const card = machineCardElements[dev.id]; if(card) card.scrollIntoView({behavior:'smooth',block:'center'}); };
+    nodesEl.appendChild(node);
+    machines.push({dev,x,y,online});
+  });
+
+  const pools = [...new Set(list.map(d => readings[d.id]?.pool).filter(Boolean))].slice(0,6);
+  const poolMap = new Map();
+  pools.forEach((pool,i) => {
+    const x = pools.length===1 ? 50 : 16 + (i/(pools.length-1))*68;
+    const y = 87;
+    const node = networkMapNode(`pool:${pool}`,x,y,`<div class="network-node-head"><div class="network-node-name">🔌 ${escapeHtml(String(pool))}</div><span class="network-node-status online"></span></div><div class="network-node-meta">Pool detetada</div>`,'pool');
+    nodesEl.appendChild(node);
+    poolMap.set(pool,{x,y});
+  });
+
+  const pt=(x,y)=>({x:x*10,y:y*5.2});
+  machines.forEach(m=>{
+    const a=pt(center.x,center.y),b=pt(m.x,m.y),line=document.createElementNS(NS,'line');
+    line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);line.setAttribute('class',`network-map-edge ${m.online?'online':''}`);svg.appendChild(line);
+  });
+  machines.forEach(m=>{
+    const pool=readings[m.dev.id]?.pool;
+    const target=poolMap.get(pool); if(!target) return;
+    const a=pt(m.x,m.y),b=pt(target.x,target.y),line=document.createElementNS(NS,'line');
+    line.setAttribute('x1',a.x);line.setAttribute('y1',a.y);line.setAttribute('x2',b.x);line.setAttribute('y2',b.y);line.setAttribute('class','network-map-edge pool');svg.appendChild(line);
+  });
+
+  if(footLeft) footLeft.textContent = `${onlineCount}/${list.length} máquinas online · clique num nó para selecionar.`;
+  if(footRight) footRight.textContent = pools.length ? `${pools.length} pool${pools.length===1?'':'s'} detetada${pools.length===1?'':'s'}` : 'Pool não identificada';
+}
+
+function initNetworkMap(){
+  $('networkMapRefreshBtn')?.addEventListener('click',renderNetworkMap);
+  $('networkMapAutoBtn')?.addEventListener('click',()=>{
+    networkMapAuto=!networkMapAuto;
+    $('networkMapAutoBtn').classList.toggle('active',networkMapAuto);
+    if(networkMapAuto) renderNetworkMap();
+  });
+  if(window.ResizeObserver){
+    const wrap=$('networkMapWrap');
+    if(wrap){ networkMapResizeObserver=new ResizeObserver(()=>{if(networkMapAuto) renderNetworkMap();}); networkMapResizeObserver.observe(wrap); }
+  } else window.addEventListener('resize',()=>{if(networkMapAuto)renderNetworkMap();});
+}
+
+// --- Ações rápidas -------------------------------------------------------
+function setQuickActionStatus(msg){ const el=$('quickActionStatus'); if(el) el.textContent=msg; }
+async function quickRefreshAll(){
+  setQuickActionStatus('A atualizar dados…');
+  await Promise.allSettled([pollAll(),pollPowerStatus(),fetchRecentBlocks()]);
+  renderAll(); setQuickActionStatus('✓ Dados atualizados.');
+}
+function findQuickProfile(name){
+  const n=aiNormalize(name);
+  return (powerProfiles||[]).find(p=>aiNormalize(p?.name||'')===n) || (powerProfiles||[]).find(p=>aiNormalize(p?.name||'').includes(n)) || null;
+}
+async function quickApplyProfileToAll(name){
+  if(!powerConfigLoaded) await loadPowerConfig();
+  const profile=findQuickProfile(name);
+  if(!profile){ setQuickActionStatus(`Perfil "${name}" não encontrado.`); return; }
+  if(!devices.length){ setQuickActionStatus('Nenhuma máquina registada.'); return; }
+  setQuickActionStatus(`A aplicar "${profile.name}"…`);
+  let ok=0;
+  for(const dev of devices){ const res=await aiApplyProfile(profile,dev); if(res.ok) ok++; }
+  setQuickActionStatus(`✓ "${profile.name}": ${ok}/${devices.length} aplicadas.`);
+  renderAll();
+}
+async function quickRestartAll(){
+  if(!devices.length){setQuickActionStatus('Nenhuma máquina registada.');return;}
+  if(!confirm(`Reiniciar as ${devices.length} máquinas? A mineração será interrompida temporariamente.`)) return;
+  setQuickActionStatus('A reiniciar máquinas…');
+  let ok=0;
+  for(const dev of devices){const res=await aiRestartDevice(dev);if(res.ok)ok++;}
+  setQuickActionStatus(`✓ Reinícios enviados: ${ok}/${devices.length}.`);
+  renderAll();
+}
+function initQuickActions(){
+  $('quickRefreshBtn')?.addEventListener('click',quickRefreshAll);
+  $('quickScanBtn')?.addEventListener('click',()=>openScanModal(false));
+  $('quickOcBtn')?.addEventListener('click',()=>{const btn=document.querySelector('.tab-btn[onclick*="\'oc\'"]');if(btn)switchTab('oc',btn);});
+  $('quickEcoBtn')?.addEventListener('click',()=>quickApplyProfileToAll('eco'));
+  $('quickTurboBtn')?.addEventListener('click',()=>quickApplyProfileToAll('turbo'));
+  $('quickRestartBtn')?.addEventListener('click',quickRestartAll);
+}
+
 
 $('scanBtn').onclick = () => openScanModal(false);
 $('scanModalCloseBtn').onclick = closeScanModal;
@@ -12043,6 +12748,8 @@ setupHashrateRangeButtons();
 setupPeakDiffRangeButtons();
 startFooterMatrix();
 startBodyMatrix();
+initNetworkMap();
+initQuickActions();
 (async () => {
   await loadDevices();
   loadNotifications();
