@@ -10,13 +10,13 @@
   "profiles": [],
   "devices": [
     {
-      "id": "m_szw5xkk",
+      "id": "m_ghsizca",
       "name": "bitaxe",
       "ip": "192.168.25.38",
       "poolAuto": false
     },
     {
-      "id": "m_76dnqiv",
+      "id": "m_xtpe92h",
       "name": "nerdqaxe6th",
       "ip": "192.168.25.163",
       "poolAuto": false
