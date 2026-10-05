@@ -60,7 +60,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "3.9.0"
+APP_VERSION = "3.9.1"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -185,11 +185,16 @@ CGMINER_TIMEOUT = 2.5
 CGMINER_SCAN_TIMEOUT = 0.6
 
 
-def cgminer_command(ip, command, port=CGMINER_PORT, timeout=CGMINER_TIMEOUT):
+CGMINER_KEY_CACHE = {}
+CGMINER_IDENT_CACHE = {}
+
+
+def cgminer_command(ip, command, port=CGMINER_PORT, timeout=CGMINER_TIMEOUT, key=None):
+    key = key or CGMINER_KEY_CACHE.get(ip, 'command')
     try:
         with socket.create_connection((ip, port), timeout=timeout) as sock:
             sock.settimeout(timeout)
-            sock.sendall(json.dumps({"command": command}).encode('utf-8'))
+            sock.sendall(json.dumps({key: command}).encode('utf-8'))
             chunks = []
             while True:
                 try:
@@ -246,9 +251,58 @@ def _cgminer_scan_numeric_fields_recursive(node, prefix_pattern, _depth=0):
     return values
 
 
+def cgminer_summary(ip, port, timeout=CGMINER_TIMEOUT):
+    """summary com a chave 'command' (cgminer/LuxOS/Antminer/Avalon) ou 'cmd' (Whatsminer)."""
+    data = cgminer_command(ip, 'summary', port=port, timeout=timeout)
+    if data and 'SUMMARY' in data:
+        return data
+    data = cgminer_command(ip, 'summary', port=port, timeout=timeout, key='cmd')
+    if data and 'SUMMARY' in data:
+        CGMINER_KEY_CACHE[ip] = 'cmd'
+        return data
+    return None
+
+
+def _avalon_tokens(text):
+    return {k: v for k, v in re.findall(r'(\w+)\[([^\]]*)\]', text or '')}
+
+
+def cgminer_identify(ip, port):
+    """(marca, modelo) — Avalon (Canaan) e Whatsminer (MicroBT); cache de 10 min por IP."""
+    now = time.time()
+    c = CGMINER_IDENT_CACHE.get(ip)
+    if c and now - c[0] < 600:
+        return c[1], c[2]
+    brand, model = '', ''
+    try:
+        if CGMINER_KEY_CACHE.get(ip) == 'cmd':
+            brand = 'whatsminer'
+            info = cgminer_command(ip, 'get_miner_info', port=port) or {}
+            msg = info.get('Msg') if isinstance(info.get('Msg'), dict) else {}
+            model = str(msg.get('type') or msg.get('miner_type') or 'Whatsminer')
+            if model.lower() == 'whatsminer' or not model.lower().startswith('whatsminer'):
+                model = 'Whatsminer ' + model if model.lower() != 'whatsminer' else model
+        else:
+            ver = (cgminer_command(ip, 'version', port=port) or {}).get('VERSION') or [{}]
+            v = ver[0] if ver else {}
+            prod = str(v.get('PROD') or v.get('Type') or '')
+            if 'avalon' in prod.lower() or 'canaan' in prod.lower() or str(v.get('MODEL', '')).strip():
+                brand = 'avalon'
+                model = prod or ('Avalon ' + str(v.get('MODEL')))
+            else:
+                info = vnish_request(ip, '/api/v1/info', timeout=1.0)
+                if isinstance(info, dict) and 'vnish' in json.dumps(info).lower():
+                    brand = 'vnish'
+                    model = str(info.get('miner') or info.get('model') or 'Antminer') + ' (Vnish)'
+    except Exception:
+        pass
+    CGMINER_IDENT_CACHE[ip] = (now, brand, model)
+    return brand, model
+
+
 def probe_cgminer(ip, port=None):
-    data = cgminer_command(ip, 'summary', port=port or CGMINER_PORT, timeout=CGMINER_SCAN_TIMEOUT)
-    if not data or 'SUMMARY' not in data:
+    data = cgminer_summary(ip, port or CGMINER_PORT, timeout=CGMINER_SCAN_TIMEOUT)
+    if not data:
         return None
     version_desc = ''
     try:
@@ -260,6 +314,12 @@ def probe_cgminer(ip, port=None):
     is_scrypt = any(k in desc_l for k in ('l3', 'l7', 'scrypt', 'ltc', 'doge', 'dg', 'gridseed'))
     algo = 'scrypt' if is_scrypt else 'sha256'
     model = version_desc or ("Antminer Scrypt" if is_scrypt else "LuxOS / cgminer")
+    try:
+        _b, _m = cgminer_identify(ip, port or CGMINER_PORT)
+        if _m:
+            model = _m
+    except Exception:
+        pass
 
     return {
         "ip": ip,
@@ -271,10 +331,87 @@ def probe_cgminer(ip, port=None):
     }
 
 
+def cgminer_extract_boards(ip, port, stats_entry, all_stats=None):
+    """Hashrate, temperaturas e chips por placa (Antminer stock/LuxOS) + ventoinhas do chassis."""
+    boards = {}
+    def b(i):
+        return boards.setdefault(int(i), {"id": int(i)})
+    for key, val in (stats_entry or {}).items():
+        m = re.match(r'^(chain_rate|chain_acn|temp_chip|temp_pcb|temp2_|temp|freq_avg|chain_acs)(\d+)$', key, re.I)
+        if not m:
+            continue
+        name, idx = m.group(1).lower(), m.group(2)
+        if name == 'chain_acs':
+            if isinstance(val, str) and val.strip():
+                b(idx)["chipStatus"] = val.strip()
+            continue
+        try:
+            num = float(val)
+        except (TypeError, ValueError):
+            continue
+        d = b(idx)
+        if name == 'chain_rate':
+            d["hashrate_ghs"] = num
+        elif name == 'chain_acn':
+            d["chips"] = int(num)
+        elif name in ('temp_chip', 'temp2_'):
+            d["tempChip"] = num
+        elif name in ('temp_pcb', 'temp'):
+            d.setdefault("tempPcb", num)
+        elif name == 'freq_avg':
+            d["freq"] = num
+    avalon_entries = [e for e in (all_stats or []) if isinstance(e, dict)]
+    for e in avalon_entries:
+        for k, v in e.items():
+            m = re.match(r'^MM ID(\d+)$', k)
+            if not m or not isinstance(v, str):
+                continue
+            t = _avalon_tokens(v)
+            d = b(m.group(1))
+            for src, dst in (('GHSmm', 'hashrate_ghs'), ('TMax', 'tempChip'), ('Temp', 'tempPcb'), ('Freq', 'freq')):
+                try:
+                    d[dst] = float(t[src])
+                except (KeyError, ValueError):
+                    pass
+    fan_list = [float(v) for k, v in sorted((stats_entry or {}).items()) if re.match(r'^fan\d+$', k, re.I) and str(v).replace('.', '', 1).isdigit() and float(v) > 0]
+    if not any("hashrate_ghs" in d for d in boards.values()):
+        # LuxOS: devs + temps + fans
+        boards = {}
+        devs = (cgminer_command(ip, 'devs', port=port) or {}).get('DEVS') or []
+        for n, dv in enumerate(devs):
+            i = dv.get('ASC', dv.get('ID', n))
+            mhs = dv.get('MHS 5s') or dv.get('MHS av') or 0
+            try:
+                b(i)["hashrate_ghs"] = float(mhs) / 1000.0
+            except (TypeError, ValueError):
+                pass
+            for src, dst in (('Chip Temp Avg', 'tempChip'), ('Temperature', 'tempPcb' if dv.get('Chip Temp Avg') else 'tempChip'),
+                             ('Effective Chips', 'chips'), ('Chip Frequency', 'freq')):
+                try:
+                    if dv.get(src) not in (None, 0, '0'):
+                        b(i)[dst] = float(dv.get(src)) if dst != 'chips' else int(float(dv.get(src)))
+                except (TypeError, ValueError):
+                    pass
+        temps = (cgminer_command(ip, 'temps', port=port) or {}).get('TEMPS') or []
+        for n, t in enumerate(temps):
+            i = t.get('ID', n)
+            for src, dst in (('Chip', 'tempChip'), ('Board', 'tempPcb')):
+                try:
+                    if float(t.get(src, 0)) > 0:
+                        b(i)[dst] = float(t[src])
+                except (TypeError, ValueError):
+                    pass
+        if not fan_list:
+            fans = (cgminer_command(ip, 'fans', port=port) or {}).get('FANS') or []
+            fan_list = [float(f.get('RPM')) for f in fans if f.get('RPM') not in (None, 0, '0')]
+    out = [boards[k] for k in sorted(boards) if len(boards[k]) > 1]
+    return out, fan_list
+
+
 def fetch_cgminer_full(ip, port=None):
     port = port or CGMINER_PORT
-    summary_data = cgminer_command(ip, 'summary', port=port)
-    if not summary_data or 'SUMMARY' not in summary_data:
+    summary_data = cgminer_summary(ip, port)
+    if not summary_data:
         return None
 
     summary = (summary_data.get('SUMMARY') or [{}])[0]
@@ -288,6 +425,37 @@ def fetch_cgminer_full(ip, port=None):
     temps = _cgminer_scan_numeric_fields(stats_entry, r'temp')
     fans = _cgminer_scan_numeric_fields(stats_entry, r'fan')
     freqs = _cgminer_scan_numeric_fields(stats_entry, r'freq')
+    # Avalon (Canaan): temperaturas/ventoinhas/frequência em strings "MM ID0" tipo Temp[..] Fan1[..]
+    for _e in stats_entries:
+        for _k, _v in (_e.items() if isinstance(_e, dict) else []):
+            if re.match(r'^MM ID\d+$', _k) and isinstance(_v, str):
+                _t = _avalon_tokens(_v)
+                for _name, _lst in (('TMax', temps), ('Temp', temps), ('Freq', freqs)):
+                    try:
+                        if float(_t[_name]) > 0:
+                            _lst.append(float(_t[_name]))
+                    except (KeyError, ValueError):
+                        pass
+                for _fk, _fv in _t.items():
+                    if re.match(r'^Fan\d+$', _fk):
+                        try:
+                            if float(_fv) > 0:
+                                fans.append(float(_fv))
+                        except ValueError:
+                            pass
+    # Whatsminer (MicroBT): temperatura e ventoinhas vêm no summary
+    for _k in ('Temperature', 'Env Temp'):
+        try:
+            if float(summary.get(_k, 0)) > 0:
+                temps.append(float(summary[_k]))
+        except (TypeError, ValueError):
+            pass
+    for _k in ('Fan Speed In', 'Fan Speed Out'):
+        try:
+            if float(summary.get(_k, 0)) > 0:
+                fans.append(float(summary[_k]))
+        except (TypeError, ValueError):
+            pass
 
     power_vals = []
     power_cmd_data = cgminer_command(ip, 'power', port=port)
@@ -315,7 +483,7 @@ def fetch_cgminer_full(ip, port=None):
             power_vals = [max(volt_vals) * max(amp_vals)]
 
     try:
-        hashrate_ghs = float(summary.get('GHS 5s') or summary.get('GHS av') or (summary.get('MHS 5s', 0) / 1000) or 0)
+        hashrate_ghs = float(summary.get('GHS 5s') or summary.get('GHS av') or (float(summary.get('MHS 5s') or 0) / 1000) or (float(summary.get('MHS 1m') or 0) / 1000) or (float(summary.get('MHS av') or 0) / 1000) or 0)
     except (TypeError, ValueError):
         hashrate_ghs = 0
 
@@ -339,9 +507,25 @@ def fetch_cgminer_full(ip, port=None):
 
     pool_url = pool_entry.get('URL') or pool_entry.get('Stratum URL') or '—'
 
+    try:
+        _boards, _fan_list = cgminer_extract_boards(ip, port, stats_entry, stats_entries)
+    except Exception:
+        _boards, _fan_list = [], []
+    try:
+        _brand, _ident = cgminer_identify(ip, port)
+    except Exception:
+        _brand, _ident = '', ''
+    _vn = {}
+    if _brand == 'vnish':
+        try:
+            _vn = vnish_enrich(ip) or {}
+        except Exception:
+            _vn = {}
+
     return {
         "hostname": ip,
-        "ASICModel": version_desc or ("Antminer Scrypt" if is_scrypt else "LuxOS / Antminer"),
+        "ASICModel": _ident or version_desc or ("Antminer Scrypt" if is_scrypt else "LuxOS / Antminer"),
+        "brand": _brand or None,
         "firmwareVersion": version_desc or None,
         "algorithm": algo,
         "type": m_type,
@@ -351,7 +535,7 @@ def fetch_cgminer_full(ip, port=None):
         "temp": max(temps) if temps else None,
         "fanrpm": max(fans) if fans else 0,
         "frequency": (sum(freqs) / len(freqs)) if freqs else 0,
-        "power": max(power_vals) if power_vals else None,
+        "power": _vn.get("power") or (max(power_vals) if power_vals else None),
         "sharesAccepted": summary.get('Accepted', 0),
         "sharesRejected": summary.get('Rejected', 0),
         "bestDiff": summary.get('Best Share', 0),
@@ -359,6 +543,8 @@ def fetch_cgminer_full(ip, port=None):
         "stratumURL": pool_url,
         "uptimeSeconds": summary.get('Elapsed', 0),
         "protocol": "cgminer",
+        "boards": _vn.get("boards") or _boards,
+        "fanList": _vn.get("fanList") or _fan_list,
     }
 
 
@@ -379,6 +565,147 @@ def fetch_goldshell_devs(ip, timeout=GOLDSHELL_HTTP_TIMEOUT):
         return json.loads(raw.decode('utf-8', errors='ignore'))
     except Exception:
         return None
+
+
+# ---------------- VNish (Antminer) e ePIC ----------------
+VNISH_PASSWORD = os.environ.get('VNISH_PASSWORD', 'admin')
+VNISH_TOKEN_CACHE = {}
+
+
+def _http_json(url, headers=None, data=None, timeout=1.5):
+    req = urllib.request.Request(url, data=data, headers=dict({'User-Agent': 'HashCommander', 'Accept': 'application/json'}, **(headers or {})))
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode('utf-8', 'replace'))
+
+
+def vnish_request(ip, path, token=None, timeout=1.5):
+    try:
+        h = {'Authorization': f'Bearer {token}'} if token else {}
+        return _http_json(f"http://{ip}{path}", headers=h, timeout=timeout)
+    except Exception:
+        return None
+
+
+def vnish_token(ip):
+    c = VNISH_TOKEN_CACHE.get(ip)
+    if c and time.time() - c[0] < 1800:
+        return c[1]
+    try:
+        r = _http_json(f"http://{ip}/api/v1/unlock", headers={'Content-Type': 'application/json'},
+                       data=json.dumps({"pw": VNISH_PASSWORD}).encode('utf-8'), timeout=2.0)
+        tok = (r or {}).get('token')
+    except Exception:
+        tok = None
+    VNISH_TOKEN_CACHE[ip] = (time.time(), tok)
+    return tok
+
+
+def _num(v):
+    if isinstance(v, dict):
+        v = v.get('max', v.get('avg', v.get('value')))
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def vnish_enrich(ip):
+    """Placas, ventoinhas e potência pela API web do VNish (a API cgminer já dá o resto)."""
+    tok = vnish_token(ip)
+    s = vnish_request(ip, '/api/v1/summary', token=tok) if tok else None
+    if not isinstance(s, dict):
+        return {}
+    m = s.get('miner') if isinstance(s.get('miner'), dict) else s
+    boards = []
+    for n, c in enumerate(m.get('chains') or []):
+        hr = _num(c.get('hashrate_rt') if c.get('hashrate_rt') is not None else c.get('hashrate_ideal'))
+        b = {"id": c.get('id', n)}
+        if hr is not None:
+            b["hashrate_ghs"] = hr * 1000 if hr < 1000 else hr   # TH/s ou GH/s
+        for src, dst in (('chip_temp', 'tempChip'), ('pcb_temp', 'tempPcb'), ('frequency', 'freq')):
+            v = _num(c.get(src))
+            if v is not None:
+                b[dst] = v
+        if len(b) > 1:
+            boards.append(b)
+    cooling = m.get('cooling') or {}
+    fans = [float(f['rpm']) for f in (cooling.get('fans') or []) if isinstance(f, dict) and f.get('rpm')]
+    return {"boards": boards, "fanList": fans, "power": _num(m.get('power_usage'))}
+
+
+def epic_get(ip, path='/summary', timeout=1.5):
+    try:
+        return _http_json(f"http://{ip}:4028{path}", timeout=timeout)
+    except Exception:
+        return None
+
+
+def probe_epic(ip):
+    d = epic_get(ip, '/summary', timeout=1.0)
+    if not isinstance(d, dict) or not ('HBs' in d or 'powerplay' in str(d.get('Software', '')).lower()):
+        return None
+    return {"ip": ip, "hostname": d.get('Hostname') or ip, "model": "ePIC " + str(d.get('Software') or 'PowerPlay'),
+            "protocol": "epic", "algorithm": "sha256", "type": "asic_sha256"}
+
+
+def _epic_nums(v):
+    if isinstance(v, (list, tuple)):
+        return [x for x in (_num(i) for i in v) if x is not None]
+    n = _num(v)
+    return [n] if n is not None else []
+
+
+def fetch_epic_full(ip):
+    d = epic_get(ip, '/summary')
+    if not isinstance(d, dict):
+        return None
+    sess = d.get('Session') if isinstance(d.get('Session'), dict) else {}
+    boards, temps = [], []
+    for n, hb in enumerate(d.get('HBs') or []):
+        if not isinstance(hb, dict):
+            continue
+        b = {"id": hb.get('Index', n)}
+        hr = sum(_epic_nums(hb.get('Hashrate')))
+        if hr:
+            b["hashrate_ghs"] = hr / 1000.0   # MH/s -> GH/s
+        t = _num(hb.get('Temperature'))
+        if t is not None:
+            b["tempChip"] = t
+            temps.append(t)
+        f = _num(hb.get('Core Clock Avg') if hb.get('Core Clock Avg') is not None else hb.get('Core Clock'))
+        if f is not None:
+            b["freq"] = f
+        if len(b) > 1:
+            boards.append(b)
+    mhs = None
+    la = sess.get('LastAverageMHs')
+    if isinstance(la, dict):
+        mhs = _num(la.get('Hashrate 1m') or la.get('Hashrate 5m') or la.get('Hashrate 5s'))
+    if not mhs:
+        mhs = _num(sess.get('Average MHs'))
+    ghs = (mhs / 1000.0) if mhs else sum(b.get('hashrate_ghs', 0) for b in boards)
+    fans = []
+    fd = d.get('Fans') if isinstance(d.get('Fans'), dict) else {}
+    for k, v in fd.items():
+        if 'rpm' in k.lower():
+            fans += [x for x in _epic_nums(v) if x > 0]
+    ps = d.get('Power Supply Stats') if isinstance(d.get('Power Supply Stats'), dict) else {}
+    power = _num(ps.get('Input Power') if ps.get('Input Power') is not None else ps.get('Output Power'))
+    if power is None and _num(ps.get('Input Voltage')) and _num(ps.get('Input Current')):
+        power = _num(ps['Input Voltage']) * _num(ps['Input Current'])
+    st = d.get('Stratum') if isinstance(d.get('Stratum'), dict) else {}
+    disp = f"{ghs / 1000:.2f} TH/s" if ghs >= 1000 else f"{ghs:.2f} GH/s"
+    return {
+        "hostname": d.get('Hostname') or ip, "ASICModel": "ePIC " + str(d.get('Software') or 'PowerPlay'),
+        "brand": "epic", "firmwareVersion": d.get('Software'), "algorithm": "sha256", "type": "asic_sha256",
+        "hashRate": ghs, "hashrate_raw": ghs * 1e9, "hashrate_display": disp,
+        "temp": max(temps) if temps else None, "fanrpm": max(fans) if fans else 0,
+        "frequency": (sum(b['freq'] for b in boards if 'freq' in b) / max(1, len([b for b in boards if 'freq' in b]))),
+        "power": power, "sharesAccepted": sess.get('Accepted', 0), "sharesRejected": sess.get('Rejected', 0),
+        "bestDiff": sess.get('Best Share', 0), "bestSessionDiff": sess.get('Best Share', 0),
+        "stratumURL": st.get('Current Pool') or '—', "uptimeSeconds": sess.get('Uptime', 0),
+        "protocol": "epic", "boards": boards, "fanList": fans,
+    }
 
 
 def probe_goldshell_http(ip):
@@ -802,7 +1129,7 @@ def switch_device_pool(ip, pool, btc_address, worker_suffix, device_name):
             return False, "Falha ao ativar a pool adicionada (switchpool)"
         return True, "ok"
 
-    if protocol in ('goldshell-http', 'srbminer-http', 'trex-http'):
+    if protocol in ('goldshell-http', 'srbminer-http', 'trex-http', 'epic'):
         return False, f"Troca automática de pool não suportada para o protocolo {protocol}"
 
     try:
@@ -823,6 +1150,93 @@ def switch_device_pool(ip, pool, btc_address, worker_suffix, device_name):
         return True, "ok"
     except Exception as e:
         return False, str(e)
+
+
+coolant_lock = threading.Lock()
+coolant_state = {"reading": None, "ts": 0, "error": "", "low_since": None, "tripped": False,
+                 "trip_reason": "", "trip_ts": 0, "relay_result": "", "history": []}
+
+
+def _coolant_num(d, *keys):
+    for k in keys:
+        try:
+            v = d.get(k)
+            if v is not None:
+                return float(v)
+        except (TypeError, ValueError):
+            pass
+    return None
+
+
+def coolant_fetch_sensor(url):
+    req = urllib.request.Request(url, headers={'User-Agent': 'HashCommander-Coolant'})
+    with urllib.request.urlopen(req, timeout=3) as resp:
+        d = json.loads(resp.read().decode('utf-8', 'replace'))
+    return {
+        "flow_lpm": _coolant_num(d, "flow_lpm", "flow", "lpm"),
+        "coolant_in_c": _coolant_num(d, "coolant_in_c", "coolant_in", "temp_in", "in"),
+        "coolant_out_c": _coolant_num(d, "coolant_out_c", "coolant_out", "temp_out", "out"),
+    }
+
+
+def coolant_call_relay(url):
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'HashCommander-Coolant'})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            return f"HTTP {resp.status}"
+    except Exception as e:
+        return f"erro: {e}"
+
+
+def coolant_trip(cfg, reason):
+    with coolant_lock:
+        if coolant_state["tripped"]:
+            return
+        coolant_state["tripped"] = True
+        coolant_state["trip_reason"] = reason
+        coolant_state["trip_ts"] = time.time()
+    result = "killswitch desativado (apenas alerta)"
+    if cfg.get("killswitch_enabled") and (cfg.get("relay_off_url") or "").strip():
+        for _ in range(3):
+            result = coolant_call_relay(cfg["relay_off_url"].strip())
+            if not result.startswith("erro"):
+                break
+    with coolant_lock:
+        coolant_state["relay_result"] = result
+    print(f"[coolant] KILLSWITCH: {reason} -> relé: {result}", flush=True)
+
+
+def coolant_loop():
+    while True:
+        with POWER_CONFIG_LOCK:
+            cfg = copy.deepcopy(power_config.get("coolant", {}) or {})
+        if cfg.get("enabled") and (cfg.get("sensor_url") or "").strip():
+            try:
+                r = coolant_fetch_sensor(cfg["sensor_url"].strip())
+                now = time.time()
+                min_flow = float(cfg.get("min_flow_lpm", 1.0))
+                grace = float(cfg.get("grace_seconds", 5))
+                max_out = float(cfg.get("max_coolant_out_c", 60))
+                reason = None
+                with coolant_lock:
+                    coolant_state.update(reading=r, ts=now, error="")
+                    coolant_state["history"].append({"t": now, **r})
+                    del coolant_state["history"][:-900]
+                    if r["flow_lpm"] is not None and r["flow_lpm"] < min_flow:
+                        if coolant_state["low_since"] is None:
+                            coolant_state["low_since"] = now
+                        if now - coolant_state["low_since"] >= grace:
+                            reason = f"fluxo {r['flow_lpm']:.2f} L/min abaixo de {min_flow} durante {grace:.0f}s"
+                    else:
+                        coolant_state["low_since"] = None
+                if reason is None and r["coolant_out_c"] is not None and r["coolant_out_c"] > max_out:
+                    reason = f"líquido à saída a {r['coolant_out_c']:.1f} °C (limite {max_out:.0f} °C)"
+                if reason:
+                    coolant_trip(cfg, reason)
+            except Exception as e:
+                with coolant_lock:
+                    coolant_state["error"] = str(e)[:160]
+        time.sleep(2)
 
 
 def pool_autoswitch_loop():
@@ -1129,6 +1543,16 @@ DEFAULT_POWER_CONFIG = {
         "worker_suffix": "",
         "min_gain_percent": 5,
         "eval_interval_minutes": 15,
+    },
+    "coolant": {
+        "enabled": False,
+        "sensor_url": "",
+        "killswitch_enabled": False,
+        "relay_off_url": "",
+        "relay_on_url": "",
+        "min_flow_lpm": 1.0,
+        "grace_seconds": 5,
+        "max_coolant_out_c": 60,
     },
     "security": {
         "https_enabled": False,
@@ -1843,6 +2267,7 @@ def load_power_config():
         cfg["mrr"].update(data.get("mrr", {}) or {})
         cfg["alerts"].update(data.get("alerts", {}) or {})
         cfg["pools"].update(data.get("pools", {}) or {})
+        cfg["coolant"].update(data.get("coolant", {}) or {})
         cfg["security"].update(data.get("security", {}) or {})
         if migrating:
             save_power_config(cfg)
@@ -2330,6 +2755,11 @@ def probe_ip(ip):
     if result:
         return result
 
+    # Testa se é uma ePIC (PowerPlay, HTTP na porta 4028)
+    result = probe_epic(ip)
+    if result:
+        return result
+
     # Testa se é uma Rig GPU/CPU com SRBMiner-Multi
     result = probe_srbminer(ip)
     if result:
@@ -2391,7 +2821,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             with endpoint_cache_lock:
                 preferred = endpoint_cache.get(target_ip, 'info')
             
-            candidate_methods = ('info', 'system', 'cgminer', 'goldshell-http', 'srbminer-http', 'trex-http')
+            candidate_methods = ('info', 'system', 'cgminer', 'goldshell-http', 'epic', 'srbminer-http', 'trex-http')
             order = [preferred] + [m for m in candidate_methods if m != preferred]
 
             last_error = None
@@ -2475,6 +2905,20 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                             self.wfile.write(json.dumps(goldshell_data).encode('utf-8'))
                             return
                         last_error = Exception("goldshell-http: sem resposta")
+
+                    elif method == 'epic':
+                        epic_data = fetch_epic_full(target_ip)
+                        if epic_data is not None:
+                            cache_reading(target_ip, epic_data)
+                            with endpoint_cache_lock:
+                                endpoint_cache[target_ip] = 'epic'
+                            self.send_response(200)
+                            self.send_header('Access-Control-Allow-Origin', '*')
+                            self.send_header('Content-Type', 'application/json; charset=utf-8')
+                            self.end_headers()
+                            self.wfile.write(json.dumps(epic_data).encode('utf-8'))
+                            return
+                        last_error = Exception("epic: sem resposta")
 
                     elif method == 'srbminer-http':
                         srb_data = fetch_srbminer_full(target_ip)
@@ -2751,6 +3195,21 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(cfg).encode('utf-8'))
             return
 
+        if path == '/api/coolant/status':
+            with POWER_CONFIG_LOCK:
+                ccfg = copy.deepcopy(power_config.get("coolant", {}) or {})
+            with coolant_lock:
+                payload = {"config": ccfg, "reading": coolant_state["reading"], "ts": coolant_state["ts"],
+                           "error": coolant_state["error"], "tripped": coolant_state["tripped"],
+                           "trip_reason": coolant_state["trip_reason"], "trip_ts": coolant_state["trip_ts"],
+                           "relay_result": coolant_state["relay_result"], "history": coolant_state["history"][-300:]}
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(payload, ensure_ascii=False).encode('utf-8'))
+            return
+
         if path == '/api/pools/log':
             log = load_pool_log()
             self.send_response(200)
@@ -3008,6 +3467,45 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({"ok": saved, "devices": clean}).encode('utf-8'))
+            return
+
+        if path == '/api/coolant/config':
+            with POWER_CONFIG_LOCK:
+                new_cfg = copy.deepcopy(power_config)
+                c = dict(new_cfg.get("coolant", {}) or {})
+                for k in ("sensor_url", "relay_off_url", "relay_on_url"):
+                    c[k] = str(body.get(k, c.get(k, ""))).strip()
+                for k in ("enabled", "killswitch_enabled"):
+                    c[k] = bool(body.get(k, c.get(k, False)))
+                for k in ("min_flow_lpm", "grace_seconds", "max_coolant_out_c"):
+                    try:
+                        c[k] = float(body.get(k, c.get(k)))
+                    except (TypeError, ValueError):
+                        pass
+                new_cfg["coolant"] = c
+                saved = save_power_config(new_cfg)
+                if saved:
+                    power_config = new_cfg
+            self.send_response(200 if saved else 500)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
+            return
+
+        if path == '/api/coolant/reset':
+            with POWER_CONFIG_LOCK:
+                on_url = str((power_config.get("coolant", {}) or {}).get("relay_on_url") or "").strip()
+            relay = ""
+            if body.get("restore") and on_url:
+                relay = coolant_call_relay(on_url)
+            with coolant_lock:
+                coolant_state.update(tripped=False, trip_reason="", trip_ts=0, low_since=None, relay_result=relay)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True, "relay": relay}).encode('utf-8'))
             return
 
         if path == '/api/pools/config':
@@ -3388,6 +3886,9 @@ def main():
 
         pool_autoswitch_thread = threading.Thread(target=pool_autoswitch_loop, daemon=True)
         pool_autoswitch_thread.start()
+
+        coolant_thread = threading.Thread(target=coolant_loop, daemon=True)
+        coolant_thread.start()
 
         start_tray_icon()
 
