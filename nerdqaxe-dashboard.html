@@ -4035,6 +4035,49 @@
 #authGate .ag-msg.ok{color:#5fd38d}
 #authUserPill{position:fixed;left:12px;bottom:12px;z-index:2147482000;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
 #authUserPill button{background:none;border:0;color:#f7931a;cursor:pointer;font-size:12px;padding:0}
+#authUserPill button#authDelete{color:#ff6b6b}
+#authUserPill .ap-sep{color:#2a2f3c}
+#authDeleteModal{position:fixed;inset:0;z-index:2147483100;background:rgba(5,7,12,.72);display:none;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec;backdrop-filter:blur(3px)}
+#authDeleteModal.open{display:flex}
+#authDeleteModal .adm-card{width:min(400px,92vw);background:#14171f;border:1px solid #3a2030;border-radius:14px;padding:26px 24px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#authDeleteModal h2{margin:0 0 6px;font-size:18px;color:#ff6b6b}
+#authDeleteModal p.adm-sub{margin:0 0 6px;font-size:13px;color:#9aa0ae;line-height:1.5}
+#authDeleteModal label{display:block;font-size:12px;color:#9aa0ae;margin:12px 0 4px}
+#authDeleteModal input{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #2a2f3c;background:#0d1016;color:#fff;font-size:14px;outline:none}
+#authDeleteModal input:focus{border-color:#ff6b6b}
+#authDeleteModal .adm-msg{min-height:18px;margin-top:10px;font-size:12.5px;color:#ff6b6b}
+#authDeleteModal .adm-actions{display:flex;gap:10px;margin-top:18px}
+#authDeleteModal button{flex:1;padding:11px;border:0;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer}
+#authDeleteModal button:disabled{opacity:.6;cursor:wait}
+#authDeleteModal .adm-cancel{background:#2a2f3c;color:#e8e8ec}
+#authDeleteModal .adm-confirm{background:#ff5a5a;color:#fff}
+#authProfileModal{position:fixed;inset:0;z-index:2147483100;background:rgba(5,7,12,.72);display:none;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec;backdrop-filter:blur(3px)}
+#authProfileModal.open{display:flex}
+#authProfileModal .apm-card{width:min(460px,94vw);max-height:88vh;overflow:auto;background:#14171f;border:1px solid #2a2f3c;border-radius:14px;padding:24px}
+#authProfileModal h2{margin:0 0 2px;font-size:19px;color:#f7931a}
+#authProfileModal .apm-close{float:right;background:none;border:0;color:#9aa0ae;font-size:20px;cursor:pointer;line-height:1}
+#authProfileModal .apm-meta{font-size:12.5px;color:#9aa0ae;margin:6px 0 14px;line-height:1.7}
+#authProfileModal .apm-meta b{color:#e8e8ec;font-weight:600}
+#authProfileModal .apm-sec{border-top:1px solid #2a2f3c;padding-top:14px;margin-top:14px}
+#authProfileModal .apm-sec h3{margin:0 0 8px;font-size:13px;color:#cfd3dc;text-transform:uppercase;letter-spacing:.4px}
+#authProfileModal label{display:block;font-size:12px;color:#9aa0ae;margin:8px 0 4px}
+#authProfileModal input{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid #2a2f3c;background:#0d1016;color:#fff;font-size:14px;outline:none}
+#authProfileModal input:focus{border-color:#f7931a}
+#authProfileModal .apm-btn{margin-top:10px;padding:9px 14px;border:0;border-radius:8px;background:#f7931a;color:#111;font-weight:700;font-size:13px;cursor:pointer}
+#authProfileModal .apm-btn:disabled{opacity:.6;cursor:wait}
+#authProfileModal .apm-rowmsg{min-height:16px;margin-top:8px;font-size:12px}
+#authProfileModal .apm-rowmsg.err{color:#ff6b6b}
+#authProfileModal .apm-rowmsg.ok{color:#5fd38d}
+#authProfileModal .apm-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:middle}
+#authProfileModal .apm-badge.ver{background:#143d28;color:#5fd38d}
+#authProfileModal .apm-badge.unver{background:#4a2420;color:#ff8f6b}
+#authProfileModal .apm-act{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+#authProfileModal .apm-act th,#authProfileModal .apm-act td{text-align:left;padding:5px 6px;border-bottom:1px solid #20242e;color:#c3c8d2}
+#authProfileModal .apm-act th{color:#8a90a0;font-weight:600}
+#authVerifyBanner{position:fixed;left:50%;transform:translateX(-50%);top:0;z-index:2147482500;display:none;align-items:center;gap:12px;padding:8px 16px;border-radius:0 0 10px 10px;background:#4a2420;border:1px solid #6a3328;border-top:0;color:#ffcbb8;font:13px system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#authVerifyBanner.show{display:flex}
+#authVerifyBanner button{background:#ff8f3a;border:0;border-radius:6px;color:#111;font-weight:700;font-size:12px;padding:5px 10px;cursor:pointer}
+#authVerifyBanner .avb-x{background:none;color:#ffcbb8;font-size:14px;padding:0 2px}
 </style>
 <div id="authGate" class="hidden">
   <div class="ag-card">
@@ -4054,7 +4097,59 @@
     </div>
   </div>
 </div>
-<div id="authUserPill"><span id="authUserEmail"></span><button type="button" id="authLogout">Terminar sessão</button></div>
+<div id="authUserPill"><span id="authUserEmail"></span><button type="button" id="authAccount">A minha conta</button><span class="ap-sep">·</span><button type="button" id="authLogout">Terminar sessão</button><span class="ap-sep">·</span><button type="button" id="authDelete">Eliminar conta</button></div>
+<div id="authDeleteModal">
+  <div class="adm-card">
+    <h2>Eliminar conta</h2>
+    <p class="adm-sub">Esta ação é permanente e não pode ser revertida. A tua conta será apagada e perderás o acesso ao painel.</p>
+    <p class="adm-sub">Por segurança, confirma a tua password para continuar.</p>
+    <label for="admPass">Password</label>
+    <input id="admPass" type="password" autocomplete="current-password">
+    <div class="adm-msg" id="admMsg"></div>
+    <div class="adm-actions">
+      <button type="button" class="adm-cancel" id="admCancel">Cancelar</button>
+      <button type="button" class="adm-confirm" id="admConfirm">Eliminar definitivamente</button>
+    </div>
+  </div>
+</div>
+<div id="authVerifyBanner">
+  <span id="avbText">O teu email ainda não foi verificado.</span>
+  <button type="button" id="avbResend">Reenviar email</button>
+  <button type="button" class="avb-x" id="avbClose">✕</button>
+</div>
+<div id="authProfileModal">
+  <div class="apm-card">
+    <button type="button" class="apm-close" id="apmClose">✕</button>
+    <h2>A minha conta</h2>
+    <div class="apm-meta" id="apmMeta">A carregar…</div>
+    <div class="apm-sec">
+      <h3>Verificação de email</h3>
+      <div id="apmVerifyRow"></div>
+    </div>
+    <div class="apm-sec">
+      <h3>Mudar email</h3>
+      <label for="apmEmail">Novo email</label>
+      <input id="apmEmail" type="email" autocomplete="email">
+      <label for="apmEmailPass">Password atual</label>
+      <input id="apmEmailPass" type="password" autocomplete="current-password">
+      <button type="button" class="apm-btn" id="apmEmailBtn">Atualizar email</button>
+      <div class="apm-rowmsg" id="apmEmailMsg"></div>
+    </div>
+    <div class="apm-sec">
+      <h3>Mudar password</h3>
+      <label for="apmCurPass">Password atual</label>
+      <input id="apmCurPass" type="password" autocomplete="current-password">
+      <label for="apmNewPass">Nova password</label>
+      <input id="apmNewPass" type="password" autocomplete="new-password">
+      <button type="button" class="apm-btn" id="apmPassBtn">Atualizar password</button>
+      <div class="apm-rowmsg" id="apmPassMsg"></div>
+    </div>
+    <div class="apm-sec">
+      <h3>Atividade recente da conta</h3>
+      <div id="apmActivity"><div class="apm-meta">A carregar…</div></div>
+    </div>
+  </div>
+</div>
 <script>
 (function(){
   const LS_KEY = 'cc_auth_session';
@@ -4080,7 +4175,10 @@
     TOO_MANY_ATTEMPTS_TRY_LATER: 'Demasiadas tentativas. Tenta novamente mais tarde.',
     OPERATION_NOT_ALLOWED: 'Login por email/password não está ativado no Firebase (Authentication → Sign-in method).',
     MISSING_PASSWORD: 'Indica a password.',
-    MISSING_EMAIL: 'Indica o email.'
+    MISSING_EMAIL: 'Indica o email.',
+    CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'Por segurança, inicia sessão novamente antes de eliminar a conta.',
+    TOKEN_EXPIRED: 'Sessão expirada. Inicia sessão novamente.',
+    USER_NOT_FOUND: 'Esta conta já não existe.'
   };
   function errText(e){ const c = String((e && e.message) || e || '').split(' ')[0]; return ERR[c] || ('Erro: ' + c); }
   function setMsg(t, ok){ msg.textContent = t || ''; msg.className = 'ag-msg ' + (t ? (ok ? 'ok' : 'err') : ''); }
@@ -4125,6 +4223,8 @@
     $('authUserEmail').textContent = session.email || '';
     $('authUserPill').style.display = 'flex';
     readyResolve();
+    recordLogin();
+    checkVerifyBanner();
   }
   function setMode(m){
     mode = m; setMsg('');
@@ -4156,6 +4256,155 @@
     location.reload();
   }
 
+  // --- Eliminar conta -------------------------------------------------------
+  const delModal = $('authDeleteModal'), delMsg = $('admMsg');
+  function openDelete(){
+    if (!session){ return; }
+    $('admPass').value = ''; delMsg.textContent = '';
+    $('admConfirm').disabled = false; $('admCancel').disabled = false;
+    delModal.classList.add('open');
+    setTimeout(() => $('admPass').focus(), 50);
+  }
+  function closeDelete(){ delModal.classList.remove('open'); }
+  async function deleteAccount(){
+    const pass = $('admPass').value;
+    if (!pass){ delMsg.textContent = 'Indica a password para confirmar.'; return; }
+    $('admConfirm').disabled = true; $('admCancel').disabled = true; delMsg.textContent = '';
+    try {
+      // Reautentica para obter um idToken recente (evita CREDENTIAL_TOO_OLD).
+      const r = await idt('signInWithPassword', { email: session.email, password: pass, returnSecureToken: true });
+      await idt('delete', { idToken: r.idToken });
+      try { localStorage.removeItem(LS_KEY); } catch(e){}
+      session = null;
+      closeDelete();
+      alert('A tua conta foi eliminada com sucesso.');
+      location.reload();
+    } catch(e){
+      delMsg.textContent = errText(e);
+      $('admConfirm').disabled = false; $('admCancel').disabled = false;
+    }
+  }
+
+  // --- Perfil / Conta -------------------------------------------------------
+  const profModal = $('authProfileModal');
+  function fmtDate(ms){
+    const n = parseInt(ms, 10);
+    if (!n) return '—';
+    try { return new Date(n).toLocaleString(); } catch(e){ return '—'; }
+  }
+  async function lookupUser(){
+    const token = await getToken();
+    const d = await idt('lookup', { idToken: token });
+    return (d.users && d.users[0]) || null;
+  }
+  function renderVerifyRow(u){
+    const row = $('apmVerifyRow');
+    if (u && u.emailVerified){
+      row.innerHTML = '<span class="apm-badge ver">Verificado</span>';
+    } else {
+      row.innerHTML = '<span class="apm-badge unver">Não verificado</span> ' +
+        '<button type="button" class="apm-btn" id="apmResendBtn" style="margin-top:0;margin-left:8px;padding:6px 12px">Reenviar email de verificação</button>' +
+        '<div class="apm-rowmsg" id="apmResendMsg"></div>';
+      $('apmResendBtn').onclick = resendVerification;
+    }
+  }
+  async function resendVerification(){
+    const btn = $('apmResendBtn'), m = $('apmResendMsg');
+    if (btn) btn.disabled = true;
+    try {
+      const token = await getToken();
+      await idt('sendOobCode', { requestType: 'VERIFY_EMAIL', idToken: token });
+      if (m){ m.className = 'apm-rowmsg ok'; m.textContent = 'Email de verificação enviado. Verifica a caixa de entrada (e o spam).'; }
+    } catch(e){
+      if (m){ m.className = 'apm-rowmsg err'; m.textContent = errText(e); }
+    }
+    if (btn) btn.disabled = false;
+  }
+  async function loadActivity(){
+    const box = $('apmActivity');
+    try {
+      const r = await window.fetch(apiOrigin + '/api/account/activity?email=' + encodeURIComponent(session.email || ''));
+      const d = await r.json();
+      const rows = (d.entries || []).map(e =>
+        '<tr><td>' + fmtDate((e.ts||0)*1000) + '</td><td>' + (e.event||'login') + '</td><td>' + (e.ip||'—') + '</td></tr>'
+      ).join('');
+      box.innerHTML = rows
+        ? '<table class="apm-act"><thead><tr><th>Data</th><th>Evento</th><th>IP</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        : '<div class="apm-meta">Sem atividade registada ainda.</div>';
+    } catch(e){
+      box.innerHTML = '<div class="apm-meta">Não foi possível carregar o registo de atividade.</div>';
+    }
+  }
+  async function openProfile(){
+    if (!session) return;
+    ['apmEmail','apmEmailPass','apmCurPass','apmNewPass'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    ['apmEmailMsg','apmPassMsg'].forEach(id => { const el=$(id); if(el){ el.textContent=''; el.className='apm-rowmsg'; } });
+    $('apmMeta').textContent = 'A carregar…';
+    $('apmVerifyRow').innerHTML = '';
+    $('apmActivity').innerHTML = '<div class="apm-meta">A carregar…</div>';
+    profModal.classList.add('open');
+    try {
+      const u = await lookupUser();
+      $('apmEmail').value = (u && u.email) || session.email || '';
+      $('apmMeta').innerHTML =
+        'Email: <b>' + ((u && u.email) || session.email || '—') + '</b><br>' +
+        'Conta criada: <b>' + fmtDate(u && u.createdAt) + '</b><br>' +
+        'Último início de sessão: <b>' + fmtDate(u && u.lastLoginAt) + '</b>';
+      renderVerifyRow(u);
+    } catch(e){
+      $('apmMeta').textContent = 'Não foi possível carregar os dados da conta.';
+    }
+    loadActivity();
+  }
+  function closeProfile(){ profModal.classList.remove('open'); }
+  async function changeEmail(){
+    const newEmail = $('apmEmail').value.trim(), pass = $('apmEmailPass').value;
+    const m = $('apmEmailMsg');
+    if (!newEmail){ m.className='apm-rowmsg err'; m.textContent='Indica o novo email.'; return; }
+    if (!pass){ m.className='apm-rowmsg err'; m.textContent='Confirma a password atual.'; return; }
+    $('apmEmailBtn').disabled = true; m.textContent=''; m.className='apm-rowmsg';
+    try {
+      const r = await idt('signInWithPassword', { email: session.email, password: pass, returnSecureToken: true });
+      const d = await idt('update', { idToken: r.idToken, email: newEmail, returnSecureToken: true });
+      saveSession({ idToken: d.idToken || r.idToken, refreshToken: d.refreshToken || session.refreshToken,
+                    email: d.email || newEmail, expiresAt: Date.now() + 3600000 });
+      $('authUserEmail').textContent = session.email;
+      m.className='apm-rowmsg ok'; m.textContent='Email atualizado com sucesso.';
+      $('apmEmailPass').value='';
+    } catch(e){ m.className='apm-rowmsg err'; m.textContent=errText(e); }
+    $('apmEmailBtn').disabled = false;
+  }
+  async function changePassword(){
+    const cur = $('apmCurPass').value, nw = $('apmNewPass').value;
+    const m = $('apmPassMsg');
+    if (!cur){ m.className='apm-rowmsg err'; m.textContent='Confirma a password atual.'; return; }
+    if (!nw || nw.length < 6){ m.className='apm-rowmsg err'; m.textContent='A nova password tem de ter pelo menos 6 caracteres.'; return; }
+    $('apmPassBtn').disabled = true; m.textContent=''; m.className='apm-rowmsg';
+    try {
+      const r = await idt('signInWithPassword', { email: session.email, password: cur, returnSecureToken: true });
+      const d = await idt('update', { idToken: r.idToken, password: nw, returnSecureToken: true });
+      saveSession({ idToken: d.idToken || r.idToken, refreshToken: d.refreshToken || session.refreshToken,
+                    email: session.email, expiresAt: Date.now() + 3600000 });
+      m.className='apm-rowmsg ok'; m.textContent='Password atualizada com sucesso.';
+      $('apmCurPass').value=''; $('apmNewPass').value='';
+    } catch(e){ m.className='apm-rowmsg err'; m.textContent=errText(e); }
+    $('apmPassBtn').disabled = false;
+  }
+  async function checkVerifyBanner(){
+    try {
+      const u = await lookupUser();
+      if (u && !u.emailVerified){ $('authVerifyBanner').classList.add('show'); }
+    } catch(e){}
+  }
+  async function recordLogin(){
+    try {
+      await window.fetch(apiOrigin + '/api/account/activity', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: session.email, event: 'login' })
+      });
+    } catch(e){}
+  }
+
   // fetch embrulhado: espera pelo login e junta o token aos pedidos à API local
   window.fetch = async function(input, init){
     const url = typeof input === 'string' ? input : (input && input.url) || '';
@@ -4181,6 +4430,23 @@
   $('agToggle').onclick = () => setMode(mode === 'signup' ? 'login' : 'signup');
   $('agReset').onclick = () => setMode('reset');
   $('authLogout').onclick = logout;
+  $('authDelete').onclick = openDelete;
+  $('authAccount').onclick = openProfile;
+  $('apmClose').onclick = closeProfile;
+  $('apmEmailBtn').onclick = changeEmail;
+  $('apmPassBtn').onclick = changePassword;
+  profModal.addEventListener('click', e => { if (e.target === profModal) closeProfile(); });
+  profModal.addEventListener('keydown', e => { if (e.key === 'Escape') closeProfile(); });
+  $('avbResend').onclick = async () => {
+    const b = $('avbResend'); b.disabled = true;
+    try { const token = await getToken(); await idt('sendOobCode', { requestType: 'VERIFY_EMAIL', idToken: token }); b.textContent = 'Enviado ✓'; }
+    catch(e){ b.textContent = 'Erro'; b.disabled = false; }
+  };
+  $('avbClose').onclick = () => $('authVerifyBanner').classList.remove('show');
+  $('admCancel').onclick = closeDelete;
+  $('admConfirm').onclick = deleteAccount;
+  delModal.addEventListener('click', e => { if (e.target === delModal) closeDelete(); });
+  delModal.addEventListener('keydown', e => { if (e.key === 'Enter') deleteAccount(); if (e.key === 'Escape') closeDelete(); });
   gate.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 
   (async function init(){
