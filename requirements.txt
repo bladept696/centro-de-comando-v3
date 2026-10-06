@@ -1,0 +1,20 @@
+# Dependências do Centro de Comando (app.py)
+#
+# Todas as bibliotecas abaixo são opcionais em runtime - o app.py importa
+# cada uma dentro de um try/except e desliga a funcionalidade respetiva
+# (sem rebentar) se faltar alguma. Mesmo assim, para uma build .exe
+# completa (PyInstaller), o mais seguro é instalar tudo antes de compilar.
+
+# MQTT (solar/tarifa) - liga-se ao broker configurado nas Definições
+paho-mqtt>=1.6
+
+# Ícone na bandeja do sistema ("Sair" garantido) + ícone de fallback
+pystray>=0.19
+Pillow>=10.0
+
+# HTTPS local com certificado autoassinado (gera o par certificado/chave)
+cryptography>=42.0
+
+# Notificação nativa do Windows (toast) nos alertas - só tem efeito no
+# Windows; noutros sistemas fica sem efeito em silêncio.
+winotify>=1.1; sys_platform == "win32"

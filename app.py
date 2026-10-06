@@ -2289,6 +2289,61 @@ def save_power_config(cfg):
 power_config = load_power_config()
 
 
+# --- Registo de atividade da conta (logins) --------------------------------
+ACCOUNT_ACTIVITY_FILENAME = "account_activity.json"
+ACCOUNT_ACTIVITY_MAX = 50
+_account_activity_lock = threading.Lock()
+
+
+def account_activity_path():
+    return os.path.join(writable_dir(), ACCOUNT_ACTIVITY_FILENAME)
+
+
+def load_account_activity():
+    try:
+        with open(account_activity_path(), 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_account_activity(data):
+    try:
+        with open(account_activity_path(), 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception:
+        return False
+
+
+def record_account_activity(email, ip, event='login', user_agent=''):
+    email = (email or '').strip().lower()
+    if not email:
+        return []
+    entry = {
+        "ts": int(time.time()),
+        "ip": ip or '',
+        "event": (event or 'login')[:40],
+        "ua": (user_agent or '')[:200],
+    }
+    with _account_activity_lock:
+        data = load_account_activity()
+        lst = data.get(email) or []
+        lst.insert(0, entry)
+        data[email] = lst[:ACCOUNT_ACTIVITY_MAX]
+        save_account_activity(data)
+        return data[email]
+
+
+def get_account_activity(email):
+    email = (email or '').strip().lower()
+    if not email:
+        return []
+    with _account_activity_lock:
+        return (load_account_activity().get(email) or [])
+
+
 def send_telegram_alert(bot_token, chat_id, message):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = json.dumps({"chat_id": chat_id, "text": message}).encode('utf-8')
@@ -2879,6 +2934,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps({"error": "auth_required"}).encode('utf-8'))
         return False
 
+    def _client_ip(self):
+        xff = self.headers.get('X-Forwarded-For', '')
+        if xff:
+            return xff.split(',')[0].strip()
+        try:
+            return self.client_address[0]
+        except Exception:
+            return ''
+
     def do_GET(self):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
@@ -2896,6 +2960,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if not self._require_auth(path):
+            return
+
+        if path == '/api/account/activity':
+            email = (query_params.get('email') or [''])[0]
+            entries = get_account_activity(email)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True, "entries": entries}, ensure_ascii=False).encode('utf-8'))
             return
 
         if path == '/api/proxy':
@@ -3455,6 +3529,17 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({"ok": True}).encode('utf-8'))
+            return
+
+        if path == '/api/account/activity':
+            email = str(body.get('email') or '').strip()
+            event = str(body.get('event') or 'login').strip() or 'login'
+            entries = record_account_activity(email, self._client_ip(), event, self.headers.get('User-Agent', ''))
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True, "entries": entries}, ensure_ascii=False).encode('utf-8'))
             return
 
         if path == '/api/close':
