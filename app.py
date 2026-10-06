@@ -60,7 +60,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "3.9.1"
+APP_VERSION = "3.9.2"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -2785,6 +2785,80 @@ def scan_subnet(subnet):
     return found
 
 
+# --- Autenticação Firebase (login obrigatório) -----------------------------
+# A API key de uma app web Firebase NÃO é secreta; a segurança vem de a conta
+# ser validada no Firebase. Deixa vazia para desativar o login (modo antigo).
+FIREBASE_API_KEY_INLINE = "AIzaSyDU-6ekXo7_8PhsbYPohW1rv0mkNsikWvg"  # <- COLA AQUI a API key web do Firebase, entre as aspas (ex.: "AIza...")
+
+
+def _load_firebase_key():
+    k = os.environ.get("FIREBASE_API_KEY", "").strip() or FIREBASE_API_KEY_INLINE.strip()
+    if k:
+        return k
+    dirs = []
+    if getattr(sys, 'frozen', False):
+        dirs.append(os.path.dirname(sys.executable))
+    dirs += [os.path.dirname(os.path.abspath(__file__)), os.getcwd()]
+    for d in dirs:
+        try:
+            with open(os.path.join(d, "firebase_key.txt"), encoding="utf-8") as f:
+                k = f.read().strip()
+            if k:
+                return k
+        except Exception:
+            continue
+    return ""
+
+
+FIREBASE_API_KEY = _load_firebase_key()
+FIREBASE_PROJECT_ID = "dashboard-a07d4"
+AUTH_REQUIRE_VERIFIED_EMAIL = False
+AUTH_TOKEN_CACHE_SECONDS = 300
+# Rotas /api/ que continuam abertas (login, keep-alive e overlays Rainmeter/OBS)
+AUTH_EXEMPT_PATHS = {
+    '/api/auth/config', '/api/heartbeat', '/api/version',
+    '/api/overlay', '/api/overlay/rainmeter',
+}
+_auth_cache = {}
+_auth_cache_lock = threading.Lock()
+
+
+def auth_enabled():
+    return bool(FIREBASE_API_KEY)
+
+
+def verify_firebase_token(id_token):
+    """Valida um ID token junto do Firebase (accounts:lookup). Com cache curta."""
+    key = hashlib.sha256(id_token.encode('utf-8')).hexdigest()
+    now = time.time()
+    with _auth_cache_lock:
+        hit = _auth_cache.get(key)
+        if hit and hit > now:
+            return True
+        for k in [k for k, v in _auth_cache.items() if v <= now]:
+            _auth_cache.pop(k, None)
+    try:
+        req = urllib.request.Request(
+            f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={urllib.parse.quote(FIREBASE_API_KEY)}",
+            data=json.dumps({"idToken": id_token}).encode('utf-8'),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        users = data.get("users") or []
+        if not users or users[0].get("disabled"):
+            return False
+        if AUTH_REQUIRE_VERIFIED_EMAIL and not users[0].get("emailVerified"):
+            return False
+    except Exception:
+        return False
+    with _auth_cache_lock:
+        _auth_cache[key] = now + AUTH_TOKEN_CACHE_SECONDS
+    return True
+
+
+
 class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=resource_dir(), **kwargs)
@@ -2792,10 +2866,37 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
+    def _require_auth(self, path):
+        if not auth_enabled() or not path.startswith('/api/') or path in AUTH_EXEMPT_PATHS:
+            return True
+        header = self.headers.get('Authorization', '')
+        token = header[7:].strip() if header.lower().startswith('bearer ') else ''
+        if token and verify_firebase_token(token):
+            return True
+        self.send_response(401)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(json.dumps({"error": "auth_required"}).encode('utf-8'))
+        return False
+
     def do_GET(self):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         query_params = urllib.parse.parse_qs(parsed_url.query)
+
+        if path == '/api/auth/config':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "enabled": auth_enabled(),
+                "apiKey": FIREBASE_API_KEY,
+                "projectId": FIREBASE_PROJECT_ID,
+            }).encode('utf-8'))
+            return
+
+        if not self._require_auth(path):
+            return
 
         if path == '/api/proxy':
             ip_list = query_params.get('ip')
@@ -3343,6 +3444,9 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
         except Exception:
             body = {}
 
+        if not self._require_auth(path):
+            return
+
         if path == '/api/heartbeat':
             LAST_HEARTBEAT["ts"] = time.time()
             cancel_pending_close()
@@ -3769,6 +3873,8 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
+        if str(getattr(self, 'path', '')).split('?')[0].endswith('.html'):
+            self.send_header('Cache-Control', 'no-store')
         super().end_headers()
 
 
@@ -3874,6 +3980,7 @@ def start_server():
 
 
 def main():
+    print(f"[auth] login Firebase: {'ATIVO' if auth_enabled() else 'DESATIVADO (FIREBASE_API_KEY vazia)'} | app.py {APP_VERSION}", flush=True)
     if not port_in_use(PORT):
         server_thread = threading.Thread(target=start_server, daemon=True)
         server_thread.start()
@@ -3897,6 +4004,8 @@ def main():
         while True:
             time.sleep(3600)
     else:
+        print(f"[aviso] a porta {PORT} já está ocupada por OUTRA instância da app (provavelmente a antiga, na bandeja/.exe). "
+              "Este app.py NÃO arrancou - o browser vai mostrar a instância antiga. Fecha-a e volta a correr.", flush=True)
         webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
 
 

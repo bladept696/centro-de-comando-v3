@@ -3987,9 +3987,219 @@
   body.perf-mode .pv-spores{ display:none; }
   body.perf-mode #tab-parasite .rate-chip::before, body.perf-mode #tab-parasite .refinery-progress-fill::after,
   body.perf-mode #tab-parasite .icon-parasite-mite, body.perf-mode #tab-parasite .refinery-status{ animation:none; }
+  /* === Gráficos 3D === */
+  .hc3d-canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:1; }
+  .hc3d-tip{ position:absolute; pointer-events:none; display:none; z-index:3; background:#0b1a28ee; border:1px solid var(--line-strong); border-radius:6px; padding:4px 8px; font-size:11px; color:var(--text); white-space:nowrap; }
+  /* === Relógio 3D + tempo === */
+  .wx-panel{ position:relative; display:flex; align-items:center; gap:24px; flex-wrap:wrap; padding:10px 20px; margin:12px 0; border:1px solid var(--line-strong); border-radius:14px; background:linear-gradient(120deg,rgba(14,32,52,.78),rgba(9,18,32,.78)); }
+  .wx-globe{ position:relative; width:170px; height:170px; flex:0 0 170px; }
+  body.perf-mode .wx-globe{ display:none; }
+  .wx-time{ font-family:'Space Grotesk',monospace; font-weight:700; font-size:54px; line-height:1; color:#dff6ff; transform-origin:50% 100%; animation:wxSway 9s ease-in-out infinite alternate;
+    text-shadow:1px 1px 0 #1a6a8a,2px 2px 0 #165b78,3px 3px 0 #124c66,4px 4px 0 #0e3d54,6px 9px 16px rgba(0,0,0,.65),0 0 22px rgba(79,214,255,.35); }
+  @keyframes wxSway{ from{ transform:perspective(700px) rotateX(16deg) rotateY(-7deg); } to{ transform:perspective(700px) rotateX(16deg) rotateY(7deg); } }
+  body.perf-mode .wx-time{ animation:none; transform:none; }
+  html.is-scrolling .wx-time{ animation-play-state:paused; }
+  .wx-sec{ font-size:26px; color:var(--cyan); }
+  .wx-date{ font-size:12px; color:var(--muted); margin-top:8px; text-transform:capitalize; }
+  .wx-place{ font-size:13px; color:var(--text); margin-top:2px; font-weight:600; }
+  .wx-temp{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:38px; color:#fff; }
+  .wx-cond{ font-size:13px; color:var(--amber); margin:2px 0 6px; }
+  .wx-meta{ display:flex; gap:16px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); }
+  .wx-meta b{ color:var(--text); }
+  .wx-gear{ position:absolute; top:8px; right:10px; background:transparent; border:1px solid var(--line-strong); color:var(--muted); border-radius:8px; padding:3px 9px; cursor:pointer; font-size:14px; }
+  .wx-gear:hover{ color:var(--cyan); border-color:var(--cyan); }
+  .wx-settings{ position:absolute; top:42px; right:10px; z-index:8; width:300px; background:#0b1a28f2; border:1px solid var(--line-strong); border-radius:10px; padding:10px 12px; font-size:12px; color:var(--text); }
+  .wx-settings input[type=text]{ background:var(--panel-2); border:1px solid var(--line-strong); color:var(--text); border-radius:6px; padding:5px 8px; width:200px; }
+  .wx-settings button{ background:var(--panel-2); border:1px solid var(--line-strong); color:var(--text); border-radius:6px; padding:4px 9px; cursor:pointer; }
+  .wx-modes,.wx-search{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+  .wx-results button{ display:block; width:100%; text-align:left; margin-bottom:4px; }
 </style>
 </head>
 <body>
+<!-- ===== Login obrigatório (Firebase Auth via REST) ===== -->
+<style>
+#authGate{position:fixed;inset:0;z-index:2147483000;background:radial-gradient(circle at 30% 20%,#1b1f2a,#0b0d12 70%);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec}
+#authGate.hidden{display:none}
+#authGate .ag-card{width:min(380px,92vw);background:#14171f;border:1px solid #2a2f3c;border-radius:14px;padding:28px 26px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+#authGate h1{margin:0 0 4px;font-size:20px;color:#f7931a}
+#authGate p.ag-sub{margin:0 0 18px;font-size:13px;color:#9aa0ae}
+#authGate label{display:block;font-size:12px;color:#9aa0ae;margin:12px 0 4px}
+#authGate input{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #2a2f3c;background:#0d1016;color:#fff;font-size:14px;outline:none}
+#authGate input:focus{border-color:#f7931a}
+#authGate button.ag-main{width:100%;margin-top:18px;padding:11px;border:0;border-radius:8px;background:#f7931a;color:#111;font-weight:700;font-size:14px;cursor:pointer}
+#authGate button.ag-main:disabled{opacity:.6;cursor:wait}
+#authGate .ag-links{display:flex;justify-content:space-between;margin-top:14px;font-size:12px}
+#authGate .ag-links a{color:#f7931a;cursor:pointer;text-decoration:none}
+#authGate .ag-msg{min-height:18px;margin-top:12px;font-size:12.5px}
+#authGate .ag-msg.err{color:#ff6b6b}
+#authGate .ag-msg.ok{color:#5fd38d}
+#authUserPill{position:fixed;left:12px;bottom:12px;z-index:2147482000;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
+#authUserPill button{background:none;border:0;color:#f7931a;cursor:pointer;font-size:12px;padding:0}
+</style>
+<div id="authGate" class="hidden">
+  <div class="ag-card">
+    <h1 id="agTitle">Centro de Comando</h1>
+    <p class="ag-sub" id="agSub">Inicia sessão para aceder ao painel.</p>
+    <label for="agEmail">Email</label>
+    <input id="agEmail" type="email" autocomplete="email">
+    <div id="agPassWrap">
+      <label for="agPass">Password</label>
+      <input id="agPass" type="password" autocomplete="current-password">
+    </div>
+    <button class="ag-main" id="agSubmit" type="button">Entrar</button>
+    <div class="ag-msg" id="agMsg"></div>
+    <div class="ag-links">
+      <a id="agToggle">Criar conta</a>
+      <a id="agReset">Esqueci a password</a>
+    </div>
+  </div>
+</div>
+<div id="authUserPill"><span id="authUserEmail"></span><button type="button" id="authLogout">Terminar sessão</button></div>
+<script>
+(function(){
+  const LS_KEY = 'cc_auth_session';
+  const nativeFetch = window.fetch.bind(window);
+  const apiOrigin = `${location.protocol}//${location.hostname}:8765`;
+  const BYPASS = ['/api/auth/config', '/api/heartbeat'];
+  let cfg = { enabled: false, apiKey: '' };
+  let session = null;               // { refreshToken, idToken, expiresAt, email }
+  let mode = 'login';               // login | signup | reset
+  let readyResolve; const authReady = new Promise(r => readyResolve = r);
+
+  const $ = id => document.getElementById(id);
+  const gate = $('authGate'), msg = $('agMsg');
+
+  const ERR = {
+    EMAIL_EXISTS: 'Já existe uma conta com este email.',
+    INVALID_EMAIL: 'Email inválido.',
+    WEAK_PASSWORD: 'Password demasiado fraca (mínimo 6 caracteres).',
+    EMAIL_NOT_FOUND: 'Email ou password incorretos.',
+    INVALID_PASSWORD: 'Email ou password incorretos.',
+    INVALID_LOGIN_CREDENTIALS: 'Email ou password incorretos.',
+    USER_DISABLED: 'Esta conta foi desativada.',
+    TOO_MANY_ATTEMPTS_TRY_LATER: 'Demasiadas tentativas. Tenta novamente mais tarde.',
+    OPERATION_NOT_ALLOWED: 'Login por email/password não está ativado no Firebase (Authentication → Sign-in method).',
+    MISSING_PASSWORD: 'Indica a password.',
+    MISSING_EMAIL: 'Indica o email.'
+  };
+  function errText(e){ const c = String((e && e.message) || e || '').split(' ')[0]; return ERR[c] || ('Erro: ' + c); }
+  function setMsg(t, ok){ msg.textContent = t || ''; msg.className = 'ag-msg ' + (t ? (ok ? 'ok' : 'err') : ''); }
+
+  async function idt(endpoint, body){
+    const r = await nativeFetch(`https://identitytoolkit.googleapis.com/v1/accounts:${endpoint}?key=${encodeURIComponent(cfg.apiKey)}`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error((d.error && d.error.message) || 'UNKNOWN');
+    return d;
+  }
+  function saveSession(s){
+    session = s;
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ refreshToken: s.refreshToken, email: s.email })); } catch(e){}
+  }
+  function fromAuthResponse(d, email){
+    return { idToken: d.idToken, refreshToken: d.refreshToken, email: d.email || email,
+             expiresAt: Date.now() + (parseInt(d.expiresIn, 10) || 3600) * 1000 };
+  }
+  async function refresh(){
+    const rt = session && session.refreshToken;
+    if (!rt) throw new Error('NO_SESSION');
+    const r = await nativeFetch(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(cfg.apiKey)}`, {
+      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(rt)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error((d.error && d.error.message) || 'REFRESH_FAILED');
+    saveSession({ idToken: d.id_token, refreshToken: d.refresh_token, email: session.email,
+                  expiresAt: Date.now() + (parseInt(d.expires_in, 10) || 3600) * 1000 });
+  }
+  async function getToken(){
+    if (!session) throw new Error('NO_SESSION');
+    if (session.expiresAt - Date.now() < 60000) await refresh();
+    return session.idToken;
+  }
+
+  function showGate(){ gate.classList.remove('hidden'); $('authUserPill').style.display = 'none'; }
+  function loggedIn(){
+    gate.classList.add('hidden');
+    $('authUserEmail').textContent = session.email || '';
+    $('authUserPill').style.display = 'flex';
+    readyResolve();
+  }
+  function setMode(m){
+    mode = m; setMsg('');
+    $('agPassWrap').style.display = m === 'reset' ? 'none' : '';
+    $('agSubmit').textContent = m === 'signup' ? 'Criar conta' : m === 'reset' ? 'Enviar email de recuperação' : 'Entrar';
+    $('agSub').textContent = m === 'signup' ? 'Cria a tua conta para usar o painel.' : m === 'reset' ? 'Enviamos-te um link para definir nova password.' : 'Inicia sessão para aceder ao painel.';
+    $('agToggle').textContent = m === 'signup' ? 'Já tenho conta' : 'Criar conta';
+    $('agPass').autocomplete = m === 'signup' ? 'new-password' : 'current-password';
+  }
+  async function submit(){
+    const email = $('agEmail').value.trim(), pass = $('agPass').value;
+    $('agSubmit').disabled = true; setMsg('');
+    try {
+      if (mode === 'reset') {
+        await idt('sendOobCode', { requestType: 'PASSWORD_RESET', email });
+        setMsg('Email enviado. Verifica a caixa de entrada (e o spam).', true);
+      } else {
+        const d = await idt(mode === 'signup' ? 'signUp' : 'signInWithPassword', { email, password: pass, returnSecureToken: true });
+        saveSession(fromAuthResponse(d, email));
+        $('agPass').value = '';
+        loggedIn();
+      }
+    } catch(e){ setMsg(errText(e)); }
+    $('agSubmit').disabled = false;
+  }
+  function logout(){
+    try { localStorage.removeItem(LS_KEY); } catch(e){}
+    session = null;
+    location.reload();
+  }
+
+  // fetch embrulhado: espera pelo login e junta o token aos pedidos à API local
+  window.fetch = async function(input, init){
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (!cfg.enabled || !url.startsWith(apiOrigin + '/api/') || BYPASS.some(p => url.startsWith(apiOrigin + p))) {
+      return nativeFetch(input, init);
+    }
+    await authReady;
+    const send = async () => {
+      const token = await getToken();
+      const headers = new Headers((init && init.headers) || (typeof input !== 'string' && input.headers) || {});
+      headers.set('Authorization', 'Bearer ' + token);
+      return nativeFetch(input, Object.assign({}, init, { headers }));
+    };
+    let res = await send();
+    if (res.status === 401) {
+      try { await refresh(); res = await send(); } catch(e){}
+      if (res.status === 401) { try { localStorage.removeItem(LS_KEY); } catch(e){} session = null; location.reload(); }
+    }
+    return res;
+  };
+
+  $('agSubmit').onclick = submit;
+  $('agToggle').onclick = () => setMode(mode === 'signup' ? 'login' : 'signup');
+  $('agReset').onclick = () => setMode('reset');
+  $('authLogout').onclick = logout;
+  gate.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+
+  (async function init(){
+    try {
+      const r = await nativeFetch(apiOrigin + '/api/auth/config');
+      cfg = await r.json();
+    } catch(e){ cfg = { enabled: false }; }
+    if (!cfg.enabled) { readyResolve(); return; }
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){}
+    if (saved && saved.refreshToken) {
+      session = { refreshToken: saved.refreshToken, email: saved.email, idToken: '', expiresAt: 0 };
+      try { await refresh(); loggedIn(); return; } catch(e){ session = null; }
+    }
+    showGate();
+  })();
+})();
+</script>
+<!-- ===== fim login ===== -->
 <div class="toast-stack" id="toastStack"></div>
 <div class="block-celebration" id="blockCelebration">
   <div class="block-celebration-confetti" id="blockConfettiLayer"></div>
@@ -4259,6 +4469,33 @@
   </div>
 
   <div id="tab-dashboard" class="tab-content active">
+    <div class="wx-panel" id="wxPanel">
+      <div class="wx-globe" id="wxGlobe"></div>
+      <div class="wx-clock">
+        <div class="wx-time" id="wxTime">--:--<span class="wx-sec" id="wxSec">:--</span></div>
+        <div class="wx-date" id="wxDate">—</div>
+        <div class="wx-place" id="wxPlace">—</div>
+      </div>
+      <div class="wx-weather">
+        <div class="wx-temp"><span id="wxIcon">⛅</span> <span id="wxTemp">—</span></div>
+        <div class="wx-cond" id="wxCond">—</div>
+        <div class="wx-meta">
+          <span>🌡️ <span data-i18n="wx_sensacao">Sensação</span> <b id="wxFeels">—</b></span>
+          <span>💨 <span data-i18n="wx_vento">Vento</span> <b id="wxWind">—</b></span>
+          <span>💧 <span data-i18n="wx_humidade">Humidade</span> <b id="wxHum">—</b></span>
+        </div>
+      </div>
+      <button class="wx-gear" onclick="wxToggleSettings()" title="Localização" aria-label="Localização">⚙</button>
+      <div class="wx-settings" id="wxSettings" style="display:none">
+        <div class="wx-modes">
+          <label><input type="radio" name="wxMode" value="auto" onchange="wxDetect()"> <span data-i18n="wx_auto">Automático</span></label>
+          <label><input type="radio" name="wxMode" value="manual" onchange="wxManual()"> <span data-i18n="wx_manual">Manual</span></label>
+          <button onclick="wxDetect()" data-i18n="wx_detetar">Detetar localização</button>
+        </div>
+        <div class="wx-search"><input type="text" id="wxQuery" data-i18n-placeholder="wx_procurar" placeholder="Procurar cidade..." onkeydown="if(event.key==='Enter')wxSearch()"><button onclick="wxSearch()">🔍</button></div>
+        <div class="wx-results" id="wxResults"></div>
+      </div>
+    </div>
     <div class="blocks-container">
       <div class="blocks-toolbar">
         <span class="title"><span data-i18n="mp_titulo">Mempool e blocos da rede Bitcoin</span></span>
@@ -5318,6 +5555,7 @@ function hcPerfPref(){ try { return localStorage.getItem('hc_perf_mode') || 'aut
 function hcApplyPerf(on){
   hcPerfMode = !!on;
   document.body.classList.toggle('perf-mode', hcPerfMode);
+  if(typeof hc3dSync === 'function') hc3dSync();
   const b = document.getElementById('perfBtn');
   if(b) b.setAttribute('aria-pressed', hcPerfMode ? 'true' : 'false');
 }
@@ -5348,6 +5586,13 @@ function togglePerfMode(){
 })();
 
 const I18N_DICT = {
+  "wx_sensacao": { pt: `Sensação`, en: `Feels like`, es: `Sensación`, fr: `Ressenti` },
+  "wx_vento": { pt: `Vento`, en: `Wind`, es: `Viento`, fr: `Vent` },
+  "wx_humidade": { pt: `Humidade`, en: `Humidity`, es: `Humedad`, fr: `Humidité` },
+  "wx_auto": { pt: `Automático`, en: `Automatic`, es: `Automático`, fr: `Automatique` },
+  "wx_manual": { pt: `Manual`, en: `Manual`, es: `Manual`, fr: `Manuel` },
+  "wx_detetar": { pt: `Detetar localização`, en: `Detect location`, es: `Detectar ubicación`, fr: `Détecter la position` },
+  "wx_procurar": { pt: `Procurar cidade...`, en: `Search city...`, es: `Buscar ciudad...`, fr: `Chercher une ville...` },
   "placas_hash": { pt: `Placas de Hash`, en: `Hash Boards`, es: `Placas de Hash`, fr: `Cartes de Hash` },
   "placas_titulo": { pt: `🔩 Placas de Hash (LuxOS / Antminer)`, en: `🔩 Hash Boards (LuxOS / Antminer)`, es: `🔩 Placas de Hash (LuxOS / Antminer)`, fr: `🔩 Cartes de Hash (LuxOS / Antminer)` },
   "refrigeracao": { pt: `Refrigeração & VRM`, en: `Cooling & VRM`, es: `Refrigeración y VRM`, fr: `Refroidissement & VRM` },
@@ -6794,6 +7039,411 @@ setInterval(() => {
     });
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
+})();
+
+/* ===== Gráficos 3D (Three.js carregado a pedido; SVG como alternativa) ===== */
+var HC3D = { charts: {}, ready: false, loading: null, failed: false, raf: 0, last: 0, payload: {}, pr: 1.5, gap: 33, q: 2, ema: 40, good: 0 };
+function hc3dLoad(){
+  if(window.THREE){ HC3D.ready = true; return Promise.resolve(); }
+  if(HC3D.loading) return HC3D.loading;
+  return HC3D.loading = new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    sc.onload = () => { HC3D.ready = true; res(); };
+    sc.onerror = () => { HC3D.failed = true; rej(new Error('three')); };
+    document.head.appendChild(sc);
+  });
+}
+function hc3dGrad(t){
+  const a = [.55, .30, 1], b = [.31, .84, 1], d = [1, .69, .13];
+  const k = t < .5 ? t * 2 : (t - .5) * 2, p = t < .5 ? a : b, q = t < .5 ? b : d;
+  return [p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k, p[2] + (q[2] - p[2]) * k];
+}
+function hc3dLabel(text, color, h){
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
+  const x = cv.getContext('2d'); x.font = '600 34px monospace'; x.textAlign = 'center'; x.fillStyle = color; x.fillText(text, 128, 44);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
+  sp.scale.set(h * 4, h, 1); return sp;
+}
+function hc3dHalo(color){
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const x = cv.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, color); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+  return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+}
+function hc3dClear(c){
+  if(!c.group) return;
+  c.scene.remove(c.group);
+  c.group.traverse(o => { if(o.geometry) o.geometry.dispose(); if(o.material){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+  c.group = null; c.line = null; c.bars = null;
+}
+function hc3dEnsure(id){
+  if(HC3D.charts[id]) return HC3D.charts[id];
+  const el0 = document.getElementById(id), custom = el0.tagName.toLowerCase() !== 'svg';
+  const svg = custom ? { style: {} } : el0, host = custom ? el0 : el0.parentElement;
+  host.style.position = 'relative';
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, HC3D.pr || 1.5));
+  const cv = renderer.domElement; cv.className = 'hc3d-canvas'; host.appendChild(cv);
+  const tip = document.createElement('div'); tip.className = 'hc3d-tip'; host.appendChild(tip);
+  const c = { id, svg, host, renderer, tip, scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(38, 3, .1, 100), ray: new THREE.Raycaster(),
+              mouse: new THREE.Vector2(9, 9), mx: 0, my: 0, px: 0, py: 0, visible: true, active: false, t: 0, W: 16, dist: 7.8, group: null };
+  c.scene.add(new THREE.AmbientLight(0xffffff, .55));
+  const dl = new THREE.DirectionalLight(0xffd9a0, .9); dl.position.set(3, 8, 6); c.scene.add(dl);
+  c.light = new THREE.PointLight(0xffb020, 1.3, 22); c.light.position.set(0, 3.5, 3); c.scene.add(c.light);
+  cv.addEventListener('pointermove', e => { const r = cv.getBoundingClientRect(); c.mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); c.px = e.clientX - r.left; c.py = e.clientY - r.top; });
+  cv.addEventListener('pointerleave', () => { c.mouse.set(9, 9); tip.style.display = 'none'; });
+  if(window.ResizeObserver) new ResizeObserver(() => hc3dResize(c)).observe(host);
+  if(window.IntersectionObserver) new IntersectionObserver(es => { c.visible = es[0].isIntersecting; }).observe(host);
+  c.custom = custom; HC3D.charts[id] = c; hc3dResize(c); return c;
+}
+function hc3dResize(c){
+  const w = c.host.clientWidth, h = c.host.clientHeight; if(!w || !h) return;
+  c.renderer.setSize(w, h, false); c.camera.aspect = w / h; c.camera.updateProjectionMatrix();
+  const W = Math.max(8, Math.min(30, 5.4 * (w / h) * .86));
+  if(!c.custom && Math.abs(W - c.W) / c.W > .05){ c.W = W; c.sig = null; hc3dClear(c); clearTimeout(c.rz); c.rz = setTimeout(hc3dReplay, 50); }
+}
+function hc3dStrip(N){
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 6), 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(N * 6), 3));
+  const idx = []; for(let i = 0; i < N - 1; i++){ const a = 2 * i; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  geo.setIndex(idx); return geo;
+}
+function hc3dMesh(g, geo){
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+  m.frustumCulled = false; g.add(m); return m;
+}
+function hc3dGrid(c, g, D){
+  const grid = new THREE.GridHelper(c.W, Math.round(c.W / 1.2), 0x3a6a8a, 0x1c3346);
+  grid.scale.z = D * 1.5 / c.W; grid.material.transparent = true; grid.material.opacity = .55; g.add(grid);
+}
+function hc3dLine(c, vals){
+  const N = Math.min(96, vals.length), rs = [];
+  for(let i = 0; i < N; i++){ const a = Math.floor(i * vals.length / N), b = Math.max(a + 1, Math.floor((i + 1) * vals.length / N)); let sm = 0; for(let k = a; k < b; k++) sm += vals[k]; rs.push(sm / (b - a)); }
+  const mn = Math.min(...rs), mx = Math.max(...rs), rg = (mx - mn) || Math.max(Math.abs(mx) * .1, 1);
+  const target = rs.map(v => .6 + (v - mn) / rg * 2.8);
+  if(!c.line || c.line.N !== N){
+    hc3dClear(c);
+    const g = c.group = new THREE.Group(); c.scene.add(g);
+    const D = 1.8; hc3dGrid(c, g, D);
+    const L = c.line = { N, D, cur: target.slice(), target };
+    L.top = hc3dMesh(g, hc3dStrip(N)); L.curt = hc3dMesh(g, hc3dStrip(N)); L.rib = hc3dMesh(g, hc3dStrip(N));
+    L.pulse = new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffffff })); g.add(L.pulse);
+    L.mark = new THREE.Mesh(new THREE.SphereGeometry(.17, 14, 14), new THREE.MeshBasicMaterial({ color: 0xffb020 })); g.add(L.mark);
+    L.halo = hc3dHalo('rgba(255,176,32,.9)'); L.halo.scale.set(1.6, 1.6, 1); g.add(L.halo);
+    const P = 60, pp = new Float32Array(P * 3); for(let i = 0; i < P; i++){ pp[3*i] = (Math.random() - .5) * c.W; pp[3*i+1] = Math.random() * 4; pp[3*i+2] = (Math.random() - .5) * D * 2; }
+    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+    L.parts = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0x8fdcff, size: .07, transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false })); L.parts.frustumCulled = false; g.add(L.parts);
+  }
+  c.line.target = target;
+}
+function hc3dFrameLine(c, dt){
+  const L = c.line; if(!L) return;
+  const N = L.N, W = c.W, D = L.D, e = Math.min(1, dt * 6);
+  const tp = L.top.geometry.attributes, cp = L.curt.geometry.attributes, rp = L.rib.geometry.attributes;
+  for(let i = 0; i < N; i++){
+    L.cur[i] += (L.target[i] - L.cur[i]) * e;
+    const x = -W / 2 + i * W / (N - 1), y = L.cur[i], q = hc3dGrad(i / (N - 1));
+    tp.position.setXYZ(2*i, x, y, -D / 2); tp.position.setXYZ(2*i + 1, x, y, D / 2);
+    tp.color.setXYZ(2*i, q[0]*.3, q[1]*.3, q[2]*.3); tp.color.setXYZ(2*i + 1, q[0]*.45, q[1]*.45, q[2]*.45);
+    cp.position.setXYZ(2*i, x, y, D / 2); cp.position.setXYZ(2*i + 1, x, 0, D / 2);
+    cp.color.setXYZ(2*i, q[0]*.55, q[1]*.55, q[2]*.55); cp.color.setXYZ(2*i + 1, q[0]*.03, q[1]*.03, q[2]*.03);
+    rp.position.setXYZ(2*i, x, y + .07, D / 2 + .02); rp.position.setXYZ(2*i + 1, x, y - .07, D / 2 + .02);
+    rp.color.setXYZ(2*i, q[0], q[1], q[2]); rp.color.setXYZ(2*i + 1, q[0], q[1], q[2]);
+  }
+  [tp, cp, rp].forEach(a => { a.position.needsUpdate = true; a.color.needsUpdate = true; });
+  const u = (c.t % 3.5) / 3.5 * (N - 1), i0 = Math.min(N - 2, Math.floor(u)), f = u - i0;
+  L.pulse.position.set(-W / 2 + u * W / (N - 1), L.cur[i0] * (1 - f) + L.cur[i0 + 1] * f, D / 2 + .06);
+  const lx = W / 2, ly = L.cur[N - 1], k = 1 + .25 * Math.sin(c.t * 4);
+  L.mark.position.set(lx, ly, D / 2 + .06); L.mark.scale.setScalar(k); L.halo.position.copy(L.mark.position); L.halo.scale.setScalar(1.4 + .5 * Math.sin(c.t * 3));
+  const pa = L.parts.geometry.attributes.position; for(let i = 0; i < pa.count; i++){ let y = pa.getY(i) + dt * .25; if(y > 4.2) y = 0; pa.setY(i, y); } pa.needsUpdate = true;
+}
+function hc3dBars(c, buckets, range){
+  const sig = range + '|' + c.W.toFixed(1) + '|' + buckets.map(b => b.ts + ':' + b.value).join(',');
+  if(c.sig === sig) return; c.sig = sig;
+  hc3dClear(c);
+  const g = c.group = new THREE.Group(); c.scene.add(g);
+  const n = buckets.length, W = c.W, D = 1.5; hc3dGrid(c, g, D);
+  const x0 = -W / 2 + 1.7, span = W - 1.7, step = span / n, bw = n === 1 ? 1.2 : Math.min(1.3, step * .62);
+  const vals = buckets.map(b => Math.max(1, b.value)), logMax = Math.log10(Math.max(...vals) * 1.15), logMin = Math.log10(Math.max(1, Math.min(...vals)) / 3), lr = (logMax - logMin) || 1;
+  const hOf = v => .15 + (Math.log10(Math.max(1, v)) - logMin) / lr * 3.2;
+  const B = c.bars = { meshes: [], caps: [] };
+  buckets.forEach((b, i) => {
+    const h = hOf(b.value), q = hc3dGrad(Math.min(1, h / 3.4));
+    const geo = new THREE.BoxGeometry(bw, 1, D * .9); geo.translate(0, .5, 0);
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: new THREE.Color(q[0], q[1], q[2]), emissive: new THREE.Color(q[0], q[1], q[2]), emissiveIntensity: .35, metalness: .35, roughness: .35 }));
+    m.position.set(x0 + i * step + step / 2, 0, 0); m.scale.y = .001; m.userData = { h, delay: i * .05, b }; g.add(m); B.meshes.push(m);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(bw * 1.04, .05, D * .92), new THREE.MeshBasicMaterial({ color: 0xffffff })); cap.position.set(m.position.x, 0, 0); g.add(cap); B.caps.push(cap);
+    if(n <= 10 || b.value === Math.max(...buckets.map(x => x.value))){
+      const f = formatDiff(b.value), lb = hc3dLabel(f.value + f.unit, '#ffd27a', .42); lb.position.set(m.position.x, h + .55, 0); lb.userData.h = h; g.add(lb); B.meshes[i].userData.label = lb; lb.visible = false;
+    }
+  });
+  for(let i = 0; i < 5; i++){
+    const v = Math.pow(10, logMin + lr * i / 4), f = formatDiff(v), lb = hc3dLabel(f.value + f.unit, '#7f9db0', .36);
+    lb.position.set(-W / 2 + .8, hOf(v), D / 2 + .1); g.add(lb);
+  }
+  const cnt = Math.min(5, n);
+  for(let i = 0; i < cnt; i++){
+    const idx = cnt > 1 ? Math.round(i * (n - 1) / (cnt - 1)) : 0, d = new Date(buckets[idx].ts * 1000);
+    const txt = range === '24h' ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+    const lb = hc3dLabel(txt, '#7f9db0', .36); lb.position.set(B.meshes[idx].position.x, -.35, D / 2 + .3); g.add(lb);
+  }
+  c.t = 0;
+}
+function hc3dFrameBars(c, dt){
+  const B = c.bars; if(!B) return;
+  c.ray.setFromCamera(c.mouse, c.camera);
+  const hit = c.mouse.x < 5 ? c.ray.intersectObjects(B.meshes)[0] : null;
+  B.meshes.forEach((m, i) => {
+    const u = m.userData, k = Math.min(1, Math.max(0, (c.t - u.delay) / .8)), e = 1 - Math.pow(1 - k, 3);
+    m.scale.y = Math.max(.001, u.h * e); B.caps[i].position.y = u.h * e + .03;
+    m.material.emissiveIntensity = (hit && hit.object === m) ? .95 : .35 + .12 * Math.sin(c.t * 2 + i);
+    if(u.label) u.label.visible = k >= 1;
+  });
+  if(hit){
+    const b = hit.object.userData.b, f = formatDiff(b.value), d = new Date(b.ts * 1000);
+    c.tip.style.display = 'block'; c.tip.style.left = (c.px + 12) + 'px'; c.tip.style.top = (c.py + 12) + 'px';
+    c.tip.textContent = `${f.value}${f.unit} · ${d.toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`;
+  } else c.tip.style.display = 'none';
+}
+function hc3dFrame(c, dt){
+  if(c.frameFn){ c.frameFn(c, dt); return; }
+  const auto = c.mouse.x > 5, tx = auto ? Math.sin(c.t * .35) * .5 : c.mouse.x, ty = auto ? Math.cos(c.t * .27) * .3 : c.mouse.y, k = Math.min(1, dt * 4);
+  c.mx += (tx - c.mx) * k; c.my += (ty - c.my) * k;
+  c.camera.position.set(c.mx * c.W * .16, 3.1 + c.my * 1.0, c.dist); c.camera.lookAt(c.mx * c.W * .05, 1.7, 0);
+  c.light.position.set(Math.sin(c.t * .8) * c.W * .4, 3.5, 3);
+  if(c.line) hc3dFrameLine(c, dt); else hc3dFrameBars(c, dt);
+}
+function hc3dQuality(q){
+  HC3D.q = q; HC3D.pr = [.75, 1, 1.5][q]; HC3D.gap = [66, 50, 33][q];
+  for(const id in HC3D.charts){ const c = HC3D.charts[id]; c.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, HC3D.pr)); hc3dResize(c); if(c.line && c.line.parts) c.line.parts.visible = q >= 2; }
+}
+function hc3dLoop(ts){
+  HC3D.raf = requestAnimationFrame(hc3dLoop);
+  if(ts - HC3D.last < HC3D.gap || hcPaused()) return;
+  const raw = ts - HC3D.last, dt = Math.min(.1, raw / 1000); HC3D.last = ts;
+  if(raw < 300){
+    HC3D.ema = HC3D.ema * .92 + raw * .08;
+    if(HC3D.ema > HC3D.gap * 1.5 && HC3D.q > 0){ hc3dQuality(HC3D.q - 1); HC3D.ema = HC3D.gap; HC3D.good = 0; }
+    else if(HC3D.ema < HC3D.gap * 1.1 && HC3D.q < 2 && ++HC3D.good > 600){ hc3dQuality(HC3D.q + 1); HC3D.good = 0; }
+  }
+  for(const id in HC3D.charts){ const c = HC3D.charts[id]; if(!c.visible || !c.active || !c.group) continue; c.t += dt; hc3dFrame(c, dt); c.renderer.render(c.scene, c.camera); }
+}
+function hc3dRender(id, p){
+  const c = hc3dEnsure(id); c.active = true; c.svg.style.visibility = 'hidden'; c.renderer.domElement.style.display = 'block';
+  if(id === 'chartHashrate') hc3dLine(c, p); else hc3dBars(c, p.buckets, p.range);
+  if(!HC3D.raf) HC3D.raf = requestAnimationFrame(hc3dLoop);
+}
+function hc3dReplay(){ if(hcPerfMode || !HC3D.ready) return; for(const id in HC3D.payload) hc3dRender(id, HC3D.payload[id]); }
+function hc3dTry(id, payload){
+  HC3D.payload[id] = payload;
+  if(hcPerfMode || HC3D.failed) return false;
+  if(!HC3D.ready){ hc3dLoad().then(hc3dReplay).catch(() => {}); return false; }
+  hc3dRender(id, payload); return true;
+}
+function hc3dSync(){
+  for(const id in HC3D.charts){ const c = HC3D.charts[id]; c.renderer.domElement.style.display = hcPerfMode ? 'none' : 'block'; c.svg.style.visibility = hcPerfMode ? 'visible' : 'hidden'; c.active = !hcPerfMode; }
+  if(!hcPerfMode) hc3dReplay();
+}
+
+/* ===== Visual 3D: faíscas de shares, cockpit, globo, barras empilhadas ===== */
+const SF = { sparks: [], cv: null, raf: 0 };
+function hcShareFlow(devId, prev, cur){
+  if(hcPerfMode || !prev || !prev.online || prev.accepted == null || !cur) return;
+  const da = (cur.accepted || 0) - (prev.accepted || 0), dr = (cur.rejected || 0) - (prev.rejected || 0);
+  if(da <= 0 && dr <= 0) return;
+  const wrap = $('networkMapWrap'); if(!wrap || wrap.clientWidth < 80) return;
+  const now = performance.now();
+  for(let i = 0; i < Math.min(da, 6); i++) SF.sparks.push({ id: devId, t0: now + Math.random() * 4000, dur: 900 + Math.random() * 400, bad: false });
+  for(let i = 0; i < Math.min(dr, 4); i++) SF.sparks.push({ id: devId, t0: now + Math.random() * 4000, dur: 800, bad: true });
+  if(!SF.raf) SF.raf = requestAnimationFrame(sfLoop);
+}
+function sfLoop(ts){
+  SF.raf = requestAnimationFrame(sfLoop);
+  const wrap = $('networkMapWrap'); if(!wrap || hcPaused()) return;
+  if(!SF.cv){ SF.cv = document.createElement('canvas'); SF.cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6'; wrap.appendChild(SF.cv); }
+  const cv = SF.cv, w = wrap.clientWidth, h = wrap.clientHeight;
+  if(cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, w, h);
+  const dn = nmNodes.get('net') || nmNodes.get('center'); if(!dn){ SF.sparks.length = 0; }
+  const wr = wrap.getBoundingClientRect(), mid = el => { const r = el.getBoundingClientRect(); return [r.left - wr.left + r.width / 2, r.top - wr.top + r.height / 2]; };
+  SF.sparks = SF.sparks.filter(s => ts - s.t0 < s.dur);
+  const dst = dn ? mid(dn.el) : [0, 0];
+  for(const s of SF.sparks){
+    const u = (ts - s.t0) / s.dur; if(u < 0) continue;
+    const sn = nmNodes.get('m:' + s.id); if(!sn) continue;
+    const src = mid(sn.el);
+    if(!s.bad){
+      const cx = (src[0] + dst[0]) / 2, cy = (src[1] + dst[1]) / 2 - 30;
+      for(let k = 3; k >= 0; k--){
+        const v = Math.max(0, u - k * .05), x = (1 - v) * (1 - v) * src[0] + 2 * (1 - v) * v * cx + v * v * dst[0], y = (1 - v) * (1 - v) * src[1] + 2 * (1 - v) * v * cy + v * v * dst[1];
+        ctx.fillStyle = `rgba(79,214,255,${k === 0 ? 1 : .35 - k * .08})`; ctx.beginPath(); ctx.arc(x, y, k === 0 ? 2.6 : 2, 0, 6.3); ctx.fill();
+        if(k === 0){ ctx.fillStyle = 'rgba(79,214,255,.25)'; ctx.beginPath(); ctx.arc(x, y, 7, 0, 6.3); ctx.fill(); }
+      }
+      if(u > .92){ ctx.strokeStyle = `rgba(33,255,176,${(1 - u) * 8})`; ctx.beginPath(); ctx.arc(dst[0], dst[1], 6 + (u - .92) * 90, 0, 6.3); ctx.stroke(); }
+    } else {
+      ctx.strokeStyle = `rgba(255,77,94,${1 - u})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(src[0], src[1], 5 + u * 24, 0, 6.3); ctx.stroke(); ctx.lineWidth = 1;
+      ctx.fillStyle = `rgba(255,77,94,${1 - u})`;
+      for(let i = 0; i < 6; i++){ const a = i * 1.047 + u, d = u * 22; ctx.beginPath(); ctx.arc(src[0] + Math.cos(a) * d, src[1] + Math.sin(a) * d, 2, 0, 6.3); ctx.fill(); }
+    }
+  }
+  if(!SF.sparks.length){ ctx.clearRect(0, 0, w, h); cancelAnimationFrame(SF.raf); SF.raf = 0; }
+}
+
+/* ===== Relógio 3D + tempo (Open-Meteo, sem chave) ===== */
+const WX = { loc: null, data: null, tz: null, results: [], fmt: {}, lang: '' };
+const WX_TXT = {
+  clear: { pt: 'Céu limpo', en: 'Clear sky', es: 'Despejado', fr: 'Ciel dégagé' }, mostly: { pt: 'Quase limpo', en: 'Mostly clear', es: 'Casi despejado', fr: 'Peu nuageux' },
+  partly: { pt: 'Parcialmente nublado', en: 'Partly cloudy', es: 'Parcialmente nublado', fr: 'Partiellement nuageux' }, overcast: { pt: 'Nublado', en: 'Overcast', es: 'Nublado', fr: 'Couvert' },
+  fog: { pt: 'Nevoeiro', en: 'Fog', es: 'Niebla', fr: 'Brouillard' }, drizzle: { pt: 'Chuvisco', en: 'Drizzle', es: 'Llovizna', fr: 'Bruine' },
+  rain: { pt: 'Chuva', en: 'Rain', es: 'Lluvia', fr: 'Pluie' }, snow: { pt: 'Neve', en: 'Snow', es: 'Nieve', fr: 'Neige' }, thunder: { pt: 'Trovoada', en: 'Thunderstorm', es: 'Tormenta', fr: 'Orage' }
+};
+function wxInfo(code, day){
+  const g = code === 0 ? 'clear' : code === 1 ? 'mostly' : code === 2 ? 'partly' : code === 3 ? 'overcast' : (code === 45 || code === 48) ? 'fog' : (code >= 51 && code <= 57) ? 'drizzle'
+    : ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) ? 'rain' : ((code >= 71 && code <= 77) || code === 85 || code === 86) ? 'snow' : code >= 95 ? 'thunder' : 'partly';
+  const icon = { clear: day ? '☀️' : '🌙', mostly: day ? '🌤️' : '🌙', partly: day ? '⛅' : '☁️', overcast: '☁️', fog: '🌫️', drizzle: '🌦️', rain: '🌧️', snow: '❄️', thunder: '⛈️' }[g];
+  const fx = { rain: g === 'rain' ? 260 : g === 'drizzle' ? 90 : g === 'thunder' ? 300 : 0, snow: g === 'snow' ? 160 : 0,
+    clouds: { clear: 0, mostly: .15, partly: .5, overcast: 1, fog: .6, drizzle: .9, rain: 1, snow: .8, thunder: 1 }[g], sun: !!day && (g === 'clear' || g === 'mostly' || g === 'partly'), night: !day, thunder: g === 'thunder' };
+  return { g, icon, fx };
+}
+const wxLoad = () => { try { return JSON.parse(localStorage.getItem('hc_wx_loc')); } catch(e){ return null; } };
+const wxSave = () => { try { localStorage.setItem('hc_wx_loc', JSON.stringify(WX.loc)); } catch(e){} };
+const wxStatus = m => { const e = $('wxCond'); if(e) e.textContent = m; };
+function wxRadios(){ document.querySelectorAll('input[name="wxMode"]').forEach(r => { r.checked = !!WX.loc && r.value === WX.loc.mode; }); }
+function wxToggleSettings(){ const e = $('wxSettings'); e.style.display = e.style.display === 'none' ? 'block' : 'none'; wxRadios(); }
+function wxManual(){ if(WX.loc) { WX.loc.mode = 'manual'; wxSave(); } $('wxQuery').focus(); }
+async function wxDetect(){
+  const loc = WX.loc = Object.assign(WX.loc || {}, { mode: 'auto' }); wxSave(); wxRadios();
+  const done = async (lat, lon, name) => { loc.lat = lat; loc.lon = lon; loc.name = name; wxSave(); await wxFetch(); };
+  const byTz = async () => {
+    const city = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').split('/').pop().replace(/_/g, ' ');
+    try { const r = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=${currentLang}`)).json(), x = r.results && r.results[0];
+      if(x) return done(x.latitude, x.longitude, x.name + (x.country ? ', ' + x.country : '')); } catch(e){}
+    wxStatus('Não foi possível detetar a localização. Usa o modo Manual (⚙).');
+  };
+  if(!navigator.geolocation) return byTz();
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = pos.coords.latitude, lon = pos.coords.longitude; let name = '';
+    try { const r = await (await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${currentLang}`)).json(); name = [r.city || r.locality, r.countryName].filter(Boolean).join(', '); } catch(e){}
+    done(lat, lon, name || `${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+  }, () => byTz(), { timeout: 8000, maximumAge: 3600000 });
+}
+async function wxSearch(){
+  const q = $('wxQuery').value.trim(), box = $('wxResults'); if(!q) return;
+  try {
+    const r = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${currentLang}`)).json();
+    WX.results = r.results || [];
+    box.innerHTML = WX.results.length ? WX.results.map((x, i) => `<button onclick="wxPick(${i})">${mpEsc([x.name, x.admin1, x.country].filter(Boolean).join(', '))}</button>`).join('') : '<div class="hint">Sem resultados.</div>';
+  } catch(e){ box.innerHTML = '<div class="hint">Sem ligação ao serviço de pesquisa.</div>'; }
+}
+function wxPick(i){
+  const x = WX.results[i]; if(!x) return;
+  WX.loc = { mode: 'manual', name: [x.name, x.country].filter(Boolean).join(', '), lat: x.latitude, lon: x.longitude }; wxSave(); wxRadios();
+  $('wxResults').innerHTML = ''; $('wxSettings').style.display = 'none'; wxFetch();
+}
+async function wxFetch(){
+  const l = WX.loc; if(!l || l.lat == null) return;
+  try {
+    const j = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${l.lat}&longitude=${l.lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day&timezone=auto`)).json();
+    WX.data = j.current; WX.tz = j.timezone; wxRender(); wxScene();
+  } catch(e){ wxStatus('Sem ligação ao serviço de meteorologia.'); }
+}
+function wxRender(){
+  const d = WX.data; if(!d) return;
+  const inf = wxInfo(d.weather_code, d.is_day);
+  $('wxIcon').textContent = inf.icon; $('wxTemp').textContent = Math.round(d.temperature_2m) + '°C';
+  $('wxCond').textContent = WX_TXT[inf.g][currentLang] || WX_TXT[inf.g].pt;
+  $('wxFeels').textContent = Math.round(d.apparent_temperature) + '°C'; $('wxWind').textContent = Math.round(d.wind_speed_10m) + ' km/h'; $('wxHum').textContent = Math.round(d.relative_humidity_2m) + '%';
+  $('wxPlace').textContent = (WX.loc && WX.loc.name) || '—'; WX.lang = currentLang;
+}
+function wxTick(){
+  const loc = currentLang === 'pt' ? 'pt-PT' : currentLang, key = (WX.tz || '') + loc;
+  let f = WX.fmt[key];
+  if(!f) f = WX.fmt[key] = { t: new Intl.DateTimeFormat(loc, { timeZone: WX.tz || undefined, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+                             d: new Intl.DateTimeFormat(loc, { timeZone: WX.tz || undefined, weekday: 'long', day: 'numeric', month: 'long' }) };
+  const now = new Date(), parts = f.t.format(now).split(':');
+  $('wxTime').firstChild.nodeValue = parts[0] + ':' + parts[1]; $('wxSec').textContent = ':' + (parts[2] || '00');
+  $('wxDate').textContent = f.d.format(now);
+  if(WX.lang !== currentLang) wxRender();
+}
+function wxCloudTex(){
+  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64; const x = cv.getContext('2d');
+  [[40, 38, 22], [64, 30, 26], [88, 38, 22], [64, 42, 24]].forEach(b => { const g = x.createRadialGradient(b[0], b[1], 0, b[0], b[1], b[2]); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 64); });
+  return new THREE.CanvasTexture(cv);
+}
+function wxTexture(file, done){
+  const bases = ['https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/', 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/'];
+  const L = new THREE.TextureLoader(); L.setCrossOrigin('anonymous');
+  (function next(i){ if(i < bases.length) L.load(bases[i] + file, done, undefined, () => next(i + 1)); })(0);
+}
+function wxBuildGlobe(c){
+  const g = c.group = new THREE.Group(); c.scene.add(g); c.custom = true; c.rx = 0; c.ry = 0; c.tx = 0; c.ty = 0;
+  const R = 1.5;
+  const dots = (() => { const N = 900, pp = new Float32Array(N * 3);
+    for(let i = 0; i < N; i++){ const y = 1 - 2 * (i + .5) / N, r = Math.sqrt(1 - y * y), th = 2.39996 * i; pp[3*i] = Math.cos(th) * r * R; pp[3*i+1] = y * R; pp[3*i+2] = Math.sin(th) * r * R; }
+    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+    return new THREE.Points(pg, new THREE.PointsMaterial({ color: 0x6fb4ff, size: .045 })); })();
+  const earthMat = new THREE.MeshPhongMaterial({ color: 0x1d5f9f, shininess: 18, specular: new THREE.Color(0x335577) });
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 48), earthMat); g.add(earth); g.add(dots);
+  wxTexture('earth_atmos_2048.jpg', tex => { earthMat.map = tex; earthMat.color.set(0xffffff); earthMat.needsUpdate = true; dots.visible = false; });
+  wxTexture('earth_specular_2048.jpg', tex => { earthMat.specularMap = tex; earthMat.needsUpdate = true; });
+  wxTexture('earth_clouds_1024.png', tex => { c.cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(R * 1.012, 48, 40), new THREE.MeshPhongMaterial({ map: tex, transparent: true, opacity: .55, depthWrite: false })); g.add(c.cloudMesh); });
+  c.scene.children.forEach(o => { if(o.isAmbientLight) o.intensity = .8; if(o.isDirectionalLight){ o.color.set(0xffffff); o.intensity = 1.05; o.position.set(4, 2, 6); } if(o.isPointLight) o.intensity = 0; });
+  c.pin = new THREE.Group(); const pm = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 10), new THREE.MeshBasicMaterial({ color: 0xffb020 })); c.pin.add(pm);
+  c.pinHalo = hc3dHalo('rgba(255,176,32,.95)'); c.pinHalo.scale.set(.5, .5, 1); c.pin.add(c.pinHalo); g.add(c.pin);
+  c.scene.add(new THREE.Mesh(new THREE.SphereGeometry(R * 1.14, 48, 48), new THREE.ShaderMaterial({
+    vertexShader: 'varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'varying vec3 vN; void main(){ float i = pow(0.72 - dot(vN, vec3(0.0, 0.0, 1.0)), 3.0); gl_FragColor = vec4(0.3, 0.65, 1.0, 1.0) * i; }',
+    blending: THREE.AdditiveBlending, side: THREE.BackSide, transparent: true, depthWrite: false })));
+  c.wx = new THREE.Group(); c.scene.add(c.wx);
+  c.frameFn = (cc, dt) => {
+    const k = Math.min(1, dt * 2.5); cc.ry += (cc.ty - cc.ry) * k; cc.rx += (cc.tx - cc.rx) * k;
+    cc.group.rotation.y = cc.ry + Math.sin(cc.t * .5) * .12; cc.group.rotation.x = cc.rx + Math.sin(cc.t * .4) * .05;
+    cc.camera.position.set(0, 0, 6.3); cc.camera.lookAt(0, 0, 0);
+    cc.pinHalo.scale.setScalar(.4 + .12 * Math.sin(cc.t * 4));
+    if(cc.cloudMesh) cc.cloudMesh.rotation.y += dt * .02;
+    const fx = cc.fx; if(!fx) return;
+    fx.clouds.forEach(sp => { const u = sp.userData; u.a += dt * u.sp; sp.position.set(Math.cos(u.a) * 1.95, u.y, Math.sin(u.a) * 1.95); });
+    if(fx.sun) fx.sun.scale.setScalar(2.6 + .25 * Math.sin(cc.t * 1.5));
+    if(fx.parts){ const pa = fx.parts.geometry.attributes.position, sp = fx.info.snow ? .5 : 3.2;
+      for(let i = 0; i < pa.count; i++){ let y = pa.getY(i) - dt * sp; if(y < -2) y = 2; pa.setY(i, y); if(fx.info.snow) pa.setX(i, pa.getX(i) + Math.sin(cc.t * 2 + i) * dt * .15); }
+      pa.needsUpdate = true; }
+    if(fx.flash){ if(fx.info.thunder && Math.random() < dt * .35) fx.flashV = 1; fx.flashV = Math.max(0, (fx.flashV || 0) - dt * 3); fx.flash.material.opacity = fx.flashV * .8; }
+  };
+}
+function wxScene(){
+  if(hcPerfMode || HC3D.failed) return;
+  if(!HC3D.ready){ hc3dLoad().then(wxScene).catch(() => {}); return; }
+  const d = WX.data, l = WX.loc; if(!d || !l) return;
+  const c = hc3dEnsure('wxGlobe'); if(!c.group) wxBuildGlobe(c);
+  c.active = true; if(!HC3D.raf) HC3D.raf = requestAnimationFrame(hc3dLoop);
+  const ph = (90 - l.lat) * Math.PI / 180, th = (l.lon + 180) * Math.PI / 180, R = 1.5;
+  const P = new THREE.Vector3(-R * Math.sin(ph) * Math.cos(th), R * Math.cos(ph), R * Math.sin(ph) * Math.sin(th));
+  c.pin.position.copy(P); c.ty = Math.atan2(-P.x, P.z); c.tx = Math.atan2(P.y, Math.sqrt(P.x * P.x + P.z * P.z));
+  while(c.wx.children.length){ const o = c.wx.children.pop(); if(o.geometry) o.geometry.dispose(); if(o.material){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); } }
+  const inf = wxInfo(d.weather_code, d.is_day), fx = c.fx = { info: inf.fx, clouds: [] };
+  if(inf.fx.sun){ fx.sun = hc3dHalo('rgba(255,214,102,.95)'); fx.sun.position.set(1.7, 1.4, -1); c.wx.add(fx.sun); }
+  if(inf.fx.night){ const sp = new Float32Array(150); for(let i = 0; i < 50; i++){ sp[3*i] = (Math.random() - .5) * 6; sp[3*i+1] = (Math.random() - .5) * 6; sp[3*i+2] = -1.5 - Math.random() * 2; }
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); c.wx.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: .05, transparent: true, opacity: .8 }))); }
+  const tex = wxCloudTex(), n = Math.round(inf.fx.clouds * 6), dark = inf.fx.rain || inf.fx.thunder;
+  for(let i = 0; i < n; i++){
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.clone(), transparent: true, opacity: .8, color: dark ? 0x8a99aa : 0xffffff, depthWrite: false })); sp.material.map.needsUpdate = true;
+    sp.scale.set(1.6 + Math.random() * .6, .8 + Math.random() * .3, 1); sp.userData = { a: Math.random() * 6.28, sp: .15 + Math.random() * .2, y: (Math.random() - .5) * 2.2 }; c.wx.add(sp); fx.clouds.push(sp);
+  }
+  const cnt = inf.fx.rain || inf.fx.snow;
+  if(cnt){ const pp = new Float32Array(cnt * 3); for(let i = 0; i < cnt; i++){ pp[3*i] = (Math.random() - .5) * 3.2; pp[3*i+1] = (Math.random() - .5) * 4; pp[3*i+2] = .4 + Math.random() * 1.6; }
+    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+    fx.parts = new THREE.Points(pg, new THREE.PointsMaterial({ color: inf.fx.snow ? 0xffffff : 0x7ac8ff, size: inf.fx.snow ? .07 : .045, transparent: true, opacity: .85, depthWrite: false })); fx.parts.frustumCulled = false; c.wx.add(fx.parts); }
+  if(inf.fx.thunder){ fx.flash = hc3dHalo('rgba(220,235,255,1)'); fx.flash.scale.set(7, 7, 1); fx.flash.material.opacity = 0; c.wx.add(fx.flash); }
+}
+(function wxInit(){
+  function go(){
+    WX.loc = wxLoad() || { mode: 'auto' }; wxRadios();
+    if(WX.loc.lat == null) wxDetect(); else wxFetch();
+    wxTick(); setInterval(wxTick, 1000); setInterval(wxFetch, 600000);
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();
 
 function switchTab(tabName, btnEl) {
@@ -11001,6 +11651,7 @@ async function pollOneDevice(dev){
 
     consecutiveFails[dev.id] = 0;
     baselineSeen[dev.id] = true;
+    try { hcShareFlow(dev.id, readings[dev.id], reading); } catch(e){}
     readings[dev.id] = reading;
     if(reading.ts == null) reading.ts = Date.now();
     histories[dev.id] = (histories[dev.id] || []).concat(reading).slice(-MAX_POINTS);
@@ -11585,6 +12236,7 @@ function drawAmberChart(svgId, vals, formatter, isHashrate = true){
   _animateChartValue($('valHashrate'), latFmt.value, latFmt.unit);
   $('valPeak').textContent = `${peakFmt.value} ${peakFmt.unit}`;
   $('valAvg').textContent = `${avgFmt.value} ${avgFmt.unit}`;
+  if(svgId === 'chartHashrate' && hc3dTry('chartHashrate', vals)) return;
   
   const paddingY = 16;
   const w = 300, h = 130;
@@ -11779,6 +12431,7 @@ function drawPeakDiffBarChart(buckets, peak, range){
     const bestWord = t('peak_diff_best_of');
     bigEl.innerHTML = `${peakFmt.value}${peakFmt.unit} <span class="peak-diff-unit">${bestWord} · ${rangeLabel}</span>`;
   }
+  if(hc3dTry('chartPeakDiff', { buckets, range })) return;
 
   const w = 600, h = 170;
   const padL = 46, padR = 8, padT = 10, padB = 22;
