@@ -3558,7 +3558,7 @@
   /* --- Live Shares (widget flutuante) ----------------------------------- */
   .ls-fab {
     position: fixed;
-    right: 18px;
+    right: 150px;
     bottom: 18px;
     z-index: 9998;
     width: 52px;
@@ -3603,7 +3603,7 @@
   .ls-panel {
     position: fixed;
     right: 18px;
-    bottom: 82px;
+    bottom: 130px;
     z-index: 9998;
     width: min(320px, calc(100vw - 32px));
     max-height: 320px;
@@ -3676,8 +3676,8 @@
   .ls-feed-time { font-family: monospace; font-size: 10px; color: var(--muted-2); flex-shrink: 0; }
   .ls-feed-empty { text-align: center; color: var(--muted); font-size: 11.5px; padding: 24px 10px; }
   @media (max-width: 600px) {
-    .ls-panel { right: 8px; left: 8px; width: auto; bottom: 76px; }
-    .ls-fab { right: 12px; bottom: 12px; }
+    .ls-panel { right: 8px; left: 8px; width: auto; bottom: 130px; }
+    .ls-fab { right: 130px; bottom: 12px; }
   }
 
   .ls-filter-row {
@@ -3761,7 +3761,7 @@
     position: fixed;
     right: 82px;
     bottom: 18px;
-    z-index: 9998;
+    z-index: 9999;
     width: 52px;
     height: 52px;
     border-radius: 50%;
@@ -3803,7 +3803,7 @@
   .bd-panel {
     position: fixed;
     right: 18px;
-    bottom: 82px;
+    bottom: 130px;
     z-index: 9998;
     width: min(320px, calc(100vw - 32px));
     max-height: 320px;
@@ -3844,7 +3844,7 @@
   .bd-feed-text b { color: var(--amber); font-weight: 700; }
   .bd-feed-time { font-family: monospace; font-size: 10px; color: var(--muted-2); flex-shrink: 0; }
   @media (max-width: 600px) {
-    .bd-panel { right: 8px; left: 8px; width: auto; bottom: 76px; }
+    .bd-panel { right: 8px; left: 8px; width: auto; bottom: 130px; }
     .bd-fab { right: 68px; bottom: 12px; }
   }
   /* ===== Banner "Hash Commander" removido a pedido do usuário ===== */
@@ -4013,7 +4013,65 @@
   .wx-settings button{ background:var(--panel-2); border:1px solid var(--line-strong); color:var(--text); border-radius:6px; padding:4px 9px; cursor:pointer; }
   .wx-modes,.wx-search{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
   .wx-results button{ display:block; width:100%; text-align:left; margin-bottom:4px; }
+
+  /* ===== Chat em Tempo Real (Balão Flutuante) ===== */
+  .chat-fab{ position:fixed; right:18px; bottom:18px; z-index:10000; width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#0c2b22,#0f3a2c); border:2px solid #21ffb055; color:var(--green); font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 22px #000a,0 0 0 1px #ffffff08; transition:all .15s ease, border-color .15s ease; }
+  .chat-fab:hover{ transform:scale(1.06); border-color:var(--green); box-shadow:0 8px 22px #000a,0 0 0 1px #ffffff08; }
+  .chat-fab-badge{ position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; border-radius:9px; background:var(--amber); color:#000; font-size:10px; font-weight:700; font-family:'Space Grotesk',sans-serif; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+  .chat-fab-badge:empty{ display:none; }
+  .chat-panel{ position:fixed; right:18px; bottom:130px; z-index:9999; width:380px; height:500px; background:var(--panel); border:1px solid var(--line-strong); border-radius:16px; display:none; flex-direction:column; box-shadow:0 12px 48px #000c,0 0 40px #21ffb011; overflow:hidden; animation:chatPanelIn .25s ease; }
+  .chat-panel.open{ display:flex; }
+  @keyframes chatPanelIn{ from{opacity:0;transform:translateY(20px) scale(.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+  .chat-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--line-strong); background:var(--panel-2); flex-shrink:0; }
+  .chat-header-left{ display:flex; align-items:center; gap:8px; }
+  .chat-header-icon{ font-size:18px; }
+  .chat-header-title{ font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:700; color:var(--cyan); letter-spacing:.06em; }
+  .chat-header-actions{ display:flex; align-items:center; gap:10px; }
+  .chat-online-badge{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+  .chat-online-dot{ width:6px; height:6px; border-radius:50%; background:#5fd38d; box-shadow:0 0 5px #5fd38d; }
+  .chat-close-btn{ background:none; border:1px solid var(--line-strong); border-radius:8px; color:var(--muted); font-size:14px; padding:2px 8px; cursor:pointer; transition:all .15s ease; line-height:1; }
+  .chat-close-btn:hover{ color:var(--text); border-color:var(--text); }
+  .chat-body{ display:flex; flex:1; overflow:hidden; }
+  .chat-messages{ flex:1; overflow-y:auto; padding:10px 12px; display:flex; flex-direction:column; gap:5px; scroll-behavior:smooth; }
+  .chat-messages::-webkit-scrollbar{ width:5px; }
+  .chat-messages::-webkit-scrollbar-thumb{ background:var(--line-strong); border-radius:3px; }
+  .chat-msg{ display:flex; flex-direction:column; max-width:82%; padding:7px 10px; border-radius:12px; font-size:12px; line-height:1.5; word-wrap:break-word; animation:chatFadeIn .2s ease; }
+  @keyframes chatFadeIn{ from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+  .chat-msg-other{ background:var(--panel-2); border:1px solid var(--line-strong); align-self:flex-start; border-bottom-left-radius:4px; }
+  .chat-msg-self{ background:linear-gradient(135deg,#0c2b22,#0f3a2c); border:1px solid #21ffb033; align-self:flex-end; border-bottom-right-radius:4px; }
+  .chat-msg-sys{ background:transparent; border:none; align-self:center; color:var(--muted); font-size:10px; padding:3px 0; text-align:center; }
+  .chat-msg-author{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:10px; margin-bottom:1px; }
+  .chat-msg-other .chat-msg-author{ color:var(--amber); }
+  .chat-msg-self .chat-msg-author{ color:var(--green); }
+  .chat-msg-text{ color:var(--text); }
+  .chat-msg-time{ font-size:9px; color:var(--muted); margin-top:2px; text-align:right; }
+  .chat-sidebar{ width:120px; border-left:1px solid var(--line-strong); padding:8px; overflow-y:auto; background:var(--panel-2); display:flex; flex-direction:column; gap:3px; flex-shrink:0; }
+  .chat-sidebar-title{ font-family:'Space Grotesk',sans-serif; font-size:9px; font-weight:700; color:var(--muted); letter-spacing:.1em; margin-bottom:4px; text-transform:uppercase; }
+  .chat-sidebar-user{ display:flex; align-items:center; gap:6px; padding:3px 6px; border-radius:6px; font-size:11px; color:var(--text); transition:all .12s ease; }
+  .chat-sidebar-dot{ width:5px; height:5px; border-radius:50%; background:#5fd38d; box-shadow:0 0 4px #5fd38d; flex-shrink:0; }
+  .chat-input-bar{ display:flex; align-items:center; gap:6px; padding:8px 12px; border-top:1px solid var(--line-strong); background:var(--panel-2); flex-shrink:0; }
+  .chat-emoji-btn{ background:none; border:1px solid var(--line-strong); border-radius:6px; color:var(--text); font-size:16px; padding:3px 6px; cursor:pointer; transition:all .12s ease; line-height:1; }
+  .chat-emoji-btn:hover{ border-color:var(--amber); background:#ffb02022; }
+  .chat-input{ flex:1; background:var(--panel); border:1px solid var(--line-strong); border-radius:8px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:8px 10px; outline:none; transition:border-color .12s ease; min-width:0; }
+  .chat-input:focus{ border-color:var(--cyan); }
+  .chat-input::placeholder{ color:var(--muted); }
+  .chat-send-btn{ background:var(--green); color:#000; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; padding:8px 14px; border:none; border-radius:8px; cursor:pointer; transition:all .12s ease; white-space:nowrap; }
+  .chat-send-btn:hover{ background:#50ffcc; box-shadow:0 3px 10px #21ffb044; }
+  .chat-send-btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .chat-empty{ display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; color:var(--muted); gap:8px; padding:20px; }
+  .chat-empty-icon{ font-size:36px; opacity:.5; }
+  .chat-empty-text{ font-size:12px; text-align:center; }
+  .chat-emoji-picker{ position:absolute; bottom:52px; left:12px; background:var(--panel-2); border:1px solid var(--line-strong); border-radius:10px; padding:8px; display:none; flex-wrap:wrap; gap:3px; max-width:250px; box-shadow:0 8px 20px #000a; z-index:100; }
+  .chat-emoji-picker.open{ display:flex; }
+  .chat-emoji-pick{ background:none; border:none; font-size:18px; padding:3px; cursor:pointer; border-radius:6px; transition:background .1s; }
+  .chat-emoji-pick:hover{ background:var(--panel); }
+  @media(max-width:500px){ .chat-panel{ width:calc(100vw - 16px); right:8px; bottom:130px; height:55vh; } .chat-sidebar{display:none} .chat-fab{ right:12px; bottom:12px; } }
 </style>
+<!-- Firebase Realtime Database SDK (compat v9) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>window.hcFbInit = function(apiKey, dbUrl){ if(!firebase.apps.length) firebase.initializeApp({ apiKey: apiKey, authDomain: 'dashboard-a07d4.firebaseapp.com', databaseURL: dbUrl || 'https://dashboard-a07d4-default-rtdb.firebaseio.com' }); return firebase.app(); };</script>
 </head>
 <body>
 <!-- ===== Login obrigatório (Firebase Auth via REST) ===== -->
@@ -4033,10 +4091,13 @@
 #authGate .ag-msg{min-height:18px;margin-top:12px;font-size:12.5px}
 #authGate .ag-msg.err{color:#ff6b6b}
 #authGate .ag-msg.ok{color:#5fd38d}
-#authUserPill{position:fixed;left:12px;bottom:12px;z-index:2147482000;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
+#authUserPill{position:fixed;right:12px;bottom:76px;z-index:10001;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
 #authUserPill button{background:none;border:0;color:#f7931a;cursor:pointer;font-size:12px;padding:0}
 #authUserPill button#authDelete{color:#ff6b6b}
 #authUserPill .ap-sep{color:#2a2f3c}
+#userCountsBar{position:fixed;right:12px;bottom:110px;z-index:10001;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
+#userCountsBar .uc-dot{width:7px;height:7px;border-radius:50%;background:#5fd38d;box-shadow:0 0 5px #5fd38d;flex-shrink:0}
+#userCountsBar .uc-num{font-weight:700;color:#e8e8ec}
 #authDeleteModal{position:fixed;inset:0;z-index:2147483100;background:rgba(5,7,12,.72);display:none;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec;backdrop-filter:blur(3px)}
 #authDeleteModal.open{display:flex}
 #authDeleteModal .adm-card{width:min(400px,92vw);background:#14171f;border:1px solid #3a2030;border-radius:14px;padding:26px 24px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -4097,6 +4158,7 @@
     </div>
   </div>
 </div>
+<div id="userCountsBar"><span class="uc-dot"></span><span class="uc-num" id="ucOnline">0</span> online · <span class="uc-num" id="ucTotal">0</span> registados</div>
 <div id="authUserPill"><span id="authUserEmail"></span><button type="button" id="authAccount">A minha conta</button><span class="ap-sep">·</span><button type="button" id="authLogout">Terminar sessão</button><span class="ap-sep">·</span><button type="button" id="authDelete">Eliminar conta</button></div>
 <div id="authDeleteModal">
   <div class="adm-card">
@@ -4217,7 +4279,7 @@
     return session.idToken;
   }
 
-  function showGate(){ gate.classList.remove('hidden'); $('authUserPill').style.display = 'none'; }
+  function showGate(){ gate.classList.remove('hidden'); $('authUserPill').style.display = 'none'; $('userCountsBar').style.display = 'none'; if(_presenceInterval){ clearInterval(_presenceInterval); _presenceInterval=null; } }
   function loggedIn(){
     gate.classList.add('hidden');
     $('authUserEmail').textContent = session.email || '';
@@ -4225,7 +4287,15 @@
     readyResolve();
     recordLogin();
     checkVerifyBanner();
+    startPresenceHeartbeat();
+    fetchUserCounts();
+    $('userCountsBar').style.display = 'flex';
   }
+
+  // Expose session getter for chat and other modules outside this IIFE
+  window.getCcSession = function(){ return session; };
+  window.getCcCfg = function(){ return cfg; };
+  window.authReady = authReady;
   function setMode(m){
     mode = m; setMsg('');
     $('agPassWrap').style.display = m === 'reset' ? 'none' : '';
@@ -4244,15 +4314,17 @@
       } else {
         const d = await idt(mode === 'signup' ? 'signUp' : 'signInWithPassword', { email, password: pass, returnSecureToken: true });
         saveSession(fromAuthResponse(d, email));
+        try { window.hcFbInit(cfg.apiKey); await Promise.race([firebase.auth().signInWithEmailAndPassword(email, pass).catch(() => {}), new Promise(r => setTimeout(r, 6000))]); } catch(e){}
         $('agPass').value = '';
         loggedIn();
       }
     } catch(e){ setMsg(errText(e)); }
     $('agSubmit').disabled = false;
   }
-  function logout(){
+  async function logout(){
     try { localStorage.removeItem(LS_KEY); } catch(e){}
     session = null;
+    try { await Promise.race([firebase.auth().signOut(), new Promise(r => setTimeout(r, 800))]); } catch(e){}
     location.reload();
   }
 
@@ -4405,6 +4477,39 @@
     } catch(e){}
   }
 
+  // --- Presença / contadores de utilizadores ---------------------------------
+  let _presenceInterval = null;
+  async function sendPresence(){
+    try {
+      const r = await window.fetch(apiOrigin + '/api/user-presence', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: session.email })
+      });
+      const d = await r.json();
+      if (d.ok) updateUserCountsUI(d.online, d.total);
+    } catch(e){}
+  }
+  async function fetchUserCounts(){
+    try {
+      const r = await window.fetch(apiOrigin + '/api/user-counts');
+      const d = await r.json();
+      updateUserCountsUI(d.online, d.total);
+    } catch(e){}
+  }
+  function updateUserCountsUI(online, total){
+    const on = $('ucOnline'), tot = $('ucTotal');
+    if (on) on.textContent = (typeof online === 'number') ? online : '—';
+    if (tot) tot.textContent = (typeof total === 'number') ? total : '—';
+  }
+  function startPresenceHeartbeat(){
+    if (_presenceInterval) clearInterval(_presenceInterval);
+    sendPresence();
+    _presenceInterval = setInterval(() => {
+      sendPresence();
+      fetchUserCounts();
+    }, 30000);
+  }
+
   // fetch embrulhado: espera pelo login e junta o token aos pedidos à API local
   window.fetch = async function(input, init){
     const url = typeof input === 'string' ? input : (input && input.url) || '';
@@ -4459,7 +4564,11 @@
     try { saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){}
     if (saved && saved.refreshToken) {
       session = { refreshToken: saved.refreshToken, email: saved.email, idToken: '', expiresAt: 0 };
-      try { await refresh(); loggedIn(); return; } catch(e){ session = null; }
+      try {
+        await refresh(); loggedIn();
+        try { window.hcFbInit(cfg.apiKey); if(!firebase.auth().currentUser) await firebase.auth().signInWithCustomToken ? null : null; } catch(_){}
+        return;
+      } catch(e){ session = null; }
     }
     showGate();
   })();
@@ -4730,7 +4839,7 @@
       <button class="tab-btn amber-tab" role="tab" aria-selected="false" onclick="switchTab('donate', this)"><span class="tab-icon" style="--tab-icon-delay:1.1s" aria-hidden="true">⚡</span><span data-i18n="apoiar_doar">Apoiar / Doar</span></button>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('supporters', this)"><span class="tab-icon" style="--tab-icon-delay:1.2s" aria-hidden="true">🌟</span><span data-i18n="apoiantes">Apoiantes</span></button>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('support', this)"><span class="tab-icon" style="--tab-icon-delay:1.3s" aria-hidden="true">🛟</span><span data-i18n="suporte">Suporte</span></button>
-    
+      
     </div>
   </div>
 
@@ -5127,6 +5236,42 @@
       <div style="margin-top:14px;">
         <button class="support-card-btn ghost-btn" style="display:inline-block; padding:10px 20px;" onclick="copyDiagnosticInfo()"><span data-i18n="copiar_diagnostico_btn">📋 Copiar Informação de Diagnóstico</span></button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== Chat em Tempo Real (Balão Flutuante) ===== -->
+  <div class="chat-fab" id="chatFab" title="Chat da Comunidade" style="display:none;">💬<span class="chat-fab-badge" id="chatBadge"></span></div>
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <span class="chat-header-icon">💬</span>
+        <span class="chat-header-title"><span data-i18n="chat_titulo">CHAT DA COMUNIDADE</span></span>
+      </div>
+      <div class="chat-header-actions">
+        <div class="chat-online-badge">
+          <span class="chat-online-dot"></span>
+          <span id="chatOnlineCount">0</span> <span data-i18n="chat_online">online</span>
+        </div>
+        <button class="chat-close-btn" id="chatCloseBtn" title="Fechar">✕</button>
+      </div>
+    </div>
+    <div class="chat-body">
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-empty" id="chatEmpty">
+          <span class="chat-empty-icon">💬</span>
+          <span class="chat-empty-text" data-i18n="chat_vazio">Ainda não há mensagens. Sê o primeiro a dizer olá!</span>
+        </div>
+      </div>
+      <div class="chat-sidebar" id="chatSidebar">
+        <div class="chat-sidebar-title"><span data-i18n="chat_online_titulo">ONLINE</span></div>
+        <div id="chatOnlineUsers"></div>
+      </div>
+    </div>
+    <div class="chat-emoji-picker" id="chatEmojiPicker"></div>
+    <div class="chat-input-bar">
+      <button class="chat-emoji-btn" id="chatEmojiBtn" title="Emojis">😊</button>
+      <input type="text" class="chat-input" id="chatInput" placeholder="Escreve uma mensagem..." maxlength="500" autocomplete="off">
+      <button class="chat-send-btn" id="chatSendBtn" disabled><span data-i18n="chat_enviar">Enviar</span></button>
     </div>
   </div>
 
@@ -6138,6 +6283,17 @@ const I18N_DICT = {
   "todas_as_maquinas": { pt: `🌐 Todas as Máquinas`, en: `🌐 All Machines`, es: `🌐 Todas las Máquinas`, fr: `🌐 Toutes les Machines` },
   "padrao": { pt: `🌘 Padrão`, en: `🌘 Default`, es: `🌘 Predeterminado`, fr: `🌘 Par Défaut` },
   "apoiantes": { pt: `🌟 Apoiantes`, en: `🌟 Supporters`, es: `🌟 Colaboradores`, fr: `🌟 Soutiens` },
+  "chat_tab": { pt: `💬 Chat`, en: `💬 Chat`, es: `💬 Chat`, fr: `💬 Chat` },
+  "chat_titulo": { pt: `CHAT DA COMUNIDADE`, en: `COMMUNITY CHAT`, es: `CHAT DE LA COMUNIDAD`, fr: `CHAT DE LA COMMUNAUTÉ` },
+  "chat_online": { pt: `online`, en: `online`, es: `en línea`, fr: `en ligne` },
+  "chat_online_titulo": { pt: `ONLINE`, en: `ONLINE`, es: `EN LÍNEA`, fr: `EN LIGNE` },
+  "chat_vazio": { pt: `Ainda não há mensagens. Sê o primeiro a dizer olá!`, en: `No messages yet. Be the first to say hi!`, es: `Aún no hay mensajes. ¡Sé el primero en decir hola!`, fr: `Pas encore de messages. Sois le premier à dire bonjour !` },
+  "chat_enviar": { pt: `Enviar`, en: `Send`, es: `Enviar`, fr: `Envoyer` },
+  "chat_placeholder": { pt: `Escreve uma mensagem...`, en: `Type a message...`, es: `Escribe un mensaje...`, fr: `Écris un message...` },
+  "chat_entrou": { pt: `entrou no chat`, en: `joined the chat`, es: `se unió al chat`, fr: `a rejoint le chat` },
+  "chat_saiu": { pt: `saiu do chat`, en: `left the chat`, es: `salió do chat`, fr: `a quitté le chat` },
+  "chat_sem_auth": { pt: `Inicia sessão para usar o chat`, en: `Sign in to use the chat`, es: `Inicia sesión para usar el chat`, fr: `Connecte-toi pour utiliser le chat` },
+  "chat_db_off": { pt: `Firebase Realtime Database não configurado. Ativa-o no Firebase Console.`, en: `Firebase Realtime Database not configured. Enable it in the Firebase Console.`, es: `Firebase Realtime Database no configurado. Actívalo en Firebase Console.`, fr: `Firebase Realtime Database non configuré. Active-le dans la Firebase Console.` },
   "canais_apoiantes": { pt: `🌟 CANAIS APOIANTES`, en: `🌟 SUPPORTING CHANNELS`, es: `🌟 CANALES COLABORADORES`, fr: `🌟 CHAÎNES PARTENAIRES` },
   "apoiante_baroneclub_desc": { pt: `Reviews Web3 e mineração doméstica.`, en: `Web3 reviews and home mining.`, es: `Reviews de Web3 y minería doméstica.`, fr: `Reviews Web3 et minage à domicile.` },
   "matrix": { pt: `🌿 Matrix`, en: `🌿 Matrix`, es: `🌿 Matrix`, fr: `🌿 Matrix` },
@@ -6256,6 +6412,8 @@ const I18N_DICT = {
   "perda": { pt: `perda`, en: `loss`, es: `pérdida`, fr: `perte` },
   "nd_pelo_pool": { pt: `N/D pelo pool`, en: `N/A from pool`, es: `N/D por el pool`, fr: `N/D par le pool` },
   "remover_maquina": { pt: `Remover máquina`, en: `Remove machine`, es: `Eliminar máquina`, fr: `Supprimer la machine` },
+  "utilizadores_online": { pt: `online`, en: `online`, es: `en línea`, fr: `en ligne` },
+  "utilizadores_registados": { pt: `registados`, en: `registered`, es: `registrados`, fr: `inscrits` },
   "som_ativo": { pt: `🔊 Som Ativo`, en: `🔊 Sound On`, es: `🔊 Sonido Activo`, fr: `🔊 Son Activé` },
   "som_mudo": { pt: `🔇 Som Mudo`, en: `🔇 Sound Muted`, es: `🔇 Sonido Silenciado`, fr: `🔇 Son Coupé` },
   "painel_iniciado_com_alertas": { pt: `Painel iniciado com alertas sonoros.`, en: `Panel started with sound alerts.`, es: `Panel iniciado con alertas sonoras.`, fr: `Panneau démarré avec alertes sonores.` },
@@ -15409,6 +15567,194 @@ function shutdownServer() {
     requestAnimationFrame(draw);
   }
   draw();
+})();
+</script>
+
+<script>
+/* ===== Chat em Tempo Real (Firebase RTDB) - Balao Flutuante ===== */
+(function(){
+  const CHAT_EMOJIS = ['😀','😂','🥳','🔥','⚡','⛏️','🪙','💰','📈','🚀','🌙','❤️','👍','👏','🙌','💪','🎯','💎','🏆','🤝','😎','🤔','💡','🛠️','🛡️','☕','🎉','✅','🌍'];
+  let _chatInited = false, _chatDb = null, _chatPresRef = null, _chatMsgRef = null, _chatOpen = false;
+  let _unreadCount = 0;
+  const CID = (() => { try { let v = localStorage.getItem('hc_chat_cid'); if(!v){ v = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('hc_chat_cid', v); } return v; } catch(e){ return 'a' + Math.random().toString(36).slice(2); } })();
+  const _c$ = id => document.getElementById(id);
+
+  function _ccEmail(){ try{ const s = window.getCcSession && window.getCcSession(); return (s && s.email) ? s.email : ''; }catch(e){ return ''; } }
+  function _ccCfg(){ try{ return window.getCcCfg && window.getCcCfg(); }catch(e){ return {}; } }
+
+  function chatT(key){ try{ const e = I18N_DICT[key]; if(!e) return key; const l = (typeof currentLang !== 'undefined') ? currentLang : 'pt'; return e[l] || e.pt || key; }catch(x){ return key; } }
+
+  function formatTime(ts){
+    const d = new Date(ts);
+    const locMap = {pt:'pt-PT',en:'en-US',es:'es-ES',fr:'fr-FR'};
+    const loc = locMap[(typeof currentLang !== 'undefined' ? currentLang : 'pt')] || 'pt-PT';
+    return d.toLocaleTimeString(loc, {hour:'2-digit',minute:'2-digit'});
+  }
+
+  function emailToNick(email){ try{ return email.split('@')[0]; }catch(e){ return email || 'Anónimo'; } }
+  function escHtml(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  /* Botões do chat ligados sempre (uma só vez), independentemente de a ligação ao Firebase já estar pronta */
+  let _uiWired = false;
+  function wireChatUI(){
+    if(_uiWired) return; _uiWired = true;
+    buildEmojiPicker();
+    const inp = _c$('chatInput');
+    if(inp) inp.placeholder = chatT('chat_placeholder');
+    _c$('chatFab')?.addEventListener('click', toggleChatPanel);
+    _c$('chatCloseBtn')?.addEventListener('click', toggleChatPanel);
+    _c$('chatEmojiBtn')?.addEventListener('click', () => { _c$('chatEmojiPicker')?.classList.toggle('open'); });
+    _c$('chatSendBtn')?.addEventListener('click', sendMessage);
+    if(inp){ inp.addEventListener('keydown', e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } }); inp.addEventListener('input', _updateSendBtn); }
+    document.addEventListener('click', e => { const p = _c$('chatEmojiPicker'), b = _c$('chatEmojiBtn'); if(p && b && !p.contains(e.target) && e.target !== b) p.classList.remove('open'); });
+  }
+
+  /* Toggle panel open/close */
+  function toggleChatPanel(){
+    const panel = _c$('chatPanel');
+    if(!panel) return;
+    _chatOpen = !_chatOpen;
+    panel.classList.toggle('open', _chatOpen);
+    if(_chatOpen){
+      _unreadCount = 0;
+      updateBadge();
+      connectChatDb();
+      setTimeout(() => { const inp = _c$('chatInput'); if(inp) inp.focus(); }, 100);
+    }
+  }
+
+  function updateBadge(){
+    const badge = _c$('chatBadge');
+    if(badge) badge.textContent = _unreadCount > 0 ? _unreadCount : '';
+  }
+
+  function addMsgEl(data, isSelf){
+    const empty = _c$('chatEmpty'); if(empty) empty.remove();
+    const box = _c$('chatMessages'); if(!box) return;
+    const div = document.createElement('div');
+    if(data.type === 'system'){
+      div.className = 'chat-msg chat-msg-sys';
+      div.textContent = data.text;
+    } else {
+      div.className = 'chat-msg ' + (isSelf ? 'chat-msg-self' : 'chat-msg-other');
+      const authorDiv = document.createElement('div');
+      authorDiv.className = 'chat-msg-author';
+      authorDiv.textContent = data.author;
+      const textDiv = document.createElement('div');
+      textDiv.className = 'chat-msg-text';
+      textDiv.textContent = data.text;
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'chat-msg-time';
+      timeDiv.textContent = formatTime(data.ts);
+      div.appendChild(authorDiv); div.appendChild(textDiv); div.appendChild(timeDiv);
+    }
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    if(!_chatOpen && data.type !== 'system'){
+      _unreadCount++;
+      updateBadge();
+    }
+  }
+
+  async function sendMessage(){
+    const inp = _c$('chatInput'); if(!inp) return;
+    const txt = inp.value.trim(); if(!txt) return;
+    if(!_chatMsgRef){ addMsgEl({ type: 'system', text: chatT('chat_sem_auth') }, false); return; }
+    inp.value = ''; _updateSendBtn();
+    const email = _ccEmail() || 'Anónimo';
+    try { await _chatMsgRef.push({ author: emailToNick(email), text: txt, ts: firebase.database.ServerValue.TIMESTAMP, cid: CID }); }
+    catch(e){ console.warn('[chat] send error', e); addMsgEl({ type: 'system', text: 'Não foi possível enviar: sem permissão ou sem ligação.' }, false); }
+  }
+
+  function listenMessages(){
+    if(!_chatMsgRef) return;
+    _chatMsgRef.orderByChild('ts').limitToLast(200).on('child_added', snap => {
+      const d = snap.val(); if(!d) return;
+      const isSelf = d.cid === CID;
+      addMsgEl({ author: d.author || '???', text: d.text || '', ts: d.ts || Date.now(), type: d.type || 'msg' }, isSelf);
+    });
+  }
+
+  function listenPresence(){
+    if(!_chatPresRef) return;
+    const myEmail = _ccEmail(); if(!myEmail) return;
+    const myKey = CID;
+    const myPresRef = _chatPresRef.child(myKey);
+    myPresRef.onDisconnect().remove();
+    myPresRef.set({ nick: emailToNick(myEmail), ts: firebase.database.ServerValue.TIMESTAMP });
+    setInterval(() => { myPresRef.set({ nick: emailToNick(myEmail), ts: firebase.database.ServerValue.TIMESTAMP }); }, 25000);
+    _chatPresRef.on('value', snap => {
+      const d = snap.val() || {};
+      const list = _c$('chatOnlineUsers');
+      const cnt = _c$('chatOnlineCount');
+      const users = Object.values(d);
+      if(cnt) cnt.textContent = users.length;
+      if(list){ list.innerHTML = ''; users.forEach(u => {
+        const el = document.createElement('div'); el.className = 'chat-sidebar-user';
+        const dot = document.createElement('span'); dot.className = 'chat-sidebar-dot';
+        const name = document.createElement('span'); name.textContent = u.nick || '???';
+        el.appendChild(dot); el.appendChild(name);
+        list.appendChild(el);
+      }); }
+    });
+  }
+
+  function showChatFab(){
+    const fab = _c$('chatFab');
+    if(fab) fab.style.display = 'flex';
+  }
+
+  /* Liga à base de dados do chat. Pode falhar (sem internet, sessão Firebase
+     ainda a validar) sem impedir o botão de abrir o painel; tenta de novo
+     sempre que o painel é aberto enquanto não estiver ligado. */
+  let _chatConnecting = false;
+  async function connectChatDb(){
+    if(_chatInited || _chatConnecting) return;
+    if(!_ccEmail()){ addMsgEl({ type: 'system', text: chatT('chat_sem_auth') }, false); return; }
+    _chatConnecting = true;
+    let dbUrl = 'https://dashboard-a07d4-default-rtdb.firebaseio.com';
+    const c = _ccCfg();
+    if(c && c.databaseURL) dbUrl = c.databaseURL;
+    try {
+      window.hcFbInit((c && c.apiKey) ? c.apiKey : '', dbUrl);
+      const fbUser = await Promise.race([
+        new Promise(res => { const off = firebase.auth().onAuthStateChanged(u => { off(); res(u); }); }),
+        new Promise(res => setTimeout(() => res(firebase.auth().currentUser || null), 6000)),
+      ]);
+      if(!fbUser){ addMsgEl({ type: 'system', text: 'Sem sessão segura ainda — tenta outra vez dentro de instantes ou termina a sessão e volta a entrar.' }, false); return; }
+      _chatDb = firebase.database();
+      _chatPresRef = _chatDb.ref('chat/presence');
+      _chatMsgRef = _chatDb.ref('chat/messages');
+      listenMessages();
+      listenPresence();
+      _chatInited = true;
+    } catch(e){
+      console.warn('[chat] Firebase RTDB init failed:', e);
+      addMsgEl({ type: 'system', text: chatT('chat_db_off') }, false);
+    } finally {
+      _chatConnecting = false;
+    }
+  }
+
+  /* Mostra o balão assim que a sessão existe, liga os botões já, e tenta a
+     ligação à base de dados em segundo plano (sem bloquear o clique). */
+  function autoInitChat(){
+    if(!_ccEmail()) return;
+    showChatFab();
+    wireChatUI();
+    connectChatDb();
+  }
+
+  if(typeof window.authReady !== 'undefined'){
+    window.authReady.then(() => setTimeout(autoInitChat, 500));
+  } else {
+    let pollT = setInterval(() => {
+      if(_ccEmail()){ clearInterval(pollT); autoInitChat(); }
+      if(pollT && Date.now() - (window._chatPollStart || 0) > 10000){ clearInterval(pollT); }
+    }, 500);
+    window._chatPollStart = Date.now();
+  }
+
 })();
 </script>
 </body>
