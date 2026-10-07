@@ -60,7 +60,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "3.9.2"
+APP_VERSION = "3.9.3"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -2294,6 +2294,130 @@ ACCOUNT_ACTIVITY_FILENAME = "account_activity.json"
 ACCOUNT_ACTIVITY_MAX = 50
 _account_activity_lock = threading.Lock()
 
+# --- Contadores de utilizadores online/totais ---------------------------------
+PRESENCE_FILENAME = "user_presence.json"
+PRESENCE_TIMEOUT_SECONDS = 90
+PRESENCE_CHECK_INTERVAL = 60
+_user_presence_lock = threading.Lock()
+
+
+def presence_path():
+    return os.path.join(writable_dir(), PRESENCE_FILENAME)
+
+
+def load_presence():
+    try:
+        with open(presence_path(), 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_presence(data):
+    try:
+        with open(presence_path(), 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception:
+        return False
+
+
+def cleanup_stale_presence():
+    """Remove entradas expiradas (offline) do ficheiro de presença."""
+    cutoff = time.time() - PRESENCE_TIMEOUT_SECONDS
+    with _user_presence_lock:
+        data = load_presence()
+        before = len(data)
+        stale = [k for k, v in data.items() if not isinstance(v, dict) or v.get('ts', 0) < cutoff]
+        for k in stale:
+            data.pop(k, None)
+        if stale:
+            save_presence(data)
+        return len(data), before - len(stale)
+
+
+def record_presence(email):
+    """Marca um utilizador como online. Devolve (online_count, total_registered)."""
+    email = (email or '').strip().lower()
+    if not email:
+        return 0, 0
+    with _user_presence_lock:
+        data = load_presence()
+        data[email] = {"ts": time.time()}
+        save_presence(data)
+        online = len(data)
+    total = get_total_registered_users()
+    return online, total
+
+
+def get_online_count():
+    cutoff = time.time() - PRESENCE_TIMEOUT_SECONDS
+    with _user_presence_lock:
+        data = load_presence()
+        online = sum(1 for v in data.values() if isinstance(v, dict) and v.get('ts', 0) >= cutoff)
+        return online
+
+
+def get_total_registered_users():
+    """Conta todos os utilizadores registados.
+    Primeiro tenta a API admin accounts:query do Firebase; se falhar
+    (sem service account, etc.), conta os emails únicos nos ficheiros
+    de atividade e de presença."""
+    # Tentativa 1: Firebase Identity Toolkit (accounts:query)
+    if auth_enabled():
+        total = 0
+        next_page = None
+        max_pages = 50
+        for _ in range(max_pages):
+            try:
+                payload = {}
+                if next_page:
+                    payload["nextPageToken"] = next_page
+                req = urllib.request.Request(
+                    f"https://identitytoolkit.googleapis.com/v1/accounts:query?key={urllib.parse.quote(FIREBASE_API_KEY)}",
+                    data=json.dumps(payload).encode('utf-8'),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    result = json.loads(resp.read().decode('utf-8', errors='ignore'))
+            except Exception:
+                break
+            users = result.get('userInfo') or []
+            total += len(users)
+            next_page = result.get('nextPageToken')
+            if not next_page or not users:
+                break
+        if total > 0:
+            return total
+
+    # Tentativa 2: contar emails únicos no registo de atividade + presença
+    emails = set()
+    try:
+        with _account_activity_lock:
+            activity = load_account_activity()
+        emails.update(k for k in activity if k.strip())
+    except Exception:
+        pass
+    try:
+        with _user_presence_lock:
+            presence = load_presence()
+        emails.update(k for k in presence if k.strip())
+    except Exception:
+        pass
+    return len(emails)
+
+
+def presence_cleanup_loop():
+    """Thread de fundo que limpa entradas offline a cada 60s."""
+    while True:
+        time.sleep(PRESENCE_CHECK_INTERVAL)
+        try:
+            cleanup_stale_presence()
+        except Exception:
+            pass
+
 
 def account_activity_path():
     return os.path.join(writable_dir(), ACCOUNT_ACTIVITY_FILENAME)
@@ -2873,6 +2997,7 @@ AUTH_TOKEN_CACHE_SECONDS = 300
 AUTH_EXEMPT_PATHS = {
     '/api/auth/config', '/api/heartbeat', '/api/version',
     '/api/overlay', '/api/overlay/rainmeter',
+    '/api/user-counts',
 }
 _auth_cache = {}
 _auth_cache_lock = threading.Lock()
@@ -2882,15 +3007,58 @@ def auth_enabled():
     return bool(FIREBASE_API_KEY)
 
 
+AUTH_GRACE_SECONDS = 24 * 3600   # sem internet, aceita tokens já validados nas últimas 24 h
+_auth_grace_lock = threading.Lock()
+
+
+def _auth_grace_path():
+    return os.path.join(os.path.dirname(account_activity_path()), "auth_grace.json")
+
+
+def _auth_grace_load():
+    try:
+        with open(_auth_grace_path(), 'r', encoding='utf-8') as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def _auth_grace_store(key, user, now):
+    with _auth_grace_lock:
+        d = _auth_grace_load()
+        d[key] = {"ts": now, "uid": user.get("uid", ""), "email": user.get("email", "")}
+        for k in [k for k, v in d.items() if now - (v or {}).get("ts", 0) > AUTH_GRACE_SECONDS]:
+            d.pop(k, None)
+        if len(d) > 50:
+            for k in sorted(d, key=lambda x: d[x].get("ts", 0))[:len(d) - 50]:
+                d.pop(k, None)
+        try:
+            with open(_auth_grace_path(), 'w', encoding='utf-8') as f:
+                json.dump(d, f)
+        except Exception:
+            pass
+
+
+def _auth_grace_lookup(key, now):
+    with _auth_grace_lock:
+        v = _auth_grace_load().get(key)
+    if v and now - v.get("ts", 0) <= AUTH_GRACE_SECONDS:
+        return {"uid": v.get("uid", ""), "email": v.get("email", "")}
+    return None
+
+
 def verify_firebase_token(id_token):
-    """Valida um ID token junto do Firebase (accounts:lookup). Com cache curta."""
+    """Valida um ID token no Firebase (accounts:lookup) e devolve {uid, email}, ou None.
+    Cache curta; se o Firebase estiver inacessível (sem internet), aceita tokens exatamente
+    iguais a um já validado nas últimas 24 h, para o painel local não ficar bloqueado."""
     key = hashlib.sha256(id_token.encode('utf-8')).hexdigest()
     now = time.time()
     with _auth_cache_lock:
         hit = _auth_cache.get(key)
-        if hit and hit > now:
-            return True
-        for k in [k for k, v in _auth_cache.items() if v <= now]:
+        if hit and hit["exp"] > now:
+            return hit["user"]
+        for k in [k for k, v in _auth_cache.items() if v["exp"] <= now]:
             _auth_cache.pop(k, None)
     try:
         req = urllib.request.Request(
@@ -2901,17 +3069,20 @@ def verify_firebase_token(id_token):
         )
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode('utf-8'))
-        users = data.get("users") or []
-        if not users or users[0].get("disabled"):
-            return False
-        if AUTH_REQUIRE_VERIFIED_EMAIL and not users[0].get("emailVerified"):
-            return False
+    except urllib.error.HTTPError:
+        return None                      # o Firebase recusou o token (inválido/expirado)
     except Exception:
-        return False
+        return _auth_grace_lookup(key, now)   # sem ligação ao Firebase
+    users = data.get("users") or []
+    if not users or users[0].get("disabled"):
+        return None
+    if AUTH_REQUIRE_VERIFIED_EMAIL and not users[0].get("emailVerified"):
+        return None
+    user = {"uid": users[0].get("localId", ""), "email": users[0].get("email", "")}
     with _auth_cache_lock:
-        _auth_cache[key] = now + AUTH_TOKEN_CACHE_SECONDS
-    return True
-
+        _auth_cache[key] = {"exp": now + AUTH_TOKEN_CACHE_SECONDS, "user": user}
+    _auth_grace_store(key, user, now)
+    return user
 
 
 class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
@@ -2926,7 +3097,9 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return True
         header = self.headers.get('Authorization', '')
         token = header[7:].strip() if header.lower().startswith('bearer ') else ''
-        if token and verify_firebase_token(token):
+        user = verify_firebase_token(token) if token else None
+        if user:
+            self._auth_user = user
             return True
         self.send_response(401)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -2934,14 +3107,23 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps({"error": "auth_required"}).encode('utf-8'))
         return False
 
+    def _auth_email(self, supplied):
+        # Com login ativo usa SEMPRE o e-mail do token validado, nunca o que o cliente envia.
+        u = getattr(self, '_auth_user', None)
+        if auth_enabled() and u and u.get('email'):
+            return u['email']
+        return supplied if not auth_enabled() else ''
+
     def _client_ip(self):
-        xff = self.headers.get('X-Forwarded-For', '')
-        if xff:
-            return xff.split(',')[0].strip()
         try:
-            return self.client_address[0]
+            ip = self.client_address[0]
         except Exception:
             return ''
+        xff = self.headers.get('X-Forwarded-For', '')
+        # só confia no X-Forwarded-For se o pedido vier de um proxy local
+        if xff and ip in ('127.0.0.1', '::1'):
+            return xff.split(',')[0].strip()
+        return ip
 
     def do_GET(self):
         parsed_url = urllib.parse.urlparse(self.path)
@@ -2959,11 +3141,20 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             }).encode('utf-8'))
             return
 
+        if path == '/api/user-counts':
+            online = get_online_count()
+            total = get_total_registered_users()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"online": online, "total": total}).encode('utf-8'))
+            return
+
         if not self._require_auth(path):
             return
 
         if path == '/api/account/activity':
-            email = (query_params.get('email') or [''])[0]
+            email = self._auth_email((query_params.get('email') or [''])[0])
             entries = get_account_activity(email)
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
@@ -3532,7 +3723,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/api/account/activity':
-            email = str(body.get('email') or '').strip()
+            email = self._auth_email(str(body.get('email') or '').strip())
             event = str(body.get('event') or 'login').strip() or 'login'
             entries = record_account_activity(email, self._client_ip(), event, self.headers.get('User-Agent', ''))
             self.send_response(200)
@@ -3540,6 +3731,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps({"ok": True, "entries": entries}, ensure_ascii=False).encode('utf-8'))
+            return
+
+        if path == '/api/user-presence':
+            email = self._auth_email(str(body.get('email') or '').strip())
+            online, total = record_presence(email)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True, "online": online, "total": total}).encode('utf-8'))
             return
 
         if path == '/api/close':
@@ -4078,6 +4279,9 @@ def main():
 
         pool_autoswitch_thread = threading.Thread(target=pool_autoswitch_loop, daemon=True)
         pool_autoswitch_thread.start()
+
+        presence_thread = threading.Thread(target=presence_cleanup_loop, daemon=True)
+        presence_thread.start()
 
         coolant_thread = threading.Thread(target=coolant_loop, daemon=True)
         coolant_thread.start()
