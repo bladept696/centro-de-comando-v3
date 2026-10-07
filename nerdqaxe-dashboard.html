@@ -15596,6 +15596,23 @@ function shutdownServer() {
 
   /* Botões do chat ligados sempre (uma só vez), independentemente de a ligação ao Firebase já estar pronta */
   let _uiWired = false;
+  function buildEmojiPicker(){
+    const p = _c$('chatEmojiPicker'); if(!p) return;
+    p.innerHTML = '';
+    CHAT_EMOJIS.forEach(em => {
+      const b = document.createElement('button');
+      b.className = 'chat-emoji-pick';
+      b.textContent = em;
+      b.onclick = () => { const inp = _c$('chatInput'); if(inp){ inp.value += em; inp.focus(); _updateSendBtn(); } p.classList.remove('open'); };
+      p.appendChild(b);
+    });
+  }
+
+  function _updateSendBtn(){
+    const inp = _c$('chatInput'), btn = _c$('chatSendBtn');
+    if(btn) btn.disabled = !(inp && inp.value.trim());
+  }
+
   function wireChatUI(){
     if(_uiWired) return; _uiWired = true;
     buildEmojiPicker();
