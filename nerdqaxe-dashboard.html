@@ -4513,7 +4513,11 @@
   // fetch embrulhado: espera pelo login e junta o token aos pedidos à API local
   window.fetch = async function(input, init){
     const url = typeof input === 'string' ? input : (input && input.url) || '';
-    if (!cfg.enabled || !url.startsWith(apiOrigin + '/api/') || BYPASS.some(p => url.startsWith(apiOrigin + p))) {
+    // Aceita tanto URLs absolutos (apiOrigin + '/api/...') como relativos ('/api/...'),
+    // para apanhar também os pedidos feitos com fetch('/api/xxx') sem o apiOrigin.
+    const isApiCall = url.startsWith(apiOrigin + '/api/') || url.startsWith('/api/');
+    const isBypass = BYPASS.some(p => url.startsWith(apiOrigin + p) || url.startsWith(p));
+    if (!cfg.enabled || !isApiCall || isBypass) {
       return nativeFetch(input, init);
     }
     await authReady;
