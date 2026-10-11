@@ -15142,6 +15142,9 @@ initQuickActions();
   updateLogMachineDropdown();
   renderAll();
   checkForUpdate();
+  // Volta a verificar periodicamente, para apanhar releases lançadas
+  // enquanto o painel fica aberto (não só no arranque).
+  setInterval(checkForUpdate, 2 * 60 * 60 * 1000);
 
   // Assistente de primeira execução: se ainda não há nenhuma máquina
   // registada e nunca mostrámos isto antes neste browser, abre a
