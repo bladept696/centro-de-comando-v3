@@ -60,7 +60,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "3.9.5"
+APP_VERSION = "3.9.7"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -301,9 +301,24 @@ def cgminer_identify(ip, port):
 
 
 def probe_cgminer(ip, port=None):
-    data = cgminer_summary(ip, port or CGMINER_PORT, timeout=CGMINER_SCAN_TIMEOUT)
+    port = port or CGMINER_PORT
+    data = cgminer_summary(ip, port, timeout=CGMINER_SCAN_TIMEOUT)
     if not data:
-        return None
+        # A porta cgminer (4028) respondeu, mas sem SUMMARY -- típico de LuxOS/cgminer
+        # com a API de mineração restrita a certos IPs (ACL "api-allow", diferente
+        # da palavra-passe da interface web). Mostra a máquina à mesma, com aviso.
+        raw = cgminer_command(ip, 'summary', port=port, timeout=CGMINER_SCAN_TIMEOUT)
+        if not (isinstance(raw, dict) and 'STATUS' in raw):
+            return None
+        return {
+            "ip": ip,
+            "hostname": ip,
+            "model": "LuxOS / cgminer (API restrita -- ativa o acesso remoto)",
+            "protocol": "cgminer",
+            "algorithm": "sha256",
+            "type": "asic_sha256",
+            "api_restricted": True,
+        }
     version_desc = ''
     try:
         version_desc = (data.get('STATUS') or [{}])[0].get('Description', '')
