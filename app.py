@@ -60,7 +60,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "3.9.7"
+APP_VERSION = "3.9.8"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -1844,6 +1844,147 @@ def _try_json_get(url, timeout=6):
         return status, None, raw, None
 
 
+
+# --- Pools genéricas (Miningcore e semelhantes) -- Molepool e futuras --------
+GENERIC_POOLS = {
+    "molepool-btc1": {
+        "label": "Molepool BTC1 (solo)",
+        "coin": "BTC",
+        "stats_url": "https://btc1.molepool.com/api/v1/stats",
+        "blocks_url": "https://btc1.molepool.com/api/v1/blocks",
+        "account_url": "https://btc1.molepool.com/api/v1/account/{address}",
+    },
+}
+GENERIC_POOL_CACHE_SECONDS = 20
+_generic_pool_cache = {}
+_generic_pool_cache_lock = threading.Lock()
+
+
+def _generic_pool_http_json(url, timeout=6):
+    req = urllib.request.Request(url, headers={"User-Agent": "HashCommander/1.0", "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8", "replace"))
+
+
+_generic_pool_account_cache = {}
+_generic_pool_account_cache_lock = threading.Lock()
+
+
+def fetch_generic_pool_account(pool_id, address):
+    """Dados pessoais do minador numa pool (quando a pool tem account_url), ex.:
+    melhor share (bestShare.share), hashrate e lista de workers deste endereço."""
+    cfg = GENERIC_POOLS.get(pool_id)
+    if not cfg or not address or not cfg.get("account_url"):
+        return None
+    cache_key = (pool_id, address)
+    with _generic_pool_account_cache_lock:
+        entry = _generic_pool_account_cache.get(cache_key)
+        if entry and (time.time() - entry["ts"]) < GENERIC_POOL_CACHE_SECONDS:
+            return entry["data"]
+    try:
+        url = cfg["account_url"].format(address=urllib.parse.quote(address))
+        raw = _generic_pool_http_json(url)
+        r = (raw.get("result") if isinstance(raw, dict) else None) or {}
+        best = r.get("bestShare") or {}
+        account = {
+            "address": address,
+            "current_hashrate": r.get("currentHashrate"),
+            "average_hashrate": r.get("averageHashrate"),
+            "balance": r.get("balance"),
+            "pending": r.get("pending"),
+            "immature": r.get("immature"),
+            "blocks_found": r.get("blocksFound"),
+            "best_share": best.get("share"),
+            "best_share_ts": best.get("time"),
+            "best_share_net_diff": best.get("netDiff"),
+            "workers": [
+                {"name": w.get("name"), "hashrate": w.get("currentHashrate"),
+                 "best_share": w.get("bestShare"), "offline": w.get("offline")}
+                for w in (r.get("workers") or [])
+            ],
+        }
+    except Exception:
+        with _generic_pool_account_cache_lock:
+            entry = _generic_pool_account_cache.get(cache_key)
+        return entry["data"] if entry else None
+    with _generic_pool_account_cache_lock:
+        _generic_pool_account_cache[cache_key] = {"ts": time.time(), "data": account}
+    return account
+
+
+def fetch_generic_pool(pool_id, address="", force=False):
+    """Estado de uma pool Miningcore-like (configurada em GENERIC_POOLS): stats gerais
+    da pool + lista de blocos recentes encontrados por qualquer pessoa, mais os dados
+    pessoais do endereço (melhor share, hashrate) quando a pool os expõe."""
+    cfg = GENERIC_POOLS.get(pool_id)
+    if not cfg:
+        return {"error": f"Pool desconhecida: {pool_id}"}
+    cache_key = pool_id
+    with _generic_pool_cache_lock:
+        entry = _generic_pool_cache.get(cache_key)
+        if entry and not force and (time.time() - entry["ts"]) < GENERIC_POOL_CACHE_SECONDS:
+            data = entry["data"]
+            return _generic_pool_mark_mine(data, address)
+    try:
+        stats = _generic_pool_http_json(cfg["stats_url"])
+        blocks = _generic_pool_http_json(cfg["blocks_url"])
+    except Exception as e:
+        with _generic_pool_cache_lock:
+            entry = _generic_pool_cache.get(cache_key)
+        if entry:
+            data = entry["data"]
+            data = dict(data)
+            data["stale"] = True
+            data["error"] = str(e)
+            return _generic_pool_mark_mine(data, address)
+        return {"error": str(e), "label": cfg["label"], "coin": cfg["coin"]}
+
+    s = (stats.get("result") if isinstance(stats, dict) else None) or {}
+    raw_blocks = (blocks.get("result") if isinstance(blocks, dict) else None) or {}
+    block_list = raw_blocks.get("blocks") or []
+    candidates = raw_blocks.get("candidate") or []
+    data = {
+        "pool_id": pool_id,
+        "label": cfg["label"],
+        "coin": cfg["coin"],
+        "total_miners": s.get("totalMiners"),
+        "pool_hashrate": s.get("totalHashrate"),
+        "network_hashrate": s.get("networkHashrate"),
+        "network_difficulty": s.get("networkDifficulty"),
+        "height": s.get("currentHeight"),
+        "last_block_found": s.get("lastBlockFound"),
+        "total_blocks": s.get("totalBlocks"),
+        "fee_percent": s.get("fee"),
+        "reward": s.get("reward"),
+        "candidates": [
+            {"height": c.get("height"), "hash": c.get("hash"), "miner": c.get("miner"),
+             "diff": c.get("shareDiff"), "status": c.get("status"), "ts": c.get("timestamp")}
+            for c in candidates
+        ],
+        "blocks": [
+            {"height": b.get("height"), "hash": b.get("hash"), "miner": b.get("miner"),
+             "diff": b.get("shareDiff"), "effort": b.get("effort"), "status": b.get("status"),
+             "reward": b.get("reward"), "ts": b.get("timestamp")}
+            for b in block_list[:100]
+        ],
+        "stale": False,
+    }
+    with _generic_pool_cache_lock:
+        _generic_pool_cache[cache_key] = {"ts": time.time(), "data": data}
+    return _generic_pool_mark_mine(data, address)
+
+
+def _generic_pool_mark_mine(data, address):
+    data = dict(data)
+    address = (address or "").strip()
+    if not address:
+        return data
+    data["blocks"] = [dict(b, mine=(b.get("miner") == address)) for b in data.get("blocks", [])]
+    data["candidates"] = [dict(c, mine=(c.get("miner") == address)) for c in data.get("candidates", [])]
+    data["account"] = fetch_generic_pool_account(data.get("pool_id", ""), address)
+    return data
+
+
 def fetch_parasite_stats(address, force=False, debug=False):
     address = (address or "").strip()
     if not address:
@@ -3467,6 +3608,32 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/generic-pool':
+            pool_id = query_params.get('pool', [''])[0].strip()
+            address = query_params.get('address', [''])[0].strip()
+            force = query_params.get('force', ['0'])[0] == '1'
+            if not pool_id:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Pool em falta"}).encode('utf-8'))
+                return
+            result = fetch_generic_pool(pool_id, address=address, force=force)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/generic-pools':
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({pid: {"label": c["label"], "coin": c["coin"]} for pid, c in GENERIC_POOLS.items()}).encode('utf-8'))
             return
 
         if path == '/api/power/config':
