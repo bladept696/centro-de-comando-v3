@@ -31,6 +31,63 @@ import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
+# --- Certificados HTTPS: funciona dentro do .exe PyInstaller ---------------
+# Em alguns PCs, um .exe gerado com PyInstaller não encontra a lista de
+# certificados de confiança do sistema (o "python app.py" normal encontra-a
+# sempre; o .exe empacotado, nem sempre). Sem isto, TODOS os pedidos HTTPS
+# feitos pelo servidor (Parasite Pool, Molepool, Firebase, VNish, ePIC...)
+# falham sempre com o mesmo tipo de erro, mesmo com internet.
+# Ordem de tentativa para o contexto principal:
+#   1) cacert.pem ao lado do .exe/script
+#   2) certifi, se estiver instalado
+#   3) o comportamento por omissão do Python (como antes)
+def _build_https_context():
+    candidates = []
+    try:
+        base_dir = sys._MEIPASS if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS") else os.path.dirname(os.path.abspath(sys.argv[0] if getattr(sys, "frozen", False) else __file__))
+        candidates.append(os.path.join(base_dir, "cacert.pem"))
+    except Exception:
+        pass
+    try:
+        candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cacert.pem"))
+    except Exception:
+        pass
+    for path in candidates:
+        try:
+            if path and os.path.isfile(path):
+                return ssl.create_default_context(cafile=path)
+        except Exception:
+            continue
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        pass
+    try:
+        return ssl.create_default_context()
+    except Exception:
+        return None
+
+
+HTTPS_CTX = _build_https_context()
+
+
+def _urlopen_https(req, timeout):
+    """Como urllib.request.urlopen(), mas resistente a dois problemas distintos:
+    1) o .exe não encontrar a lista de certificados (resolvido acima, por HTTPS_CTX);
+    2) uma rede com inspeção de HTTPS (antivírus/router) que usa o SEU PRÓPRIO
+       certificado -- nesse caso o SO costuma confiar nele, mas a lista fixa do
+       certifi/cacert.pem não. Se a 1ª tentativa falhar só por validação de
+       certificado, repete uma vez com o comportamento por omissão do sistema."""
+    try:
+        return urllib.request.urlopen(req, context=HTTPS_CTX, timeout=timeout)
+    except urllib.error.URLError as e:
+        reason = getattr(e, "reason", e)
+        if isinstance(reason, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(reason):
+            return _urlopen_https(req, timeout=timeout)
+        raise
+
 try:
     import paho.mqtt.client as mqtt
     MQTT_AVAILABLE = True
@@ -60,7 +117,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "3.9.8"
+APP_VERSION = "3.9.9"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -95,7 +152,7 @@ def _usage_counter_hit(key):
     try:
         url = f"{USAGE_COUNTER_BASE}/hit/{key}"
         req = urllib.request.Request(url, headers={'User-Agent': 'CentroDeComando-UsageCounter'})
-        with urllib.request.urlopen(req, timeout=USAGE_COUNTER_TIMEOUT):
+        with _urlopen_https(req, timeout=USAGE_COUNTER_TIMEOUT):
             pass
     except Exception:
         pass
@@ -131,7 +188,7 @@ def get_usage_count():
         try:
             url = f"{USAGE_COUNTER_BASE}/get/{key}"
             req = urllib.request.Request(url, headers={'User-Agent': 'CentroDeComando-UsageCounter'})
-            with urllib.request.urlopen(req, timeout=USAGE_COUNTER_TIMEOUT) as resp:
+            with _urlopen_https(req, timeout=USAGE_COUNTER_TIMEOUT) as resp:
                 data = json.loads(resp.read().decode('utf-8', errors='ignore'))
             val = data.get("value")
             result[label] = int(val) if val is not None else None
@@ -575,7 +632,7 @@ def fetch_goldshell_devs(ip, timeout=GOLDSHELL_HTTP_TIMEOUT):
         req = urllib.request.Request(
             url, headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Accept': 'application/json'}
         )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_https(req, timeout=timeout) as resp:
             raw = resp.read()
         return json.loads(raw.decode('utf-8', errors='ignore'))
     except Exception:
@@ -589,7 +646,7 @@ VNISH_TOKEN_CACHE = {}
 
 def _http_json(url, headers=None, data=None, timeout=1.5):
     req = urllib.request.Request(url, data=data, headers=dict({'User-Agent': 'HashCommander', 'Accept': 'application/json'}, **(headers or {})))
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with _urlopen_https(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode('utf-8', 'replace'))
 
 
@@ -834,7 +891,7 @@ def fetch_srbminer_stats(ip, port=SRBMINER_PORT, timeout=SRBMINER_TIMEOUT):
         req = urllib.request.Request(
             url, headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Accept': 'application/json'}
         )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_https(req, timeout=timeout) as resp:
             raw = resp.read()
         return json.loads(raw.decode('utf-8', errors='ignore'))
     except Exception:
@@ -933,7 +990,7 @@ def fetch_trex_summary(ip, port=TREX_PORT, timeout=TREX_TIMEOUT):
         req = urllib.request.Request(
             url, headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Accept': 'application/json'}
         )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_https(req, timeout=timeout) as resp:
             raw = resp.read()
         return json.loads(raw.decode('utf-8', errors='ignore'))
     except Exception:
@@ -1160,7 +1217,7 @@ def switch_device_pool(ip, pool, btc_address, worker_suffix, device_name):
             method='PATCH',
             headers={'Content-Type': 'application/json'},
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with _urlopen_https(req, timeout=5) as resp:
             resp.read()
         return True, "ok"
     except Exception as e:
@@ -1185,7 +1242,7 @@ def _coolant_num(d, *keys):
 
 def coolant_fetch_sensor(url):
     req = urllib.request.Request(url, headers={'User-Agent': 'HashCommander-Coolant'})
-    with urllib.request.urlopen(req, timeout=3) as resp:
+    with _urlopen_https(req, timeout=3) as resp:
         d = json.loads(resp.read().decode('utf-8', 'replace'))
     return {
         "flow_lpm": _coolant_num(d, "flow_lpm", "flow", "lpm"),
@@ -1197,7 +1254,7 @@ def coolant_fetch_sensor(url):
 def coolant_call_relay(url):
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'HashCommander-Coolant'})
-        with urllib.request.urlopen(req, timeout=3) as resp:
+        with _urlopen_https(req, timeout=3) as resp:
             return f"HTTP {resp.status}"
     except Exception as e:
         return f"erro: {e}"
@@ -1632,7 +1689,7 @@ def check_for_update(force=False):
                 'Accept': 'application/vnd.github+json',
             }
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with _urlopen_https(req, timeout=5) as resp:
             data = json.loads(resp.read().decode('utf-8', errors='ignore'))
 
         tag = data.get('tag_name', '') or ''
@@ -1689,7 +1746,7 @@ def _do_download_and_launch_installer(url, name, silent):
         dest = os.path.join(update_download_dir(), name or "CentroDeComando-Setup.exe")
         req = urllib.request.Request(url, headers={'User-Agent': 'CentroDeComando-UpdateDownload'})
         total = 0
-        with urllib.request.urlopen(req, timeout=15) as resp, open(dest, 'wb') as f:
+        with _urlopen_https(req, timeout=15) as resp, open(dest, 'wb') as f:
             while True:
                 chunk = resp.read(1024 * 256)
                 if not chunk:
@@ -1759,7 +1816,7 @@ def fetch_binance_rates(force=False):
             api_url,
             headers={'User-Agent': 'CentroDeComando-RatesCheck'}
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with _urlopen_https(req, timeout=5) as resp:
             data = json.loads(resp.read().decode('utf-8', errors='ignore'))
 
         for entry in data:
@@ -1825,7 +1882,7 @@ def _try_json_get(url, timeout=6):
         headers={'User-Agent': 'CentroDeComando-ParasiteCheck', 'Accept': 'application/json'}
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_https(req, timeout=timeout) as resp:
             status = resp.status
             raw = resp.read().decode('utf-8', errors='ignore')
     except urllib.error.HTTPError as he:
@@ -1862,7 +1919,7 @@ _generic_pool_cache_lock = threading.Lock()
 
 def _generic_pool_http_json(url, timeout=6):
     req = urllib.request.Request(url, headers={"User-Agent": "HashCommander/1.0", "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with _urlopen_https(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8", "replace"))
 
 
@@ -2536,7 +2593,7 @@ def get_total_registered_users():
                     headers={"Content-Type": "application/json"},
                     method="POST",
                 )
-                with urllib.request.urlopen(req, timeout=8) as resp:
+                with _urlopen_https(req, timeout=8) as resp:
                     result = json.loads(resp.read().decode('utf-8', errors='ignore'))
             except Exception:
                 break
@@ -2628,7 +2685,7 @@ def send_telegram_alert(bot_token, chat_id, message):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = json.dumps({"chat_id": chat_id, "text": message}).encode('utf-8')
     req = urllib.request.Request(url, data=payload, method='POST', headers={'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=8) as resp:
+    with _urlopen_https(req, timeout=8) as resp:
         return json.loads(resp.read().decode('utf-8'))
 
 
@@ -2643,7 +2700,7 @@ def send_discord_alert(webhook_url, message):
             'User-Agent': 'Mozilla/5.0 (compatible; CentroDeComando/1.0)',
         },
     )
-    with urllib.request.urlopen(req, timeout=8) as resp:
+    with _urlopen_https(req, timeout=8) as resp:
         resp.read()
         return True
 
@@ -2725,7 +2782,7 @@ def mrr_request(endpoint, method='GET', params=None):
         'x-api-nonce': nonce,
         'User-Agent': 'NerdQaxeDashboard/1.0',
     })
-    with urllib.request.urlopen(req, timeout=10) as response:
+    with _urlopen_https(req, timeout=10) as response:
         return json.loads(response.read().decode('utf-8'))
 
 
@@ -3059,7 +3116,7 @@ def probe_ip(ip):
                 f"http://{ip}{path}",
                 headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Accept-Encoding': 'gzip, deflate'}
             )
-            with urllib.request.urlopen(req, timeout=SCAN_TIMEOUT) as resp:
+            with _urlopen_https(req, timeout=SCAN_TIMEOUT) as resp:
                 raw = resp.read()
                 if resp.headers.get('Content-Encoding') == 'gzip' or raw[:2] == b'\x1f\x8b':
                     with gzip.GzipFile(fileobj=io.BytesIO(raw)) as gz:
@@ -3223,7 +3280,7 @@ def verify_firebase_token(id_token):
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with _urlopen_https(req, timeout=8) as resp:
             data = json.loads(resp.read().decode('utf-8'))
     except urllib.error.HTTPError:
         return None                      # o Firebase recusou o token (inválido/expirado)
@@ -3358,7 +3415,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                                 'Accept-Encoding': 'gzip, deflate'
                             }
                         )
-                        with urllib.request.urlopen(req, timeout=1.8) as response:
+                        with _urlopen_https(req, timeout=1.8) as response:
                             raw_data = response.read()
                             if response.headers.get('Content-Encoding') == 'gzip' or raw_data[:2] == b'\x1f\x8b':
                                 buffer = io.BytesIO(raw_data)
@@ -4278,7 +4335,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Content-Type': 'application/json'},
                     method='PATCH'
                 )
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with _urlopen_https(req, timeout=5) as resp:
                     resp.read()
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')
@@ -4320,7 +4377,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     headers={'User-Agent': 'NerdQaxeDashboard/1.0', 'Content-Type': 'application/json'},
                     method='POST'
                 )
-                with urllib.request.urlopen(req, timeout=5) as resp:
+                with _urlopen_https(req, timeout=5) as resp:
                     resp.read()
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')

@@ -4099,6 +4099,9 @@
   .gp-spot-empty{position:relative;color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .gp-spot-empty a{color:var(--cyan);cursor:pointer;}
   .gp-spot-setup input{background:var(--panel-2);border:1px solid var(--line-strong);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12.5px;width:260px;}
+  .footer-coffee{position:relative;z-index:2;display:inline-flex;align-items:center;gap:5px;margin-left:12px;padding:3px 10px;border-radius:7px;
+    background:#2b220d;border:1px solid #ffb02066;color:#ffd27a;font-size:11px;text-decoration:none;white-space:nowrap;transition:transform .15s,border-color .15s;}
+  .footer-coffee:hover{transform:translateY(-1px);border-color:#ffb020;color:#fff;}
 </style>
 <!-- Firebase Realtime Database SDK (compat v9) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -4905,6 +4908,9 @@
         <div class="wx-results" id="wxResults"></div>
       </div>
     </div>
+
+    <div id="gpSpotlight" class="gp-spot" style="display:none;"></div>
+
     <div class="blocks-container">
       <div class="blocks-toolbar">
         <span class="title"><span data-i18n="mp_titulo">Mempool e blocos da rede Bitcoin</span></span>
@@ -4915,8 +4921,6 @@
         <div class="blocks-empty"><span data-i18n="a_carregar_blocos">A carregar blocos...</span></div>
       </div>
     </div>
-
-    <div id="gpSpotlight" class="gp-spot" style="display:none;"></div>
 
     <div class="body-grid">
       <div class="sidebar">
@@ -5942,6 +5946,7 @@
     <span id="footerAlert"></span>
     <span id="footerStamp">—</span>
     <span class="footer-copyright" id="footerCopyright">© 2026 <a href="https://github.com/bladept696" target="_blank" rel="noopener">bladept696</a> · Centro de Comando / Hash Commander · Todos os direitos reservados. Proibida a cópia ou redistribuição sem autorização.</span>
+    <a class="footer-coffee" href="https://buymeacoffee.com/bladept" target="_blank" rel="noopener" title="Apoiar o projeto">☕ Buy me a coffee</a>
   </div>
 </div>
 
@@ -8264,7 +8269,7 @@ async function fetchMyShares(force) {
   await Promise.all(list.map(async d => {
     try {
       // Preferido: momentos exatos em que a máquina bateu um novo recorde (app.py novo)
-      const rr = await fetch(`/api/diff-records?ip=${encodeURIComponent(d.ip)}&range=24h`);
+      const rr = await fetch(`${API_BASE}/api/diff-records?ip=${encodeURIComponent(d.ip)}&range=24h`);
       if (rr.ok) {
         const dj = await rr.json();
         if (Array.isArray(dj.events)) {
@@ -8276,7 +8281,7 @@ async function fetchMyShares(force) {
       }
     } catch (e) { /* cai para os buckets */ }
     try {
-      const res = await fetch(`/api/diff-buckets?ip=${encodeURIComponent(d.ip)}&range=24h`);
+      const res = await fetch(`${API_BASE}/api/diff-buckets?ip=${encodeURIComponent(d.ip)}&range=24h`);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       const bs = (data.buckets || [])
@@ -9947,7 +9952,7 @@ async function fetchParasiteStats(forceUi){
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     let res;
     try {
-      res = await fetch(`/api/parasite-stats?address=${encodeURIComponent(addr)}`, { signal: controller.signal });
+      res = await fetch(`${API_BASE}/api/parasite-stats?address=${encodeURIComponent(addr)}`, { signal: controller.signal });
     } finally {
       clearTimeout(timeoutId);
     }
@@ -10055,7 +10060,7 @@ async function fetchParasiteRefinery(forceUi){
     const timeoutId = setTimeout(() => controller.abort(), 10000);
     let res;
     try {
-      res = await fetch(`/api/parasite-refinery?address=${encodeURIComponent(addr)}${forceUi ? '&force=1' : ''}`, { signal: controller.signal });
+      res = await fetch(`${API_BASE}/api/parasite-refinery?address=${encodeURIComponent(addr)}${forceUi ? '&force=1' : ''}`, { signal: controller.signal });
     } finally {
       clearTimeout(timeoutId);
     }
@@ -10238,7 +10243,7 @@ function renderOcTab(){
       if(freq) payload.frequency = Number(freq);
       if(volt) payload.coreVoltage = Number(volt);
       try {
-        const resp = await fetch('/api/apply-profile', {
+        const resp = await fetch(`${API_BASE}/api/apply-profile`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(payload)
@@ -10261,7 +10266,7 @@ function renderOcTab(){
       statusEl.className = 'oc-card-status';
       statusEl.textContent = t('a_reiniciar') + '...';
       try {
-        const resp = await fetch('/api/restart-machine', {
+        const resp = await fetch(`${API_BASE}/api/restart-machine`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ ip: dev.ip })
@@ -10317,7 +10322,7 @@ function renderRates(){
 async function fetchRates(force){
   const errEl = $('converterError');
   try {
-    const res = await fetch(`/api/rates${force ? '?force=1' : ''}`);
+    const res = await fetch(`${API_BASE}/api/rates${force ? '?force=1' : ''}`);
     const data = await res.json();
     if(data.btc_eur == null || data.btc_usdt == null){
       errEl.textContent = t('erro_ao_obter_cotacoes') + (data.error ? ` (${data.error})` : '');
@@ -11337,7 +11342,7 @@ const UPDATE_DISMISS_KEY = 'nerdqaxe:update-dismissed-version';
 
 async function checkForUpdate(){
   try {
-    const res = await fetch('/api/update/check');
+    const res = await fetch(`${API_BASE}/api/update/check`);
     const data = await res.json();
     if(!data.update_available || !data.latest_version) return;
 
@@ -11377,7 +11382,7 @@ async function startAutoUpdate(installBtn, text){
   installBtn.disabled = true;
   installBtn.textContent = 'A descarregar…';
   try {
-    const res = await fetch('/api/update/install', {
+    const res = await fetch(`${API_BASE}/api/update/install`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({silent: true})
@@ -11401,7 +11406,7 @@ async function startAutoUpdate(installBtn, text){
 function pollUpdateStatus(installBtn, text){
   const iv = setInterval(async () => {
     try {
-      const res = await fetch('/api/update/status');
+      const res = await fetch(`${API_BASE}/api/update/status`);
       const data = await res.json();
       if(data.status === 'error') {
         clearInterval(iv);
@@ -11435,7 +11440,7 @@ function loadDevicesFromLocalStorage(){
 async function loadDevices(){
   const localDevices = loadDevicesFromLocalStorage();
   try {
-    const res = await fetch('/api/devices');
+    const res = await fetch(`${API_BASE}/api/devices`);
     const data = await res.json();
     const serverDevices = Array.isArray(data.devices) ? data.devices : [];
 
@@ -11455,7 +11460,7 @@ async function loadDevices(){
 function saveDevices(){
   // grava sempre uma cópia local como reserva (funciona mesmo offline)
   try { localStorage.setItem(DEVICES_KEY, JSON.stringify(devices)); } catch(e){}
-  return fetch('/api/devices', {
+  return fetch(`${API_BASE}/api/devices`, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({devices})
@@ -13044,7 +13049,7 @@ async function fetchAndRenderPeakDiff(ip, range, force){
   _peakDiffState.lastFetchAt = Date.now();
   _peakDiffState.lastKey = key;
   try{
-    const res = await fetch(`/api/diff-buckets?ip=${encodeURIComponent(ip)}&range=${encodeURIComponent(range)}`);
+    const res = await fetch(`${API_BASE}/api/diff-buckets?ip=${encodeURIComponent(ip)}&range=${encodeURIComponent(range)}`);
     const data = await res.json();
     // ignora respostas atrasadas de um pedido antigo (máquina/aba já trocou)
     if(_peakDiffState.lastKey !== key) return;
@@ -13977,7 +13982,7 @@ async function aiRestartDevice(dev, opts={}){
   if(!dev) return {ok:false,error:'máquina não encontrada'};
   if(opts.auto && !aiAgentConfig.allowRestart) return {ok:false,error:'reinício automático desativado nas proteções'};
   try{
-    const resp = await fetch('/api/restart-machine', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ip:dev.ip}) });
+    const resp = await fetch(`${API_BASE}/api/restart-machine`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ip:dev.ip}) });
     const data = await resp.json();
     if(!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`);
     logEvent(`🤖 IA: reinício enviado para "${dev.name}".`, 'edit', dev.name, dev.id);
@@ -15467,7 +15472,7 @@ window.addEventListener('pagehide', (event) => {
 // verificação de atualizações que consulta o GitHub).
 (async () => {
   try {
-    const res = await fetch('/api/version');
+    const res = await fetch(`${API_BASE}/api/version`);
     const data = await res.json();
     const tag = $('versionTag');
     if (data.version) appVersion = data.version;
