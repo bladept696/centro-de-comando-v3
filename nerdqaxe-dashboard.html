@@ -3863,6 +3863,9 @@
   .office-log li.info span{color:var(--text);}
 
   /* Cena */
+  .ho-door-a,.ho-door-b{transition:transform .7s ease;}
+  .ho-lift.open .ho-door-a{transform:translateX(-1.15px);}
+  .ho-lift.open .ho-door-b{transform:translateX(1.15px);}
   .ho-hit{fill:transparent;cursor:pointer;}
   .ho-hit:hover{fill:rgba(255,255,255,.035);}
   .ho-sel{fill:none;stroke:var(--green);stroke-width:2;stroke-dasharray:7 5;opacity:0;pointer-events:none;}
@@ -15316,7 +15319,9 @@ const OFFICE_STATUS = {
   idle:   { label: 'À espera',      color: 'var(--muted)' }
 };
 const officeEls = {};   // dev.id -> grupo SVG do quarto (usado pelo nmSelect para fazer scroll)
-const ho = { sig: '', rooms: {}, techs: [], idx: {}, perFloor: 1, floors: 1, view: null, zShift: 0, baseVB: null, zoom: { k: 1, cx: 0, cy: 0 }, lastSel: undefined, since: {}, log: [], raf: 0, last: 0 };
+const HO_CAB_H = 5.0;   // altura da cabine do elevador
+const ho = { sig: '', rooms: {}, techs: [], idx: {}, perFloor: 1, floors: 1, view: null, zShift: 0, baseVB: null, zoom: { k: 1, cx: 0, cy: 0 }, lastSel: undefined, since: {}, log: [], raf: 0, last: 0,
+             lift: { z: 0, target: null, busy: null, moving: false } };
 try { ho.log = JSON.parse(localStorage.getItem(HO_LOG_KEY) || '[]').filter(e => new Date(e.t).toDateString() === new Date().toDateString()); } catch(e) { ho.log = []; }
 
 // --- Geometria isométrica (2:1). Mundo em unidades; 1 unidade = HO.S px. ---
@@ -15595,6 +15600,80 @@ function hoTechSvg(t, i){
     `<g class="ho-bubble" transform="translate(0,-90)"><rect x="-20" y="-11" width="40" height="18" rx="8" fill="#f4f6f8"/><path d="M-3 7L0 12L3 7z" fill="#f4f6f8"/><text y="2.6" text-anchor="middle" font-size="10" fill="#1d2328"></text></g></g>`;
 }
 
+// --- Elevador: poço envidraçado com colunas, cabine com portas e indicador de piso ---
+// A cabine é desenhada à altura 0 e depois deslocada (translate) para a altura atual.
+function hoLiftSvg(shown, floors){
+  const { R, C, H, RB, E, FH } = HO, S = HO.S;
+  const sx0 = -RB - E + .2, sy0 = R + .4, sw = E - .4, sd = C - .8;   // poço: x -13.8..-10.2, y 10.4..14.6
+  const zb = Math.min(...shown) * FH - .6, zt = Math.max(...shown) * FH + H + 1.2, sh = zt - zb;
+  const post = (x, y) => hoBox(x - .1, y - .1, zb, .2, .2, sh, '#4a5966');
+  let back = `<g transform="${hoM('wallY', sx0, sy0, zt)}"><rect width="${sw}" height="${sh}" fill="rgba(22,36,48,.62)"/></g>` +
+    `<g transform="${hoM('wallX', sx0, sy0, zt)}"><rect width="${sd}" height="${sh}" fill="rgba(18,30,40,.7)"/></g>`;
+  // vigas horizontais em cada piso (nas duas faces de trás)
+  for(let f = Math.min(...shown); f <= Math.max(...shown); f++){
+    const z = f * FH + H + .6;
+    back += `<polyline points="${hoPts([[sx0, sy0 + sd, z], [sx0, sy0, z], [sx0 + sw, sy0, z]])}" fill="none" stroke="#4a5966" stroke-width="2.5"/>`;
+  }
+  back += post(sx0, sy0) + post(sx0 + sw, sy0);
+  // cabine (altura 0)
+  const cx0 = -RB - E + .4, cy0 = R + .6, cw = E - .8, cd = C - 1.2, CH = HO_CAB_H;   // x -13.6..-10.4, y 10.6..14.4
+  const cabBack = hoBox(cx0, cy0, -.25, cw, cd, .25, '#3a4650') +
+    `<g transform="${hoM('floor', cx0, cy0, 0)}"><rect width="${cw}" height="${cd}" fill="#46535e"/><rect x=".3" y=".3" width="${cw - .6}" height="${cd - .6}" fill="none" stroke="#2f3a43" stroke-width=".06"/></g>` +
+    `<g transform="${hoM('wallY', cx0, cy0, CH)}"><rect width="${cw}" height="${CH}" fill="#6d7c88"/>` +
+      `<rect x=".35" y=".6" width="${cw - .7}" height="2.8" fill="#a9bdca" opacity=".35"/><line x1=".2" y1="${CH - 1.7}" x2="${cw - .2}" y2="${CH - 1.7}" stroke="#c9d3da" stroke-width=".12"/></g>` +
+    `<g transform="${hoM('wallX', cx0, cy0, CH)}"><rect width="${cd}" height="${CH}" fill="#5a6874"/><line x1=".2" y1="${CH - 1.7}" x2="${cd - .2}" y2="${CH - 1.7}" stroke="#b9c4cc" stroke-width=".12"/></g>`;
+  const doorW = (cd - .8) / 2;
+  const cabFront = `<g transform="${hoM('wallY', cx0, cy0 + cd, CH)}"><rect width="${cw}" height="${CH}" fill="rgba(170,215,240,.10)" stroke="#9fb3c0" stroke-width=".08"/>` +
+      `<line x1="${cw / 2}" y1="0" x2="${cw / 2}" y2="${CH}" stroke="#9fb3c0" stroke-width=".05" opacity=".6"/></g>` +
+    `<g transform="${hoM('wallX', cx0 + cw, cy0, CH)}"><rect width="${cd}" height="${CH}" fill="none" stroke="#9fb3c0" stroke-width=".1"/>` +
+      `<g clip-path="url(#hoDoorClip)"><rect class="ho-door-a" x=".4" y=".25" width="${doorW}" height="${CH - .25}" fill="rgba(170,215,240,.16)" stroke="#c4d2db" stroke-width=".06"/>` +
+      `<rect class="ho-door-b" x="${.4 + doorW}" y=".25" width="${doorW}" height="${CH - .25}" fill="rgba(170,215,240,.16)" stroke="#c4d2db" stroke-width=".06"/></g></g>` +
+    `<g opacity=".4">${hoBox(cx0, cy0, CH, cw, cd, .3, '#2b343c')}</g>` +   // tejadilho translúcido: vê-se quem vai lá dentro
+    `<g transform="${hoM('floor', cx0, cy0, CH + .3)}"><rect x=".5" y=".5" width="${cw - 1}" height="${cd - 1}" fill="none" stroke="#e0b53a" stroke-width=".08" stroke-dasharray=".3 .25"/></g>`;
+  const [ax, ay] = hoP(cx0 + cw / 2, cy0 + cd / 2, zt);
+  let front = post(sx0, sy0 + sd) + post(sx0 + sw, sy0 + sd) +
+    hoBox(sx0 - .1, sy0 - .1, zt, sw + .2, sd + .2, .7, '#2b343c') +
+    `<line class="ho-cable" x1="${ax.toFixed(1)}" y1="${ay.toFixed(1)}" x2="${ax.toFixed(1)}" y2="${ay.toFixed(1)}" stroke="#1d252c" stroke-width="1.6"/>`;
+  // indicador de piso por cima da porta, em cada piso visível
+  shown.forEach(f => {
+    const [ix, iy] = hoP(sx0 + sw + .05, sy0 + sd / 2, f * FH + H - .2);
+    front += `<g transform="translate(${ix.toFixed(1)},${iy.toFixed(1)})"><rect x="-11" y="-8" width="22" height="13" rx="2" fill="#05090c" stroke="#2c4252"/>` +
+      `<text class="ho-lift-ind" x="0" y="2" text-anchor="middle" font-size="9" font-weight="700" fill="var(--amber)">0</text></g>`;
+  });
+  return { back, cabBack, cabFront, front, cable: { x: ax, y: ay, zt } };
+}
+function hoInLift(t){
+  return t.x < -HO.RB - .3 && t.x > -HO.RB - HO.E + .3 && t.y > HO.R + .5 && t.y < HO.R + HO.C - .5;
+}
+// Move a cabine: acompanha o técnico que vai lá dentro, ou vai buscar quem a chamou
+function hoLiftStep(dt){
+  const L = ho.lift, b = L.busy;
+  let moving = false;
+  if(b && hoInLift(b)){ L.z = b.z; moving = !!(b.path.length && Math.abs(b.path[0].f * HO.FH - b.z) > .01); }
+  else if(L.target != null){
+    const tz = L.target * HO.FH, d = tz - L.z, st = HO.LIFT * dt;
+    if(Math.abs(d) <= st){ L.z = tz; L.target = null; } else { L.z += Math.sign(d) * st; moving = true; }
+  }
+  L.moving = moving;
+  return moving;
+}
+function hoPlaceLift(){
+  const L = ho.lift, g = ho.liftEl;
+  if(!g) return;
+  const vis = ho.view === 'all' || Math.abs(L.z - ho.view * HO.FH) < HO.FH * .5;
+  g.style.display = vis ? '' : 'none';
+  g.setAttribute('transform', `translate(0,${(-L.z * HO.S).toFixed(1)})`);
+  const open = !L.moving && (!!L.busy || ho.techs.some(t => t.path[0] && t.path[0].wait));
+  g.classList.toggle('open', open);
+  if(ho.liftCable){
+    const c = ho.liftCable;
+    c.el.setAttribute('y1', (c.y + (c.zt - L.z - HO_CAB_H - .3) * HO.S).toFixed(1));
+  }
+  const fl = Math.round(L.z / HO.FH), dir = L.moving ? (L.busy && L.busy.path[0] ? (L.busy.path[0].f * HO.FH > L.z ? '▲' : '▼') : (L.target != null && L.target * HO.FH > L.z ? '▲' : '▼')) : '';
+  const txt = dir + fl;
+  (ho.liftInd || []).forEach(el => { if(el.textContent !== txt) el.textContent = txt; });
+}
+
 // --- Construção do prédio (só quando a lista de máquinas muda) ---
 function hoBuild(host, list, models){
   const { R, C, H, RB, E, FH } = HO, n = list.length;
@@ -15611,6 +15690,7 @@ function hoBuild(host, list, models){
     `<pattern id="hoCorr" width="1.6" height="1.6" patternUnits="userSpaceOnUse"><rect width="1.6" height="1.6" fill="#1b2a35"/><path d="M1.6 0H0V1.6" fill="none" stroke="#162330" stroke-width="0.05"/></pattern>` +
     `<radialGradient id="hoLampGlow"><stop offset="0" stop-color="#fff6d8" stop-opacity="0.16"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></radialGradient>` +
     `<linearGradient id="hoSky" x1="0" y1="0" x2="0" y2="1"><stop data-k="sky0" offset="0" stop-color="#7cc4ff"/><stop data-k="sky1" offset="1" stop-color="#cfe9ff"/></linearGradient>` +
+    `<clipPath id="hoDoorClip"><rect x=".3" y="0" width="${HO.C - 1.8}" height="${HO_CAB_H}"/></clipPath>` +
     `<filter id="hoGlow" x="-2" y="-2" width="5" height="5"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` +
     `</defs>`;
 
@@ -15637,14 +15717,11 @@ function hoBuild(host, list, models){
     scene += side.body + rooms.map(r => r.body).join('');
     hits += rooms.map(r => r.hit).join('');
   }
-  // calhas do elevador entre pisos
-  if(shown.length > 1){
-    const top = (floors - 1) * FH + H;
-    [[xmin, R], [xmin + E, R], [xmin, yc], [xmin + E, yc]].forEach(([x, y]) => {
-      const a = hoP(x, y, 0), b = hoP(x, y, top);
-      rails += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="#4a6070" stroke-width="2" opacity="0.55"/>`;
-    });
-  }
+  // poço e cabine do elevador
+  const lift = hoLiftSvg(shown, floors);
+  rails = `<g class="ho-shaft">${lift.back}</g>` +
+    `<g class="ho-lift"><g>${lift.cabBack}</g><g class="ho-lift-inside"></g><g>${lift.cabFront}</g></g>` +
+    `<g class="ho-shaft">${lift.front}</g>`;
 
   // limites para o viewBox
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -15660,6 +15737,10 @@ function hoBuild(host, list, models){
   ho.zoom = { k: 1, cx: 0, cy: 0 };
   const vb = ho.baseVB.map(v => v.toFixed(0)).join(' ');
   host.innerHTML = `<svg viewBox="${vb}" role="img" aria-label="Escritório: um quarto por máquina">${defs}${scene}${rails}<g class="ho-techs"></g>${hits}</svg>`;
+  ho.liftEl = host.querySelector('.ho-lift');
+  ho.liftInside = host.querySelector('.ho-lift-inside');
+  ho.liftInd = [...host.querySelectorAll('.ho-lift-ind')];
+  ho.liftCable = { el: host.querySelector('.ho-cable'), y: lift.cable.y, zt: lift.cable.zt };
 
   // referências para as atualizações rápidas
   ho.rooms = {};
@@ -15692,7 +15773,8 @@ function hoBuild(host, list, models){
     if(prev && prev.target != null && !ho.rooms[prev.target]) prev.target = null;
     return t;
   });
-  const layer = host.querySelector('.ho-techs');
+  if(ho.lift.busy && !ho.techs.includes(ho.lift.busy)) ho.lift.busy = null;
+  const layer = ho.techLayer = host.querySelector('.ho-techs');
   layer.innerHTML = ho.techs.map((t, i) => hoTechSvg(t, i)).join('');
   ho.techs.forEach((t, i) => {
     t.el = layer.querySelector(`[data-t="${i}"]`);
@@ -15721,14 +15803,29 @@ function hoReducedMotion(){
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) { return false; }
 }
 function hoRoute(t, dest){
-  const yc = HO.R + HO.C / 2, xE = -HO.RB - HO.E / 2, cf = Math.round(t.z / HO.FH);
+  const yc = HO.R + HO.C / 2, xE = -HO.RB - HO.E / 2, xD = -HO.RB + .8, cf = Math.round(t.z / HO.FH);
   const path = [];
-  if(Math.abs(t.z - cf * HO.FH) > 0.01) path.push({ x: t.x, y: t.y, f: cf });
-  if(Math.abs(t.y - yc) > 0.3) path.push({ x: t.x, y: yc, f: cf });
-  if(dest.f !== cf){ path.push({ x: xE, y: yc, f: cf }); path.push({ x: xE, y: yc, f: dest.f }); }
+  if(!hoInLift(t) && ho.lift.busy === t) ho.lift.busy = null;   // mudou de rota antes de entrar
+  if(hoInLift(t)){
+    // já está dentro da cabine: segue nela até ao piso de destino e sai
+    ho.lift.busy = t; ho.lift.target = null;
+    path.push({ x: xE, y: yc, f: cf });
+    if(dest.f !== cf) path.push({ x: xE, y: yc, f: dest.f });
+    path.push({ x: xD, y: yc, f: dest.f, exit: true });
+  } else {
+    if(Math.abs(t.y - yc) > 0.3) path.push({ x: t.x, y: yc, f: cf });
+    if(dest.f !== cf){
+      path.push({ x: xD, y: yc, f: cf });                 // porta do elevador
+      path.push({ x: xD, y: yc, f: cf, wait: true });     // chama a cabine e espera
+      path.push({ x: xE, y: yc, f: cf });                 // entra
+      path.push({ x: xE, y: yc, f: dest.f });             // viagem
+      path.push({ x: xD, y: yc, f: dest.f, exit: true }); // sai
+    }
+  }
   path.push({ x: dest.x, y: yc, f: dest.f });
   path.push({ x: dest.x, y: dest.y, f: dest.f });
   if(hoReducedMotion()){
+    if(ho.lift.busy === t) ho.lift.busy = null;
     t.x = dest.x; t.y = dest.y; t.z = dest.f * HO.FH; t.path = [];
     hoArrive(t);
     return;
@@ -15861,21 +15958,28 @@ function hoKick(){
 }
 function hoTick(now){
   ho.raf = 0;
-  const dt = ho.last ? Math.min(0.1, (now - ho.last) / 1000) : 0;
+  const dt = ho.last ? Math.max(0, Math.min(0.1, (now - ho.last) / 1000)) : 0;
   ho.last = now;
   let moving = false;
   ho.techs.forEach(t => {
     if(!t.path.length) return;
     moving = true;
     const p = t.path[0], tz = p.f * HO.FH;
+    if(p.wait){
+      const L = ho.lift, here = Math.abs(L.z - tz) < .01;
+      if(!L.busy && here && L.target == null && !L.moving){ L.busy = t; t.path.shift(); }
+      else if(!L.busy && L.target == null && !here) L.target = p.f;
+      return;
+    }
     const dx = p.x - t.x, dy = p.y - t.y, dz = tz - t.z;
     const dist = Math.hypot(dx, dy, dz);
     const step = (Math.abs(dz) > 0.01 ? HO.LIFT : HO.SPEED) * dt;
     if(Math.abs(dx - dy) > 0.01) t.face = dx - dy > 0 ? 1 : -1;
-    if(dist <= step){ t.x = p.x; t.y = p.y; t.z = tz; t.path.shift(); }
+    if(dist <= step){ t.x = p.x; t.y = p.y; t.z = tz; t.path.shift(); if(p.exit && ho.lift.busy === t) ho.lift.busy = null; }
     else { t.x += dx / dist * step; t.y += dy / dist * step; t.z += dz / dist * step; }
     if(!t.path.length) hoArrive(t);
   });
+  if(hoLiftStep(dt)) moving = true;
   hoPlaceTechs();
   if(moving) ho.raf = requestAnimationFrame(hoTick);
 }
@@ -15886,7 +15990,8 @@ function hoPlaceTechs(){
     if(!t.el) return;
     const vis = ho.view === 'all' || Math.abs(t.z - ho.view * HO.FH) < HO.FH * 0.45;
     if(t.el.style.display !== (vis ? '' : 'none')) t.el.style.display = vis ? '' : 'none';
-    const [X, Y] = hoP(t.x, t.y, t.z);
+    // dentro da cabine, a posição é relativa à cabine (que já está deslocada para a altura dela)
+    const [X, Y] = hoInLift(t) ? hoP(t.x, t.y, t.z - ho.lift.z) : hoP(t.x, t.y, t.z);
     t.el.setAttribute('transform', `translate(${X.toFixed(1)},${Y.toFixed(1)})`);
     t.flip.setAttribute('transform', t.face < 0 ? 'scale(-1,1)' : '');
     const mode = t.path.length ? 'walk' : t.mode;
@@ -15903,12 +16008,17 @@ function hoPlaceTechs(){
     else if(t.act) tag += ' · ' + HO_ACTS[t.act].label + (t.actRoom != null ? ' ' + hoRoomLabel(t.actRoom) : '');
     if(t.tag.textContent !== tag) t.tag.textContent = tag;
   });
-  // ordem de desenho: quem está mais à frente fica por cima
-  const layer = ho.techs[0].el && ho.techs[0].el.parentNode;
+  // quem vai na cabine fica entre as paredes e o vidro dela; os outros por ordem de profundidade
+  const layer = ho.techLayer;
+  ho.techs.forEach(t => {
+    const want = hoInLift(t) && ho.liftInside ? ho.liftInside : layer;
+    if(want && t.el && t.el.parentNode !== want) want.appendChild(t.el);
+  });
   if(layer){
-    const sorted = [...ho.techs].sort((a, b) => (a.x + a.y) - (b.x + b.y));
-    if(sorted.some((t, i) => layer.children[i] !== t.el)) sorted.forEach(t => layer.appendChild(t.el));
+    const out = ho.techs.filter(t => t.el && t.el.parentNode === layer).sort((a, b) => (a.x + a.y) - (b.x + b.y));
+    if(out.some((t, i) => layer.children[i] !== t.el)) out.forEach(t => layer.appendChild(t.el));
   }
+  hoPlaceLift();
 }
 
 function hoLog(text, kind, id){
