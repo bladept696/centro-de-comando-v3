@@ -19,4 +19,5 @@ account_activity.json
 user_presence.json
 diff_buckets.json
 diff_history.json
+diff_records.json
 .install_id
