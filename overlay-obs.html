@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Centro de Comando — Overlay OBS</title>
+<style>
+  @font-face {
+    font-family: 'JetBrains Mono';
+    src: local('JetBrains Mono');
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{
+    background:transparent;
+    font-family:'JetBrains Mono','Consolas',monospace;
+    color:#eaf6f7;
+    overflow:hidden;
+  }
+
+  #wrap{
+    display:inline-flex;
+    flex-direction:column;
+    gap:10px;
+    padding:14px;
+  }
+
+  .panel{
+    background:rgba(6,13,20,0.82);
+    border:1px solid #21ffb066;
+    border-radius:10px;
+    box-shadow:0 0 18px #21ffb033, inset 0 0 30px #21ffb00f;
+    backdrop-filter:blur(3px);
+    padding:14px 18px;
+    min-width:340px;
+  }
+
+  .farm-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:#21ffb0;
+    margin-bottom:10px;
+  }
+  .dot-live{
+    width:8px; height:8px; border-radius:50%;
+    background:#21ffb0;
+    box-shadow:0 0 8px #21ffb0;
+    animation:blink 1.4s infinite;
+  }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.25;} }
+
+  .farm-grid{
+    display:grid;
+    grid-template-columns:repeat(4, auto);
+    gap:4px 22px;
+  }
+  .stat-label{ font-size:10px; color:#8fb0ac; letter-spacing:1px; text-transform:uppercase; }
+  .stat-value{ font-size:20px; font-weight:700; color:#eaf6f7; text-shadow:0 0 8px #21ffb033; }
+  .stat-value.accent{ color:#21ffb0; }
+  .stat-value.warn{ color:#ff5d5d; }
+
+  .machines{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .machine-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:13px;
+    padding:4px 2px;
+    border-bottom:1px solid #21ffb022;
+  }
+  .machine-row:last-child{ border-bottom:none; }
+  .m-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .m-dot.on{ background:#21ffb0; box-shadow:0 0 6px #21ffb0; }
+  .m-dot.off{ background:#ff5d5d; box-shadow:0 0 6px #ff5d5d; }
+  .m-name{ flex:1; color:#eaf6f7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+  .m-hash{ color:#21ffb0; min-width:70px; text-align:right; }
+  .m-temp{ min-width:50px; text-align:right; }
+  .m-temp.hot{ color:#ff5d5d; }
+
+  #empty{ font-size:12px; color:#8fb0ac; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="panel">
+    <div class="farm-head"><span class="dot-live"></span> CENTRO DE COMANDO — FARM</div>
+    <div class="farm-grid" id="farmGrid"></div>
+  </div>
+  <div class="panel">
+    <div class="machines" id="machineList">
+      <div id="empty">à espera de dados…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api/overlay';
+
+function fmtHash(ghs){
+  if(ghs >= 1000) return (ghs/1000).toFixed(2) + ' TH/s';
+  return ghs.toFixed(1) + ' GH/s';
+}
+
+function render(data){
+  const farm = data.farm || {};
+  const machines = data.machines || [];
+
+  const farmGrid = document.getElementById('farmGrid');
+  farmGrid.innerHTML = `
+    <div>
+      <div class="stat-label">Hashrate</div>
+      <div class="stat-value accent">${fmtHash(farm.total_hashrate_ghs || 0)}</div>
+    </div>
+    <div>
+      <div class="stat-label">Potência</div>
+      <div class="stat-value">${farm.total_power_w != null ? farm.total_power_w.toFixed(0) + ' W' : 'N/D'}</div>
+    </div>
+    <div>
+      <div class="stat-label">Temp. Média</div>
+      <div class="stat-value ${farm.avg_temp_c != null && farm.avg_temp_c >= 70 ? 'warn' : ''}">${farm.avg_temp_c != null ? farm.avg_temp_c.toFixed(1) + ' °C' : '—'}</div>
+    </div>
+    <div>
+      <div class="stat-label">Online</div>
+      <div class="stat-value">${farm.online_count ?? 0}/${farm.total_count ?? 0}</div>
+    </div>
+  `;
+
+  const list = document.getElementById('machineList');
+  if(!machines.length){
+    list.innerHTML = '<div id="empty">nenhuma máquina registada — abre o painel principal primeiro</div>';
+    return;
+  }
+  list.innerHTML = machines.map(m => `
+    <div class="machine-row">
+      <span class="m-dot ${m.online ? 'on' : 'off'}"></span>
+      <span class="m-name">${m.name}</span>
+      <span class="m-hash">${m.online ? fmtHash(m.hashrate_ghs) : '—'}</span>
+      <span class="m-temp ${m.temp_c != null && m.temp_c >= 70 ? 'hot' : ''}">${m.online && m.temp_c != null ? m.temp_c.toFixed(0) + '°C' : '—'}</span>
+    </div>
+  `).join('');
+}
+
+async function poll(){
+  try{
+    const res = await fetch(API);
+    const data = await res.json();
+    render(data);
+  }catch(e){
+    // silencioso - overlay simplesmente mantém o último estado conhecido
+  }
+}
+
+poll();
+setInterval(poll, 4000);
+</script>
+</body>
+</html>

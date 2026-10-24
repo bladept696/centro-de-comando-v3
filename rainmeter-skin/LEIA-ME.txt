@@ -1,0 +1,35 @@
+CENTRO DE COMANDO — Widget Rainmeter
+=====================================
+
+REQUISITOS
+- Rainmeter instalado (https://www.rainmeter.net/)
+- O Centro de Comando (CentroDeComando.exe ou app.py) tem de estar a
+  correr ao mesmo tempo — é ele quem serve os dados em
+  http://localhost:8765
+
+COMO INSTALAR
+1. Copia a pasta "CentroDeComando" (a que tem o ficheiro
+   CentroDeComando.ini lá dentro) para:
+   C:\Users\<o teu utilizador>\Documents\Rainmeter\Skins\
+
+2. Abre o Rainmeter, clica com o botão direito no ícone da bandeja do
+   sistema > "Manage" (Gerir).
+
+3. Na lista à esquerda, escolhe "CentroDeComando" e clica em "Load"
+   (Carregar).
+
+4. O widget aparece no ambiente de trabalho com o hashrate total,
+   potência, temperatura média e as 4 primeiras máquinas registadas
+   no painel.
+
+NOTAS
+- As máquinas mostradas são as mesmas que tens registadas no painel
+  principal (nerdqaxe-dashboard.html) — não precisas de configurar
+  nada aqui, o widget lê-as automaticamente.
+- Se abrires o painel principal pela primeira vez depois de instalar
+  o widget, pode demorar até ~10s a aparecerem as máquinas (é o tempo
+  que o painel demora a "avisar" o backend da lista).
+- Para mostrar mais do que 4 máquinas, lê o comentário no topo do
+  CentroDeComando.ini — é só duplicar um bloco e trocar o número.
+- Podes arrastar o widget para onde quiseres (botão direito > opções,
+  ou simplesmente arrastar se não estiver bloqueado).

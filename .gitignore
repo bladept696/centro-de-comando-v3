@@ -1,0 +1,22 @@
+dist/
+build/
+*.spec
+!CentroDeComando.spec
+__pycache__/
+*.pyc
+
+# Instalador gerado (Inno Setup)
+Output/
+
+# Definições do IDE
+.idea/
+
+# Dados gerados pela app em tempo de execução (máquinas, sessões, atividade da conta)
+config.json
+power_profiles.json
+auth_grace.json
+account_activity.json
+user_presence.json
+diff_buckets.json
+diff_history.json
+.install_id
