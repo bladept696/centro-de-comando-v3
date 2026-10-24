@@ -3163,6 +3163,21 @@
   }
   .update-banner .close-update:hover { color: var(--text); }
 
+  /* Rodapé de notícias de Bitcoin (faixa a correr) */
+  .news-ticker{display:flex;align-items:center;gap:12px;height:34px;padding:0 14px;border-top:1px solid var(--line-strong);background:linear-gradient(90deg,#060b10,#0a131b 50%,#060b10);overflow:hidden;}
+  .news-ticker[hidden]{display:none;}
+  .news-label{flex-shrink:0;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#05080b;background:var(--amber);padding:3px 8px;border-radius:5px;}
+  .news-viewport{flex:1;min-width:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
+  .news-track{display:inline-flex;align-items:center;gap:18px;white-space:nowrap;animation:newsScroll var(--news-dur,120s) linear infinite;}
+  .news-ticker:hover .news-track{animation-play-state:paused;}
+  .news-item{color:var(--text);text-decoration:none;font-size:12px;}
+  .news-item:hover{color:var(--cyan);text-decoration:underline;}
+  .news-item.worry{color:#ff7b7b;font-weight:600;}
+  .news-item small{margin-left:8px;font-size:10px;font-weight:400;color:var(--muted-2);}
+  .news-sep{color:var(--muted-2);font-size:10px;}
+  .news-alerts{flex-shrink:0;font-size:10.5px;font-weight:600;color:#ff7b7b;}
+  @keyframes newsScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  @media (prefers-reduced-motion: reduce){ .news-track{animation:none;} .news-viewport{overflow-x:auto;} }
   .footer-bar{
     position:relative;
     overflow:hidden;
@@ -5833,6 +5848,12 @@
         <div id="forecastBody"></div>
       </div>
     </div>
+  </div>
+
+  <div class="news-ticker" id="newsTicker" hidden>
+    <span class="news-label">₿ Notícias</span>
+    <div class="news-viewport"><div class="news-track" id="newsTrack"></div></div>
+    <span class="news-alerts" id="newsAlerts"></span>
   </div>
 
   <div class="footer-bar" id="footerBar">
@@ -15398,6 +15419,39 @@ function shutdownServer() {
   }
 
 })();
+</script>
+<script>
+// ---------- Rodapé de notícias de Bitcoin ----------
+// As notícias vêm do servidor local (/api/btc-news), que junta vários feeds RSS.
+// As preocupantes (ataques, quedas, proibições...) aparecem primeiro, a vermelho.
+function newsAgo(ts){
+  if(!ts) return '';
+  const m = Math.max(1, Math.round((Date.now() / 1000 - ts) / 60));
+  return m < 60 ? 'há ' + m + ' min' : m < 1440 ? 'há ' + Math.round(m / 60) + ' h' : 'há ' + Math.round(m / 1440) + ' d';
+}
+function newsRender(items){
+  const box = $('newsTicker'), track = $('newsTrack');
+  if(!box || !track) return;
+  if(!items.length){ box.hidden = true; return; }
+  const list = items.filter(i => i.worry).concat(items.filter(i => !i.worry)).slice(0, 25);
+  const html = list.map(i => '<a class="news-item' + (i.worry ? ' worry' : '') + '" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">' +
+    (i.worry ? '⚠ ' : '') + escapeHtml(i.title) + '<small>' + escapeHtml(i.source) + (i.ts ? ' · ' + newsAgo(i.ts) : '') + '</small></a>').join('<span class="news-sep">•</span>');
+  track.innerHTML = html + '<span class="news-sep">•</span>' + html;   // duplicado para a faixa correr sem saltos
+  track.style.setProperty('--news-dur', Math.max(60, list.length * 9) + 's');
+  const w = list.filter(i => i.worry).length;
+  $('newsAlerts').textContent = w ? '⚠ ' + w + ' preocupante' + (w > 1 ? 's' : '') : '';
+  box.hidden = false;
+}
+async function newsFetch(){
+  try {
+    const res = await fetch(`${API_BASE}/api/btc-news`);
+    if(!res.ok) return;
+    const d = await res.json();
+    newsRender(Array.isArray(d.items) ? d.items : []);
+  } catch(e) { /* sem internet ou servidor antigo: o rodapé fica escondido */ }
+}
+newsFetch();
+setInterval(newsFetch, 10 * 60 * 1000);
 </script>
 <script>
 // ---------- Escritório isométrico 2.5D ----------

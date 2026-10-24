@@ -117,7 +117,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "3.9.9"
+APP_VERSION = "4.0.0"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -1795,6 +1795,93 @@ def start_update_install(silent=True):
     )
     t.start()
     return True, None
+
+
+# --- Notícias de Bitcoin (rodapé da dashboard) ---
+# Junta várias fontes RSS (feito aqui no servidor porque o browser não consegue
+# ler estes feeds diretamente por causa do CORS), tira repetidos e marca como
+# "preocupantes" as notícias sobre ataques, roubos, proibições, quedas, etc.
+BTC_NEWS_FEEDS = [
+    ("Google Notícias", "https://news.google.com/rss/search?q=bitcoin&hl=pt-PT&gl=PT&ceid=PT:pt-150"),
+    ("Cointelegraph", "https://cointelegraph.com/rss/tag/bitcoin"),
+    ("CoinDesk", "https://www.coindesk.com/arc/outboundfeeds/rss/"),
+    ("Bitcoin Magazine", "https://bitcoinmagazine.com/.rss/full/"),
+]
+BTC_NEWS_CACHE_SECONDS = 10 * 60
+_btc_news_cache = {"ts": 0, "data": None}
+_btc_news_cache_lock = threading.Lock()
+_BTC_NEWS_WORRY = re.compile(
+    r"hack|exploit|stolen|theft|drain|ban(?:s|ned)?\b|crackdown|lawsuit|sued|\bsec\b|crash|plung|plummet|tumbl|sell-?off|dump|"
+    r"liquidat|outage|bug\b|vulnerab|fraud|scam|bankrupt|insolven|halt|frozen|freez|seiz|arrest|attack|51%|warning|fear|"
+    r"queda|cai\b|caem|afunda|desaba|colapso|proib|ataque|roub|fraude|burla|fal[eê]ncia|apreen|multa|alerta|vulnerab|"
+    r"pirat|golpe|investiga|detid|preso|medo|p[aâ]nico|recua|perde[mu]?\b|sa[ií]da|ameaç|guerra|sanç|evacu|"
+    r"slide|slump|drop|below|outflow|ponzi|threat|\bwar\b|sanction",
+    re.IGNORECASE)
+_BTC_NEWS_BTC = re.compile(r"bitcoin|\bbtc\b|satoshi|minera|mining|miner|halving|hashrate", re.IGNORECASE)
+
+
+def _btc_news_fetch_feed(source, url):
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (CentroDeComando)", "Accept": "application/rss+xml, application/xml, text/xml"})
+    with _urlopen_https(req, timeout=8) as resp:
+        raw = resp.read()
+    root = ET.fromstring(raw)
+    out = []
+    for item in root.iter("item"):
+        title = (item.findtext("title") or "").strip()
+        link = (item.findtext("link") or "").strip()
+        if not title or not link.startswith("http"):
+            continue
+        src = source
+        # O Google Notícias junta várias fontes: o título vem "Título - Fonte"
+        src_el = item.find("source")
+        if src_el is not None and (src_el.text or "").strip():
+            src = src_el.text.strip()
+            if title.endswith(" - " + src):
+                title = title[: -len(" - " + src)].strip()
+        ts = 0
+        try:
+            ts = int(parsedate_to_datetime(item.findtext("pubDate") or "").timestamp())
+        except Exception:
+            pass
+        if source != "Google Notícias" and source != "Bitcoin Magazine" and source != "Cointelegraph":
+            # feeds gerais de cripto: só ficam as notícias sobre Bitcoin
+            if not _BTC_NEWS_BTC.search(title + " " + (item.findtext("description") or "")[:300]):
+                continue
+        out.append({"title": title, "link": link, "source": src, "ts": ts, "worry": bool(_BTC_NEWS_WORRY.search(title))})
+    return out
+
+
+def fetch_btc_news(force=False):
+    with _btc_news_cache_lock:
+        if not force and _btc_news_cache["data"] is not None and time.time() - _btc_news_cache["ts"] < BTC_NEWS_CACHE_SECONDS:
+            return _btc_news_cache["data"]
+    items, errors = [], []
+    with ThreadPoolExecutor(max_workers=len(BTC_NEWS_FEEDS)) as ex:
+        futs = {ex.submit(_btc_news_fetch_feed, s, u): s for s, u in BTC_NEWS_FEEDS}
+        for fut in as_completed(futs):
+            try:
+                items.extend(fut.result())
+            except Exception as e:
+                errors.append(f"{futs[fut]}: {e}")
+    # tira repetidos (mesmo título) e fica com as mais recentes das últimas 48 h
+    seen, uniq = set(), []
+    cutoff = time.time() - 48 * 3600
+    for it in sorted(items, key=lambda x: x["ts"], reverse=True):
+        key = re.sub(r"[^a-z0-9]+", "", it["title"].lower())[:80]
+        if key in seen or (it["ts"] and it["ts"] < cutoff):
+            continue
+        seen.add(key)
+        uniq.append(it)
+    data = {"ts": int(time.time()), "items": uniq[:40], "errors": errors}
+    with _btc_news_cache_lock:
+        if uniq or _btc_news_cache["data"] is None:
+            _btc_news_cache["ts"] = time.time()
+            _btc_news_cache["data"] = data
+        else:
+            data = _btc_news_cache["data"]   # tudo falhou: mantém as últimas notícias boas
+    return data
 
 
 def fetch_binance_rates(force=False):
@@ -3632,6 +3719,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e), "subnet": subnet, "devices": []}).encode('utf-8'))
                 return
+
+        if path == '/api/btc-news':
+            force = query_params.get('force', ['0'])[0] == '1'
+            news = fetch_btc_news(force=force)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(news, ensure_ascii=False).encode('utf-8'))
+            return
 
         if path == '/api/rates':
             force = query_params.get('force', ['0'])[0] == '1'
