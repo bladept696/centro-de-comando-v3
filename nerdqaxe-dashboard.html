@@ -1038,19 +1038,34 @@
   /* ===== Cadeia de blocos ao estilo mempool.space ===== */
   .blocks-scroll.mp-chain{ position:relative; align-items:flex-start; gap:14px; padding:6px 10px 16px; }
   .mp-block{ flex:0 0 auto; width:132px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  /* Cubo 3D escuro: a frente é o próprio .mp-cube; ::before é o topo e ::after a lateral.
+     O "líquido" (cor da taxa) enche a frente e a lateral até --fill-h. */
+  @property --fill-h{ syntax:'<percentage>'; inherits:true; initial-value:0%; }
+  .mp-block{ padding-top:13px; }
   .mp-cube{
-    position:relative; width:132px; height:132px; border-radius:8px; overflow:hidden;
-    background:linear-gradient(160deg, var(--panel-2), var(--deep));
-    border:1px solid var(--line-strong);
-    box-shadow:6px 6px 0 -1px var(--line-strong), 0 10px 22px -12px #000c;
-    transition:transform .3s cubic-bezier(.16,1,.3,1);
+    position:relative; width:132px; height:132px; border-radius:2px;
+    background:linear-gradient(170deg, #0f1922, #070c11);
+    border:1px solid #1f303c;
+    box-shadow:0 16px 26px -16px #000;
+    transition:transform .3s cubic-bezier(.16,1,.3,1), --fill-h 1.1s cubic-bezier(.22,1,.36,1);
+  }
+  .mp-cube::before{
+    content:''; position:absolute; left:-1px; right:-1px; top:-13px; height:12px;
+    transform-origin:bottom left; transform:skewX(-45deg);
+    background:linear-gradient(90deg, #142029, #1b2b37); border:1px solid #1f303c; border-bottom:none;
+  }
+  .mp-cube::after{
+    content:''; position:absolute; top:-1px; bottom:-1px; right:-14px; width:12px;
+    transform-origin:top left; transform:skewY(-45deg);
+    background:linear-gradient(to top, color-mix(in srgb, var(--liq, #3bb7a8) 32%, #060a0e) 0 var(--fill-h), #0a1117 var(--fill-h));
+    border:1px solid #1f303c; border-left:none;
   }
   .mp-block:hover .mp-cube{ transform:translateY(-4px); }
   .mp-fill{
     position:absolute; left:0; right:0; bottom:0; height:var(--fill-h,0%);
     background:var(--fill-bg); transition:height 1.1s cubic-bezier(.22,1,.36,1);
   }
-  .mp-fill::before{ content:''; position:absolute; left:0; right:0; top:0; height:2px; background:#ffffff55; }
+  .mp-fill::before{ content:''; position:absolute; left:0; right:0; top:0; height:2px; background:var(--liq, #ffffff55); box-shadow:0 0 8px var(--liq, transparent); }
   .mp-face{
     position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:3px; text-align:center; padding:6px; text-shadow:0 1px 3px #000d;
@@ -1063,7 +1078,8 @@
   .mp-foot .mp-pool{ color:var(--cyan); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .mp-foot img{ width:16px; height:16px; border-radius:4px; background:#081119; object-fit:contain; flex:0 0 auto; }
   .mp-time{ font-size:10px; color:var(--muted-2); }
-  .mp-pending .mp-cube{ border-style:dashed; background:linear-gradient(160deg, var(--deep), var(--panel)); }
+  .mp-pending .mp-cube{ border-style:dashed; background:linear-gradient(170deg, #0b141b, #060a0e); }
+  .mp-pending .mp-cube::before, .mp-pending .mp-cube::after{ opacity:.75; }
   .mp-pending .mp-foot{ color:var(--amber); font-weight:600; }
   .mp-pending.mp-next .mp-cube{ border-color:var(--amber); animation:mpNextPulse 2.4s ease-in-out infinite; }
   .mp-tip .mp-cube{ border-color:var(--green-dim); animation:mpTipGlow 2.4s ease-in-out infinite; }
@@ -1072,12 +1088,12 @@
   .mp-sep-lbl{ font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); white-space:nowrap; }
   .mp-sep-time{ color:var(--muted); letter-spacing:0; text-transform:none; }
   @keyframes mpNextPulse{
-    0%,100%{ box-shadow:6px 6px 0 -1px var(--line-strong), 0 0 0 0 var(--amber-dim); }
-    50%{ box-shadow:6px 6px 0 -1px var(--line-strong), 0 0 20px -2px var(--amber-dim); }
+    0%,100%{ box-shadow:0 16px 26px -16px #000, 0 0 0 0 var(--amber-dim); }
+    50%{ box-shadow:0 16px 26px -16px #000, 0 0 20px -2px var(--amber-dim); }
   }
   @keyframes mpTipGlow{
-    0%,100%{ box-shadow:6px 6px 0 -1px var(--line-strong), 0 0 0 1px var(--green-dim); }
-    50%{ box-shadow:6px 6px 0 -1px var(--line-strong), 0 0 0 1px var(--green-dim), 0 0 22px -4px var(--green-dim); }
+    0%,100%{ box-shadow:0 16px 26px -16px #000, 0 0 0 1px var(--green-dim); }
+    50%{ box-shadow:0 16px 26px -16px #000, 0 0 0 1px var(--green-dim), 0 0 22px -4px var(--green-dim); }
   }
   /* Bloco novo: cai para a cadeia e pisca a verde uma vez */
   .mp-new{ animation:mpDrop .7s cubic-bezier(.22,1,.36,1) both; }
@@ -1085,9 +1101,9 @@
   .mp-new.mp-tip .mp-cube{ animation:mpNewFlash 1.6s ease-out .1s backwards, mpTipGlow 2.4s ease-in-out 1.7s infinite; }
   @keyframes mpDrop{ 0%{ opacity:0; transform:translateX(-46px) scale(.85); } 100%{ opacity:1; transform:none; } }
   @keyframes mpNewFlash{
-    0%{ box-shadow:6px 6px 0 -1px var(--line-strong), 0 0 0 1px var(--green), 0 0 0 var(--green-dim); }
-    35%{ box-shadow:6px 6px 0 -1px var(--line-strong), 0 0 0 1px var(--green), 0 0 36px 2px var(--green-dim); }
-    100%{ box-shadow:6px 6px 0 -1px var(--line-strong), 0 0 0 1px transparent, 0 0 0 transparent; }
+    0%{ box-shadow:0 16px 26px -16px #000, 0 0 0 1px var(--green), 0 0 0 var(--green-dim); }
+    35%{ box-shadow:0 16px 26px -16px #000, 0 0 0 1px var(--green), 0 0 36px 2px var(--green-dim); }
+    100%{ box-shadow:0 16px 26px -16px #000, 0 0 0 1px transparent, 0 0 0 transparent; }
   }
   /* Medidor de "proximidade": topo = dificuldade do bloco, pontos = melhor share de cada máquina */
   .mp-face.mp-has-gauge{ padding-right:30px; }
@@ -8141,8 +8157,8 @@ let mpFirstScrollDone = false;
 function mpFeeColor(fee, alpha) {
   const f = Math.max(1, Number(fee) || 1);
   const x = Math.min(1, Math.log(f) / Math.log(300));
-  const hue = Math.round(170 - 170 * x);
-  return `hsl(${hue} 85% 55% / ${alpha === undefined ? 1 : alpha})`;
+  const hue = Math.round(172 - 147 * x);   // verde-água → verde → amarelo → laranja
+  return `hsl(${hue} 72% 56% / ${alpha === undefined ? 1 : alpha})`;
 }
 function mpNum(n) {
   n = Number(n);
@@ -8150,7 +8166,7 @@ function mpNum(n) {
   return n >= 10 ? String(Math.round(n)) : String(Math.round(n * 10) / 10);
 }
 function mpFillBg(lo, med, hi) {
-  return `linear-gradient(to top, ${mpFeeColor(lo, .62)}, ${mpFeeColor(med, .62)} 55%, ${mpFeeColor(hi, .62)})`;
+  return `linear-gradient(to top, ${mpFeeColor(lo, .14)}, ${mpFeeColor(med, .24)} 60%, ${mpFeeColor(hi, .36)})`;
 }
 function mpEsc(v) {
   return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -8329,8 +8345,8 @@ function renderRecentBlocks(blocks) {
     const fillStyle = isFirstRender ? `--fill-h:0%` : `--fill-h:${pct}%`;
     return `
       <div class="mp-block mp-pending${i === 0 ? ' mp-next' : ''}" title="${mpEsc(tip)}">
-        <div class="mp-cube">
-          <div class="mp-fill" style="${fillStyle};--fill-bg:${mpFillBg(lo, med, hi)}"${isFirstRender ? ` data-fill="${pct.toFixed(1)}"` : ''}></div>
+        <div class="mp-cube" style="${fillStyle};--liq:${mpFeeColor(med)}"${isFirstRender ? ` data-fill="${pct.toFixed(1)}"` : ''}>
+          <div class="mp-fill" style="--fill-bg:${mpFillBg(lo, med, hi)}"></div>
           <div class="mp-face${i === 0 ? ' mp-has-gauge' : ''}">
             <span class="mp-fee" style="color:${mpFeeColor(med)}">~${mpNum(med)} sat/vB</span>
             <span class="mp-range">${mpNum(lo)} - ${mpNum(hi)} sat/vB</span>
@@ -8368,8 +8384,8 @@ function renderRecentBlocks(blocks) {
     const fillStyle = animate ? `--fill-h:0%` : `--fill-h:${pct}%`;
     return `
       <div class="mp-block mp-confirmed${idx === 0 ? ' mp-tip' : ''}${isNew ? ' mp-new' : ''}" data-height="${b.height}" title="${mpEsc(tip)}">
-        <div class="mp-cube">
-          <div class="mp-fill" style="${fillStyle};--fill-bg:${mpFillBg(lo, med, hi)}"${animate ? ` data-fill="${pct.toFixed(1)}"` : ''}></div>
+        <div class="mp-cube" style="${fillStyle};--liq:${mpFeeColor(med)}"${animate ? ` data-fill="${pct.toFixed(1)}"` : ''}>
+          <div class="mp-fill" style="--fill-bg:${mpFillBg(lo, med, hi)}"></div>
           <div class="mp-face mp-has-gauge">
             <span class="mp-h">${b.height}</span>
             <span class="mp-fee" style="color:${mpFeeColor(med)}">~${mpNum(med)} sat/vB</span>
@@ -8392,7 +8408,7 @@ function renderRecentBlocks(blocks) {
 
   // Enchimento: arranca a 0% e sobe até ao valor real (só 1º render / bloco novo)
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    container.querySelectorAll('.mp-fill[data-fill]').forEach(el => {
+    container.querySelectorAll('.mp-cube[data-fill]').forEach(el => {
       el.style.setProperty('--fill-h', el.dataset.fill + '%');
     });
   }));
