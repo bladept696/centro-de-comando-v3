@@ -3693,6 +3693,9 @@
   body.perf-mode #tab-parasite .icon-parasite-mite, body.perf-mode #tab-parasite .refinery-status{ animation:none; }
   /* === Gráficos 3D === */
   .hc3d-canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:1; }
+  .hc3d-labels{ position:absolute; inset:0; pointer-events:none; z-index:2; overflow:hidden; }
+  .hc3d-lbl{ position:absolute; left:0; top:0; font-size:10px; color:var(--muted); white-space:nowrap; text-shadow:0 1px 2px #000a; font-variant-numeric:tabular-nums; }
+  .hc3d-lbl-strong{ font-size:11px; font-weight:600; color:var(--text); }
   .hc3d-tip{ position:absolute; pointer-events:none; display:none; z-index:3; background:#0b1a28ee; border:1px solid var(--line-strong); border-radius:6px; padding:4px 8px; font-size:11px; color:var(--text); white-space:nowrap; }
   /* === Relógio 3D + tempo === */
   .wx-panel{ position:relative; display:flex; align-items:center; gap:24px; flex-wrap:wrap; padding:10px 20px; margin:12px 0; border:1px solid var(--line-strong); border-radius:14px; background:linear-gradient(120deg,rgba(14,32,52,.78),rgba(9,18,32,.78)); }
@@ -4907,8 +4910,7 @@
         </div>
 
         <div class="charts" data-layout-id="main-charts">
-          <div class="chart-box wave-bg-host" data-layout-id="chart-hashrate">
-            <canvas class="wave-bg-canvas" data-wave-bg></canvas>
+          <div class="chart-box" data-layout-id="chart-hashrate">
             <div class="chart-header">
               <div class="chart-title-group">
                 <span style="font-size:12px;">📈</span>
@@ -4933,8 +4935,7 @@
             </div>
           </div>
 
-          <div class="chart-box wave-bg-host" data-layout-id="chart-best">
-            <canvas class="wave-bg-canvas" data-wave-bg></canvas>
+          <div class="chart-box" data-layout-id="chart-best">
             <div class="chart-header">
               <div class="chart-title-group">
                 <span style="font-size:12px;">🏆</span>
@@ -7378,17 +7379,6 @@ function hc3dLoad(){
     document.head.appendChild(sc);
   });
 }
-function hc3dGrad(t){
-  const a = [.55, .30, 1], b = [.31, .84, 1], d = [1, .69, .13];
-  const k = t < .5 ? t * 2 : (t - .5) * 2, p = t < .5 ? a : b, q = t < .5 ? b : d;
-  return [p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k, p[2] + (q[2] - p[2]) * k];
-}
-function hc3dLabel(text, color, h){
-  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
-  const x = cv.getContext('2d'); x.font = '600 34px monospace'; x.textAlign = 'center'; x.fillStyle = color; x.fillText(text, 128, 44);
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
-  sp.scale.set(h * 4, h, 1); return sp;
-}
 function hc3dHalo(color){
   const cv = document.createElement('canvas'); cv.width = cv.height = 64;
   const x = cv.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -7396,6 +7386,7 @@ function hc3dHalo(color){
   return new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
 }
 function hc3dClear(c){
+  if(c.lab){ c.lab.innerHTML = ''; c.labels = []; }
   if(!c.group) return;
   c.scene.remove(c.group);
   c.group.traverse(o => { if(o.geometry) o.geometry.dispose(); if(o.material){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); } });
@@ -7410,11 +7401,16 @@ function hc3dEnsure(id){
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, HC3D.pr || 1.5));
   const cv = renderer.domElement; cv.className = 'hc3d-canvas'; host.appendChild(cv);
   const tip = document.createElement('div'); tip.className = 'hc3d-tip'; host.appendChild(tip);
-  const c = { id, svg, host, renderer, tip, scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(38, 3, .1, 100), ray: new THREE.Raycaster(),
-              mouse: new THREE.Vector2(9, 9), mx: 0, my: 0, px: 0, py: 0, visible: true, active: false, t: 0, W: 16, dist: 7.8, group: null };
-  c.scene.add(new THREE.AmbientLight(0xffffff, .55));
-  const dl = new THREE.DirectionalLight(0xffd9a0, .9); dl.position.set(3, 8, 6); c.scene.add(dl);
-  c.light = new THREE.PointLight(0xffb020, 1.3, 22); c.light.position.set(0, 3.5, 3); c.scene.add(c.light);
+  // Gráficos: lente "longa" (pouca perspetiva) para as alturas se compararem bem
+  const c = { id, svg, host, renderer, tip, scene: new THREE.Scene(), camera: new THREE.PerspectiveCamera(custom ? 38 : 22, 3, .1, 100), ray: new THREE.Raycaster(),
+              mouse: new THREE.Vector2(9, 9), mx: 0, my: 0, px: 0, py: 0, visible: true, active: false, t: 0, W: 16, dist: custom ? 7.8 : 13.5, group: null };
+  c.scene.add(new THREE.AmbientLight(0xffffff, custom ? .55 : .7));
+  const dl = new THREE.DirectionalLight(0xffe2b8, custom ? .9 : .75); dl.position.set(-4, 9, 7); c.scene.add(dl);
+  c.light = new THREE.PointLight(0xffb020, custom ? 1.3 : .5, 22); c.light.position.set(0, 3.5, 3); c.scene.add(c.light);
+  if(!custom){
+    const rim = new THREE.DirectionalLight(0x6fb7ff, .35); rim.position.set(6, 3, -6); c.scene.add(rim);
+    c.lab = document.createElement('div'); c.lab.className = 'hc3d-labels'; host.appendChild(c.lab); c.labels = [];
+  }
   cv.addEventListener('pointermove', e => { const r = cv.getBoundingClientRect(); c.mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); c.px = e.clientX - r.left; c.py = e.clientY - r.top; });
   cv.addEventListener('pointerleave', () => { c.mouse.set(9, 9); tip.style.display = 'none'; });
   if(window.ResizeObserver) new ResizeObserver(() => hc3dResize(c)).observe(host);
@@ -7427,6 +7423,59 @@ function hc3dResize(c){
   const W = Math.max(8, Math.min(30, 5.4 * (w / h) * .86));
   if(!c.custom && Math.abs(W - c.W) / c.W > .05){ c.W = W; c.sig = null; hc3dClear(c); clearTimeout(c.rz); c.rz = setTimeout(hc3dReplay, 50); }
 }
+
+// --- Peças comuns aos gráficos 3D ---
+// Cores do tema atual (seguem os temas da dashboard)
+function hc3dTheme(){
+  const cs = getComputedStyle(document.body), v = (n, d) => { const s = cs.getPropertyValue(n).trim(); return /^#[0-9a-f]{6}$/i.test(s) ? s : d; };
+  return { accent: new THREE.Color(v('--amber', '#ffb020')), floor: new THREE.Color(v('--panel-2', '#0f2130')), wall: new THREE.Color(v('--panel', '#0d1a26')),
+           grid: new THREE.Color(v('--line-strong', '#1c3a49')), text: v('--text', '#eaf6f7') };
+}
+// Rótulos em HTML projetados a partir da cena: texto sempre nítido e legível
+function hc3dAddLabel(c, text, x, y, z, align, cls){
+  const el = document.createElement('span'); el.className = 'hc3d-lbl' + (cls ? ' ' + cls : ''); el.textContent = text; c.lab.appendChild(el);
+  const L = { el, pos: new THREE.Vector3(x, y, z), align: align || 'c' }; c.labels.push(L); return L;
+}
+function hc3dPlaceLabels(c){
+  if(!c.labels || !c.labels.length) return;
+  const w = c.host.clientWidth, h = c.host.clientHeight, v = c._v || (c._v = new THREE.Vector3());
+  const off = { r: 'translate(-100%,-50%)', l: 'translate(0,-50%)', c: 'translate(-50%,0)', b: 'translate(-50%,-100%)' };
+  c.labels.forEach(L => {
+    if(L.hidden){ if(L.el.style.display !== 'none') L.el.style.display = 'none'; return; }
+    v.copy(L.pos).project(c.camera);
+    L.el.style.display = '';
+    L.el.style.transform = `translate(${((v.x + 1) / 2 * w).toFixed(1)}px,${((1 - v.y) / 2 * h).toFixed(1)}px) ${off[L.align]}`;
+  });
+}
+// Chão, parede de fundo e linhas de valor (o "eixo Y" desenhado na parede)
+function hc3dStage(c, g, D, H, ticks, th){
+  const x0 = c.xL - .3, x1 = c.xR + .3, zb = -D / 2 - .35;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, D + 1.1), new THREE.MeshStandardMaterial({ color: th.floor, roughness: 1, metalness: 0, transparent: true, opacity: .85 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.set(0, -.002, .2); g.add(floor);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, H + .5), new THREE.MeshStandardMaterial({ color: th.wall, roughness: 1, metalness: 0, transparent: true, opacity: .55 }));
+  wall.position.set(0, (H + .5) / 2, zb); g.add(wall);
+  const lm = new THREE.LineBasicMaterial({ color: th.grid, transparent: true, opacity: .9 });
+  const pts = [];
+  ticks.forEach(t => { pts.push(new THREE.Vector3(x0, t.y, zb + .01), new THREE.Vector3(x1, t.y, zb + .01)); });
+  // aresta do chão junto à parede e à frente
+  pts.push(new THREE.Vector3(x0, 0, zb + .01), new THREE.Vector3(x1, 0, zb + .01), new THREE.Vector3(x0, 0, D / 2 + .75), new THREE.Vector3(x1, 0, D / 2 + .75));
+  g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lm));
+  ticks.forEach(t => hc3dAddLabel(c, t.text, x0 - .1, t.y, zb, 'r'));
+}
+// Valores "redondos" para as linhas de valor (escala linear)
+function hc3dNiceTicks(lo, hi, n){
+  const span = hi - lo || Math.abs(hi) || 1, raw = span / Math.max(1, n), mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || 10 * mag;
+  const out = []; for(let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+function hc3dRangeLabels(){
+  const ms = (typeof _hashrateRangeState !== 'undefined' && _hashrateRangeState.rangeMs) || 3600000, min = Math.round(ms / 60000);
+  const fmt = m => m >= 120 ? '-' + Math.round(m / 60) + ' h' : '-' + m + ' min';
+  return { start: fmt(min), mid: fmt(Math.round(min / 2)), minutes: min };
+}
+
+// --- Hashrate: área em 3D com a linha à frente ---
 function hc3dStrip(N){
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 6), 3));
@@ -7434,84 +7483,116 @@ function hc3dStrip(N){
   const idx = []; for(let i = 0; i < N - 1; i++){ const a = 2 * i; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
   geo.setIndex(idx); return geo;
 }
-function hc3dMesh(g, geo){
-  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+function hc3dMesh(g, geo, opacity){
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: opacity == null ? 1 : opacity, side: THREE.DoubleSide, depthWrite: false }));
   m.frustumCulled = false; g.add(m); return m;
-}
-function hc3dGrid(c, g, D){
-  const grid = new THREE.GridHelper(c.W, Math.round(c.W / 1.2), 0x3a6a8a, 0x1c3346);
-  grid.scale.z = D * 1.5 / c.W; grid.material.transparent = true; grid.material.opacity = .55; g.add(grid);
 }
 function hc3dLine(c, vals){
   const N = Math.min(96, vals.length), rs = [];
   for(let i = 0; i < N; i++){ const a = Math.floor(i * vals.length / N), b = Math.max(a + 1, Math.floor((i + 1) * vals.length / N)); let sm = 0; for(let k = a; k < b; k++) sm += vals[k]; rs.push(sm / (b - a)); }
-  const mn = Math.min(...rs), mx = Math.max(...rs), rg = (mx - mn) || Math.max(Math.abs(mx) * .1, 1);
-  const target = rs.map(v => .6 + (v - mn) / rg * 2.8);
-  if(!c.line || c.line.N !== N){
-    hc3dClear(c);
-    const g = c.group = new THREE.Group(); c.scene.add(g);
-    const D = 1.8; hc3dGrid(c, g, D);
-    const L = c.line = { N, D, cur: target.slice(), target };
-    L.top = hc3dMesh(g, hc3dStrip(N)); L.curt = hc3dMesh(g, hc3dStrip(N)); L.rib = hc3dMesh(g, hc3dStrip(N));
-    L.pulse = new THREE.Mesh(new THREE.SphereGeometry(.13, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffffff })); g.add(L.pulse);
-    L.mark = new THREE.Mesh(new THREE.SphereGeometry(.17, 14, 14), new THREE.MeshBasicMaterial({ color: 0xffb020 })); g.add(L.mark);
-    L.halo = hc3dHalo('rgba(255,176,32,.9)'); L.halo.scale.set(1.6, 1.6, 1); g.add(L.halo);
-    const P = 60, pp = new Float32Array(P * 3); for(let i = 0; i < P; i++){ pp[3*i] = (Math.random() - .5) * c.W; pp[3*i+1] = Math.random() * 4; pp[3*i+2] = (Math.random() - .5) * D * 2; }
-    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
-    L.parts = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0x8fdcff, size: .07, transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false })); L.parts.frustumCulled = false; g.add(L.parts);
+  const mn = Math.min(...rs), mx = Math.max(...rs), pad = ((mx - mn) || Math.max(mx * .1, 1)) * .25;
+  let ticks = hc3dNiceTicks(Math.max(0, mn - pad), mx + pad, 3);
+  if(ticks.length < 2) ticks = [mn, mx];
+  const lo = Math.min(ticks[0], mn), hi = Math.max(ticks[ticks.length - 1], mx), H = 3.2, D = 1.1;
+  const yOf = v => (v - lo) / ((hi - lo) || 1) * H;
+  const target = rs.map(yOf), rl = hc3dRangeLabels();
+  c.xL = -c.W / 2 + 1.7; c.xR = c.W / 2 - 2.0;
+  const sig = N + '|' + c.W.toFixed(1) + '|' + ticks.join(',') + '|' + rl.minutes;
+  if(!c.line || c.sig !== sig){
+    const prev = c.line && c.line.N === N ? c.line.cur : null;
+    hc3dClear(c); c.sig = sig;
+    const th = hc3dTheme(), g = c.group = new THREE.Group(); c.scene.add(g);
+    hc3dStage(c, g, D, H, ticks.map(v => { const f = formatHashrate(v); return { y: yOf(v), text: f.value.replace(/\.?0+$/, '') + ' ' + f.unit }; }), th);
+    const L = c.line = { N, D, H, cur: prev || target.slice(), target, rs, th, yOf };
+    L.front = hc3dMesh(g, hc3dStrip(N), .92);   // face da frente (área)
+    L.top = hc3dMesh(g, hc3dStrip(N), .9);      // topo com profundidade
+    L.edge = hc3dMesh(g, hc3dStrip(N));          // linha brilhante na aresta da frente
+    L.mark = new THREE.Mesh(new THREE.SphereGeometry(.14, 20, 20), new THREE.MeshStandardMaterial({ color: th.accent, emissive: th.accent, emissiveIntensity: .7, roughness: .3 })); g.add(L.mark);
+    L.halo = hc3dHalo('rgba(255,190,80,.55)'); L.halo.scale.set(1, 1, 1); g.add(L.halo);
+    L.guide = new THREE.Mesh(new THREE.BoxGeometry(.025, 1, .025), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .5 })); L.guide.geometry.translate(0, .5, 0); L.guide.visible = false; g.add(L.guide);
+    L.dot = new THREE.Mesh(new THREE.SphereGeometry(.09, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff })); L.dot.visible = false; g.add(L.dot);
+    L.hitPlane = new THREE.Mesh(new THREE.PlaneGeometry(c.W + 2, H + 3), new THREE.MeshBasicMaterial({ visible: false })); L.hitPlane.position.set(0, H / 2, D / 2); g.add(L.hitPlane);
+    const avgV = rs.reduce((a, b) => a + b, 0) / rs.length, ay = yOf(avgV);
+    const avg = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(c.xL, ay, -D / 2 - .33), new THREE.Vector3(c.xR, ay, -D / 2 - .33)]),
+      new THREE.LineDashedMaterial({ color: th.accent, dashSize: .25, gapSize: .18, transparent: true, opacity: .55 }));
+    avg.computeLineDistances(); g.add(avg); L.avg = avg;
+    hc3dAddLabel(c, 'média', c.xR + .4, ay, -D / 2 - .33, 'l');
+    hc3dAddLabel(c, rl.start, c.xL, -.05, D / 2 + .75, 'c');
+    hc3dAddLabel(c, rl.mid, (c.xL + c.xR) / 2, -.05, D / 2 + .75, 'c');
+    hc3dAddLabel(c, 'agora', c.xR, -.05, D / 2 + .75, 'c');
   }
-  c.line.target = target;
+  c.line.target = target; c.line.rs = rs;
 }
 function hc3dFrameLine(c, dt){
   const L = c.line; if(!L) return;
-  const N = L.N, W = c.W, D = L.D, e = Math.min(1, dt * 6);
-  const tp = L.top.geometry.attributes, cp = L.curt.geometry.attributes, rp = L.rib.geometry.attributes;
+  const N = L.N, D = L.D, e = Math.min(1, dt * 5), a = L.th.accent, f = L.th.floor, xL = c.xL, PW = c.xR - c.xL;
+  const fp = L.front.geometry.attributes, tp = L.top.geometry.attributes, ep = L.edge.geometry.attributes;
   for(let i = 0; i < N; i++){
     L.cur[i] += (L.target[i] - L.cur[i]) * e;
-    const x = -W / 2 + i * W / (N - 1), y = L.cur[i], q = hc3dGrad(i / (N - 1));
+    const x = xL + i * PW / (N - 1), y = L.cur[i], k = .35 + .65 * (y / L.H);
+    fp.position.setXYZ(2*i, x, y, D / 2); fp.position.setXYZ(2*i + 1, x, 0, D / 2);
+    fp.color.setXYZ(2*i, f.r + (a.r - f.r) * .55 * k, f.g + (a.g - f.g) * .55 * k, f.b + (a.b - f.b) * .55 * k);
+    fp.color.setXYZ(2*i + 1, f.r, f.g, f.b);
     tp.position.setXYZ(2*i, x, y, -D / 2); tp.position.setXYZ(2*i + 1, x, y, D / 2);
-    tp.color.setXYZ(2*i, q[0]*.3, q[1]*.3, q[2]*.3); tp.color.setXYZ(2*i + 1, q[0]*.45, q[1]*.45, q[2]*.45);
-    cp.position.setXYZ(2*i, x, y, D / 2); cp.position.setXYZ(2*i + 1, x, 0, D / 2);
-    cp.color.setXYZ(2*i, q[0]*.55, q[1]*.55, q[2]*.55); cp.color.setXYZ(2*i + 1, q[0]*.03, q[1]*.03, q[2]*.03);
-    rp.position.setXYZ(2*i, x, y + .07, D / 2 + .02); rp.position.setXYZ(2*i + 1, x, y - .07, D / 2 + .02);
-    rp.color.setXYZ(2*i, q[0], q[1], q[2]); rp.color.setXYZ(2*i + 1, q[0], q[1], q[2]);
+    tp.color.setXYZ(2*i, a.r * .35, a.g * .35, a.b * .35); tp.color.setXYZ(2*i + 1, a.r * .7, a.g * .7, a.b * .7);
+    ep.position.setXYZ(2*i, x, y + .05, D / 2 + .005); ep.position.setXYZ(2*i + 1, x, y - .05, D / 2 + .005);
+    ep.color.setXYZ(2*i, a.r, a.g, a.b); ep.color.setXYZ(2*i + 1, a.r, a.g, a.b);
   }
-  [tp, cp, rp].forEach(a => { a.position.needsUpdate = true; a.color.needsUpdate = true; });
-  const u = (c.t % 3.5) / 3.5 * (N - 1), i0 = Math.min(N - 2, Math.floor(u)), f = u - i0;
-  L.pulse.position.set(-W / 2 + u * W / (N - 1), L.cur[i0] * (1 - f) + L.cur[i0 + 1] * f, D / 2 + .06);
-  const lx = W / 2, ly = L.cur[N - 1], k = 1 + .25 * Math.sin(c.t * 4);
-  L.mark.position.set(lx, ly, D / 2 + .06); L.mark.scale.setScalar(k); L.halo.position.copy(L.mark.position); L.halo.scale.setScalar(1.4 + .5 * Math.sin(c.t * 3));
-  const pa = L.parts.geometry.attributes.position; for(let i = 0; i < pa.count; i++){ let y = pa.getY(i) + dt * .25; if(y > 4.2) y = 0; pa.setY(i, y); } pa.needsUpdate = true;
+  [fp, tp, ep].forEach(at => { at.position.needsUpdate = true; at.color.needsUpdate = true; });
+  const ly = L.cur[N - 1];
+  L.mark.position.set(c.xR, ly, D / 2 + .02); L.halo.position.copy(L.mark.position); L.halo.scale.setScalar(.9 + .25 * Math.sin(c.t * 2.2));
+  // passar o rato: guia vertical, ponto e dica com o valor e o tempo
+  let shown = false;
+  if(c.mouse.x < 5){
+    c.ray.setFromCamera(c.mouse, c.camera);
+    const hit = c.ray.intersectObject(L.hitPlane)[0];
+    if(hit){
+      const i = Math.max(0, Math.min(N - 1, Math.round((hit.point.x - xL) / PW * (N - 1))));
+      const x = xL + i * PW / (N - 1), y = L.cur[i];
+      L.guide.position.set(x, 0, D / 2 + .01); L.guide.scale.y = Math.max(.01, y); L.guide.visible = true;
+      L.dot.position.set(x, y, D / 2 + .03); L.dot.visible = true;
+      const fv = formatHashrate(L.rs[i]), rl = hc3dRangeLabels(), ago = Math.round(rl.minutes * (1 - i / (N - 1)));
+      c.tip.style.display = 'block'; c.tip.style.left = (c.px + 12) + 'px'; c.tip.style.top = Math.max(0, c.py - 30) + 'px';
+      c.tip.textContent = `${fv.value} ${fv.unit} · ${ago ? (ago >= 120 ? '-' + Math.round(ago / 60) + ' h' : '-' + ago + ' min') : 'agora'}`;
+      shown = true;
+    }
+  }
+  if(!shown){ L.guide.visible = false; L.dot.visible = false; c.tip.style.display = 'none'; }
 }
+
+// --- Melhor dificuldade: colunas 3D com escala logarítmica marcada na parede ---
 function hc3dBars(c, buckets, range){
   const sig = range + '|' + c.W.toFixed(1) + '|' + buckets.map(b => b.ts + ':' + b.value).join(',');
-  if(c.sig === sig) return; c.sig = sig;
-  hc3dClear(c);
-  const g = c.group = new THREE.Group(); c.scene.add(g);
-  const n = buckets.length, W = c.W, D = 1.5; hc3dGrid(c, g, D);
-  const x0 = -W / 2 + 1.7, span = W - 1.7, step = span / n, bw = n === 1 ? 1.2 : Math.min(1.3, step * .62);
-  const vals = buckets.map(b => Math.max(1, b.value)), logMax = Math.log10(Math.max(...vals) * 1.15), logMin = Math.log10(Math.max(1, Math.min(...vals)) / 3), lr = (logMax - logMin) || 1;
-  const hOf = v => .15 + (Math.log10(Math.max(1, v)) - logMin) / lr * 3.2;
-  const B = c.bars = { meshes: [], caps: [] };
+  if(c.sig === sig) return;
+  hc3dClear(c); c.sig = sig;
+  const th = hc3dTheme(), g = c.group = new THREE.Group(); c.scene.add(g);
+  const n = buckets.length, W = c.W, D = 1.1, H = 3.2;
+  const vals = buckets.map(b => Math.max(1, b.value)), top = Math.max(...vals), low = Math.min(...vals);
+  c.xL = -W / 2 + 1.5; c.xR = W / 2 - .4;
+  // marcas 1-3-10: do primeiro valor abaixo do mínimo ao primeiro acima do máximo
+  const steps = []; for(let e = Math.floor(Math.log10(low)) - 1; e <= Math.ceil(Math.log10(top)) + 1; e++) steps.push(Math.pow(10, e), 3 * Math.pow(10, e));
+  const lo = steps.filter(v => v <= low).pop() || steps[0], hi = steps.find(v => v >= top * 1.05) || top * 1.5;
+  const tickVals = steps.filter(v => v >= lo && v <= hi);
+  const logMin = Math.log10(lo), lr = (Math.log10(hi) - logMin) || 1, hOf = v => .06 + (Math.log10(Math.max(1, v)) - logMin) / lr * (H - .06);
+  hc3dStage(c, g, D, H, tickVals.map(v => { const f = formatDiff(v); return { y: hOf(v), text: f.value.replace(/\.0+$/, '') + f.unit }; }), th);
+  const step = (c.xR - c.xL) / n, bw = Math.min(1.0, step * .62), best = vals.indexOf(top);
+  const dim = th.accent.clone().lerp(th.wall, .5), capCol = th.accent.clone().lerp(new THREE.Color(0xffffff), .35);
+  const B = c.bars = { meshes: [], caps: [], best };
   buckets.forEach((b, i) => {
-    const h = hOf(b.value), q = hc3dGrad(Math.min(1, h / 3.4));
-    const geo = new THREE.BoxGeometry(bw, 1, D * .9); geo.translate(0, .5, 0);
-    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: new THREE.Color(q[0], q[1], q[2]), emissive: new THREE.Color(q[0], q[1], q[2]), emissiveIntensity: .35, metalness: .35, roughness: .35 }));
-    m.position.set(x0 + i * step + step / 2, 0, 0); m.scale.y = .001; m.userData = { h, delay: i * .05, b }; g.add(m); B.meshes.push(m);
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(bw * 1.04, .05, D * .92), new THREE.MeshBasicMaterial({ color: 0xffffff })); cap.position.set(m.position.x, 0, 0); g.add(cap); B.caps.push(cap);
-    if(n <= 10 || b.value === Math.max(...buckets.map(x => x.value))){
-      const f = formatDiff(b.value), lb = hc3dLabel(f.value + f.unit, '#ffd27a', .42); lb.position.set(m.position.x, h + .55, 0); lb.userData.h = h; g.add(lb); B.meshes[i].userData.label = lb; lb.visible = false;
-    }
+    const h = hOf(vals[i]), isBest = i === best, col = isBest ? th.accent : dim;
+    const geo = new THREE.BoxGeometry(bw, 1, D * .8); geo.translate(0, .5, 0);
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: isBest ? .28 : .08, metalness: .15, roughness: .5 }));
+    m.position.set(c.xL + i * step + step / 2, 0, 0); m.scale.y = .001; m.userData = { h, delay: i * .04, b, base: isBest ? .28 : .08 }; g.add(m); B.meshes.push(m);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(bw, .04, D * .8), new THREE.MeshBasicMaterial({ color: isBest ? capCol : dim.clone().lerp(new THREE.Color(0xffffff), .2) }));
+    cap.position.set(m.position.x, 0, 0); g.add(cap); B.caps.push(cap);
   });
-  for(let i = 0; i < 5; i++){
-    const v = Math.pow(10, logMin + lr * i / 4), f = formatDiff(v), lb = hc3dLabel(f.value + f.unit, '#7f9db0', .36);
-    lb.position.set(-W / 2 + .8, hOf(v), D / 2 + .1); g.add(lb);
-  }
-  const cnt = Math.min(5, n);
+  const fb = formatDiff(top);
+  B.bestLabel = hc3dAddLabel(c, fb.value + fb.unit, B.meshes[best].position.x, hOf(top) + .12, 0, 'b', 'hc3d-lbl-strong'); B.bestLabel.hidden = true;
+  const cnt = Math.min(n, Math.max(2, Math.floor(W / 3)));
   for(let i = 0; i < cnt; i++){
     const idx = cnt > 1 ? Math.round(i * (n - 1) / (cnt - 1)) : 0, d = new Date(buckets[idx].ts * 1000);
     const txt = range === '24h' ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
-    const lb = hc3dLabel(txt, '#7f9db0', .36); lb.position.set(B.meshes[idx].position.x, -.35, D / 2 + .3); g.add(lb);
+    hc3dAddLabel(c, txt, B.meshes[idx].position.x, -.05, D / 2 + .75, 'c');
   }
   c.t = 0;
 }
@@ -7519,25 +7600,30 @@ function hc3dFrameBars(c, dt){
   const B = c.bars; if(!B) return;
   c.ray.setFromCamera(c.mouse, c.camera);
   const hit = c.mouse.x < 5 ? c.ray.intersectObjects(B.meshes)[0] : null;
+  let done = true;
   B.meshes.forEach((m, i) => {
-    const u = m.userData, k = Math.min(1, Math.max(0, (c.t - u.delay) / .8)), e = 1 - Math.pow(1 - k, 3);
-    m.scale.y = Math.max(.001, u.h * e); B.caps[i].position.y = u.h * e + .03;
-    m.material.emissiveIntensity = (hit && hit.object === m) ? .95 : .35 + .12 * Math.sin(c.t * 2 + i);
-    if(u.label) u.label.visible = k >= 1;
+    const u = m.userData, k = Math.min(1, Math.max(0, (c.t - u.delay) / .7)), e = 1 - Math.pow(1 - k, 3);
+    if(k < 1) done = false;
+    m.scale.y = Math.max(.001, u.h * e); B.caps[i].position.y = u.h * e + .02;
+    const want = (hit && hit.object === m) ? u.base + .45 : u.base;
+    m.material.emissiveIntensity += (want - m.material.emissiveIntensity) * Math.min(1, dt * 10);
   });
+  B.bestLabel.hidden = !done;
   if(hit){
     const b = hit.object.userData.b, f = formatDiff(b.value), d = new Date(b.ts * 1000);
-    c.tip.style.display = 'block'; c.tip.style.left = (c.px + 12) + 'px'; c.tip.style.top = (c.py + 12) + 'px';
+    c.tip.style.display = 'block'; c.tip.style.left = (c.px + 12) + 'px'; c.tip.style.top = Math.max(0, c.py - 30) + 'px';
     c.tip.textContent = `${f.value}${f.unit} · ${d.toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`;
   } else c.tip.style.display = 'none';
 }
 function hc3dFrame(c, dt){
   if(c.frameFn){ c.frameFn(c, dt); return; }
-  const auto = c.mouse.x > 5, tx = auto ? Math.sin(c.t * .35) * .5 : c.mouse.x, ty = auto ? Math.cos(c.t * .27) * .3 : c.mouse.y, k = Math.min(1, dt * 4);
+  // câmara: ligeiramente de cima e de lado; o rato inclina-a um pouco (paralaxe suave)
+  const inside = c.mouse.x < 5, tx = inside ? c.mouse.x * .6 : 0, ty = inside ? c.mouse.y * .35 : 0, k = Math.min(1, dt * 3);
   c.mx += (tx - c.mx) * k; c.my += (ty - c.my) * k;
-  c.camera.position.set(c.mx * c.W * .16, 3.1 + c.my * 1.0, c.dist); c.camera.lookAt(c.mx * c.W * .05, 1.7, 0);
-  c.light.position.set(Math.sin(c.t * .8) * c.W * .4, 3.5, 3);
+  c.camera.position.set(-2.2 + c.mx * 1.6, 4.6 + c.my * 1.2, c.dist); c.camera.lookAt(0, 1.45, 0);
+  c.light.position.set(0, 4, 4);
   if(c.line) hc3dFrameLine(c, dt); else hc3dFrameBars(c, dt);
+  hc3dPlaceLabels(c);
 }
 function hc3dQuality(q){
   HC3D.q = q; HC3D.pr = [.75, 1, 1.5][q]; HC3D.gap = [66, 50, 33][q];
