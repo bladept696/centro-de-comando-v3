@@ -3305,8 +3305,20 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
+    def _is_local_request(self):
+        # Pedido feito neste próprio PC e não reencaminhado por um proxy
+        try:
+            ip = self.client_address[0]
+        except Exception:
+            return False
+        return (ip in ('::1', '::ffff:127.0.0.1') or ip.startswith('127.')) and not self.headers.get('X-Forwarded-For')
+
     def _require_auth(self, path):
         if not auth_enabled() or not path.startswith('/api/') or path in AUTH_EXEMPT_PATHS:
+            return True
+        # O aviso de fecho (navigator.sendBeacon) não consegue enviar o token,
+        # por isso fechar o servidor é permitido sem login só a partir deste PC.
+        if path == '/api/close' and self._is_local_request():
             return True
         header = self.headers.get('Authorization', '')
         token = header[7:].strip() if header.lower().startswith('bearer ') else ''
