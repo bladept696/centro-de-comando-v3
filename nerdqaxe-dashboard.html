@@ -1471,6 +1471,14 @@
   .network-map-empty{display:flex;align-items:center;justify-content:center;min-height:430px;color:var(--muted);font-size:11px;text-align:center;padding:30px;}
   .network-map-foot{margin-top:9px;font-size:9px;color:var(--muted-2);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
   @media(max-width:900px){.network-map-wrap{min-height:500px;}.network-node{width:135px;}.network-node.center{width:155px;}}
+  /* Cartões mais compactos (mapa em colunas) */
+  .network-node{padding:6px 8px;border-radius:9px;}
+  .network-node-name{font-size:11px;}
+  .network-node-meta{font-size:8.5px;margin-top:2px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .network-node-stats{gap:4px;margin-top:5px;}
+  .network-node-stat{padding:2px 5px;border-radius:5px;}
+  .network-node-stat span{font-size:6.5px;}
+  .network-node-stat b{font-size:8.5px;}
 
   /* --- Mapa da rede v2 (camadas, ligações animadas, arrastar) ----------- */
   .network-map-select{background:var(--panel-2);border:1px solid var(--line-strong);color:var(--text);font-family:inherit;font-size:10px;font-weight:600;padding:6px 8px;border-radius:6px;cursor:pointer;}
@@ -1480,6 +1488,8 @@
   .network-node.center{cursor:grab;}
   .network-node.wide{width:300px;max-width:calc(100% - 16px);}
   .network-node.wide .network-node-stats{grid-template-columns:repeat(4,1fr);}
+  .network-map-wrap.nm-cols .network-node.wide{width:170px;}
+  .network-map-wrap.nm-cols .network-node.wide .network-node-stats{grid-template-columns:1fr 1fr;}
   .network-node.nm-pool,.network-node.nm-net{width:160px;}
   .network-node.nm-ghost{width:150px;border-style:dashed;opacity:.85;}
   .network-node.acc{border-color:var(--nm-accent,var(--line-strong));box-shadow:0 12px 28px -12px #000c,0 0 16px -8px var(--nm-accent,transparent);}
@@ -13748,7 +13758,7 @@ let nmRenderRaf = 0;
 let nmJustDragged = false;
 let nmMenuEl = null;
 let nmPulseCount = 0;
-const NM_POS_KEY = 'networkMapPositions_v1';
+const NM_POS_KEY = 'networkMapPositions_v2';   // v2: disposição compacta em colunas
 const NM_MODE_KEY = 'networkMapMode_v1';
 try { nmPos = JSON.parse(localStorage.getItem(NM_POS_KEY) || '{}') || {}; } catch(e) { nmPos = {}; }
 try { const m = localStorage.getItem(NM_MODE_KEY); if (['status','temp','eff','link'].includes(m)) networkMapMode = m; } catch(e) {}
@@ -13837,7 +13847,36 @@ function nmGrid(count, idx, W, nodeW){
   return { row, x, perRow, rows: Math.ceil(count / perRow) };
 }
 
+// Disposição compacta da esquerda para a direita, em colunas:
+// centro → router → máquinas → pools → rede Bitcoin. A altura só cresce
+// com a coluna mais comprida. Em ecrãs estreitos usa a disposição vertical.
 function nmLayout(W, list, pools, ghosts){
+  const ROW = 118, TOP = 66, pos = {};   // cartões com ~106 px de altura
+  const machines = list.map(d => 'm:' + d.id).concat(ghosts.map(g => 'g:' + g.ip));
+  const mCols = machines.length > 12 ? 3 : machines.length > 6 ? 2 : 1;
+  // sem largura para colunas de pelo menos 200 px, volta à disposição vertical
+  if (W < 190 + (4 + (mCols - 1) * 0.75) * 200) return nmLayoutVertical(W, list, pools, ghosts);
+  const mRows = Math.max(1, Math.ceil(machines.length / mCols));
+  const pRows = Math.max(1, pools.length);
+  const rows = Math.max(2, mRows, pRows);
+  const H = TOP * 2 + (rows - 1) * ROW;
+  const mid = H / 2;
+  // colunas em px, convertidas para fração da largura
+  const colGap = Math.min(230, (W - 190) / (4 + (mCols - 1) * 0.75));
+  const xCenter = 100, xRouter = xCenter + colGap, xM0 = xRouter + colGap;
+  const xPool = xM0 + (mCols - 1) * colGap * 0.75 + colGap, xNet = Math.min(W - 95, xPool + colGap);
+  const fx = px => px / W;
+  pos['center'] = { x: fx(xCenter), y: mid };
+  pos['router'] = { x: fx(xRouter), y: mid };
+  machines.forEach((id, i) => {
+    const col = Math.floor(i / mRows), row = i % mRows, inCol = Math.min(mRows, machines.length - col * mRows);
+    pos[id] = { x: fx(xM0 + col * colGap * 0.75), y: mid + (row - (inCol - 1) / 2) * ROW };
+  });
+  pools.forEach((p, i) => { pos['p:' + p.key] = { x: fx(xPool), y: mid + (i - (pools.length - 1) / 2) * ROW }; });
+  pos['net'] = { x: fx(xNet), y: mid };
+  return { pos, H, cols: true };
+}
+function nmLayoutVertical(W, list, pools, ghosts){
   const ROW = 150, pos = {};
   pos['center'] = { x: 0.5, y: 64 };
   pos['router'] = { x: 0.5, y: 194 };
@@ -14136,6 +14175,7 @@ function renderNetworkMap(){
   const hasSha = list.some(d => nmIsSha(readings[d.id]));
 
   const L = nmLayout(W, list, pools, ghosts);
+  wrap.classList.toggle('nm-cols', !!L.cols);
   const H = L.H;
   wrap.style.minHeight = '0';
   wrap.style.height = H + 'px';
