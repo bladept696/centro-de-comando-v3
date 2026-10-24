@@ -3724,19 +3724,19 @@
   .hc3d-lbl-strong{ font-size:11px; font-weight:600; color:var(--text); }
   .hc3d-tip{ position:absolute; pointer-events:none; display:none; z-index:3; background:#0b1a28ee; border:1px solid var(--line-strong); border-radius:6px; padding:4px 8px; font-size:11px; color:var(--text); white-space:nowrap; }
   /* === Relógio 3D + tempo === */
-  .wx-panel{ position:relative; display:flex; align-items:center; gap:24px; flex-wrap:wrap; padding:10px 20px; margin:12px 0; border:1px solid var(--line-strong); border-radius:14px; background:linear-gradient(120deg,rgba(14,32,52,.78),rgba(9,18,32,.78)); }
-  .wx-globe{ position:relative; width:170px; height:170px; flex:0 0 170px; }
+  .wx-panel{ position:relative; display:flex; align-items:center; gap:20px; flex-wrap:wrap; padding:6px 18px; margin:10px 0; border:1px solid var(--line-strong); border-radius:14px; background:linear-gradient(120deg,rgba(14,32,52,.78),rgba(9,18,32,.78)); }
+  .wx-globe{ position:relative; width:104px; height:104px; flex:0 0 104px; }
   body.perf-mode .wx-globe{ display:none; }
-  .wx-time{ font-family:'Space Grotesk',monospace; font-weight:700; font-size:54px; line-height:1; color:#dff6ff; transform-origin:50% 100%; animation:wxSway 9s ease-in-out infinite alternate;
+  .wx-time{ font-family:'Space Grotesk',monospace; font-weight:700; font-size:40px; line-height:1; color:#dff6ff; transform-origin:50% 100%; animation:wxSway 9s ease-in-out infinite alternate;
     text-shadow:1px 1px 0 #1a6a8a,2px 2px 0 #165b78,3px 3px 0 #124c66,4px 4px 0 #0e3d54,6px 9px 16px rgba(0,0,0,.65),0 0 22px rgba(79,214,255,.35); }
   @keyframes wxSway{ from{ transform:perspective(700px) rotateX(16deg) rotateY(-7deg); } to{ transform:perspective(700px) rotateX(16deg) rotateY(7deg); } }
   body.perf-mode .wx-time{ animation:none; transform:none; }
   html.is-scrolling .wx-time{ animation-play-state:paused; }
-  .wx-sec{ font-size:26px; color:var(--cyan); }
-  .wx-date{ font-size:12px; color:var(--muted); margin-top:8px; text-transform:capitalize; }
-  .wx-place{ font-size:13px; color:var(--text); margin-top:2px; font-weight:600; }
-  .wx-temp{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:38px; color:#fff; }
-  .wx-cond{ font-size:13px; color:var(--amber); margin:2px 0 6px; }
+  .wx-sec{ font-size:19px; color:var(--cyan); }
+  .wx-date{ font-size:11px; color:var(--muted); margin-top:5px; text-transform:capitalize; }
+  .wx-place{ font-size:12px; color:var(--text); margin-top:1px; font-weight:600; }
+  .wx-temp{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:28px; color:#fff; }
+  .wx-cond{ font-size:12px; color:var(--amber); margin:1px 0 4px; }
   .wx-meta{ display:flex; gap:16px; flex-wrap:wrap; font-size:11.5px; color:var(--muted); }
   .wx-meta b{ color:var(--text); }
   .wx-gear{ position:absolute; top:8px; right:10px; background:transparent; border:1px solid var(--line-strong); color:var(--muted); border-radius:8px; padding:3px 9px; cursor:pointer; font-size:14px; }
@@ -7806,49 +7806,99 @@ function wxTick(){
   $('wxDate').textContent = f.d.format(now);
   if(WX.lang !== currentLang) wxRender();
 }
-function wxCloudTex(){
-  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64; const x = cv.getContext('2d');
-  [[40, 38, 22], [64, 30, 26], [88, 38, 22], [64, 42, 24]].forEach(b => { const g = x.createRadialGradient(b[0], b[1], 0, b[0], b[1], b[2]); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 64); });
-  return new THREE.CanvasTexture(cv);
-}
 function wxTexture(file, done){
   const bases = ['https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/', 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/'];
   const L = new THREE.TextureLoader(); L.setCrossOrigin('anonymous');
   (function next(i){ if(i < bases.length) L.load(bases[i] + file, done, undefined, () => next(i + 1)); })(0);
 }
+// Direção do Sol no referencial do globo (sem rodar): ponto subsolar a partir da hora UTC
+function wxSunLocal(R){
+  const now = new Date(), start = Date.UTC(now.getUTCFullYear(), 0, 0);
+  const doy = (now - start) / 86400000;
+  const decl = -23.44 * Math.cos(2 * Math.PI / 365 * (doy + 10));
+  const utcH = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+  const lon = -(utcH - 12) * 15;
+  const ph = (90 - decl) * Math.PI / 180, th = (lon + 180) * Math.PI / 180;
+  return new THREE.Vector3(-R * Math.sin(ph) * Math.cos(th), R * Math.cos(ph), R * Math.sin(ph) * Math.sin(th)).normalize();
+}
+function wxPlainTex(rgb){
+  const t = new THREE.DataTexture(new Uint8Array([rgb[0], rgb[1], rgb[2], 255]), 1, 1, THREE.RGBAFormat); t.needsUpdate = true; return t;
+}
+// Globo realista: texturas da NASA (Blue Marble), dia e noite pela posição real do Sol,
+// luzes das cidades no lado noturno, brilho do Sol nos oceanos, nuvens e atmosfera.
 function wxBuildGlobe(c){
   const g = c.group = new THREE.Group(); c.scene.add(g); c.custom = true; c.rx = 0; c.ry = 0; c.tx = 0; c.ty = 0;
   const R = 1.5;
-  const dots = (() => { const N = 900, pp = new Float32Array(N * 3);
-    for(let i = 0; i < N; i++){ const y = 1 - 2 * (i + .5) / N, r = Math.sqrt(1 - y * y), th = 2.39996 * i; pp[3*i] = Math.cos(th) * r * R; pp[3*i+1] = y * R; pp[3*i+2] = Math.sin(th) * r * R; }
-    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
-    return new THREE.Points(pg, new THREE.PointsMaterial({ color: 0x6fb4ff, size: .045 })); })();
-  const earthMat = new THREE.MeshPhongMaterial({ color: 0x1d5f9f, shininess: 18, specular: new THREE.Color(0x335577) });
-  const earth = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 48), earthMat); g.add(earth); g.add(dots);
-  wxTexture('earth_atmos_2048.jpg', tex => { earthMat.map = tex; earthMat.color.set(0xffffff); earthMat.needsUpdate = true; dots.visible = false; });
-  wxTexture('earth_specular_2048.jpg', tex => { earthMat.specularMap = tex; earthMat.needsUpdate = true; });
-  wxTexture('earth_clouds_1024.png', tex => { c.cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(R * 1.012, 48, 40), new THREE.MeshPhongMaterial({ map: tex, transparent: true, opacity: .55, depthWrite: false })); g.add(c.cloudMesh); });
-  c.scene.children.forEach(o => { if(o.isAmbientLight) o.intensity = .8; if(o.isDirectionalLight){ o.color.set(0xffffff); o.intensity = 1.05; o.position.set(4, 2, 6); } if(o.isPointLight) o.intensity = 0; });
-  c.pin = new THREE.Group(); const pm = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 10), new THREE.MeshBasicMaterial({ color: 0xffb020 })); c.pin.add(pm);
-  c.pinHalo = hc3dHalo('rgba(255,176,32,.95)'); c.pinHalo.scale.set(.5, .5, 1); c.pin.add(c.pinHalo); g.add(c.pin);
-  c.scene.add(new THREE.Mesh(new THREE.SphereGeometry(R * 1.14, 48, 48), new THREE.ShaderMaterial({
-    vertexShader: 'varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'varying vec3 vN; void main(){ float i = pow(0.72 - dot(vN, vec3(0.0, 0.0, 1.0)), 3.0); gl_FragColor = vec4(0.3, 0.65, 1.0, 1.0) * i; }',
-    blending: THREE.AdditiveBlending, side: THREE.BackSide, transparent: true, depthWrite: false })));
-  c.wx = new THREE.Group(); c.scene.add(c.wx);
+  const sun = new THREE.Vector3(1, .3, .6).normalize();
+  const U = c.wxU = {
+    dayMap: { value: wxPlainTex([24, 64, 112]) }, nightMap: { value: wxPlainTex([0, 0, 0]) }, specMap: { value: wxPlainTex([255, 255, 255]) },
+    sunDir: { value: sun.clone() }
+  };
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(R, 96, 64), new THREE.ShaderMaterial({
+    uniforms: U,
+    vertexShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vP;
+      void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vec4 wp = modelMatrix * vec4(position, 1.0); vP = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }`,
+    fragmentShader: `uniform sampler2D dayMap; uniform sampler2D nightMap; uniform sampler2D specMap; uniform vec3 sunDir;
+      varying vec2 vUv; varying vec3 vN; varying vec3 vP;
+      void main(){
+        vec3 N = normalize(vN), V = normalize(cameraPosition - vP);
+        float NdL = dot(N, sunDir);
+        float dayMix = smoothstep(-0.10, 0.22, NdL);
+        vec3 day = texture2D(dayMap, vUv).rgb * (0.08 + 1.08 * max(NdL, 0.0));
+        vec3 lights = texture2D(nightMap, vUv).rgb;
+        vec3 night = vec3(0.010, 0.018, 0.035) + lights * vec3(1.0, 0.78, 0.48) * 1.6;
+        vec3 col = mix(night, day, dayMix);
+        float water = texture2D(specMap, vUv).r;
+        vec3 H = normalize(sunDir + V);
+        col += vec3(1.0, 0.93, 0.8) * pow(max(dot(N, H), 0.0), 55.0) * water * 0.75 * dayMix;
+        col += vec3(1.0, 0.42, 0.14) * 0.16 * max(0.0, 1.0 - abs(NdL) * 6.0);
+        float fres = pow(1.0 - max(dot(N, V), 0.0), 2.6);
+        col += vec3(0.32, 0.62, 1.0) * fres * (0.12 + 0.75 * smoothstep(-0.3, 0.6, NdL));
+        gl_FragColor = vec4(col, 1.0);
+      }`
+  }));
+  g.add(earth);
+  // nuvens: camada própria, iluminada pelo Sol
+  c.cloudU = { map: { value: wxPlainTex([0, 0, 0]) }, sunDir: U.sunDir, opacity: { value: .55 }, tint: { value: new THREE.Color(1, 1, 1) } };
+  c.cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(R * 1.012, 72, 48), new THREE.ShaderMaterial({
+    uniforms: c.cloudU, transparent: true, depthWrite: false,
+    vertexShader: `varying vec2 vUv; varying vec3 vN; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform sampler2D map; uniform vec3 sunDir; uniform float opacity; uniform vec3 tint; varying vec2 vUv; varying vec3 vN;
+      void main(){ float a = texture2D(map, vUv).r; float l = dot(normalize(vN), sunDir);
+        vec3 col = tint * (0.04 + 1.0 * max(l, 0.0)); gl_FragColor = vec4(col, a * opacity * (0.25 + 0.75 * smoothstep(-0.25, 0.2, l))); }`
+  }));
+  g.add(c.cloudMesh);
+  wxTexture('earth_atmos_2048.jpg', tex => { U.dayMap.value = tex; });
+  wxTexture('earth_lights_2048.png', tex => { U.nightMap.value = tex; });
+  wxTexture('earth_specular_2048.jpg', tex => { U.specMap.value = tex; });
+  wxTexture('earth_clouds_1024.png', tex => { c.cloudU.map.value = tex; });
+  // atmosfera: halo azul fino, mais forte do lado do Sol
+  c.atmoU = { sunDir: U.sunDir };
+  c.scene.add(new THREE.Mesh(new THREE.SphereGeometry(R * 1.075, 64, 48), new THREE.ShaderMaterial({
+    uniforms: c.atmoU, blending: THREE.AdditiveBlending, side: THREE.BackSide, transparent: true, depthWrite: false,
+    vertexShader: `varying vec3 vN; varying vec3 vNW; void main(){ vN = normalize(normalMatrix * normal); vNW = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform vec3 sunDir; varying vec3 vN; varying vec3 vNW;
+      void main(){ float i = pow(max(0.0, 0.66 - dot(vN, vec3(0.0, 0.0, 1.0))), 2.4); float s = 0.25 + 0.75 * smoothstep(-0.4, 0.5, dot(vNW, sunDir));
+        gl_FragColor = vec4(0.35, 0.65, 1.0, 1.0) * i * s * 1.8; }`
+  })));
+  // estrelas ao fundo
+  const sp = new Float32Array(240); for(let i = 0; i < 80; i++){ sp[3*i] = (Math.random() - .5) * 9; sp[3*i+1] = (Math.random() - .5) * 9; sp[3*i+2] = -3 - Math.random() * 2; }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  c.scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xcfe3ff, size: .035, transparent: true, opacity: .75 })));
+  // marcador da localização
+  c.pin = new THREE.Group(); const pm = new THREE.Mesh(new THREE.SphereGeometry(.045, 10, 10), new THREE.MeshBasicMaterial({ color: 0xffc040 })); c.pin.add(pm);
+  c.pinHalo = hc3dHalo('rgba(255,180,50,.9)'); c.pinHalo.scale.set(.35, .35, 1); c.pin.add(c.pinHalo); g.add(c.pin);
+  c.sunLocal = wxSunLocal(R); c.sunAt = Date.now();
+  const tmp = new THREE.Vector3();
   c.frameFn = (cc, dt) => {
     const k = Math.min(1, dt * 2.5); cc.ry += (cc.ty - cc.ry) * k; cc.rx += (cc.tx - cc.rx) * k;
-    cc.group.rotation.y = cc.ry + Math.sin(cc.t * .5) * .12; cc.group.rotation.x = cc.rx + Math.sin(cc.t * .4) * .05;
-    cc.camera.position.set(0, 0, 6.3); cc.camera.lookAt(0, 0, 0);
-    cc.pinHalo.scale.setScalar(.4 + .12 * Math.sin(cc.t * 4));
-    if(cc.cloudMesh) cc.cloudMesh.rotation.y += dt * .02;
-    const fx = cc.fx; if(!fx) return;
-    fx.clouds.forEach(sp => { const u = sp.userData; u.a += dt * u.sp; sp.position.set(Math.cos(u.a) * 1.95, u.y, Math.sin(u.a) * 1.95); });
-    if(fx.sun) fx.sun.scale.setScalar(2.6 + .25 * Math.sin(cc.t * 1.5));
-    if(fx.parts){ const pa = fx.parts.geometry.attributes.position, sp = fx.info.snow ? .5 : 3.2;
-      for(let i = 0; i < pa.count; i++){ let y = pa.getY(i) - dt * sp; if(y < -2) y = 2; pa.setY(i, y); if(fx.info.snow) pa.setX(i, pa.getX(i) + Math.sin(cc.t * 2 + i) * dt * .15); }
-      pa.needsUpdate = true; }
-    if(fx.flash){ if(fx.info.thunder && Math.random() < dt * .35) fx.flashV = 1; fx.flashV = Math.max(0, (fx.flashV || 0) - dt * 3); fx.flash.material.opacity = fx.flashV * .8; }
+    cc.group.rotation.y = cc.ry + Math.sin(cc.t * .25) * .18; cc.group.rotation.x = cc.rx + Math.sin(cc.t * .2) * .04;
+    cc.camera.position.set(0, 0, 5.2); cc.camera.lookAt(0, 0, 0);
+    if(Date.now() - cc.sunAt > 60000){ cc.sunLocal = wxSunLocal(R); cc.sunAt = Date.now(); }
+    cc.group.updateMatrixWorld();
+    U.sunDir.value.copy(tmp.copy(cc.sunLocal).transformDirection(cc.group.matrixWorld));
+    cc.pinHalo.scale.setScalar(.28 + .09 * Math.sin(cc.t * 3.5));
+    cc.cloudMesh.rotation.y += dt * .012;
   };
 }
 function wxScene(){
@@ -7859,22 +7909,11 @@ function wxScene(){
   c.active = true; if(!HC3D.raf) HC3D.raf = requestAnimationFrame(hc3dLoop);
   const ph = (90 - l.lat) * Math.PI / 180, th = (l.lon + 180) * Math.PI / 180, R = 1.5;
   const P = new THREE.Vector3(-R * Math.sin(ph) * Math.cos(th), R * Math.cos(ph), R * Math.sin(ph) * Math.sin(th));
-  c.pin.position.copy(P); c.ty = Math.atan2(-P.x, P.z); c.tx = Math.atan2(P.y, Math.sqrt(P.x * P.x + P.z * P.z));
-  while(c.wx.children.length){ const o = c.wx.children.pop(); if(o.geometry) o.geometry.dispose(); if(o.material){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); } }
-  const inf = wxInfo(d.weather_code, d.is_day), fx = c.fx = { info: inf.fx, clouds: [] };
-  if(inf.fx.sun){ fx.sun = hc3dHalo('rgba(255,214,102,.95)'); fx.sun.position.set(1.7, 1.4, -1); c.wx.add(fx.sun); }
-  if(inf.fx.night){ const sp = new Float32Array(150); for(let i = 0; i < 50; i++){ sp[3*i] = (Math.random() - .5) * 6; sp[3*i+1] = (Math.random() - .5) * 6; sp[3*i+2] = -1.5 - Math.random() * 2; }
-    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); c.wx.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: .05, transparent: true, opacity: .8 }))); }
-  const tex = wxCloudTex(), n = Math.round(inf.fx.clouds * 6), dark = inf.fx.rain || inf.fx.thunder;
-  for(let i = 0; i < n; i++){
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.clone(), transparent: true, opacity: .8, color: dark ? 0x8a99aa : 0xffffff, depthWrite: false })); sp.material.map.needsUpdate = true;
-    sp.scale.set(1.6 + Math.random() * .6, .8 + Math.random() * .3, 1); sp.userData = { a: Math.random() * 6.28, sp: .15 + Math.random() * .2, y: (Math.random() - .5) * 2.2 }; c.wx.add(sp); fx.clouds.push(sp);
-  }
-  const cnt = inf.fx.rain || inf.fx.snow;
-  if(cnt){ const pp = new Float32Array(cnt * 3); for(let i = 0; i < cnt; i++){ pp[3*i] = (Math.random() - .5) * 3.2; pp[3*i+1] = (Math.random() - .5) * 4; pp[3*i+2] = .4 + Math.random() * 1.6; }
-    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
-    fx.parts = new THREE.Points(pg, new THREE.PointsMaterial({ color: inf.fx.snow ? 0xffffff : 0x7ac8ff, size: inf.fx.snow ? .07 : .045, transparent: true, opacity: .85, depthWrite: false })); fx.parts.frustumCulled = false; c.wx.add(fx.parts); }
-  if(inf.fx.thunder){ fx.flash = hc3dHalo('rgba(220,235,255,1)'); fx.flash.scale.set(7, 7, 1); fx.flash.material.opacity = 0; c.wx.add(fx.flash); }
+  c.pin.position.copy(P.clone().multiplyScalar(1.01)); c.ty = Math.atan2(-P.x, P.z); c.tx = Math.atan2(P.y, Math.sqrt(P.x * P.x + P.z * P.z));
+  // o tempo atual muda só a camada de nuvens: mais densa e mais escura com chuva/trovoada
+  const inf = wxInfo(d.weather_code, d.is_day).fx, dark = inf.rain || inf.thunder;
+  c.cloudU.opacity.value = .22 + .63 * (inf.clouds || 0);
+  c.cloudU.tint.value.setRGB(dark ? .72 : 1, dark ? .76 : 1, dark ? .82 : 1);
 }
 (function wxInit(){
   function go(){
