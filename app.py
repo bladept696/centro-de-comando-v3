@@ -1609,6 +1609,9 @@ DEFAULT_POWER_CONFIG = {
         "notify_rental_ending": True,
         "notify_hashrate_drop": True,
         "notify_windows_toast": True,
+        "notify_health": True,
+        "notify_daily": False,
+        "daily_hour": 21,
     },
     "pools": {
         "btc_address": "",
@@ -4345,6 +4348,9 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 "notify_rental_ending": bool(body.get("notify_rental_ending", existing.get("notify_rental_ending", True))),
                 "notify_hashrate_drop": bool(body.get("notify_hashrate_drop", existing.get("notify_hashrate_drop", True))),
                 "notify_windows_toast": bool(body.get("notify_windows_toast", existing.get("notify_windows_toast", True))),
+                "notify_health": bool(body.get("notify_health", existing.get("notify_health", True))),
+                "notify_daily": bool(body.get("notify_daily", existing.get("notify_daily", False))),
+                "daily_hour": max(0, min(23, int(body.get("daily_hour", existing.get("daily_hour", 21)) or 0))) if str(body.get("daily_hour", existing.get("daily_hour", 21))) != "" else 21,
             }
 
             with POWER_CONFIG_LOCK:

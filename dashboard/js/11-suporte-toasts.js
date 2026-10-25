@@ -86,6 +86,7 @@ function celebrateBlockFound(machineName, diffVal) {
   if(!overlay || !layer) return;
 
   window._lastBlockShare = { machineName: machineName || 'Máquina', diff: Number(diffVal) || 0, date: new Date() };
+  try { if(typeof mcBlockFound === 'function') mcBlockFound(machineName); } catch(e) {}
 
   if(machineLabel) machineLabel.textContent = machineName ? `${machineName} — bloco minerado com sucesso!` : 'Bloco minerado com sucesso!';
 
