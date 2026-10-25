@@ -22,8 +22,7 @@
 <link rel="stylesheet" href="dashboard/css/graficos.css">
 <link rel="stylesheet" href="dashboard/css/widgets.css">
 <link rel="stylesheet" href="dashboard/css/visual-extra.css">
-<link rel="stylesheet" href="dashboard/css/escritorio.css">
-<link rel="stylesheet" href="dashboard/css/ambiente.css">
+<link rel="stylesheet" href="dashboard/css/cartoes.css">
 <!-- Firebase Realtime Database SDK (compat v9) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -131,48 +130,6 @@
     <span data-i18n="rodar_separadores">Rodar separadores</span>
   </label>
   <button class="kiosk-exit-btn" onclick="exitKioskMode()"><span data-i18n="sair_do_kiosk">Sair (Esc)</span></button>
-</div>
-
-<button class="ls-fab" id="lsFab" onclick="toggleLiveSharesPanel()" title="Live Shares">
-  ⚡<span class="ls-fab-badge" id="lsFabBadge">0</span>
-</button>
-<div class="ls-panel" id="lsPanel">
-  <div class="ls-panel-header">
-    <div class="ls-panel-title"><span class="ls-dot"></span><span data-i18n="live_shares">Live Shares</span></div>
-    <button class="ls-panel-close" onclick="toggleLiveSharesPanel(false)" aria-label="Fechar painel Live Shares">✕</button>
-  </div>
-  <div class="ls-stats-row">
-    <div class="ls-stat">
-      <div class="ls-stat-val green" id="lsStatAccepted">0</div>
-      <div class="ls-stat-label" data-i18n="aceites">Aceites</div>
-    </div>
-    <div class="ls-stat">
-      <div class="ls-stat-val red" id="lsStatRejected">0</div>
-      <div class="ls-stat-label" data-i18n="rejeitadas">Rejeitadas</div>
-    </div>
-    <div class="ls-stat">
-      <div class="ls-stat-val" id="lsStatRate">0</div>
-      <div class="ls-stat-label" data-i18n="por_minuto">/min</div>
-    </div>
-  </div>
-  <div class="ls-filter-row">
-    <select class="ls-filter-select" id="lsMachineFilter" onchange="onLiveSharesFilterChange(this.value)"></select>
-    <button class="ls-viewall-btn" onclick="openLiveSharesFullModal()" data-i18n="ver_tudo">Ver tudo</button>
-  </div>
-  <div class="ls-feed" id="lsFeed">
-    <div class="ls-feed-empty" data-i18n="ls_a_aguardar">A aguardar shares...</div>
-  </div>
-</div>
-
-<div class="ls-full-modal" id="lsFullModal" onclick="if(event.target===this) closeLiveSharesFullModal()">
-  <div class="ls-full-card">
-    <div class="ls-full-header">
-      <div class="ls-full-title" data-i18n="live_shares">Live Shares</div>
-      <select class="ls-filter-select" id="lsMachineFilterFull" style="max-width:150px;" onchange="onLiveSharesFilterChange(this.value)"></select>
-      <button class="ls-full-close" onclick="closeLiveSharesFullModal()" aria-label="Fechar Live Shares em ecrã completo">✕</button>
-    </div>
-    <div class="ls-full-list" id="lsFullList"></div>
-  </div>
 </div>
 
 <button class="bd-fab" id="bdFab" onclick="toggleBestDiffPanel()" title="Best Diff ao vivo">
@@ -540,6 +497,17 @@
           <div class="hint" style="margin-bottom:12px;"><span data-i18n="requer_o_servidor_local_nerdqaxe_server_">Requer o servidor local (`nerdqaxe_server.py`) a correr em localhost:8765.</span></div>
         </div>
 
+        <div class="panel mc-panel" data-layout-id="machine-cards">
+          <div class="panel-title"><span data-i18n="mc_title">🖥️ As suas máquinas</span><span id="mcCount" style="font-size:9px;color:var(--muted-2);">0 máquinas</span></div>
+          <div class="mc-toolbar" id="mcToolbar"></div>
+          <div class="mc-newfound mc-paused mc-lockbar" id="mcLockBar" hidden></div>
+          <div class="mc-newfound mc-paused" id="mcPaused" hidden></div>
+          <div class="mc-newfound" id="mcNew" hidden></div>
+          <div class="mc-board" id="mcBoard"></div>
+          <details class="mc-sched" id="mcSched"><summary><span data-i18n="mc_sc_title">⏰ Agendamentos</span> <b id="mcSchedN">0</b></summary><div id="mcSchedBody"></div></details>
+          <details class="mc-log"><summary><span data-i18n="mc_log_title">📋 Eventos de hoje</span> <b id="mcLogN">0</b></summary><ul id="mcLog"></ul></details>
+        </div>
+
         <div class="panel network-map-panel" data-layout-id="network-map">
           <div class="panel-title"><span>🌐 Mapa da Rede</span><span id="networkMapCount" style="font-size:9px;color:var(--muted-2);">0 dispositivos</span></div>
           <div class="network-map-toolbar">
@@ -548,20 +516,6 @@
           </div>
           <div class="network-map-wrap" id="networkMapWrap"><svg class="network-map-svg" id="networkMapSvg" aria-hidden="true"></svg><div class="network-map-nodes" id="networkMapNodes"></div></div>
           <div class="network-map-foot"><span id="networkMapFootLeft">Clique numa máquina para a selecionar.</span><span id="networkMapFootRight">—</span></div>
-        </div>
-
-        <div class="panel office-panel" data-layout-id="office">
-          <div class="panel-title"><span>🏢 Escritório</span><span id="officeCount" style="font-size:9px;color:var(--muted-2);">0 quartos</span></div>
-          <div class="office-lobby" id="officeLobby"></div>
-          <div class="office-floors" id="officeFloors" hidden></div>
-          <div class="office-stage" id="officeStage"><div id="officeSvgHost"></div>
-            <div class="office-modebar" id="officeModeBar"></div>
-            <div class="office-zoom"><button type="button" data-zoom="in" title="Aproximar (ou Ctrl + roda do rato)">＋</button><button type="button" data-zoom="out" title="Afastar">－</button><button type="button" data-zoom="reset" title="Ver tudo (ou duplo clique)">⤢</button></div>
-            <div class="office-tip" id="officeTip" hidden></div></div>
-          <div class="office-bottom">
-            <div class="office-detail" id="officeDetail"></div>
-            <div class="office-log"><div class="office-log-title">📋 Registo de avarias de hoje</div><ul id="officeLog"></ul></div>
-          </div>
         </div>
 
         <div class="charts" data-layout-id="main-charts">
@@ -1337,6 +1291,9 @@
           <label>Discord — Webhook URL
             <input type="text" id="alDiscordWebhook" placeholder="deixa em branco para manter" data-i18n-placeholder="ph_deixa_em_branco_para_manter" autocomplete="off">
           </label>
+          <label><span data-i18n="mc_al_webhook">Webhook / ntfy — endereço (Home Assistant, ntfy.sh, Slack...)</span>
+            <input type="text" id="alWebhook" placeholder="https://ntfy.sh/o-meu-topico" autocomplete="off">
+          </label>
           <label><span data-i18n="alertas_queda_hashrate">Queda de hashrate que dispara aviso (%)</span>
             <input type="number" id="alHashDropPct" min="5" max="90" value="30">
           </label>
@@ -1349,6 +1306,9 @@
           <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyRecord" checked style="width:auto;"> <span data-i18n="alertas_ev_recorde">Novo recorde de dificuldade</span></label>
           <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyRental" checked style="width:auto;"> <span data-i18n="alertas_ev_rental">Rental prestes a terminar</span></label>
           <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyDrop" checked style="width:auto;"> <span data-i18n="alertas_ev_queda">Queda súbita de hashrate</span></label>
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyHealth" checked style="width:auto;"> <span data-i18n="mc_al_health">Problemas de saúde (temperatura, rejeições, Wi-Fi, pool)</span></label>
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyBrowser" style="width:auto;" onchange="mcToggleBrowserNotify(this)"> <span data-i18n="mc_al_browser">Notificações do navegador (neste PC)</span></label>
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyDaily" style="width:auto;"> <span data-i18n="mc_al_daily">Resumo diário às</span> <select id="alDailyHour" style="width:auto;"><option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></label>
           <label id="alNotifyToastLabel" style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyToast" checked style="width:auto;"> <span data-i18n="alertas_ev_toast">Notificação nativa do Windows (toast)</span> <span id="alNotifyToastLock" style="display:none;" title="Indisponível neste PC">🔒</span></label>
         </div>
         <div class="hint" id="alertsToastHint" style="display:none; margin-top:6px;" data-i18n="alertas_toast_indisponivel">Notificações do Windows indisponíveis neste PC (falta o pacote `winotify` ou não estás no Windows) — os outros canais continuam a funcionar normalmente.</div>
@@ -1356,6 +1316,7 @@
         <div class="power-actions-row">
           <button class="power-save-btn" onclick="saveAlertsConfig()"><span data-i18n="guardar_alertas">💾 Guardar Alertas</span></button>
           <button class="ls-viewall-btn" onclick="testAlerts()"><span data-i18n="testar_alertas">🔔 Enviar Teste</span></button>
+          <button class="ls-viewall-btn" onclick="mcSendSummaryNow()" data-i18n="mc_al_send">📊 Enviar resumo agora</button>
         </div>
         <div class="power-live-error" id="alertsLiveError" style="display:none;"></div>
         <div class="power-live-error" id="alertsLiveOk" style="display:none; color:var(--green);"></div>
@@ -1545,8 +1506,13 @@
 <script src="dashboard/js/chat.js"></script>
 <script src="dashboard/js/noticias.js"></script>
 <script src="dashboard/js/donut3d.js"></script>
-<script src="dashboard/js/ambiente.js"></script>
-<script src="dashboard/js/escritorio-salas.js"></script>
-<script src="dashboard/js/escritorio.js"></script>
+<script src="dashboard/js/cartoes-i18n.js"></script>
+<script src="dashboard/js/cartoes.js"></script>
+<script src="dashboard/js/cartoes-extra.js"></script>
+<script src="dashboard/js/cartoes-ferramentas.js"></script>
+<script src="dashboard/js/cartoes-relatorios.js"></script>
+<script src="dashboard/js/cartoes-experiencias.js"></script>
+<script src="dashboard/js/cartoes-regras.js"></script>
+<script src="dashboard/js/rede-extra.js"></script>
 </body>
 </html>

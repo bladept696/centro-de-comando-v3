@@ -117,7 +117,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.0.1"
+APP_VERSION = "4.0.2"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -1609,6 +1609,10 @@ DEFAULT_POWER_CONFIG = {
         "notify_rental_ending": True,
         "notify_hashrate_drop": True,
         "notify_windows_toast": True,
+        "notify_health": True,
+        "notify_daily": False,
+        "daily_hour": 21,
+        "webhook_url": "",
     },
     "pools": {
         "btc_address": "",
@@ -2792,6 +2796,159 @@ def send_discord_alert(webhook_url, message):
         return True
 
 
+# --- diagnóstico do caminho: router, internet e DNS (para o mapa da rede) ---
+_netcheck_cache = {"ts": 0, "data": None}
+_netcheck_lock = threading.Lock()
+
+
+def _ping_ms(host, timeout_ms=1500):
+    """Tempo de resposta (ms) de um ping, ou None se não responder. Lê o 'tempo=12ms' em vários idiomas."""
+    try:
+        if os.name == 'nt':
+            cmd, flags = ['ping', '-n', '1', '-w', str(timeout_ms), host], getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+        else:
+            cmd, flags = ['ping', '-c', '1', '-W', str(max(1, timeout_ms // 1000)), host], 0
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_ms / 1000 + 2, creationflags=flags).stdout or ""
+        m = re.search(r'(?:time|tempo|tiempo|temps|durée|zeit)\s*[=<]\s*([\d.,]+)', out, re.I)
+        if m:
+            return float(m.group(1).replace(',', '.'))
+        return None
+    except Exception:
+        return None
+
+
+def _tcp_ms(host, port, timeout=2.0):
+    try:
+        t0 = time.time()
+        with socket.create_connection((host, port), timeout=timeout):
+            return (time.time() - t0) * 1000
+    except Exception:
+        return None
+
+
+def _local_gateway():
+    """O router costuma ser o endereço .1 da rede do PC."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip.rsplit('.', 1)[0] + '.1'
+    except Exception:
+        return None
+
+
+def netcheck(force=False):
+    with _netcheck_lock:
+        if not force and _netcheck_cache["data"] and time.time() - _netcheck_cache["ts"] < 15:
+            return _netcheck_cache["data"]
+    gw = _local_gateway()
+
+    def internet():
+        vals = [v for v in (_ping_ms("1.1.1.1"), _ping_ms("8.8.8.8")) if v is not None]
+        if vals:
+            return min(vals)
+        return _tcp_ms("1.1.1.1", 443)
+
+    def dns():
+        try:
+            t0 = time.time()
+            socket.getaddrinfo("one.one.one.one", 443)
+            return (time.time() - t0) * 1000
+        except Exception:
+            return None
+
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        f_gw = ex.submit(lambda: (_ping_ms(gw) if gw else None))
+        f_net, f_dns = ex.submit(internet), ex.submit(dns)
+        gw_ms, net_ms, dns_ms = f_gw.result(), f_net.result(), f_dns.result()
+    if gw and gw_ms is None:
+        gw_ms = _tcp_ms(gw, 80, 1.0) or _tcp_ms(gw, 443, 1.0)
+    data = {"gateway": {"ip": gw, "ms": gw_ms}, "internet": {"ms": net_ms}, "dns": {"ms": dns_ms}, "ts": time.time()}
+    with _netcheck_lock:
+        _netcheck_cache.update({"ts": time.time(), "data": data})
+    return data
+
+
+_plug_lock = threading.Lock()
+_plug_busy = set()
+
+
+def _plug_url_ok(url):
+    """Só aceita http/https para um aparelho da rede local (IP privado ou nome sem domínio público)."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+        if parts.scheme not in ("http", "https") or not parts.hostname:
+            return False
+        host = parts.hostname
+        try:
+            ip = ipaddress.ip_address(host)
+        except ValueError:
+            ip = ipaddress.ip_address(socket.gethostbyname(host))
+        return ip.is_private or ip.is_loopback or ip.is_link_local
+    except Exception:
+        return False
+
+
+def plug_cycle(dev_ip):
+    """Desliga a tomada, espera e volta a ligar. Devolve (ok, mensagem)."""
+    with POWER_CONFIG_LOCK:
+        dev = next((d for d in power_config.get("devices", []) if d.get("ip") == dev_ip), None)
+    if not dev:
+        return False, "máquina não encontrada"
+    off_url, on_url = str(dev.get("plugOff") or ""), str(dev.get("plugOn") or "")
+    wait = max(3, min(30, int(dev.get("plugWait") or 8)))
+    if not off_url or not on_url:
+        return False, "a tomada não está configurada"
+    if not (_plug_url_ok(off_url) and _plug_url_ok(on_url)):
+        return False, "os endereços da tomada têm de ser da rede local"
+    with _plug_lock:
+        if dev_ip in _plug_busy:
+            return False, "já há um ciclo de energia em curso"
+        _plug_busy.add(dev_ip)
+    try:
+        def call(url):
+            req = urllib.request.Request(url, headers={'User-Agent': 'HashCommander-Plug'})
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                return resp.status
+        try:
+            call(off_url)
+        except Exception as e:
+            return False, f"não foi possível desligar a tomada ({e})"
+        time.sleep(wait)
+        last = None
+        for _ in range(3):
+            try:
+                call(on_url)
+                return True, f"tomada desligada {wait} s e voltou a ligar"
+            except Exception as e:
+                last = e
+                time.sleep(2)
+        return False, f"A TOMADA FICOU DESLIGADA: não foi possível voltar a ligá-la ({last}). Ligue-a à mão."
+    finally:
+        with _plug_lock:
+            _plug_busy.discard(dev_ip)
+
+
+def send_custom_webhook(url, message):
+    """Envia o alerta para um endereço à escolha. Para o ntfy manda texto simples; para os outros
+    manda JSON com os campos mais comuns (message, text, content), que serve ao Home Assistant, Slack e Discord."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        raise ValueError("endereço inválido")
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; CentroDeComando/1.0)'}
+    if "ntfy" in parts.netloc.lower():
+        payload = message.encode('utf-8')
+        headers.update({'Title': 'Centro de Comando', 'Content-Type': 'text/plain; charset=utf-8'})
+    else:
+        payload = json.dumps({"message": message, "text": message, "content": message, "source": "hash-commander"}).encode('utf-8')
+        headers['Content-Type'] = 'application/json'
+    req = urllib.request.Request(url, data=payload, method='POST', headers=headers)
+    with _urlopen_https(req, timeout=8) as resp:
+        resp.read()
+        return True
+
+
 def send_windows_toast(title, message):
     if not WINDOWS_TOAST_AVAILABLE:
         return
@@ -2828,6 +2985,13 @@ def broadcast_alert(message, title="🔔 Centro de Comando"):
             send_discord_alert(webhook_url, message)
         except Exception as e:
             errors.append(f"Discord: {e}")
+
+    custom = alerts_cfg.get("webhook_url", "").strip()
+    if custom:
+        try:
+            send_custom_webhook(custom, message)
+        except Exception as e:
+            errors.append(f"Webhook: {e}")
 
     if alerts_cfg.get("notify_windows_toast", True):
         send_windows_toast(title, message)
@@ -3720,6 +3884,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": str(e), "subnet": subnet, "devices": []}).encode('utf-8'))
                 return
 
+        if path == '/api/netcheck':
+            data = netcheck(force=query_params.get('force', ['0'])[0] == '1')
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode('utf-8'))
+            return
+
         if path == '/api/btc-news':
             force = query_params.get('force', ['0'])[0] == '1'
             news = fetch_btc_news(force=force)
@@ -4186,12 +4359,49 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 ip = str(d.get("ip") or "").strip()
                 if not dev_id or not ip:
                     continue
-                clean.append({
+                item = {
                     "id": dev_id,
                     "name": name or ip,
                     "ip": ip,
                     "poolAuto": bool(d.get("poolAuto", False)),
-                })
+                }
+                group = str(d.get("group") or "").strip()[:24]
+                note = str(d.get("note") or "").strip()[:300]
+                if group:
+                    item["group"] = group
+                if note:
+                    item["note"] = note
+                if d.get("pin"):
+                    item["pin"] = True
+                try:
+                    maint = int(d.get("maintMonths") or 0)
+                except (TypeError, ValueError):
+                    maint = 0
+                if 1 <= maint <= 60:
+                    item["maintMonths"] = maint
+                for key in ("plugOff", "plugOn"):
+                    u = str(d.get(key) or "").strip()[:300]
+                    if u.lower().startswith(("http://", "https://")):
+                        item[key] = u
+                try:
+                    pw = int(d.get("plugWait") or 0)
+                except (TypeError, ValueError):
+                    pw = 0
+                if 3 <= pw <= 30:
+                    item["plugWait"] = pw
+                try:
+                    expected = float(d.get("expected") or 0)
+                except (TypeError, ValueError):
+                    expected = 0
+                if 0 < expected < 100000:
+                    item["expected"] = round(expected, 3)
+                try:
+                    mute = int(d.get("mute") or 0)
+                except (TypeError, ValueError):
+                    mute = 0
+                if mute > time.time() * 1000:
+                    item["mute"] = mute
+                clean.append(item)
 
             with POWER_CONFIG_LOCK:
                 new_cfg = copy.deepcopy(power_config)
@@ -4326,6 +4536,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
             return
 
+        if path == '/api/plug-cycle':
+            ok, msg = plug_cycle(str(body.get("ip") or "").strip())
+            self.send_response(200 if ok else 400)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": ok, "message": msg}, ensure_ascii=False).encode('utf-8'))
+            return
+
         if path == '/api/alerts/config':
             with POWER_CONFIG_LOCK:
                 existing = copy.deepcopy(power_config.get("alerts", {}) or {})
@@ -4339,12 +4558,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 "telegram_bot_token": keep_or_update("telegram_bot_token"),
                 "telegram_chat_id": str(body.get("telegram_chat_id", existing.get("telegram_chat_id", ""))).strip(),
                 "discord_webhook_url": keep_or_update("discord_webhook_url"),
+                "webhook_url": keep_or_update("webhook_url"),
                 "hashrate_drop_pct": int(body.get("hashrate_drop_pct", existing.get("hashrate_drop_pct", 30)) or 30),
                 "notify_offline": bool(body.get("notify_offline", existing.get("notify_offline", True))),
                 "notify_record": bool(body.get("notify_record", existing.get("notify_record", True))),
                 "notify_rental_ending": bool(body.get("notify_rental_ending", existing.get("notify_rental_ending", True))),
                 "notify_hashrate_drop": bool(body.get("notify_hashrate_drop", existing.get("notify_hashrate_drop", True))),
                 "notify_windows_toast": bool(body.get("notify_windows_toast", existing.get("notify_windows_toast", True))),
+                "notify_health": bool(body.get("notify_health", existing.get("notify_health", True))),
+                "notify_daily": bool(body.get("notify_daily", existing.get("notify_daily", False))),
+                "daily_hour": max(0, min(23, int(body.get("daily_hour", existing.get("daily_hour", 21)) or 0))) if str(body.get("daily_hour", existing.get("daily_hour", 21))) != "" else 21,
             }
 
             with POWER_CONFIG_LOCK:
