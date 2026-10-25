@@ -330,3 +330,14 @@
   .mc-menu-row span{flex:1;} .mc-menu-row button{padding:5px 9px !important;border:1px solid var(--line-strong) !important;}
   .mc-newfound.mc-paused{background:color-mix(in srgb,var(--amber) 11%,var(--panel));border-color:var(--amber);}
   .mc-newfound.mc-paused button:hover{border-color:var(--amber);color:var(--amber);}
+
+  /* ---------- Meta, bloqueio ---------- */
+  .mc-goalbar{height:6px;border-radius:99px;background:var(--deep);border:1px solid var(--line);overflow:hidden;margin:3px 0 4px;}
+  .mc-goalbar i{display:block;height:100%;width:0;background:var(--green);border-radius:99px;transition:width .6s ease,background .3s;} .mc-goalbar i.warn{background:var(--amber);} .mc-goalbar i.bad{background:var(--red);}
+  .mc-tile small em{font-style:normal;}
+  .mc-tile input#mcGoal{width:58px;}
+  .mc-newfound.mc-lockbar{background:color-mix(in srgb,var(--cyan) 10%,var(--panel));border-color:var(--cyan);} .mc-newfound.mc-lockbar button:hover{border-color:var(--cyan);color:var(--cyan);}
+  body.mc-locked .mc-actions [data-a="restart"],body.mc-locked .mc-actions [data-a="remove"],body.mc-locked .mc-actions [data-a="eco"],body.mc-locked .mc-actions [data-a="turbo"],body.mc-locked .mc-actions [data-a="plug"],
+  body.mc-locked .mc-tact [data-a="restart"],body.mc-locked .mc-tact [data-a="remove"],body.mc-locked .mc-star,body.mc-locked .mc-pick,body.mc-locked #mcBulk{display:none !important;}
+  body.mc-locked .mc-more .mc-edit,body.mc-locked .mc-more .mc-grp{opacity:.55;pointer-events:none;}
+  body.mc-locked .mc-table input[type=checkbox]{display:none;}

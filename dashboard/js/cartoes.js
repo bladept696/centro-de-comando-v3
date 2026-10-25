@@ -123,6 +123,11 @@ function mcAlertItems(dev, r, st, trend){
     const sv = mcSeries(dev.id).slice(-5);
     if(sv.length >= 3){ const pct = sv.reduce((a, b) => a + b, 0) / sv.length / (dev.expected * 1000) * 100; if(pct < 85) add('warn', mct('mc_a_below', pct.toFixed(0)), 'below'); }
   }
+  if(dev.maintMonths > 0 && typeof getLastMaintenanceTime === 'function'){
+    const lm = getLastMaintenanceTime(dev.id);
+    if(!lm) add('info', t('mc_a_maint_none'), 'maintnone');
+    else if(Date.now() - lm > dev.maintMonths * 30 * 86400e3) add('warn', mct('mc_a_maint', mcAgo(Date.now() - lm - dev.maintMonths * 30 * 86400e3)), 'maint');
+  }
   if(dev.mute > Date.now()) add('info', mct('mc_a_muted', new Date(dev.mute).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' })), 'mute');
   if(r.temp >= mc.th.tempHot) add('bad', mct('mc_a_tempcrit', Number(r.temp).toFixed(0)), 'temp');
   else if(r.temp >= mc.th.tempWarm) add('warn', mct('mc_a_warm', Number(r.temp).toFixed(0)), 'temp');
@@ -296,6 +301,7 @@ function mcUpdateCard(el, dev, r, st, i){
         '<div class="mc-edit"><label class="mc-grp"><span>' + t('mc_e_name') + '</span><input type="text" data-a="name" maxlength="40"></label><label class="mc-grp"><span>IP</span><input type="text" data-a="ip" maxlength="60" inputmode="decimal"></label></div>' +
         '<label class="mc-grp"><span>' + t('mc_e_expected') + '</span><input type="number" step="0.1" min="0" data-a="expected" placeholder="TH/s"></label>' +
         '<label class="mc-grp"><span>' + t('mc_e_mute') + '</span><select data-a="mute"></select></label>' +
+        '<label class="mc-grp"><span>' + t('mc_e_maint') + '</span><input type="number" min="0" max="60" step="1" data-a="maintMonths" placeholder="6"></label>' +
         '<label class="mc-grp"><span>' + t('mc_e_plugoff') + '</span><input type="text" data-a="plugOff" maxlength="300" placeholder="http://192.168.1.60/relay/0?turn=off"></label>' +
         '<label class="mc-grp"><span>' + t('mc_e_plugon') + '</span><input type="text" data-a="plugOn" maxlength="300" placeholder="http://192.168.1.60/relay/0?turn=on"></label>' +
         '<label class="mc-grp"><span>' + t('mc_e_group') + '</span><input type="text" list="mcGroupList" data-a="group" placeholder="' + t('mc_e_nogroup') + '" maxlength="24"></label>' +
@@ -310,7 +316,7 @@ function mcUpdateCard(el, dev, r, st, i){
     const muted = dev.mute > Date.now(), mh = (muted ? '<option value="cur" selected>' + mct('mc_a_muted', new Date(dev.mute).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' })) + '</option>' : '') +
       '<option value="0"' + (muted ? '' : ' selected') + '>' + t(muted ? 'mc_mute_off' : 'mc_mute_0') + '</option><option value="60">' + t('mc_mute_1') + '</option><option value="240">' + t('mc_mute_4') + '</option><option value="1440">' + t('mc_mute_24') + '</option>';
     if(document.activeElement !== ms && ms.dataset.s !== mh){ ms.dataset.s = mh; ms.innerHTML = mh; }
-    [['group', dev.group], ['name', dev.name], ['ip', dev.ip], ['note', dev.note], ['expected', dev.expected], ['plugOff', dev.plugOff], ['plugOn', dev.plugOn]].forEach(([k, v]) => {
+    [['group', dev.group], ['name', dev.name], ['ip', dev.ip], ['note', dev.note], ['expected', dev.expected], ['plugOff', dev.plugOff], ['plugOn', dev.plugOn], ['maintMonths', dev.maintMonths]].forEach(([k, v]) => {
       const inp = more.querySelector('[data-a="' + k + '"]');
       if(inp && document.activeElement !== inp) inp.value = v || '';
     });
@@ -467,6 +473,7 @@ function mcRenderBulk(){
   if(bar.dataset.s !== html){ bar.dataset.s = html; bar.innerHTML = html; }
 }
 async function mcBulkRun(kind){
+  if(mc.locked && kind !== 'clear' && kind !== 'all' && kind !== 'compare') return;
   const devs = (devices || []).filter(d => mc.picked.has(d.id));
   if(!devs.length) return;
   if(kind === 'clear'){ mc.picked.clear(); renderMachineCards(); return; }
@@ -646,7 +653,8 @@ function renderMachineCards(){
     const label = dev.name || dev.ip;
     if(!a){ if(e.target.closest('.mc-pick, .mc-grp, .mc-edit, .mc-hist')) return; if(selectedId !== dev.id){ selectedId = dev.id; renderAll(); } return; }
     const act = a.dataset.a;
-    if(['group', 'name', 'ip', 'note', 'expected', 'mute', 'plugOff', 'plugOn'].includes(act)) return;
+    if(['group', 'name', 'ip', 'note', 'expected', 'mute', 'plugOff', 'plugOn', 'maintMonths'].includes(act)) return;
+    if(mc.locked && ['remove', 'restart', 'eco', 'turbo', 'plug', 'pin', 'pick'].includes(act)) return;
     e.stopPropagation();
     if(act === 'pin'){ if(dev.pin) delete dev.pin; else dev.pin = true; saveDevices(); renderMachineCards(); return; }
     if(act === 'copyip'){
@@ -680,7 +688,8 @@ function renderMachineCards(){
   });
   // nome, IP, grupo e nota guardam-se ao sair do campo ou com Enter
   if(board) board.addEventListener('change', e => {
-    const inp = e.target.closest('[data-a="group"],[data-a="name"],[data-a="ip"],[data-a="note"],[data-a="expected"],[data-a="mute"],[data-a="plugOff"],[data-a="plugOn"]');
+    const inp = e.target.closest('[data-a="group"],[data-a="name"],[data-a="ip"],[data-a="note"],[data-a="expected"],[data-a="mute"],[data-a="plugOff"],[data-a="plugOn"],[data-a="maintMonths"]');
+    if(mc.locked){ if(inp) mc.lockedEdit = true; return; }
     const host = inp && inp.closest('[data-id]');
     const dev = host && find(host.dataset.id);
     if(!dev) return;
@@ -692,6 +701,7 @@ function renderMachineCards(){
       else if(/^https?:\/\/\S+$/i.test(v)) dev[k] = v.slice(0, 300);
       else { inp.value = dev[k] || ''; setQuickActionStatus(t('mc_plug_badurl')); return; }
     }
+    else if(k === 'maintMonths'){ const x = parseInt(v, 10); if(x > 0 && x <= 60) dev.maintMonths = x; else delete dev.maintMonths; }
     else if(k === 'expected'){ const x = parseFloat(v.replace(',', '.')); if(x > 0) dev.expected = Math.round(x * 1000) / 1000; else delete dev.expected; }
     else if(k === 'mute'){ const m = parseInt(inp.value, 10); if(m > 0) dev.mute = Date.now() + m * 60000; else if(inp.value === '0') delete dev.mute; else return; }
     else if(k === 'name'){ if(!v){ inp.value = dev.name; return; } dev.name = v.slice(0, 40); }

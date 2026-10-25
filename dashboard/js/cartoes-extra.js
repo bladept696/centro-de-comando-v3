@@ -110,6 +110,8 @@ function mcBlockFound(name){
 function mcPrice(){ try { const v = parseFloat(localStorage.getItem(MC_PRICE_KEY)); return isFinite(v) && v > 0 ? v : 0; } catch(e) { return 0; } }
 // tarifa bi-horária (opcional): preço no vazio e horas do vazio; o preço usado nas contas é a média ponderada pelas horas
 const MC_TARIFF_KEY = 'nerdqaxe:tariff';
+const MC_GOAL_KEY = 'nerdqaxe:goal_ths';
+function mcGoal(){ try { const v = parseFloat(localStorage.getItem(MC_GOAL_KEY)); return isFinite(v) && v > 0 ? v : 0; } catch(e) { return 0; } }
 function mcTariff(){ try { const o = JSON.parse(localStorage.getItem(MC_TARIFF_KEY) || '{}'); return { off: Number(o.off) > 0 ? Number(o.off) : 0, from: Number.isInteger(o.from) ? o.from : 22, to: Number.isInteger(o.to) ? o.to : 8 }; } catch(e) { return { off: 0, from: 22, to: 8 }; } }
 function mcEffPrice(){
   const full = mcPrice(), tf = mcTariff();
@@ -179,7 +181,10 @@ function mcRenderSummary(list){
       '<div class="mc-tile"><span>' + t('mc_s_energy') + '</span><b data-f="kwh">—</b><small><label>€/kWh <input type="number" step="0.01" min="0" id="mcPrice" placeholder="0.20"></label> <i data-f="cost"></i></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_profit') + '</span><b data-f="profit">—</b><small data-f="profitS"></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_chance') + '</span><b data-f="chance">—</b><small data-f="chanceS"></small></div>' +
+      '<div class="mc-tile"><span>' + t('mc_s_goal') + '</span><b data-f="goal">—</b><div class="mc-goalbar"><i data-f="goalB"></i></div><small><label>TH/s <input type="number" step="0.1" min="0" id="mcGoal" placeholder="10"></label> <em data-f="goalS"></em></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_events') + '</span><b data-f="ev">—</b><small data-f="evS"></small></div>';
+    const gi = $('mcGoal'); gi.value = mcGoal() || '';
+    gi.addEventListener('input', () => { try { localStorage.setItem(MC_GOAL_KEY, gi.value); } catch(e) {} mcRenderSummary(devices || []); });
     const inp = $('mcPrice'); inp.value = mcPrice() || '';
     inp.addEventListener('input', () => { try { localStorage.setItem(MC_PRICE_KEY, inp.value); } catch(e) {} mcRenderSummary(devices || []); });
   }
@@ -199,6 +204,9 @@ function mcRenderSummary(list){
     set('profitS', eco.hasEur ? (mcEffPrice() ? mct('mc_s_revenue', eco.revenue.toFixed(2)) : t('mc_s_noprice')) : t('mc_s_nodata'));
     set('chance', mcBlockText(eco)); set('chanceS', eco.pYear >= 0.01 ? t('mc_s_peryear') : mct('mc_s_peryearpct', (eco.pYear * 100).toFixed(4)));
   }
+  const goal = mcGoal(), pct = goal ? st.nowHash / (goal * 1000) * 100 : 0, gb = box.querySelector('[data-f="goalB"]');
+  set('goal', goal ? pct.toFixed(0) + '%' : '—'); set('goalS', goal ? (pct >= 100 ? '✓' : mct('mc_s_goal_s', mcFmtHash(Math.max(0, goal * 1000 - st.nowHash)))) : t('mc_s_goal_none'));
+  if(gb){ gb.style.width = Math.min(100, pct).toFixed(0) + '%'; gb.className = pct >= 100 ? '' : pct >= 80 ? 'warn' : 'bad'; }
   set('ev', String(st.events)); set('evS', st.events ? t('mc_s_seelog') : t('mc_s_calm'));
 }
 
@@ -422,6 +430,7 @@ function mcNetWatch(list, states){
 }
 
 function mcExtraRender(list, states){
+  if(typeof mcLockRender === 'function') mcLockRender();
   mcPausedRender();
   mcAutoPlug(list);
   mcNetWatch(list, states);

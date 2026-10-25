@@ -4290,6 +4290,12 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     item["note"] = note
                 if d.get("pin"):
                     item["pin"] = True
+                try:
+                    maint = int(d.get("maintMonths") or 0)
+                except (TypeError, ValueError):
+                    maint = 0
+                if 1 <= maint <= 60:
+                    item["maintMonths"] = maint
                 for key in ("plugOff", "plugOn"):
                     u = str(d.get(key) or "").strip()[:300]
                     if u.lower().startswith(("http://", "https://")):
