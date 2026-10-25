@@ -341,3 +341,46 @@
   body.mc-locked .mc-tact [data-a="restart"],body.mc-locked .mc-tact [data-a="remove"],body.mc-locked .mc-star,body.mc-locked .mc-pick,body.mc-locked #mcBulk{display:none !important;}
   body.mc-locked .mc-more .mc-edit,body.mc-locked .mc-more .mc-grp{opacity:.55;pointer-events:none;}
   body.mc-locked .mc-table input[type=checkbox]{display:none;}
+
+  /* ---------- Experiências: ventoinha, arco, pulso, onda, mapa de calor e planta ---------- */
+  .mc-fanico,.mc-arc,.mc-ecg{display:none;}
+  /* ventoinha que gira */
+  .mc-xp-fan .mc-fanico{display:inline-block;width:13px;height:13px;margin-right:5px;vertical-align:-2px;fill:var(--cyan);}
+  .mc-xp-fan .mc-fanico .blades{transform-origin:12px 12px;animation:mcSpin var(--fan-dur,0s) linear infinite;}
+  .mc-xp-fan .mc-meter-fan.stopped .mc-fanico{fill:var(--muted-2);} .mc-xp-fan .mc-meter-fan.stopped .blades{animation:none;}
+  @keyframes mcSpin{to{transform:rotate(360deg);}}
+  /* temperatura em arco */
+  .mc-xp-arc .mc-meter-temp .mc-bar{display:none;}
+  .mc-xp-arc .mc-arc{display:block;width:76px;height:38px;margin:2px auto -2px;overflow:visible;}
+  .mc-arc path{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:100;} .mc-arc .bg{stroke:var(--deep);stroke-dashoffset:0;}
+  .mc-arc .fg{stroke:var(--green);stroke-dashoffset:100;transition:stroke-dashoffset .8s cubic-bezier(.2,.8,.2,1),stroke .4s;filter:drop-shadow(0 0 3px currentColor);}
+  .mc-arc .fg.warn{stroke:var(--amber);} .mc-arc .fg.bad{stroke:var(--red);}
+  .mc-xp-arc .mc-meter-temp.near .mc-arc{animation:mcShake .35s linear infinite;} @keyframes mcShake{25%{transform:translateX(-1.2px);}75%{transform:translateX(1.2px);}}
+  /* linha de pulso */
+  .mc-xp-ecg .mc-ecg{display:block;height:16px;overflow:hidden;margin:-2px 0 -2px 4px;}
+  .mc-ecg-run{width:200%;height:100%;animation:mcEcg var(--ecg-dur,3s) linear infinite;}
+  .mc-ecg svg{width:100%;height:100%;display:block;} .mc-ecg path{fill:none;stroke:var(--mc-c,var(--green));stroke-width:1.4;vector-effect:non-scaling-stroke;stroke-linejoin:round;filter:drop-shadow(0 0 2px var(--mc-c,var(--green)));}
+  .mc-ecg.flat .mc-ecg-run{animation:none;} .mc-ecg.flat path{opacity:.3;d:path('M0 10H400');}
+  @keyframes mcEcg{to{transform:translateX(-50%);}}
+  /* onda de cor na mudança de estado */
+  .mc-wavefx{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;background:radial-gradient(circle,var(--wc,var(--green)) 0%,transparent 62%) 14% 22%/0 0 no-repeat;}
+  .mc-xp-wave .mc-wavefx.go{animation:mcWave 1.3s ease-out;}
+  @keyframes mcWave{0%{opacity:.85;background-size:0 0;}100%{opacity:0;background-size:420% 420%;}}
+  /* mapa de calor */
+  .mc-heat-bar,.mc-plan-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;font-size:11px;color:var(--muted);}
+  .mc-heat-bar div{display:flex;gap:4px;} .mc-heat-bar button,.mc-plan-bar button{font:inherit;font-size:11px;font-weight:700;color:var(--muted);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:4px 10px;cursor:pointer;}
+  .mc-heat-bar button.on{color:var(--cyan);border-color:var(--cyan);} .mc-plan-bar button:hover{color:var(--cyan);border-color:var(--cyan);}
+  .mc-heat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;}
+  .mc-hcell{display:flex;flex-direction:column;justify-content:space-between;gap:4px;min-height:74px;padding:9px 10px;border-radius:10px;cursor:pointer;color:#fff;
+    background:linear-gradient(160deg,var(--hc),color-mix(in srgb,var(--hc) 62%,#000));box-shadow:inset 0 1px 0 #ffffff33,0 6px 14px -8px #000;transition:transform .2s,box-shadow .2s;}
+  .mc-hcell:hover{transform:translateY(-2px) scale(1.03);} .mc-hcell.is-sel{outline:2px solid var(--cyan);outline-offset:2px;}
+  .mc-hcell b{font-size:12px;text-shadow:0 1px 2px #0008;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .mc-hcell span{font-size:15px;font-weight:700;text-shadow:0 1px 2px #0008;font-variant-numeric:tabular-nums;}
+  .mc-heat-legend{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:10px;color:var(--muted-2);} .mc-heat-legend i{flex:1;max-width:200px;height:6px;border-radius:99px;background:linear-gradient(90deg,hsl(140,72%,46%),hsl(70,72%,42%),hsl(0,72%,38%));order:1;} .mc-heat-legend small:first-of-type{order:0;} .mc-heat-legend small:last-of-type{order:2;}
+  /* planta */
+  .mc-plan-area{position:relative;height:clamp(300px,52vh,520px);border-radius:12px;border:1px solid var(--line);
+    background:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px),radial-gradient(circle at 50% 40%,var(--glow-1),transparent 70%);background-size:36px 36px,36px 36px,auto;overflow:hidden;}
+  .mc-ptile{position:absolute;display:flex;align-items:center;gap:8px;min-width:132px;padding:8px 11px;border-radius:10px;cursor:grab;user-select:none;touch-action:none;
+    background:linear-gradient(160deg,var(--panel-2),var(--deep));border:1px solid var(--line-strong);border-left:4px solid var(--mc-c);box-shadow:0 8px 18px -10px #000;transition:box-shadow .2s;}
+  .mc-ptile:hover{box-shadow:0 10px 22px -8px #000,0 0 14px -4px var(--mc-c);} .mc-ptile.dragging{cursor:grabbing;opacity:.9;z-index:5;} .mc-ptile.is-sel{outline:2px solid var(--cyan);}
+  .mc-ptile b{display:block;font-size:12px;color:var(--text);} .mc-ptile small{display:block;font-size:10.5px;color:var(--muted);}
+  @media (prefers-reduced-motion: reduce){.mc-ecg-run,.mc-fanico .blades,.mc-wavefx{animation:none !important;}}

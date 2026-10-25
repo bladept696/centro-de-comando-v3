@@ -17,7 +17,7 @@ function mcToggleMenu(){
   const m = document.createElement('div');
   m.id = 'mcMenu'; m.className = 'mc-menu';
   m.innerHTML = '<button type="button" data-m="export">' + t('mc_m_export') + '</button><button type="button" data-m="import">' + t('mc_m_import') + '</button>' +
-    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button><div class="mc-menu-row"><span>' + t('mc_m_pause') + '</span><button type="button" data-m="pause60">1 h</button><button type="button" data-m="pause240">4 h</button><button type="button" data-m="pause720">12 h</button></div><button type="button" data-m="tariff">' + t('mc_m_tariff') + '</button><button type="button" data-m="limits">' + t('mc_m_limits') + '</button><button type="button" data-m="lock">' + t(mc.locked ? 'mc_m_unlock' : 'mc_m_lock') + '</button><button type="button" data-m="report">' + t('mc_m_report') + '</button><button type="button" data-m="help">' + t('mc_m_help') + '</button>';
+    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button><div class="mc-menu-row"><span>' + t('mc_m_pause') + '</span><button type="button" data-m="pause60">1 h</button><button type="button" data-m="pause240">4 h</button><button type="button" data-m="pause720">12 h</button></div><button type="button" data-m="xp">' + t('mc_m_xp') + '</button><button type="button" data-m="tariff">' + t('mc_m_tariff') + '</button><button type="button" data-m="limits">' + t('mc_m_limits') + '</button><button type="button" data-m="lock">' + t(mc.locked ? 'mc_m_unlock' : 'mc_m_lock') + '</button><button type="button" data-m="report">' + t('mc_m_report') + '</button><button type="button" data-m="help">' + t('mc_m_help') + '</button>';
   if(mc.locked) m.querySelectorAll('[data-m]').forEach(b => { if(!['export', 'report', 'help', 'lock'].includes(b.dataset.m)) b.remove(); });
   m.querySelectorAll('.mc-menu-row').forEach(r => { if(mc.locked) r.remove(); });
   const pr = panel.getBoundingClientRect(), br = btn.getBoundingClientRect();
@@ -35,6 +35,7 @@ document.addEventListener('click', e => {
   else if(k === 'import') mcBackupPick();
   else if(k === 'scan'){ mc.prefs.autoScan = !mc.prefs.autoScan; mcSavePrefs(); if(mc.prefs.autoScan){ setQuickActionStatus(t('mc_sc_scanning')); mcScanNow(true); } else { mc.found = []; mcNewRender(); } }
   else if(k.startsWith('pause')){ mcPauseAlerts(Number(k.slice(5))); }
+  else if(k === 'xp'){ if(typeof mcXpOpen === 'function') mcXpOpen(); }
   else if(k === 'tariff'){ if(typeof mcTariffOpen === 'function') mcTariffOpen(); }
   else if(k === 'limits'){ if(typeof mcLimitsOpen === 'function') mcLimitsOpen(); }
   else if(k === 'lock'){ mcLockToggle(); }
