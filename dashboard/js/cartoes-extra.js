@@ -79,6 +79,15 @@ function mcBlockFound(name){
 
 // ---- 3. resumo do dia (últimas 24 h, com a comparação com ontem) ----
 function mcPrice(){ try { const v = parseFloat(localStorage.getItem(MC_PRICE_KEY)); return isFinite(v) && v > 0 ? v : 0; } catch(e) { return 0; } }
+// tarifa bi-horária (opcional): preço no vazio e horas do vazio; o preço usado nas contas é a média ponderada pelas horas
+const MC_TARIFF_KEY = 'nerdqaxe:tariff';
+function mcTariff(){ try { const o = JSON.parse(localStorage.getItem(MC_TARIFF_KEY) || '{}'); return { off: Number(o.off) > 0 ? Number(o.off) : 0, from: Number.isInteger(o.from) ? o.from : 22, to: Number.isInteger(o.to) ? o.to : 8 }; } catch(e) { return { off: 0, from: 22, to: 8 }; } }
+function mcEffPrice(){
+  const full = mcPrice(), tf = mcTariff();
+  if(!full || !(tf.off > 0)) return full;
+  const offH = tf.from === tf.to ? 0 : (tf.to - tf.from + 24) % 24;
+  return (full * (24 - offH) + tf.off * offH) / 24;
+}
 function mcStats(list){
   const now = Date.now(), cut = now - 24 * 3600e3, buckets = new Map();
   let kwh = 0, nowHash = 0, online = 0, watts = 0;
@@ -108,7 +117,7 @@ function mcStatsStore(st){
 const mcFmtHash = gh => { const f = formatHashrate(gh); return gh ? f.value + ' ' + f.unit : '—'; };
 const mcDelta = (a, b) => (b > 0 && a > 0) ? (a - b) / b * 100 : null;
 function mcSummaryText(st, y){
-  const price = mcPrice(), d = y ? mcDelta(st.avg, y.avg) : null;
+  const price = mcEffPrice(), d = y ? mcDelta(st.avg, y.avg) : null;
   return t('mc_d_head') + '\n' +
     mct('mc_d_online', st.online, st.total) + '\n' +
     mct('mc_d_avg', mcFmtHash(st.avg), d != null ? mct('mc_d_vs', d >= 0 ? '+' : '', d.toFixed(1)) : '') + '\n' +
@@ -153,12 +162,12 @@ function mcRenderSummary(list){
   dn.className = d == null ? '' : d >= 0 ? 'up' : 'down';
   set('peak', mcFmtHash(st.peak)); set('peakS', st.peak && st.avg ? mct('mc_s_pct', (st.avg / st.peak * 100).toFixed(0)) : '');
   set('kwh', st.kwh ? st.kwh.toFixed(2) + ' kWh' : '—');
-  set('cost', mcPrice() && st.kwh ? '≈ ' + (st.kwh * mcPrice()).toFixed(2) + ' €' : '');
+  set('cost', mcEffPrice() && st.kwh ? '≈ ' + (st.kwh * mcEffPrice()).toFixed(2) + ' €' : '');
   const eco = mcEconomics(st.nowHash, st.watts);
   if(!eco){ set('profit', '—'); set('profitS', t('mc_s_nodata')); set('chance', '—'); set('chanceS', t('mc_s_nodata')); }
   else {
     set('profit', (eco.profit >= 0 ? '+' : '') + eco.profit.toFixed(2) + ' €');
-    set('profitS', eco.hasEur ? (mcPrice() ? mct('mc_s_revenue', eco.revenue.toFixed(2)) : t('mc_s_noprice')) : t('mc_s_nodata'));
+    set('profitS', eco.hasEur ? (mcEffPrice() ? mct('mc_s_revenue', eco.revenue.toFixed(2)) : t('mc_s_noprice')) : t('mc_s_nodata'));
     set('chance', mcBlockText(eco)); set('chanceS', eco.pYear >= 0.01 ? t('mc_s_peryear') : mct('mc_s_peryearpct', (eco.pYear * 100).toFixed(4)));
   }
   set('ev', String(st.events)); set('evS', st.events ? t('mc_s_seelog') : t('mc_s_calm'));
@@ -226,7 +235,7 @@ function mcEconomics(ghs, watts){
   const eur = typeof currentRates !== 'undefined' && currentRates && currentRates.btc_eur;
   if(!(ghs > 0) || !diff) return null;
   const perDay = ghs * 1e9 * 86400 / (diff * 4294967296);          // blocos esperados por dia
-  const revenue = eur ? perDay * MC_REWARD_BTC * eur : 0, price = mcPrice(), cost = price ? (watts || 0) / 1000 * 24 * price : 0;
+  const revenue = eur ? perDay * MC_REWARD_BTC * eur : 0, price = mcEffPrice(), cost = price ? (watts || 0) / 1000 * 24 * price : 0;
   return { perDay, yearsPerBlock: perDay > 0 ? 1 / (perDay * 365) : Infinity, pYear: 1 - Math.exp(-perDay * 365), revenue, cost, profit: revenue - cost, hasEur: !!eur };
 }
 function mcBlockText(eco){

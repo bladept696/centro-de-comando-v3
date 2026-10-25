@@ -17,7 +17,7 @@ function mcToggleMenu(){
   const m = document.createElement('div');
   m.id = 'mcMenu'; m.className = 'mc-menu';
   m.innerHTML = '<button type="button" data-m="export">' + t('mc_m_export') + '</button><button type="button" data-m="import">' + t('mc_m_import') + '</button>' +
-    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button><div class="mc-menu-row"><span>' + t('mc_m_pause') + '</span><button type="button" data-m="pause60">1 h</button><button type="button" data-m="pause240">4 h</button><button type="button" data-m="pause720">12 h</button></div><button type="button" data-m="limits">' + t('mc_m_limits') + '</button><button type="button" data-m="report">' + t('mc_m_report') + '</button><button type="button" data-m="help">' + t('mc_m_help') + '</button>';
+    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button><div class="mc-menu-row"><span>' + t('mc_m_pause') + '</span><button type="button" data-m="pause60">1 h</button><button type="button" data-m="pause240">4 h</button><button type="button" data-m="pause720">12 h</button></div><button type="button" data-m="tariff">' + t('mc_m_tariff') + '</button><button type="button" data-m="limits">' + t('mc_m_limits') + '</button><button type="button" data-m="report">' + t('mc_m_report') + '</button><button type="button" data-m="help">' + t('mc_m_help') + '</button>';
   const pr = panel.getBoundingClientRect(), br = btn.getBoundingClientRect();
   m.style.top = (br.bottom - pr.top + 6) + 'px';
   m.style.right = Math.max(8, pr.right - br.right) + 'px';
@@ -33,6 +33,7 @@ document.addEventListener('click', e => {
   else if(k === 'import') mcBackupPick();
   else if(k === 'scan'){ mc.prefs.autoScan = !mc.prefs.autoScan; mcSavePrefs(); if(mc.prefs.autoScan){ setQuickActionStatus(t('mc_sc_scanning')); mcScanNow(true); } else { mc.found = []; mcNewRender(); } }
   else if(k.startsWith('pause')){ mcPauseAlerts(Number(k.slice(5))); }
+  else if(k === 'tariff'){ if(typeof mcTariffOpen === 'function') mcTariffOpen(); }
   else if(k === 'limits'){ if(typeof mcLimitsOpen === 'function') mcLimitsOpen(); }
   else if(k === 'report'){ if(typeof mcReportOpen === 'function') mcReportOpen(); }
   else if(k === 'help'){ if(typeof mcHelpToggle === 'function') mcHelpToggle(); }
@@ -45,7 +46,7 @@ function mcBackupExport(){
   const data = {
     app: MC_BACKUP_APP, version: 1, date: new Date().toISOString(),
     devices: (devices || []).map(d => keep({ name: d.name, ip: d.ip, group: d.group, note: d.note, expected: d.expected, pin: d.pin })),
-    prefs: mc.prefs, thresholds: mc.th, kwhPrice: mcPrice() || null, schedules: mc.sched,
+    prefs: mc.prefs, thresholds: mc.th, kwhPrice: mcPrice() || null, tariff: mcTariff(), schedules: mc.sched,
     quickProfiles: (() => { try { return JSON.parse(localStorage.getItem(QUICK_PROFILE_KEY) || '{}'); } catch(e) { return {}; } })()
   };
   const a = document.createElement('a');
@@ -87,6 +88,7 @@ function mcBackupImport(file){
     });
     if(o.prefs && typeof o.prefs === 'object') ['filter', 'sort', 'view', 'groupBy', 'range', 'fx', 'autoScan'].forEach(k => { if(k in o.prefs) mc.prefs[k] = o.prefs[k]; });
     if(o.thresholds && typeof o.thresholds === 'object'){ Object.keys(MC_TH_DEFAULT).forEach(k => { if(isFinite(Number(o.thresholds[k]))) mc.th[k] = Number(o.thresholds[k]); }); try { localStorage.setItem(MC_TH_KEY, JSON.stringify(mc.th)); } catch(e) {} }
+    if(o.tariff && typeof o.tariff === 'object'){ try { localStorage.setItem(MC_TARIFF_KEY, JSON.stringify(o.tariff)); } catch(e) {} }
     if(Number(o.kwhPrice) > 0){ try { localStorage.setItem(MC_PRICE_KEY, String(o.kwhPrice)); } catch(e) {} }
     if(o.quickProfiles && typeof o.quickProfiles === 'object'){ try { localStorage.setItem(QUICK_PROFILE_KEY, JSON.stringify(o.quickProfiles)); } catch(e) {} }
     if(Array.isArray(o.schedules)){ mc.sched = o.schedules.filter(r => r && /^\d\d:\d\d$/.test(r.time) && Array.isArray(r.days) && ['eco', 'turbo'].includes(r.slot)).map(r => ({ id: String(r.id || Math.random().toString(36).slice(2, 8)), time: r.time, days: r.days.map(Number).filter(n => n >= 0 && n <= 6), slot: r.slot, target: String(r.target || 'all'), on: r.on !== false, last: '' })); mcSchedSave(); }

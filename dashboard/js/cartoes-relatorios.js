@@ -43,7 +43,7 @@ function mcReportOpen(){
   let days = {};
   try { days = JSON.parse(localStorage.getItem(MC_STATS_KEY) || '{}'); } catch(e) {}
   const esc = escapeHtml, fm = gh => { const f = formatHashrate(gh); return gh ? f.value + ' ' + f.unit : '—'; };
-  const price = typeof mcPrice === 'function' ? mcPrice() : 0, loc = mcLocale();
+  const price = typeof mcEffPrice === 'function' ? mcEffPrice() : 0, loc = mcLocale();
   const dayRows = Object.keys(days).sort().slice(-7).reverse().map(k => {
     const d = days[k];
     return '<tr><td>' + new Date(k + 'T12:00:00').toLocaleDateString(loc, { weekday: 'short', day: '2-digit', month: '2-digit' }) + '</td><td>' + fm(d.avg) + '</td><td>' + fm(d.peak) + '</td><td>' + Number(d.kwh).toFixed(2) + ' kWh' + (price ? ' · ' + (d.kwh * price).toFixed(2) + ' €' : '') + '</td><td>' + (d.events || 0) + '</td></tr>';
@@ -114,6 +114,33 @@ function mcLimitsOpen(){
     try { localStorage.setItem(MC_TH_KEY, JSON.stringify(v)); } catch(e2) {}
     m.remove(); renderAll();
     setQuickActionStatus(t('mc_th_saved'));
+  });
+  document.body.appendChild(m);
+}
+
+// ---- tarifas (preço normal e, se tiver bi-horário, preço e horas do vazio) ----
+function mcTariffOpen(){
+  mcCompareClose();
+  const tf = mcTariff(), hrs = sel => Array.from({ length: 24 }, (_, h) => '<option value="' + h + '"' + (h === sel ? ' selected' : '') + '>' + String(h).padStart(2, '0') + ':00</option>').join('');
+  const m = document.createElement('div');
+  m.id = 'mcCompare'; m.className = 'mc-cmp';
+  m.innerHTML = '<div class="mc-cmp-card mc-help" role="dialog" aria-modal="true"><div class="mc-cmp-head"><b>💶 ' + t('mc_tf_title') + '</b><button type="button" data-cmp="close" aria-label="' + t('mc_cmp_close') + '">✕</button></div>' +
+    '<div class="mc-th-form"><label><span>' + t('mc_tf_full') + '</span><input type="number" step="0.001" min="0" id="mcTfFull" value="' + (mcPrice() || '') + '" placeholder="0.20"></label>' +
+    '<label><span>' + t('mc_tf_off') + '</span><input type="number" step="0.001" min="0" id="mcTfOff" value="' + (tf.off || '') + '" placeholder="0.10"></label>' +
+    '<label><span>' + t('mc_tf_from') + '</span><select id="mcTfFrom">' + hrs(tf.from) + '</select></label><label><span>' + t('mc_tf_to') + '</span><select id="mcTfTo">' + hrs(tf.to) + '</select></label></div>' +
+    '<div class="mc-cmp-note">' + t('mc_tf_note') + '</div><div class="mc-th-actions"><button type="button" data-tf="save" class="primary">' + t('mc_th_save') + '</button></div></div>';
+  m.addEventListener('click', e => {
+    if(e.target === m || e.target.closest('[data-cmp="close"]')){ m.remove(); return; }
+    if(!e.target.closest('[data-tf="save"]')) return;
+    const full = parseFloat($('mcTfFull').value), off = parseFloat($('mcTfOff').value);
+    if(!(full > 0) || (isFinite(off) && off < 0)){ alert(t('mc_th_bad')); return; }
+    try {
+      localStorage.setItem(MC_PRICE_KEY, String(full));
+      localStorage.setItem(MC_TARIFF_KEY, JSON.stringify({ off: off > 0 ? off : 0, from: Number($('mcTfFrom').value), to: Number($('mcTfTo').value) }));
+    } catch(e2) {}
+    m.remove();
+    const pi = $('mcPrice'); if(pi) pi.value = full;
+    renderAll(); setQuickActionStatus(t('mc_th_saved'));
   });
   document.body.appendChild(m);
 }
