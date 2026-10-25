@@ -1,0 +1,210 @@
+// ---------- Cartões: menu ⚙ (backup e restauro, procura de máquinas novas) e agendamentos ----------
+// Tudo corre no browser enquanto a dashboard está aberta. Complementa cartoes.js e cartoes-extra.js.
+const MC_SCHED_KEY = 'nerdqaxe:schedules';
+const MC_IGN_KEY = 'nerdqaxe:scan_ignored';
+const MC_BACKUP_APP = 'hash-commander-backup';
+mc.found = [];
+mc.sched = (() => { try { const a = JSON.parse(localStorage.getItem(MC_SCHED_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch(e) { return []; } })();
+mc.ignored = (() => { try { return new Set(JSON.parse(localStorage.getItem(MC_IGN_KEY) || '[]')); } catch(e) { return new Set(); } })();
+const mcToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+
+// ---------------- menu ⚙ ----------------
+function mcCloseMenu(){ const m = $('mcMenu'); if(m) m.remove(); }
+function mcToggleMenu(){
+  if($('mcMenu')){ mcCloseMenu(); return; }
+  const btn = $('mcMenuBtn'), panel = btn && btn.closest('.mc-panel');
+  if(!panel) return;
+  const m = document.createElement('div');
+  m.id = 'mcMenu'; m.className = 'mc-menu';
+  m.innerHTML = '<button type="button" data-m="export">' + t('mc_m_export') + '</button><button type="button" data-m="import">' + t('mc_m_import') + '</button>' +
+    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button>';
+  const pr = panel.getBoundingClientRect(), br = btn.getBoundingClientRect();
+  m.style.top = (br.bottom - pr.top + 6) + 'px';
+  m.style.right = Math.max(8, pr.right - br.right) + 'px';
+  panel.appendChild(m);
+}
+document.addEventListener('click', e => {
+  if(e.target.closest('#mcMenuBtn')){ mcToggleMenu(); return; }
+  const it = e.target.closest('#mcMenu [data-m]');
+  if(!it){ if(!e.target.closest('#mcMenu')) mcCloseMenu(); return; }
+  const k = it.dataset.m;
+  mcCloseMenu();
+  if(k === 'export') mcBackupExport();
+  else if(k === 'import') mcBackupPick();
+  else if(k === 'scan'){ mc.prefs.autoScan = !mc.prefs.autoScan; mcSavePrefs(); if(mc.prefs.autoScan){ setQuickActionStatus(t('mc_sc_scanning')); mcScanNow(true); } else { mc.found = []; mcNewRender(); } }
+  else if(k === 'sched'){ const d = $('mcSched'); if(d){ d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }
+});
+
+// ---------------- backup e restauro ----------------
+function mcBackupExport(){
+  const keep = o => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+  const data = {
+    app: MC_BACKUP_APP, version: 1, date: new Date().toISOString(),
+    devices: (devices || []).map(d => keep({ name: d.name, ip: d.ip, group: d.group, note: d.note, expected: d.expected, pin: d.pin })),
+    prefs: mc.prefs, kwhPrice: mcPrice() || null, schedules: mc.sched,
+    quickProfiles: (() => { try { return JSON.parse(localStorage.getItem(QUICK_PROFILE_KEY) || '{}'); } catch(e) { return {}; } })()
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  a.download = 'hash-commander-backup-' + mcToday() + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  setQuickActionStatus(mct('mc_bk_exported', data.devices.length));
+}
+function mcBackupPick(){
+  let inp = $('mcImportFile');
+  if(!inp){
+    inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json'; inp.id = 'mcImportFile'; inp.hidden = true;
+    inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; inp.value = ''; if(f) mcBackupImport(f); });
+    document.body.appendChild(inp);
+  }
+  inp.click();
+}
+function mcBackupImport(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    let o;
+    try { o = JSON.parse(String(rd.result)); } catch(e) { alert(t('mc_bk_bad')); return; }
+    if(!o || o.app !== MC_BACKUP_APP || !Array.isArray(o.devices)){ alert(t('mc_bk_bad')); return; }
+    if(!confirm(mct('mc_bk_confirm', o.devices.length))) return;
+    let added = 0, updated = 0;
+    o.devices.forEach(d => {
+      const ip = d && String(d.ip || '').trim();
+      if(!ip || !/^[A-Za-z0-9.\-:]{3,60}$/.test(ip)) return;
+      const f = {};
+      if(d.name) f.name = String(d.name).slice(0, 40);
+      if(d.group) f.group = String(d.group).slice(0, 24);
+      if(d.note) f.note = String(d.note).slice(0, 300);
+      if(Number(d.expected) > 0) f.expected = Math.round(Number(d.expected) * 1000) / 1000;
+      if(d.pin) f.pin = true;
+      const cur = devices.find(x => x.ip === ip);
+      if(cur){ Object.assign(cur, f); updated++; }
+      else { const id = 'm_' + Math.random().toString(36).slice(2, 9); devices.push(Object.assign({ id, name: f.name || ip, ip }, f)); histories[id] = []; added++; }
+    });
+    if(o.prefs && typeof o.prefs === 'object') ['filter', 'sort', 'view', 'groupBy', 'range', 'fx', 'autoScan'].forEach(k => { if(k in o.prefs) mc.prefs[k] = o.prefs[k]; });
+    if(Number(o.kwhPrice) > 0){ try { localStorage.setItem(MC_PRICE_KEY, String(o.kwhPrice)); } catch(e) {} }
+    if(o.quickProfiles && typeof o.quickProfiles === 'object'){ try { localStorage.setItem(QUICK_PROFILE_KEY, JSON.stringify(o.quickProfiles)); } catch(e) {} }
+    if(Array.isArray(o.schedules)){ mc.sched = o.schedules.filter(r => r && /^\d\d:\d\d$/.test(r.time) && Array.isArray(r.days) && ['eco', 'turbo'].includes(r.slot)).map(r => ({ id: String(r.id || Math.random().toString(36).slice(2, 8)), time: r.time, days: r.days.map(Number).filter(n => n >= 0 && n <= 6), slot: r.slot, target: String(r.target || 'all'), on: r.on !== false, last: '' })); mcSchedSave(); }
+    mcSavePrefs(); saveDevices();
+    mc.lang = null;   // refaz a interface com os valores novos
+    renderAll();
+    setQuickActionStatus(mct('mc_bk_done', added, updated));
+    if(typeof pollAll === 'function') pollAll();
+  };
+  rd.readAsText(file);
+}
+
+// ---------------- máquinas novas na rede ----------------
+let mcScanBusy = false;
+async function mcScanNow(force){
+  if(mcScanBusy || (!force && (document.hidden || !mc.prefs.autoScan))) return;
+  mcScanBusy = true;
+  try {
+    if(window.authReady) await window.authReady;
+    const resp = await fetch(`${API_BASE}/api/scan`);
+    if(!resp.ok) throw new Error('scan');
+    const data = await resp.json();
+    const known = new Set((devices || []).map(d => d.ip));
+    mc.found = (data.devices || []).filter(d => d && d.ip && !known.has(d.ip) && !mc.ignored.has(d.ip));
+    if(force) setQuickActionStatus(mc.found.length ? mct('mc_nf_found', mc.found.length) : t('mc_nf_none'));
+  } catch(e) { if(force) setQuickActionStatus(t('mc_nf_err')); }
+  mcScanBusy = false;
+  mcNewRender();
+}
+function mcNewRender(){
+  const box = $('mcNew');
+  if(!box) return;
+  const known = new Set((devices || []).map(d => d.ip));
+  mc.found = mc.found.filter(d => !known.has(d.ip));
+  box.hidden = !mc.found.length;
+  if(!mc.found.length){ box.innerHTML = ''; return; }
+  const list = mc.found.slice(0, 4).map(d => '<b>' + escapeHtml(d.ip) + '</b>' + (d.hostname && d.hostname !== d.ip ? ' (' + escapeHtml(d.hostname) + ')' : '')).join(', ') + (mc.found.length > 4 ? '…' : '');
+  const h = '<span>🔎 ' + mct(mc.found.length === 1 ? 'mc_nf_one' : 'mc_nf_many', mc.found.length) + ' ' + list + '</span><button type="button" data-n="add">' + t('mc_nf_add') + '</button><button type="button" data-n="ignore">' + t('mc_nf_ignore') + '</button>';
+  if(box.dataset.s !== h){ box.dataset.s = h; box.innerHTML = h; }
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('#mcNew [data-n]');
+  if(!b) return;
+  if(b.dataset.n === 'add') mc.found.forEach(d => addDevice(d.hostname && d.hostname !== d.ip ? d.hostname : '', d.ip));
+  else { mc.found.forEach(d => mc.ignored.add(d.ip)); try { localStorage.setItem(MC_IGN_KEY, JSON.stringify([...mc.ignored])); } catch(e2) {} }
+  mc.found = []; mcNewRender();
+});
+setTimeout(() => mcScanNow(false), 25000);
+setInterval(() => mcScanNow(false), 30 * 60000);
+
+// ---------------- agendamentos (Eco/Turbo a uma hora) ----------------
+function mcSchedSave(){ try { localStorage.setItem(MC_SCHED_KEY, JSON.stringify(mc.sched)); } catch(e) {} }
+function mcSchedTargetLabel(tg){
+  if(tg === 'all') return t('mc_sc_all');
+  if(tg.startsWith('g:')) return '🗂 ' + tg.slice(2);
+  const d = (devices || []).find(x => 'd:' + x.id === tg);
+  return d ? (d.name || d.ip) : '?';
+}
+function mcSchedDays(days){
+  if(days.length === 7) return t('mc_sc_everyday');
+  return [...days].sort().map(d => new Date(2024, 0, 7 + d).toLocaleDateString(mcLocale(), { weekday: 'short' })).join(' ');
+}
+function mcSchedRender(){
+  const body = $('mcSchedBody');
+  if(!body) return;
+  if($('mcSchedN')) $('mcSchedN').textContent = mc.sched.length;
+  if(body.dataset.lang !== currentLang){
+    body.dataset.lang = currentLang;
+    const dayBoxes = [1, 2, 3, 4, 5, 6, 0].map(d => '<label><input type="checkbox" data-d="' + d + '" checked> ' + new Date(2024, 0, 7 + d).toLocaleDateString(mcLocale(), { weekday: 'short' }) + '</label>').join('');
+    body.innerHTML = '<div id="mcSchedList"></div><div class="mc-sched-form"><input type="time" id="mcScTime" value="22:00"><div class="mc-sc-days">' + dayBoxes + '</div>' +
+      '<select id="mcScSlot"></select><select id="mcScTarget"></select><button type="button" id="mcScAdd">' + t('mc_sc_add') + '</button></div><div class="mc-sched-note">' + t('mc_sc_note') + '</div>';
+    $('mcScAdd').addEventListener('click', () => {
+      const days = [...body.querySelectorAll('[data-d]')].filter(x => x.checked).map(x => Number(x.dataset.d));
+      const slot = $('mcScSlot').value, time = $('mcScTime').value;
+      if(!time || !days.length || !slot){ setQuickActionStatus(t('mc_sc_incomplete')); return; }
+      mc.sched.push({ id: Math.random().toString(36).slice(2, 8), time, days, slot, target: $('mcScTarget').value, on: true, last: '' });
+      mcSchedSave(); mcSchedRender();
+    });
+    body.addEventListener('click', e => {
+      const b = e.target.closest('[data-sc]');
+      if(!b) return;
+      const r = mc.sched.find(x => x.id === b.dataset.id);
+      if(b.dataset.sc === 'del') mc.sched = mc.sched.filter(x => x.id !== b.dataset.id);
+      else if(r) r.on = !r.on;
+      mcSchedSave(); mcSchedRender();
+    });
+  }
+  // opções de perfil e de alvo (dependem das máquinas e dos perfis guardados)
+  const slots = ['eco', 'turbo'].map(s => [s, typeof getQuickSlot === 'function' ? getQuickSlot(s) : null]).filter(x => x[1]);
+  const so = slots.length ? slots.map(([s, p]) => '<option value="' + s + '">' + (s === 'eco' ? '🌿 ' : '🚀 ') + escapeHtml(p.name) + '</option>').join('') : '<option value="">' + t('mc_sc_noprof') + '</option>';
+  const to = '<option value="all">' + t('mc_sc_all') + '</option>' + mcGroupsOf(devices || []).map(g => '<option value="g:' + escapeHtml(g) + '">🗂 ' + escapeHtml(g) + '</option>').join('') + (devices || []).map(d => '<option value="d:' + escapeHtml(String(d.id)) + '">' + escapeHtml(d.name || d.ip) + '</option>').join('');
+  [['mcScSlot', so], ['mcScTarget', to]].forEach(([id, h]) => { const n = $(id); if(n && n.dataset.s !== h && document.activeElement !== n){ const v = n.value; n.dataset.s = h; n.innerHTML = h; if(v) n.value = v; } });
+  const list = $('mcSchedList'), lh = mc.sched.length ? mc.sched.map(r => {
+    const p = typeof getQuickSlot === 'function' ? getQuickSlot(r.slot) : null;
+    return '<div class="mc-sc-item' + (r.on ? '' : ' off') + '"><b>⏰ ' + r.time + '</b><span>' + mcSchedDays(r.days) + '</span><span>' + (r.slot === 'eco' ? '🌿 ' : '🚀 ') + escapeHtml(p ? p.name : r.slot) + '</span><span>→ ' + escapeHtml(mcSchedTargetLabel(r.target)) + '</span>' +
+      '<button type="button" data-sc="tog" data-id="' + r.id + '">' + t(r.on ? 'mc_sc_on' : 'mc_sc_off') + '</button><button type="button" data-sc="del" data-id="' + r.id + '" class="mc-danger" title="' + t('mc_remove_g') + '">✕</button></div>';
+  }).join('') : '<div class="mc-sc-empty">' + t('mc_sc_empty') + '</div>';
+  if(list && list.dataset.s !== lh){ list.dataset.s = lh; list.innerHTML = lh; }
+}
+async function mcSchedRun(r){
+  const prof = typeof getQuickSlot === 'function' ? getQuickSlot(r.slot) : null;
+  const label = r.time + ' ' + (prof ? prof.name : r.slot);
+  if(!prof){ mcLogEvent(mct('mc_sc_noprof_run', label), 'bad'); return; }
+  const devs = (devices || []).filter(d => (r.target === 'all' || (r.target.startsWith('g:') && d.group === r.target.slice(2)) || r.target === 'd:' + d.id) && readings[d.id] && readings[d.id].online && !(d.mute > Date.now()));
+  let ok = 0;
+  for(const d of devs){ const res = await aiApplyProfile(prof, d); if(res && res.ok) ok++; }
+  const msg = mct('mc_sc_done', label, ok, devs.length);
+  mcLogEvent(msg, ok === devs.length ? 'info' : 'warn');
+  if(typeof sendAlert === 'function') sendAlert(msg, 'sched-' + r.id + '-' + mcToday());
+  renderAll();
+}
+function mcSchedTick(){
+  if(!mc.sched.length) return;
+  const now = new Date(), today = mcToday(), mins = now.getHours() * 60 + now.getMinutes();
+  mc.sched.forEach(r => {
+    if(!r.on || r.last === today || !r.days.includes(now.getDay())) return;
+    const [h, m] = r.time.split(':').map(Number), diff = mins - (h * 60 + m);
+    if(diff < 0 || diff >= 10) return;       // só corre nos 10 minutos a seguir à hora marcada
+    r.last = today; mcSchedSave();
+    mcSchedRun(r);
+  });
+}
+setInterval(mcSchedTick, 30000);
+
+// atualiza o que depende do idioma e das máquinas
+function mcToolsRender(){ mcSchedRender(); mcNewRender(); }

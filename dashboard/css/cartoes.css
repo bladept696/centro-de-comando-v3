@@ -275,3 +275,24 @@
   .mc-grp span{width:auto;min-width:44px;}
   .mc-grp select{flex:1;font:inherit;font-size:12px;letter-spacing:0;text-transform:none;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:5px 9px;min-width:0;}
   .mc-facts b[title]{cursor:help;}
+
+  /* ---------- Menu ⚙, máquinas novas e agendamentos ---------- */
+  .mc-menu{position:absolute;z-index:20;min-width:260px;display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:12px;background:var(--panel);border:1px solid var(--line-strong);box-shadow:0 18px 40px -12px #000;animation:mcIn .15s ease both;}
+  .mc-menu button{font:inherit;font-size:12px;text-align:left;color:var(--text);background:none;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;}
+  .mc-menu button:hover{background:color-mix(in srgb,var(--cyan) 14%,transparent);}
+  .mc-newfound{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;padding:9px 12px;border-radius:12px;font-size:12px;color:var(--text);
+    background:color-mix(in srgb,var(--green) 11%,var(--panel));border:1px solid var(--green);}
+  .mc-newfound[hidden]{display:none;} .mc-newfound span{flex:1;min-width:200px;}
+  .mc-newfound button{font:inherit;font-size:11px;font-weight:700;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:5px 10px;cursor:pointer;}
+  .mc-newfound button:hover{border-color:var(--green);color:var(--green);}
+  .mc-sched{margin-top:14px;border-top:1px solid var(--line);padding-top:10px;}
+  .mc-sched summary{cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);list-style:none;} .mc-sched summary::-webkit-details-marker{display:none;} .mc-sched summary b{color:var(--cyan);margin-left:4px;}
+  .mc-sc-item{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:7px 10px;margin-top:6px;border-radius:8px;background:var(--deep);border-left:3px solid var(--cyan);font-size:12px;color:var(--muted);}
+  .mc-sc-item b{color:var(--text);} .mc-sc-item.off{opacity:.55;border-left-color:var(--line-strong);}
+  .mc-sc-item button,.mc-sched-form button{font:inherit;font-size:11px;font-weight:700;color:var(--text);background:var(--panel-2);border:1px solid var(--line-strong);border-radius:7px;padding:4px 9px;cursor:pointer;}
+  .mc-sc-item button:first-of-type{margin-left:auto;} .mc-sc-item button:hover,.mc-sched-form button:hover{border-color:var(--cyan);color:var(--cyan);} .mc-sc-item .mc-danger:hover{border-color:var(--red);color:var(--red);}
+  .mc-sc-empty{font-size:11.5px;color:var(--muted);padding:8px 2px;}
+  .mc-sched-form{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;}
+  .mc-sched-form input[type=time],.mc-sched-form select{font:inherit;font-size:12px;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:5px 8px;min-width:0;}
+  .mc-sc-days{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--muted);} .mc-sc-days label{display:flex;align-items:center;gap:3px;cursor:pointer;} .mc-sc-days input{accent-color:var(--cyan);}
+  .mc-sched-note{margin-top:8px;font-size:10.5px;color:var(--muted-2);}
