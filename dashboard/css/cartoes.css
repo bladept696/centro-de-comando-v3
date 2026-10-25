@@ -135,3 +135,54 @@
   @media (prefers-reduced-motion: reduce){
     .mc-card,.mc-card .mc-dot{animation:none !important;}
   }
+
+  /* ---------- Efeitos 3D (botão "✨ 3D"): profundidade, inclinação com o rato, reflexo e barras em relevo ---------- */
+  .mc-fx-btn{font:inherit;font-size:11px;font-weight:700;color:var(--muted);background:var(--deep);border:1px solid var(--line-strong);border-radius:8px;padding:6px 10px;cursor:pointer;}
+  .mc-fx-btn.active{color:var(--cyan);border-color:var(--cyan);background:color-mix(in srgb,var(--cyan) 14%,var(--deep));}
+  .mc-board.mc-fx{perspective:1500px;}
+  .mc-fx .mc-card{overflow:visible;transform-style:preserve-3d;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+    transition:transform .28s cubic-bezier(.2,.8,.2,1),border-color .25s,box-shadow .25s;
+    animation:mcIn3d .6s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0) * 45ms);
+    box-shadow:inset 0 1px 0 #ffffff14,inset 0 -22px 34px -26px #000,0 3px 0 -1px var(--deep),0 4px 0 -1px var(--line-strong),0 22px 34px -20px #000f;}
+  .mc-fx .mc-card:hover{transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-3px);
+    box-shadow:inset 0 1px 0 #ffffff1c,inset 0 -22px 34px -26px #000,0 3px 0 -1px var(--deep),0 4px 0 -1px var(--line-strong),0 34px 44px -22px #000,0 0 28px -10px var(--mc-c);}
+  .mc-fx .mc-card[data-state="hot"]{animation:mcIn3d .6s cubic-bezier(.2,.8,.2,1) backwards,mcAlarm 1.6s ease-in-out infinite;}
+  .mc-fx .mc-card::before{left:-1px;top:14px;bottom:14px;width:5px;border-radius:0 4px 4px 0;}
+  .mc-fx .mc-card::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;
+    background:radial-gradient(circle at var(--gx,50%) var(--gy,0%),#ffffff26,transparent 55%);}
+  .mc-fx .mc-card.is-tilt::after{opacity:1;}
+  /* camadas: os blocos saltam para a frente enquanto o cartão está inclinado */
+  .mc-fx .mc-card.is-tilt .mc-head{transform:translateZ(22px);}
+  .mc-fx .mc-card.is-tilt .mc-hash{transform:translateZ(34px);}
+  .mc-fx .mc-card.is-tilt .mc-spark{transform:translateZ(16px);}
+  .mc-fx .mc-card.is-tilt .mc-alerts{transform:translateZ(20px);}
+  .mc-fx .mc-card.is-tilt .mc-meters{transform:translateZ(14px);}
+  .mc-fx .mc-card.is-tilt .mc-facts div{transform:translateZ(8px);}
+  .mc-fx .mc-card.is-tilt .mc-actions{transform:translateZ(18px);}
+  .mc-fx .mc-head,.mc-fx .mc-hash,.mc-fx .mc-spark,.mc-fx .mc-alerts,.mc-fx .mc-meters,.mc-fx .mc-actions{transition:transform .28s cubic-bezier(.2,.8,.2,1);}
+  /* hashrate em relevo */
+  .mc-fx .mc-hash b{text-shadow:0 1px 0 color-mix(in srgb,var(--mc-c) 35%,#000),0 2px 0 color-mix(in srgb,var(--mc-c) 25%,#000),0 3px 0 color-mix(in srgb,var(--mc-c) 15%,#000),0 8px 14px #000a,0 0 22px color-mix(in srgb,var(--mc-c) 35%,transparent);}
+  /* estado como pérola de vidro */
+  .mc-fx .mc-dot{background:radial-gradient(circle at 35% 30%,#ffffffcc 0,#ffffff55 14%,var(--mc-c) 48%,color-mix(in srgb,var(--mc-c) 45%,#000) 100%);}
+  /* mini-gráfico com brilho e ponto vivo */
+  .mc-fx .mc-spark .line{filter:drop-shadow(0 0 4px var(--mc-c));stroke-width:2.2;}
+  .mc-spark .live{fill:var(--mc-c);stroke:#fff;stroke-width:1;vector-effect:non-scaling-stroke;}
+  .mc-fx .mc-spark .live{animation:mcLive 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center;}
+  @keyframes mcLive{50%{transform:scale(1.7);opacity:.55;}}
+  /* barras como tubos de vidro com luz */
+  .mc-fx .mc-bar{height:9px;box-shadow:inset 0 2px 4px #000c,0 1px 0 #ffffff12;}
+  .mc-fx .mc-bar i{--c:var(--green);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 45%,#fff) 0,var(--c) 42%,color-mix(in srgb,var(--c) 65%,#000) 100%);box-shadow:0 0 9px -1px var(--c);}
+  .mc-fx .mc-bar i.warn{--c:var(--amber);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 45%,#fff) 0,var(--c) 42%,color-mix(in srgb,var(--c) 65%,#000) 100%);}
+  .mc-fx .mc-bar i.bad{--c:var(--red);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 45%,#fff) 0,var(--c) 42%,color-mix(in srgb,var(--c) 65%,#000) 100%);}
+  .mc-fx .mc-sig i.on{background:linear-gradient(180deg,#ffffff88,var(--green) 40%,color-mix(in srgb,var(--green) 60%,#000));box-shadow:0 0 6px -1px var(--green);}
+  .mc-fx .mc-sig.warn i.on{background:linear-gradient(180deg,#ffffff88,var(--amber) 40%,color-mix(in srgb,var(--amber) 60%,#000));box-shadow:0 0 6px -1px var(--amber);}
+  .mc-fx .mc-sig.bad i.on{background:linear-gradient(180deg,#ffffff88,var(--red) 40%,color-mix(in srgb,var(--red) 60%,#000));box-shadow:0 0 6px -1px var(--red);}
+  /* blocos e botões em relevo */
+  .mc-fx .mc-facts div,.mc-fx .mc-more-grid div{box-shadow:inset 0 1px 0 #ffffff0d,inset 0 -2px 0 #0006;}
+  .mc-fx .mc-actions button{box-shadow:0 3px 0 -1px #000a,inset 0 1px 0 #ffffff14;transition:transform .12s,box-shadow .12s,border-color .2s,color .2s;}
+  .mc-fx .mc-actions button:hover{transform:translateY(-1px);}
+  .mc-fx .mc-actions button:active{transform:translateY(2px);box-shadow:0 0 0 -1px #000a,inset 0 2px 4px #0008;}
+  .mc-fx .mc-chip{box-shadow:inset 0 1px 0 #ffffff12,0 2px 0 -1px #0008;}
+  @keyframes mcIn3d{from{opacity:0;transform:perspective(900px) rotateX(-16deg) translateY(22px) scale(.96);}to{opacity:1;transform:none;}}
+  @media (max-width:640px){.mc-board.mc-fx{perspective:none;}}
+  @media (prefers-reduced-motion: reduce){.mc-fx .mc-card,.mc-fx .mc-spark .live{animation:none !important;transition:none !important;}}
