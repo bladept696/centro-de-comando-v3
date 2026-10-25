@@ -6,16 +6,16 @@
 const MC_KEY = 'nerdqaxe:cards_prefs';
 const MC_LOG_KEY = 'nerdqaxe:cards_log';
 const MC_STATUS = {
-  ok:     { label: 'A trabalhar',   color: 'var(--green)', rank: 5 },
-  warn:   { label: 'Atenção',       color: 'var(--amber)', rank: 4 },
-  warm:   { label: 'Quente',        color: 'var(--amber)', rank: 3 },
-  hot:    { label: 'Alarme',        color: 'var(--red)',   rank: 0 },
-  off:    { label: 'Offline',       color: 'var(--red)',   rank: 1 },
-  portal: { label: 'Config. Wi-Fi', color: 'var(--cyan)',  rank: 2 },
-  idle:   { label: 'À espera',      color: 'var(--muted)', rank: 6 }
+  ok:     { get label(){ return t('mc_st_ok'); },     color: 'var(--green)', rank: 5 },
+  warn:   { get label(){ return t('mc_st_warn'); },   color: 'var(--amber)', rank: 4 },
+  warm:   { get label(){ return t('mc_st_warm'); },   color: 'var(--amber)', rank: 3 },
+  hot:    { get label(){ return t('mc_st_hot'); },    color: 'var(--red)',   rank: 0 },
+  off:    { get label(){ return t('mc_st_off'); },    color: 'var(--red)',   rank: 1 },
+  portal: { get label(){ return t('mc_st_portal'); }, color: 'var(--cyan)',  rank: 2 },
+  idle:   { get label(){ return t('mc_st_idle'); },   color: 'var(--muted)', rank: 6 }
 };
-const MC_FILTERS = [['all', 'Todas'], ['ok', 'A trabalhar'], ['warn', 'Atenção'], ['hot', 'Alarme'], ['off', 'Offline']];
-const MC_SORTS = [['status', 'Problemas primeiro'], ['name', 'Nome'], ['hash', 'Hashrate'], ['temp', 'Temperatura'], ['eff', 'Eficiência']];
+const MC_FILTERS = [['all', 'mc_f_all'], ['ok', 'mc_st_ok'], ['warn', 'mc_st_warn'], ['hot', 'mc_st_hot'], ['off', 'mc_st_off']];
+const MC_SORTS = [['status', 'mc_s_status'], ['name', 'mc_s_name'], ['hash', 'mc_s_hash'], ['temp', 'mc_s_temp'], ['eff', 'mc_s_eff']];
 const mc = { prefs: { filter: 'all', sort: 'status', view: 'cards', q: '', fx: 'auto', group: '', groupBy: false, range: 24 }, els: new Map(), heads: new Map(), open: new Set(), picked: new Set(), collapsed: new Set(), visible: [],
   prev: {}, since: {}, log: [], recordUntil: {}, rank: {} };
 try { Object.assign(mc.prefs, JSON.parse(localStorage.getItem(MC_KEY) || '{}')); } catch(e) {}
@@ -48,7 +48,7 @@ function mcModelOf(dev, r){
   return ['Bitaxe', '🔹'];
 }
 // nome da interface web de cada tipo de máquina
-function mcOsName(model){ return model === 'NerdQAxe' ? 'NerdOS' : model === 'Bitaxe' ? 'AxeOS' : 'Interface'; }
+function mcOsName(model){ return model === 'NerdQAxe' ? 'NerdOS' : model === 'Bitaxe' ? 'AxeOS' : t('mc_interface'); }
 function mcHashText(r){
   if(!r || !r.online) return ['—', ''];
   if(r.hashrate_display){ const m = String(r.hashrate_display).match(/^([\d.,]+)\s*(.*)$/); return m ? [m[1], m[2]] : [r.hashrate_display, '']; }
@@ -83,24 +83,24 @@ function mcSpark(vals){
 function mcAlertItems(dev, r, st, trend){
   const out = [];
   const add = (lvl, txt, code) => out.push({ lvl, txt, code });
-  if(!r){ add('muted', '⏳ À espera de dados', 'wait'); return out; }
+  if(!r){ add('muted', t('mc_a_wait'), 'wait'); return out; }
   if(!r.online){
-    if(r.portalMode) add('info', '📶 Em modo de configuração Wi-Fi', 'portal');
-    else { const s = mc.since[dev.id]; add('bad', '🔌 Offline' + (s ? ' há ' + mcAgo(Date.now() - s) : ''), 'off'); }
+    if(r.portalMode) add('info', t('mc_a_portal'), 'portal');
+    else { const s = mc.since[dev.id]; add('bad', s ? mct('mc_a_offsince', mcAgo(Date.now() - s)) : t('mc_a_off'), 'off'); }
     return out;
   }
-  if(mc.recordUntil[dev.id] > Date.now()) add('gold', '🏆 Novo recorde de dificuldade', 'record');
+  if(mc.recordUntil[dev.id] > Date.now()) add('gold', t('mc_a_record'), 'record');
   const n0 = out.length;
-  if(r.temp >= 75) add('bad', '🔥 Temperatura crítica ' + Number(r.temp).toFixed(0) + ' °C', 'temp');
-  else if(r.temp >= 65) add('warn', '🌡️ Quente ' + Number(r.temp).toFixed(0) + ' °C', 'temp');
-  if(r.vrTemp != null && r.vrTemp >= 85) add('bad', '⚡ VR a ' + Number(r.vrTemp).toFixed(0) + ' °C', 'vr');
+  if(r.temp >= 75) add('bad', mct('mc_a_tempcrit', Number(r.temp).toFixed(0)), 'temp');
+  else if(r.temp >= 65) add('warn', mct('mc_a_warm', Number(r.temp).toFixed(0)), 'temp');
+  if(r.vrTemp != null && r.vrTemp >= 85) add('bad', mct('mc_a_vr', Number(r.vrTemp).toFixed(0)), 'vr');
   const sh = (r.accepted || 0) + (r.rejected || 0);
-  if(sh > 20 && r.rejected / sh > 0.02) add('warn', '⚠️ Rejeições ' + (r.rejected / sh * 100).toFixed(1) + '%', 'rej');
-  if(r.rssi != null && r.rssi <= -80) add('warn', '📶 Wi-Fi fraco ' + r.rssi + ' dBm', 'wifi');
-  if(r.poolPing != null && r.poolPing > 400) add('warn', '🐢 Pool lenta ' + Math.round(r.poolPing) + ' ms', 'ping');
-  if(r.poolInfo && r.poolInfo.usingFallback) add('info', '↪ A usar a pool de reserva', 'fallback');
-  if(trend != null && trend <= -30) add('warn', '📉 Hashrate em queda ' + Math.abs(trend).toFixed(0) + '%', 'drop');
-  if(out.length === n0) add('good', '✓ Tudo normal', 'ok');
+  if(sh > 20 && r.rejected / sh > 0.02) add('warn', mct('mc_a_rej', (r.rejected / sh * 100).toFixed(1)), 'rej');
+  if(r.rssi != null && r.rssi <= -80) add('warn', mct('mc_a_wifi', r.rssi), 'wifi');
+  if(r.poolPing != null && r.poolPing > 400) add('warn', mct('mc_a_ping', Math.round(r.poolPing)), 'ping');
+  if(r.poolInfo && r.poolInfo.usingFallback) add('info', t('mc_a_fallback'), 'fallback');
+  if(trend != null && trend <= -30) add('warn', mct('mc_a_drop', Math.abs(trend).toFixed(0)), 'drop');
+  if(out.length === n0) add('good', t('mc_a_ok'), 'ok');
   return out;
 }
 function mcAlerts(dev, r, st, trend){
@@ -108,7 +108,7 @@ function mcAlerts(dev, r, st, trend){
 }
 function mcAgo(ms){
   const m = Math.max(1, Math.round(ms / 60000));
-  return m < 60 ? m + ' min' : m < 1440 ? Math.round(m / 60) + ' h' : Math.round(m / 1440) + ' d';
+  return m < 60 ? m + ' ' + t('mc_u_min') : m < 1440 ? Math.round(m / 60) + ' ' + t('mc_u_h') : Math.round(m / 1440) + ' ' + t('mc_u_d');
 }
 
 // ---- construção dos cartões ----
@@ -120,28 +120,28 @@ function mcCardEl(dev){
   el.className = 'mc-card';
   el.dataset.id = dev.id;
   el.innerHTML =
-    '<header class="mc-head"><label class="mc-pick" title="Selecionar para ações em grupo"><input type="checkbox" data-a="pick" aria-label="Selecionar máquina"></label><span class="mc-dot" data-f="dot"></span>' +
-      '<div class="mc-title"><b data-f="name"></b><small data-f="ip" data-a="copyip" title="Clique para copiar o IP"></small></div>' +
-      '<button type="button" class="mc-star" data-a="pin" title="Fixar no topo" aria-label="Fixar no topo">☆</button>' +
+    '<header class="mc-head"><label class="mc-pick" title="' + t('mc_pick_t') + '"><input type="checkbox" data-a="pick" aria-label="' + t('mc_pick_a') + '"></label><span class="mc-dot" data-f="dot"></span>' +
+      '<div class="mc-title"><b data-f="name"></b><small data-f="ip" data-a="copyip" title="' + t('mc_copyip') + '"></small></div>' +
+      '<button type="button" class="mc-star" data-a="pin" title="' + t('mc_pin') + '" aria-label="' + t('mc_pin') + '">☆</button>' +
       '<span class="mc-model" data-f="model"></span></header>' +
     '<div class="mc-status-row"><span class="mc-status" data-f="status"></span><span class="mc-algo" data-f="algo"></span><span class="mc-gchip" data-f="group" hidden></span><span class="mc-notechip" data-f="notechip" hidden>📝</span></div>' +
     '<div class="mc-hero"><div class="mc-hash"><b data-f="hash">—</b><small data-f="unit"></small><i class="mc-trend" data-f="trend"></i></div>' +
       '<svg class="mc-spark" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"><path class="area" data-f="area"/><path class="line" data-f="line"/><circle class="live" data-f="live" r="2.6"/></svg></div>' +
     '<div class="mc-alerts" data-f="alerts"></div>' +
-    '<div class="mc-meters">' + mcMeter('temp', 'Temp.') + mcMeter('fan', 'Ventoinha') +
+    '<div class="mc-meters">' + mcMeter('temp', t('mc_m_temp')) + mcMeter('fan', t('mc_m_fan')) +
       '<div class="mc-meter"><div class="mc-meter-top"><span>Wi-Fi</span><b data-f="wifiV">—</b></div><div class="mc-sig" data-f="sig"><i></i><i></i><i></i><i></i></div></div></div>' +
     '<div class="mc-facts">' +
-      '<div><span>Consumo</span><b data-f="power">—</b></div><div><span>Eficiência</span><b data-f="eff">—</b></div>' +
-      '<div><span>Aceites / rej.</span><b data-f="shares">—</b></div><div><span>Melhor dif.</span><b data-f="best">—</b></div>' +
-      '<div><span>Uptime</span><b data-f="uptime">—</b></div><div><span>Ping pool</span><b data-f="ping">—</b></div></div>' +
+      '<div><span>' + t('mc_k_power') + '</span><b data-f="power">—</b></div><div><span>' + t('mc_k_eff') + '</span><b data-f="eff">—</b></div>' +
+      '<div><span>' + t('mc_k_shares') + '</span><b data-f="shares">—</b></div><div><span>' + t('mc_k_best') + '</span><b data-f="best">—</b></div>' +
+      '<div><span>Uptime</span><b data-f="uptime">—</b></div><div><span>' + t('mc_k_ping') + '</span><b data-f="ping">—</b></div></div>' +
     '<div class="mc-pool"><span>Pool</span><b data-f="pool">—</b></div>' +
     '<div class="mc-more" data-f="more"></div>' +
     '<footer class="mc-actions">' +
-      '<button type="button" data-a="web" title="Abrir a interface da máquina (AxeOS)">↗ AxeOS</button>' +
-      '<button type="button" data-a="eco" title="Aplicar o perfil Eco">🌿</button><button type="button" data-a="turbo" title="Aplicar o perfil Turbo">🚀</button>' +
-      '<button type="button" data-a="restart" title="Reiniciar a máquina">⟲</button>' +
-      '<button type="button" data-a="more" title="Mostrar todos os detalhes">⋯ Detalhes</button>' +
-      '<button type="button" data-a="remove" class="mc-danger" title="Remover a máquina">✕</button></footer>';
+      '<button type="button" data-a="web" title="' + t('mc_web_g') + '">↗ AxeOS</button>' +
+      '<button type="button" data-a="eco" title="' + t('mc_eco_t') + '">🌿</button><button type="button" data-a="turbo" title="' + t('mc_turbo_t') + '">🚀</button>' +
+      '<button type="button" data-a="restart" title="' + t('mc_restart_t') + '">⟲</button>' +
+      '<button type="button" data-a="more" title="' + t('mc_more_t') + '">' + t('mc_more') + '</button>' +
+      '<button type="button" data-a="remove" class="mc-danger" title="' + t('mc_remove_t') + '">✕</button></footer>';
   return el;
 }
 function mcSet(el, f, text){
@@ -161,18 +161,18 @@ function mcMoreHtml(dev, r){
   if(r && r.online && r.inputV != null) inParts.push(r.inputV.toFixed(2) + ' V');
   if(r && r.online && r.inputA != null) inParts.push(r.inputA.toFixed(2) + ' A');
   const last = typeof getLastMaintenanceTime === 'function' ? getLastMaintenanceTime(dev.id) : null;
-  return row('Temp. VR', r && r.online ? mcNum(r.vrTemp, 1) + ' °C' : '—') + row('Frequência', r && r.online ? mcNum(r.frequency, 0) + ' MHz' : '—') +
-    row('Entrada', inParts.length ? inParts.join(' · ') : '—') + row('Latência local', r && r.online ? mcNum(r.localLatency, 0) + ' ms' : '—') +
-    row('Firmware', r && r.online && r.firmware ? r.firmware : '—') + row('Modelo', r && (r.asicModel || r.deviceModel) ? (r.asicModel || r.deviceModel) : '—') +
-    row('Algoritmo', r && r.algorithm ? String(r.algorithm).toUpperCase() : 'SHA256') + row('Última manutenção', last && typeof formatMaintDate === 'function' ? formatMaintDate(last) : 'nunca registada');
+  return row(t('mc_d_vr'), r && r.online ? mcNum(r.vrTemp, 1) + ' °C' : '—') + row(t('mc_d_freq'), r && r.online ? mcNum(r.frequency, 0) + ' MHz' : '—') +
+    row(t('mc_d_input'), inParts.length ? inParts.join(' · ') : '—') + row(t('mc_d_lat'), r && r.online ? mcNum(r.localLatency, 0) + ' ms' : '—') +
+    row('Firmware', r && r.online && r.firmware ? r.firmware : '—') + row(t('mc_d_model'), r && (r.asicModel || r.deviceModel) ? (r.asicModel || r.deviceModel) : '—') +
+    row(t('mc_d_algo'), r && r.algorithm ? String(r.algorithm).toUpperCase() : 'SHA256') + row(t('mc_d_maint'), last && typeof formatMaintDate === 'function' ? formatMaintDate(last) : t('mc_d_never'));
 }
 // histórico (hashrate e temperatura) da máquina nas últimas 1, 6 ou 24 horas
 function mcHistoryHtml(dev){
   const hrs = mc.prefs.range || 24, cutoff = Date.now() - hrs * 3600e3;
   const btns = [1, 6, 24].map(n => '<button type="button" data-a="range" data-r="' + n + '" class="' + (hrs === n ? 'on' : '') + '">' + n + ' h</button>').join('');
-  const head = '<div class="mc-hist-head"><span>Histórico</span><div>' + btns + '</div></div>';
+  const head = '<div class="mc-hist-head"><span>' + t('mc_h_title') + '</span><div>' + btns + '</div></div>';
   const h = (histories[dev.id] || []).filter(x => x && x.ts >= cutoff && x.hashrate != null && isFinite(x.hashrate));
-  if(h.length < 4) return head + '<div class="mc-hist-empty">A recolher dados… o gráfico aparece passados alguns minutos (a dashboard guarda até 24 h enquanto está aberta).</div>';
+  if(h.length < 4) return head + '<div class="mc-hist-empty">' + t('mc_h_wait') + '</div>';
   const W = 300, H = 90, t0 = h[0].ts, span = Math.max(1, h[h.length - 1].ts - t0);
   const hv = h.map(x => Number(x.hashrate)), hmax = Math.max(...hv), hmin = Math.min(...hv), hs = (hmax - hmin) || hmax * .1 || 1;
   const X = x => ((x.ts - t0) / span * W).toFixed(1);
@@ -180,13 +180,13 @@ function mcHistoryHtml(dev){
   const tp = h.filter(x => isFinite(x.temp) && x.temp > 0).map((x, i) => (i ? 'L' : 'M') + X(x) + ' ' + (H - 4 - (Math.min(90, Math.max(30, x.temp)) - 30) / 60 * (H - 12)).toFixed(1)).join('');
   const temps = h.map(x => Number(x.temp)).filter(v => isFinite(v) && v > 0);
   const avg = hv.reduce((a, b) => a + b, 0) / hv.length, fm = v => { const f = formatHashrate(v); return f.value + ' ' + f.unit; };
-  const tm = t => new Date(t).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  const tm = ts => new Date(ts).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' });
   return head + '<svg class="mc-hist-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
     [.25, .5, .75].map(g => '<line x1="0" x2="' + W + '" y1="' + (H * g).toFixed(0) + '" y2="' + (H * g).toFixed(0) + '"/>').join('') +
     '<path class="harea" d="' + hp + 'L' + W + ' ' + H + 'L0 ' + H + 'Z"/><path class="hline" d="' + hp + '"/>' + (tp ? '<path class="tline" d="' + tp + '"/>' : '') + '</svg>' +
     '<div class="mc-hist-axis"><span>' + tm(t0) + '</span><span>' + tm(h[h.length - 1].ts) + '</span></div>' +
-    '<div class="mc-hist-stats"><span>Média <b>' + fm(avg) + '</b></span><span>Máx. <b>' + fm(hmax) + '</b></span><span>Mín. <b>' + fm(hmin) + '</b></span>' +
-    (temps.length ? '<span class="t">Temp. máx. <b>' + Math.max(...temps).toFixed(0) + ' °C</b></span>' : '') + '</div>';
+    '<div class="mc-hist-stats"><span>' + t('mc_h_avg') + ' <b>' + fm(avg) + '</b></span><span>' + t('mc_h_max') + ' <b>' + fm(hmax) + '</b></span><span>' + t('mc_h_min') + ' <b>' + fm(hmin) + '</b></span>' +
+    (temps.length ? '<span class="t">' + t('mc_h_tmax') + ' <b>' + Math.max(...temps).toFixed(0) + ' °C</b></span>' : '') + '</div>';
 }
 
 // ---- atualização de um cartão ----
@@ -201,13 +201,13 @@ function mcUpdateCard(el, dev, r, st, i){
   const pk = el.querySelector('[data-a="pick"]');
   if(pk){ pk.checked = mc.picked.has(dev.id); el.classList.toggle('is-pick', pk.checked); }
   const star = el.querySelector('[data-a="pin"]');
-  star.textContent = dev.pin ? '★' : '☆'; star.classList.toggle('on', !!dev.pin); star.title = dev.pin ? 'Deixar de fixar' : 'Fixar no topo';
+  star.textContent = dev.pin ? '★' : '☆'; star.classList.toggle('on', !!dev.pin); star.title = dev.pin ? t('mc_unpin') : t('mc_pin');
   el.classList.toggle('is-pinned', !!dev.pin);
   const nc = el.querySelector('[data-f="notechip"]');
   nc.hidden = !dev.note; nc.title = dev.note || '';
   const gc = el.querySelector('[data-f="group"]');
   gc.hidden = !dev.group; mcSet(el, 'group', dev.group ? '🗂 ' + dev.group : '');
-  mcSet(el, 'name', dev.name || ('Máquina ' + (i + 1)));
+  mcSet(el, 'name', dev.name || mct('mc_machine', i + 1));
   mcSet(el, 'ip', dev.ip || '');
   mcSet(el, 'model', icon + ' ' + model);
   mcSet(el, 'status', S.label);
@@ -224,7 +224,7 @@ function mcUpdateCard(el, dev, r, st, i){
   el.querySelector('[data-f="line"]').setAttribute('d', sp.line);
   el.querySelector('[data-f="area"]').setAttribute('d', sp.area);
   const lv = el.querySelector('[data-f="live"]'); lv.setAttribute('cx', sp.x.toFixed(1)); lv.setAttribute('cy', sp.y.toFixed(1));
-  const al = mcAlerts(dev, r, st, trend).join('') + (mc.rank[dev.id] || []).map(t => '<span class="mc-chip rank">' + t + '</span>').join('');
+  const al = mcAlerts(dev, r, st, trend).join('') + (mc.rank[dev.id] || []).map(tx => '<span class="mc-chip rank">' + tx + '</span>').join('');
   const aln = el.querySelector('[data-f="alerts"]');
   if(aln.dataset.s !== al){ aln.dataset.s = al; aln.innerHTML = al; }
   // medidores
@@ -255,9 +255,9 @@ function mcUpdateCard(el, dev, r, st, i){
   if(mc.open.has(dev.id)){
     if(!more.dataset.shell){
       more.innerHTML = '<div class="mc-hist"></div><div class="mc-more-grid"></div>' +
-        '<div class="mc-edit"><label class="mc-grp"><span>Nome</span><input type="text" data-a="name" maxlength="40"></label><label class="mc-grp"><span>IP</span><input type="text" data-a="ip" maxlength="60" inputmode="decimal"></label></div>' +
-        '<label class="mc-grp"><span>Grupo</span><input type="text" list="mcGroupList" data-a="group" placeholder="sem grupo" maxlength="24"></label>' +
-        '<label class="mc-grp mc-noteedit"><span>Nota</span><textarea data-a="note" rows="2" maxlength="300" placeholder="ex.: pasta térmica trocada em 12/10"></textarea></label>';
+        '<div class="mc-edit"><label class="mc-grp"><span>' + t('mc_e_name') + '</span><input type="text" data-a="name" maxlength="40"></label><label class="mc-grp"><span>IP</span><input type="text" data-a="ip" maxlength="60" inputmode="decimal"></label></div>' +
+        '<label class="mc-grp"><span>' + t('mc_e_group') + '</span><input type="text" list="mcGroupList" data-a="group" placeholder="' + t('mc_e_nogroup') + '" maxlength="24"></label>' +
+        '<label class="mc-grp mc-noteedit"><span>' + t('mc_e_note') + '</span><textarea data-a="note" rows="2" maxlength="300" placeholder="' + t('mc_e_noteph') + '"></textarea></label>';
       more.dataset.shell = '1';
     }
     setHtml(more.querySelector('.mc-hist'), mcHistoryHtml(dev));
@@ -267,25 +267,25 @@ function mcUpdateCard(el, dev, r, st, i){
       if(inp && document.activeElement !== inp) inp.value = v || '';
     });
   } else if(more.dataset.shell){ more.innerHTML = ''; delete more.dataset.shell; }
-  el.querySelector('[data-a="more"]').textContent = mc.open.has(dev.id) ? '▴ Menos' : '⋯ Detalhes';
+  el.querySelector('[data-a="more"]').textContent = mc.open.has(dev.id) ? t('mc_less') : t('mc_more');
   // atalhos de perfis só aparecem se existirem
   ['eco', 'turbo'].forEach(slot => {
     const b = el.querySelector('[data-a="' + slot + '"]'), prof = typeof getQuickSlot === 'function' ? getQuickSlot(slot) : null;
-    if(b){ b.hidden = !prof || !on; if(prof) b.title = 'Aplicar "' + prof.name + '"'; }
+    if(b){ b.hidden = !prof || !on; if(prof) b.title = mct('mc_apply_t', prof.name); }
   });
   const web = el.querySelector('[data-a="web"]'), os = mcOsName(model);
-  web.hidden = !dev.ip; web.textContent = '↗ ' + os; web.title = 'Abrir a interface da máquina (' + os + ')';
+  web.hidden = !dev.ip; web.textContent = '↗ ' + os; web.title = mct('mc_web_t', os);
 }
 
 // ---- tabela ----
 function mcTableHtml(rows){
   const th = h => '<th>' + h + '</th>';
-  let html = '<table class="mc-table"><thead><tr>' + ['', '', 'Máquina', 'Grupo', 'Estado', 'Hashrate', 'Temp.', 'Consumo', 'Efic.', 'Wi-Fi', 'Ping', 'Rej.', 'Uptime', ''].map(th).join('') + '</tr></thead><tbody>';
+  let html = '<table class="mc-table"><thead><tr>' + ['', '', t('mc_t_machine'), t('mc_e_group'), t('mc_t_state'), 'Hashrate', t('mc_m_temp'), t('mc_k_power'), t('mc_t_eff'), 'Wi-Fi', 'Ping', t('mc_t_rej'), 'Uptime', ''].map(th).join('') + '</tr></thead><tbody>';
   rows.forEach(({ dev, r, st }) => {
     const on = !!(r && r.online), S = MC_STATUS[st], [hv, hu] = mcHashText(r);
     const sh = on ? (r.accepted || 0) + (r.rejected || 0) : 0, rej = sh ? r.rejected / sh * 100 : 0;
     html += '<tr data-id="' + escapeHtml(String(dev.id)) + '" class="' + (selectedId === dev.id ? 'is-sel' : '') + '">' +
-      '<td><input type="checkbox" data-a="pick"' + (mc.picked.has(dev.id) ? ' checked' : '') + ' aria-label="Selecionar"></td>' +
+      '<td><input type="checkbox" data-a="pick"' + (mc.picked.has(dev.id) ? ' checked' : '') + ' aria-label="' + t('mc_select') + '"></td>' +
       '<td><span class="mc-dot" style="--mc-c:' + S.color + '"></span></td>' +
       '<td><b>' + escapeHtml(dev.name || '') + '</b><small>' + escapeHtml(dev.ip || '') + '</small></td>' +
       '<td>' + (dev.group ? '<span class="mc-gchip">🗂 ' + escapeHtml(dev.group) + '</span>' : '<small>—</small>') + '</td>' +
@@ -296,7 +296,7 @@ function mcTableHtml(rows){
       '<td>' + (on && r.rssi != null ? r.rssi + ' dBm' : '—') + '</td><td>' + (on && r.poolPing != null ? Math.round(r.poolPing) + ' ms' : '—') + '</td>' +
       '<td class="' + (sh > 20 && rej > 2 ? 'warn' : '') + '">' + (sh > 20 ? rej.toFixed(1) + '%' : '—') + '</td>' +
       '<td>' + (on ? formatUptime(r.uptime).text : '—') + '</td>' +
-      '<td class="mc-tact"><button type="button" data-a="web" title="Abrir a interface da máquina"' + (dev.ip ? '' : ' hidden') + '>↗</button><button type="button" data-a="restart" title="Reiniciar">⟲</button><button type="button" data-a="remove" class="mc-danger" title="Remover">✕</button></td></tr>';
+      '<td class="mc-tact"><button type="button" data-a="web" title="' + t('mc_web_g') + '"' + (dev.ip ? '' : ' hidden') + '>↗</button><button type="button" data-a="restart" title="' + t('mc_restart_g') + '">⟲</button><button type="button" data-a="remove" class="mc-danger" title="' + t('mc_remove_g') + '">✕</button></td></tr>';
   });
   return html + '</tbody></table>';
 }
@@ -311,12 +311,12 @@ function mcBuildToolbar(){
   tb.insertAdjacentHTML('afterend', '<div class="mc-bulk" id="mcBulk" hidden></div><datalist id="mcGroupList"></datalist>');
   tb.innerHTML =
     '<div class="mc-chips" id="mcChips"></div>' +
-    '<div class="mc-tools"><input type="search" id="mcSearch" placeholder="Pesquisar (atalho: /)" aria-label="Pesquisar máquinas">' +
-    '<select id="mcGroup" aria-label="Filtrar por grupo"></select>' +
-    '<select id="mcSort" aria-label="Ordenar por">' + MC_SORTS.map(([k, l]) => '<option value="' + k + '">' + l + '</option>').join('') + '</select>' +
-    '<button type="button" class="mc-fx-btn" id="mcExport" title="Descarregar as máquinas e as leituras atuais (CSV)">⬇ Exportar</button>' +
-    '<button type="button" class="mc-fx-btn" id="mcGroupBy" title="Mostrar as máquinas separadas por grupo">🗂 Agrupar</button>' +
-    '<button type="button" class="mc-fx-btn" id="mcFx" title="Efeitos 3D nos cartões">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="Cartões">▦</button><button type="button" data-v="compact" title="Compacto">▥</button><button type="button" data-v="table" title="Tabela">☰</button></div></div>';
+    '<div class="mc-tools"><input type="search" id="mcSearch" placeholder="' + t('mc_search') + '" aria-label="' + t('mc_search_a') + '">' +
+    '<select id="mcGroup" aria-label="' + t('mc_group_a') + '"></select>' +
+    '<select id="mcSort" aria-label="' + t('mc_sort_a') + '">' + MC_SORTS.map(([k, l]) => '<option value="' + k + '">' + t(l) + '</option>').join('') + '</select>' +
+    '<button type="button" class="mc-fx-btn" id="mcExport" title="' + t('mc_export_t') + '">' + t('mc_export') + '</button>' +
+    '<button type="button" class="mc-fx-btn" id="mcGroupBy" title="' + t('mc_groupby_t') + '">' + t('mc_groupby') + '</button>' +
+    '<button type="button" class="mc-fx-btn" id="mcFx" title="' + t('mc_fx_on') + '">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="' + t('mc_v_cards') + '">▦</button><button type="button" data-v="compact" title="' + t('mc_v_compact') + '">▥</button><button type="button" data-v="table" title="' + t('mc_v_table') + '">☰</button></div></div>';
   $('mcSearch').value = mc.prefs.q || '';
   $('mcFx').addEventListener('click', () => { mc.prefs.fx = !mcFxOn(); mcSavePrefs(); renderMachineCards(); });
   $('mcExport').addEventListener('click', () => { if(typeof mcExportCsv === 'function') mcExportCsv(); });
@@ -339,11 +339,11 @@ function mcTrackStates(list, states){
     if(r && r.online) delete mc.since[id]; else if(r && !mc.since[id]) mc.since[id] = Date.now();
     if(was && was !== st){
       const name = dev.name || dev.ip;
-      if(st === 'hot') mcLogEvent(name + ': alarme' + (r && r.temp ? ' (' + Number(r.temp).toFixed(0) + ' °C)' : ''), 'bad', id);
-      else if(st === 'off') mcLogEvent(name + ': ficou offline', 'bad', id);
-      else if(st === 'portal') mcLogEvent(name + ': modo de configuração Wi-Fi', 'info', id);
-      else if(st === 'warm' || st === 'warn') mcLogEvent(name + ': ' + MC_STATUS[st].label.toLowerCase(), 'warn', id);
-      else if(st === 'ok') mcLogEvent(name + ': voltou ao normal', 'good', id);
+      if(st === 'hot') mcLogEvent(mct('mc_l_alarm', name, r && r.temp ? ' (' + Number(r.temp).toFixed(0) + ' °C)' : ''), 'bad', id);
+      else if(st === 'off') mcLogEvent(mct('mc_l_off', name), 'bad', id);
+      else if(st === 'portal') mcLogEvent(mct('mc_l_portal', name), 'info', id);
+      else if(st === 'warm' || st === 'warn') mcLogEvent(mct('mc_l_state', name, MC_STATUS[st].label.toLowerCase()), 'warn', id);
+      else if(st === 'ok') mcLogEvent(mct('mc_l_ok', name), 'good', id);
     }
     mc.prev[id] = st;
   });
@@ -356,7 +356,7 @@ function mcRenderLog(){
   if(ul.dataset.sig === sig) return;
   ul.dataset.sig = sig;
   ul.innerHTML = items.length ? items.map(e => '<li class="' + e.kind + '"' + (e.id != null ? ' data-jump="' + escapeHtml(String(e.id)) + '"' : '') + '><time>' +
-    new Date(e.t).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) + '</time><span>' + escapeHtml(e.text) + '</span></li>').join('') : '<li class="muted"><span>Sem eventos hoje. Tudo calmo.</span></li>';
+    new Date(e.t).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' }) + '</time><span>' + escapeHtml(e.text) + '</span></li>').join('') : '<li class="muted"><span>' + t('mc_l_none') + '</span></li>';
 }
 
 // ---- selos: a mais rápida e a mais eficiente (só com 3 ou mais máquinas SHA-256 online) ----
@@ -366,18 +366,18 @@ function mcRanks(list){
   if(on.length < 3) return;
   const fast = on.reduce((a, b) => (Number(readings[b.id].hashrate) || 0) > (Number(readings[a.id].hashrate) || 0) ? b : a);
   const eff = on.filter(d => readings[d.id].efficiency > 0).reduce((a, b) => !a || readings[b.id].efficiency < readings[a.id].efficiency ? b : a, null);
-  (mc.rank[fast.id] = mc.rank[fast.id] || []).push('🚀 Mais rápida');
-  if(eff) (mc.rank[eff.id] = mc.rank[eff.id] || []).push('🏅 Mais eficiente');
+  (mc.rank[fast.id] = mc.rank[fast.id] || []).push(t('mc_rank_fast'));
+  if(eff) (mc.rank[eff.id] = mc.rank[eff.id] || []).push(t('mc_rank_eff'));
 }
 
 // ---- grupos ----
-function mcGroupsOf(list){ return [...new Set(list.map(d => d.group).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt')); }
+function mcGroupsOf(list){ return [...new Set(list.map(d => d.group).filter(Boolean))].sort((a, b) => a.localeCompare(b, mcLocale())); }
 function mcFillGroups(list){
   const gs = mcGroupsOf(list), sel = $('mcGroup'), dl = $('mcGroupList');
   if(dl){ const h = gs.map(g => '<option value="' + escapeHtml(g) + '">').join(''); if(dl.dataset.s !== h){ dl.dataset.s = h; dl.innerHTML = h; } }
   if(!sel) return;
   if(mc.prefs.group && mc.prefs.group !== '__none' && !gs.includes(mc.prefs.group)) mc.prefs.group = '';
-  const h = '<option value="">Todos os grupos</option>' + gs.map(g => '<option value="' + escapeHtml(g) + '">🗂 ' + escapeHtml(g) + '</option>').join('') + (gs.length ? '<option value="__none">Sem grupo</option>' : '');
+  const h = '<option value="">' + t('mc_g_all') + '</option>' + gs.map(g => '<option value="' + escapeHtml(g) + '">🗂 ' + escapeHtml(g) + '</option>').join('') + (gs.length ? '<option value="__none">' + t('mc_g_none') + '</option>' : '');
   if(sel.dataset.s !== h){ sel.dataset.s = h; sel.innerHTML = h; }
   sel.value = mc.prefs.group || '';
   sel.hidden = !gs.length;
@@ -387,16 +387,16 @@ function mcGroupHead(name, items){
   let el = mc.heads.get(name);
   if(!el){
     el = document.createElement('div'); el.className = 'mc-ghead'; el.dataset.g = name;
-    el.innerHTML = '<button type="button" data-a="gtoggle" class="mc-gtoggle" aria-label="Abrir ou fechar o grupo">▾</button><b></b><span class="mc-gstats"></span>';
+    el.innerHTML = '<button type="button" data-a="gtoggle" class="mc-gtoggle" aria-label="' + t('mc_g_toggle') + '">▾</button><b></b><span class="mc-gstats"></span>';
     mc.heads.set(name, el);
   }
   const online = items.filter(x => x.r && x.r.online), gh = online.reduce((s, x) => s + (algoGroupOf(x.r) === 'sha256' ? Number(x.r.hashrate) || 0 : 0), 0);
   const bad = items.filter(x => x.st === 'hot' || x.st === 'off').length, warn = items.filter(x => x.st === 'warm' || x.st === 'warn').length;
   const f = formatHashrate(gh);
   el.classList.toggle('closed', mc.collapsed.has(name));
-  el.querySelector('b').textContent = name ? '🗂 ' + name : 'Sem grupo';
-  el.querySelector('.mc-gstats').innerHTML = items.length + ' máquina' + (items.length === 1 ? '' : 's') + ' · ' + online.length + ' online' + (gh ? ' · <i>' + f.value + ' ' + f.unit + '</i>' : '') +
-    (bad ? ' · <i class="bad">' + bad + ' em falha</i>' : '') + (warn ? ' · <i class="warn">' + warn + ' com aviso</i>' : '');
+  el.querySelector('b').textContent = name ? '🗂 ' + name : t('mc_g_none');
+  el.querySelector('.mc-gstats').innerHTML = mct(items.length === 1 ? 'mc_n_machine' : 'mc_n_machines', items.length) + ' · ' + mct('mc_g_online', online.length) + (gh ? ' · <i>' + f.value + ' ' + f.unit + '</i>' : '') +
+    (bad ? ' · <i class="bad">' + mct('mc_g_fail', bad) + '</i>' : '') + (warn ? ' · <i class="warn">' + mct('mc_g_warn', warn) + '</i>' : '');
   return el;
 }
 
@@ -409,10 +409,10 @@ function mcRenderBulk(){
   bar.hidden = n === 0;
   if(!n){ bar.innerHTML = ''; return; }
   const q = slot => { const p = typeof getQuickSlot === 'function' ? getQuickSlot(slot) : null; return p ? p.name : null; };
-  const html = '<b>✓ ' + n + ' selecionada' + (n === 1 ? '' : 's') + '</b>' +
+  const html = '<b>' + mct(n === 1 ? 'mc_b_sel1' : 'mc_b_seln', n) + '</b>' +
     (q('eco') ? '<button type="button" data-b="eco">🌿 ' + escapeHtml(q('eco')) + '</button>' : '') + (q('turbo') ? '<button type="button" data-b="turbo">🚀 ' + escapeHtml(q('turbo')) + '</button>' : '') +
-    '<button type="button" data-b="restart">⟲ Reiniciar</button><button type="button" data-b="group">🗂 Pôr num grupo…</button>' +
-    '<span class="mc-bulk-sp"></span><button type="button" data-b="all">Selecionar as visíveis</button><button type="button" data-b="clear">Limpar</button>';
+    '<button type="button" data-b="restart">' + t('mc_b_restart') + '</button><button type="button" data-b="group">' + t('mc_b_group') + '</button>' +
+    '<span class="mc-bulk-sp"></span><button type="button" data-b="all">' + t('mc_b_all') + '</button><button type="button" data-b="clear">' + t('mc_b_clear') + '</button>';
   if(bar.dataset.s !== html){ bar.dataset.s = html; bar.innerHTML = html; }
 }
 async function mcBulkRun(kind){
@@ -421,38 +421,48 @@ async function mcBulkRun(kind){
   if(kind === 'clear'){ mc.picked.clear(); renderMachineCards(); return; }
   if(kind === 'all'){ (mc.visible || []).forEach(id => mc.picked.add(id)); renderMachineCards(); return; }
   if(kind === 'group'){
-    const g = prompt('Nome do grupo para as ' + devs.length + ' máquinas (deixe vazio para as tirar do grupo):', devs[0].group || '');
+    const g = prompt(mct('mc_b_prompt', devs.length), devs[0].group || '');
     if(g === null) return;
     devs.forEach(d => { if(g.trim()) d.group = g.trim().slice(0, 24); else delete d.group; });
     saveDevices(); mc.picked.clear(); renderAll(); return;
   }
   const names = devs.map(d => d.name || d.ip).join(', ');
   if(kind === 'restart'){
-    if(!confirm('Reiniciar ' + devs.length + ' máquina(s)?\n' + names + '\nA mineração será interrompida temporariamente.')) return;
+    if(!confirm(mct('mc_b_confirm_restart', devs.length, names))) return;
     let ok = 0;
-    for(const d of devs){ setQuickActionStatus('⟲ A reiniciar ' + (d.name || d.ip) + '…'); const res = await aiRestartDevice(d); if(res && res.ok) ok++; }
-    setQuickActionStatus('✓ Reinício enviado a ' + ok + ' de ' + devs.length + ' máquinas.');
+    for(const d of devs){ setQuickActionStatus(mct('mc_b_restarting', d.name || d.ip)); const res = await aiRestartDevice(d); if(res && res.ok) ok++; }
+    setQuickActionStatus(mct('mc_b_restarted', ok, devs.length));
     return;
   }
   const prof = getQuickSlot(kind);
   if(!prof) return;
-  if(!confirm('Aplicar "' + prof.name + '" (' + qpDescribe(prof) + ') a ' + devs.length + ' máquina(s)?\n' + names)) return;
+  if(!confirm(mct('mc_b_confirm_apply', prof.name, qpDescribe(prof), devs.length, names))) return;
   let ok = 0;
-  for(const d of devs){ if(!(readings[d.id] && readings[d.id].online)) continue; setQuickActionStatus('⚙ A aplicar a ' + (d.name || d.ip) + '…'); const res = await aiApplyProfile(prof, d); if(res && res.ok) ok++; }
-  setQuickActionStatus('✓ "' + prof.name + '" aplicado a ' + ok + ' de ' + devs.length + ' máquinas.');
+  for(const d of devs){ if(!(readings[d.id] && readings[d.id].online)) continue; setQuickActionStatus(mct('mc_b_applying', d.name || d.ip)); const res = await aiApplyProfile(prof, d); if(res && res.ok) ok++; }
+  setQuickActionStatus(mct('mc_b_applied', prof.name, ok, devs.length));
   renderAll();
+}
+
+function mcResetUi(){
+  ['mcSummary', 'mcBulk', 'mcGroupList'].forEach(id => { const n = $(id); if(n) n.remove(); });
+  const tb = $('mcToolbar');
+  if(tb){ tb.innerHTML = ''; delete tb.dataset.ready; }
+  mc.els.forEach(el => el.remove()); mc.els.clear();
+  mc.heads.forEach(el => el.remove()); mc.heads.clear();
+  const log = $('mcLog'); if(log) delete log.dataset.sig;
 }
 
 function renderMachineCards(){
   const board = $('mcBoard');
   if(!board) return;
+  if(mc.lang !== currentLang){ mc.lang = currentLang; mcResetUi(); }
   mcBuildToolbar();
   const list = Array.isArray(devices) ? devices : [];
   const states = {};
   list.forEach(d => { states[d.id] = mcStateOf(readings[d.id]); });
   mcTrackStates(list, states);
   [...mc.picked].forEach(id => { if(!list.some(d => d.id === id)) mc.picked.delete(id); });
-  if($('mcCount')) $('mcCount').textContent = list.length + ' máquina' + (list.length === 1 ? '' : 's');
+  if($('mcCount')) $('mcCount').textContent = mct(list.length === 1 ? 'mc_n_machine' : 'mc_n_machines', list.length);
   mcFillGroups(list);
   mcRanks(list);
   if(typeof mcExtraRender === 'function') mcExtraRender(list, states);
@@ -462,13 +472,13 @@ function renderMachineCards(){
   list.forEach(d => { const f = mcFilterOf(states[d.id]); if(counts[f] != null) counts[f]++; });
   const chips = $('mcChips');
   if(chips){
-    const html = MC_FILTERS.map(([k, l]) => '<button type="button" data-flt="' + k + '" class="mc-fchip ' + k + (mc.prefs.filter === k ? ' active' : '') + (counts[k] ? '' : ' zero') + '">' + l + ' <b>' + counts[k] + '</b></button>').join('');
+    const html = MC_FILTERS.map(([k, l]) => '<button type="button" data-flt="' + k + '" class="mc-fchip ' + k + (mc.prefs.filter === k ? ' active' : '') + (counts[k] ? '' : ' zero') + '">' + t(l) + ' <b>' + counts[k] + '</b></button>').join('');
     if(chips.dataset.s !== html){ chips.dataset.s = html; chips.innerHTML = html; }
   }
   if($('mcFx')) {
     const on = mcFxOn(), perf = typeof hcPerfMode !== 'undefined' && hcPerfMode;
     $('mcFx').classList.toggle('active', on);
-    $('mcFx').title = on ? 'Desligar os efeitos 3D' : perf && mc.prefs.fx === 'auto' ? 'O modo Desempenho está ativo. Clique para ligar os efeitos 3D mesmo assim' : 'Ligar os efeitos 3D';
+    $('mcFx').title = on ? t('mc_fx_off') : perf && mc.prefs.fx === 'auto' ? t('mc_fx_perf') : t('mc_fx_on');
   }
   $('mcViews') && $('mcViews').querySelectorAll('[data-v]').forEach(b => b.classList.toggle('active', b.dataset.v === mc.prefs.view));
 
@@ -482,7 +492,7 @@ function renderMachineCards(){
   const byNum = (f, desc) => (a, b) => ((b.r && b.r.online ? Number(f(b.r)) || 0 : -1) - (a.r && a.r.online ? Number(f(a.r)) || 0 : -1)) * (desc ? 1 : -1);
   const cmp = {
     status: (a, b) => MC_STATUS[a.st].rank - MC_STATUS[b.st].rank || (a.dev.name || '').localeCompare(b.dev.name || ''),
-    name: (a, b) => (a.dev.name || '').localeCompare(b.dev.name || '', 'pt', { numeric: true }),
+    name: (a, b) => (a.dev.name || '').localeCompare(b.dev.name || '', mcLocale(), { numeric: true }),
     hash: byNum(r => r.hashrate_raw || (r.hashrate ? r.hashrate * 1e9 : 0), true),
     temp: byNum(r => r.temp, true),
     eff: (a, b) => ((a.r && a.r.online && a.r.efficiency > 0 ? a.r.efficiency : 1e9) - (b.r && b.r.online && b.r.efficiency > 0 ? b.r.efficiency : 1e9))
@@ -494,12 +504,12 @@ function renderMachineCards(){
   mcRenderBulk();
   if(!list.length){
     board.className = 'mc-board mc-empty';
-    board.innerHTML = '<div class="mc-hint">Ainda não há máquinas. Adicione uma no painel acima ou use <b>Localizar máquinas na rede</b>.</div>';
+    board.innerHTML = '<div class="mc-hint">' + t('mc_empty') + '</div>';
     mc.els.clear(); mc.heads.clear(); mcRenderLog(); return;
   }
   if(!rows.length){
     board.className = 'mc-board mc-empty';
-    board.innerHTML = '<div class="mc-hint">Nenhuma máquina corresponde ao filtro ou à pesquisa.</div>';
+    board.innerHTML = '<div class="mc-hint">' + t('mc_nomatch') + '</div>';
     mc.els.clear(); mc.heads.clear(); mcRenderLog(); return;
   }
   if(mc.prefs.view === 'table'){
@@ -515,7 +525,7 @@ function renderMachineCards(){
   if(mc.prefs.groupBy && mcGroupsOf(list).length){
     const groups = new Map();
     rows.forEach(x => { const g = x.dev.group || ''; if(!groups.has(g)) groups.set(g, []); groups.get(g).push(x); });
-    [...groups.keys()].sort((a, b) => a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, 'pt')).forEach(g => {
+    [...groups.keys()].sort((a, b) => a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, mcLocale())).forEach(g => {
       useHeads.add(g); nodes.push(mcGroupHead(g, groups.get(g)));
       if(!mc.collapsed.has(g)) groups.get(g).forEach(x => nodes.push(x));
     });
@@ -587,7 +597,7 @@ function renderMachineCards(){
     e.stopPropagation();
     if(act === 'pin'){ if(dev.pin) delete dev.pin; else dev.pin = true; saveDevices(); renderMachineCards(); return; }
     if(act === 'copyip'){
-      try { await navigator.clipboard.writeText(dev.ip); setQuickActionStatus('✓ IP ' + dev.ip + ' copiado.'); } catch(err) { setQuickActionStatus('✗ Não foi possível copiar o IP.'); }
+      try { await navigator.clipboard.writeText(dev.ip); setQuickActionStatus(mct('mc_c_copied', dev.ip)); } catch(err) { setQuickActionStatus(t('mc_c_copyfail')); }
       return;
     }
     if(act === 'pick'){
@@ -598,16 +608,16 @@ function renderMachineCards(){
     if(act === 'range'){ mc.prefs.range = Number(a.dataset.r) || 24; mcSavePrefs(); renderMachineCards(); return; }
     if(act === 'web' && dev.ip) window.open('http://' + dev.ip, '_blank', 'noopener');
     else if(act === 'more'){ mc.open.has(dev.id) ? mc.open.delete(dev.id) : mc.open.add(dev.id); renderMachineCards(); }
-    else if(act === 'remove'){ if(confirm('Remover a máquina "' + label + '"?')) removeDevice(dev.id); }
+    else if(act === 'remove'){ if(confirm(mct('mc_c_remove', label))) removeDevice(dev.id); }
     else if(act === 'restart'){
-      if(!confirm('Reiniciar ' + label + '? A mineração será interrompida temporariamente.')) return;
+      if(!confirm(mct('mc_c_restart', label))) return;
       const res = await aiRestartDevice(dev);
-      setQuickActionStatus(res && res.ok ? '✓ Reinício enviado a ' + label + '.' : '✗ Falhou em ' + label + '.');
+      setQuickActionStatus(res && res.ok ? mct('mc_c_restart_ok', label) : mct('mc_c_fail', label));
     } else if(act === 'eco' || act === 'turbo'){
       const prof = getQuickSlot(act);
-      if(!prof || !confirm('Aplicar "' + prof.name + '" (' + qpDescribe(prof) + ') a ' + label + '?')) return;
+      if(!prof || !confirm(mct('mc_c_apply', prof.name, qpDescribe(prof), label))) return;
       const res = await aiApplyProfile(prof, dev);
-      setQuickActionStatus(res && res.ok ? '✓ "' + prof.name + '" aplicado a ' + label + '.' : '✗ Falhou em ' + label + '.');
+      setQuickActionStatus(res && res.ok ? mct('mc_c_apply_ok', prof.name, label) : mct('mc_c_fail', label));
       renderAll();
     }
   });
@@ -622,8 +632,8 @@ function renderMachineCards(){
     else if(k === 'note'){ if(v) dev.note = v.slice(0, 300); else delete dev.note; }
     else if(k === 'name'){ if(!v){ inp.value = dev.name; return; } dev.name = v.slice(0, 40); }
     else if(k === 'ip'){
-      if(!/^[A-Za-z0-9.\-:]{3,60}$/.test(v)){ inp.value = dev.ip; setQuickActionStatus('✗ IP inválido.'); return; }
-      if(devices.some(d => d !== dev && d.ip === v)){ inp.value = dev.ip; setQuickActionStatus('✗ Já existe uma máquina com esse IP.'); return; }
+      if(!/^[A-Za-z0-9.\-:]{3,60}$/.test(v)){ inp.value = dev.ip; setQuickActionStatus(t('mc_c_ipbad')); return; }
+      if(devices.some(d => d !== dev && d.ip === v)){ inp.value = dev.ip; setQuickActionStatus(t('mc_c_ipdup')); return; }
       dev.ip = v;
     }
     saveDevices(); renderAll();
