@@ -813,16 +813,24 @@ const ANOMALY_RULES = [
   { id: 'wdt',    re: /watchdog|brownout|guru meditation|panic|rebooting|stack overflow/i, msg: n => `Reinício/falha de firmware (watchdog/brownout) na ${n}` },
   { id: 'psu',    re: /(?:overcurrent|overvoltage|undervoltage|power fault|vr[_ ]?fault)/i, msg: n => `Falha de alimentação/regulador (VR) na ${n}` },
 ];
+// Para não encher o ecrã de avisos: só avisa com 5 ocorrências num minuto e, depois de avisar,
+// espera 1 hora por máquina e tipo de erro (a hora do último aviso fica guardada, por isso
+// recarregar a página não repete o aviso).
+const ANOMALY_HITS = 5, ANOMALY_COOLDOWN_MS = 60 * 60000, ANOMALY_KEY = 'nerdqaxe:anomaly_last';
 const anomalyState = {};
+let anomalyLast = {};
+try { anomalyLast = JSON.parse(localStorage.getItem(ANOMALY_KEY) || '{}'); } catch(e) {}
 function parseConsoleAnomaly(machineId, machineName, text) {
   if(!text || machineId === 'sys') return;
   for(const rule of ANOMALY_RULES) {
     if(!rule.re.test(text)) continue;
     const key = machineId + ':' + rule.id, now = Date.now();
-    const st = anomalyState[key] || (anomalyState[key] = { hits: [], lastAlert: 0 });
+    const st = anomalyState[key] || (anomalyState[key] = { hits: [], lastAlert: anomalyLast[key] || 0 });
     st.hits = st.hits.filter(t => now - t < 60000); st.hits.push(now);
-    if(st.hits.length >= 3 && now - st.lastAlert > 10 * 60000) {
+    if(st.hits.length >= ANOMALY_HITS && now - st.lastAlert > ANOMALY_COOLDOWN_MS) {
       st.lastAlert = now;
+      anomalyLast[key] = now;
+      try { localStorage.setItem(ANOMALY_KEY, JSON.stringify(anomalyLast)); } catch(e) {}
       const m = rule.msg(machineName);
       addNotification('anomaly', 'Anomalia Detetada', `${m} (${st.hits.length} ocorrências no último minuto). Última linha: ${String(text).slice(0, 120)}`, machineName);
       logEvent(`🔧 ${m}`, 'error', machineName, machineId);
