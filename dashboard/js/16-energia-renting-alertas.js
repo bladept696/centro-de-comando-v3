@@ -309,7 +309,7 @@ async function fetchRentingList(){
 // --- Alertas (Telegram / Discord) -------------------------------------------
 let alertCooldowns = {}; // chave -> timestamp do último alerta enviado (evita spam)
 const ALERT_COOLDOWN_MS = 10 * 60 * 1000; // 10 min por tipo/máquina
-let alertsConfig = { notify_offline: true, notify_record: true, notify_rental_ending: true, notify_hashrate_drop: true, notify_windows_toast: true, hashrate_drop_pct: 30 };
+let alertsConfig = { notify_offline: true, notify_record: true, notify_rental_ending: true, notify_hashrate_drop: true, notify_windows_toast: true, notify_health: true, notify_daily: false, daily_hour: 21, hashrate_drop_pct: 30 };
 
 async function sendAlert(message, cooldownKey){
   if(cooldownKey){
@@ -334,6 +334,9 @@ async function loadAlertsConfig(){
       notify_rental_ending: cfg.notify_rental_ending !== false,
       notify_hashrate_drop: cfg.notify_hashrate_drop !== false,
       notify_windows_toast: cfg.notify_windows_toast !== false,
+      notify_health: cfg.notify_health !== false,
+      notify_daily: cfg.notify_daily === true,
+      daily_hour: cfg.daily_hour != null ? Number(cfg.daily_hour) : 21,
       hashrate_drop_pct: cfg.hashrate_drop_pct || 30,
     };
     if($('alTgChatId')) $('alTgChatId').value = cfg.telegram_chat_id || '';
@@ -342,6 +345,9 @@ async function loadAlertsConfig(){
     if($('alNotifyRecord')) $('alNotifyRecord').checked = alertsConfig.notify_record;
     if($('alNotifyRental')) $('alNotifyRental').checked = alertsConfig.notify_rental_ending;
     if($('alNotifyDrop')) $('alNotifyDrop').checked = alertsConfig.notify_hashrate_drop;
+    if($('alNotifyHealth')) $('alNotifyHealth').checked = alertsConfig.notify_health;
+    if($('alNotifyDaily')) $('alNotifyDaily').checked = alertsConfig.notify_daily;
+    if($('alDailyHour')) $('alDailyHour').value = String(alertsConfig.daily_hour);
     if($('alNotifyToast')){
       $('alNotifyToast').checked = alertsConfig.notify_windows_toast;
       $('alNotifyToast').disabled = cfg.toast_available === false;
@@ -365,6 +371,9 @@ async function saveAlertsConfig(){
     notify_rental_ending: $('alNotifyRental').checked,
     notify_hashrate_drop: $('alNotifyDrop').checked,
     notify_windows_toast: $('alNotifyToast') ? $('alNotifyToast').checked : true,
+    notify_health: $('alNotifyHealth') ? $('alNotifyHealth').checked : true,
+    notify_daily: $('alNotifyDaily') ? $('alNotifyDaily').checked : false,
+    daily_hour: $('alDailyHour') ? parseInt($('alDailyHour').value, 10) : 21,
   };
   if($('alTgToken').value.trim()) body.telegram_bot_token = $('alTgToken').value.trim();
   if($('alDiscordWebhook').value.trim()) body.discord_webhook_url = $('alDiscordWebhook').value.trim();
