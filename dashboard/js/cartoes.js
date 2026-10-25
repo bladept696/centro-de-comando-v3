@@ -354,7 +354,8 @@ function mcBuildToolbar(){
     '<select id="mcSort" aria-label="' + t('mc_sort_a') + '">' + MC_SORTS.map(([k, l]) => '<option value="' + k + '">' + t(l) + '</option>').join('') + '</select>' +
     '<button type="button" class="mc-fx-btn" id="mcExport" title="' + t('mc_export_t') + '">' + t('mc_export') + '</button>' +
     '<button type="button" class="mc-fx-btn" id="mcGroupBy" title="' + t('mc_groupby_t') + '">' + t('mc_groupby') + '</button>' +
-    '<button type="button" class="mc-fx-btn" id="mcFx" title="' + t('mc_fx_on') + '">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="' + t('mc_v_cards') + '">▦</button><button type="button" data-v="compact" title="' + t('mc_v_compact') + '">▥</button><button type="button" data-v="table" title="' + t('mc_v_table') + '">☰</button></div></div>';
+    '<button type="button" class="mc-fx-btn" id="mcFx" title="' + t('mc_fx_on') + '">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="' + t('mc_v_cards') + '">▦</button><button type="button" data-v="compact" title="' + t('mc_v_compact') + '">▥</button><button type="button" data-v="table" title="' + t('mc_v_table') + '">☰</button></div>' +
+    '<button type="button" class="mc-fx-btn" id="mcMenuBtn" title="' + t('mc_m_title') + '">⚙</button></div>';
   $('mcSearch').value = mc.prefs.q || '';
   $('mcFx').addEventListener('click', () => { mc.prefs.fx = !mcFxOn(); mcSavePrefs(); renderMachineCards(); });
   $('mcExport').addEventListener('click', () => { if(typeof mcExportCsv === 'function') mcExportCsv(); });

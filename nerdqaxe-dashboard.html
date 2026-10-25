@@ -500,7 +500,9 @@
         <div class="panel mc-panel" data-layout-id="machine-cards">
           <div class="panel-title"><span data-i18n="mc_title">🖥️ As suas máquinas</span><span id="mcCount" style="font-size:9px;color:var(--muted-2);">0 máquinas</span></div>
           <div class="mc-toolbar" id="mcToolbar"></div>
+          <div class="mc-newfound" id="mcNew" hidden></div>
           <div class="mc-board" id="mcBoard"></div>
+          <details class="mc-sched" id="mcSched"><summary><span data-i18n="mc_sc_title">⏰ Agendamentos</span> <b id="mcSchedN">0</b></summary><div id="mcSchedBody"></div></details>
           <details class="mc-log"><summary><span data-i18n="mc_log_title">📋 Eventos de hoje</span> <b id="mcLogN">0</b></summary><ul id="mcLog"></ul></details>
         </div>
 
@@ -1502,5 +1504,6 @@
 <script src="dashboard/js/cartoes-i18n.js"></script>
 <script src="dashboard/js/cartoes.js"></script>
 <script src="dashboard/js/cartoes-extra.js"></script>
+<script src="dashboard/js/cartoes-ferramentas.js"></script>
 </body>
 </html>

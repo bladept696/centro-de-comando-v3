@@ -299,6 +299,7 @@ setInterval(mcLoadNetwork, 10 * 60000);
 
 function mcExtraRender(list, states){
   mcUptimeTrack(list);
+  if(typeof mcToolsRender === 'function') mcToolsRender();
   mcGlobalHealth(list, states);
   mcWatchEvents(list);
   mcHealthWatch(list);
