@@ -48,6 +48,8 @@ O Dashboard Geral mostra um cartão por máquina (vista de cartões, compacta ou
   disponibilidade a 7/30 dias, resumo diário opcional e relatório imprimível.
 - **Ferramentas (⚙):** backup e restauro da configuração, procura de máquinas novas na rede,
   agendamento de perfis Eco/Turbo, pausa de todos os alertas e atalhos de teclado (`?`).
+- **Mapa da rede:** partículas nas ligações (mais depressa com mais hashrate), zonas coloridas por grupo, destaque do
+  caminho da máquina escolhida, diagnóstico do caminho (router, internet e DNS), radar, exportar PNG e ecrã inteiro.
 - **Tomada inteligente:** com os endereços de ligar e desligar (Shelly, Tasmota...), o botão ⚡ faz
   um ciclo de energia; se a máquina ficar presa 25 min, pode fazê-lo sozinha (só com o reinício automático permitido).
 - **Webhook / ntfy:** os alertas podem também seguir para um endereço à escolha (Home Assistant, ntfy.sh, Slack...).

@@ -245,3 +245,30 @@
   .risk-amber{color:var(--amber) !important; text-shadow:0 0 10px #ffb02055 !important;}
   .risk-red{color:var(--red) !important; text-shadow:0 0 10px #ff5d5d66 !important;}
 
+
+  /* ---------- Mapa: partículas, zonas, diagnóstico, radar, destaque, ecrã inteiro ---------- */
+  .nm-particle{filter:drop-shadow(0 0 4px currentColor);opacity:.9;}
+  .nm-zone{stroke-width:1.2;stroke-dasharray:7 6;} .nm-zone-label{font-size:12px;font-weight:700;}
+  .nm-mark{font-size:11px;font-weight:700;paint-order:stroke;stroke:var(--bg);stroke-width:3px;}
+  .nm-edge.diag-bad{stroke:var(--red) !important;stroke-dasharray:4 6;opacity:.9;}
+  /* ligações e nós ligados à máquina escolhida */
+  .network-map-wrap.has-sel .nm-edge{opacity:.28;} .network-map-wrap.has-sel .nm-edge.hl{opacity:1;stroke-width:2.6;filter:drop-shadow(0 0 5px var(--cyan));}
+  .network-map-wrap.has-sel .network-node:not(.selected):not(.rel){opacity:.5;}
+  .network-map-wrap .network-node{transition:opacity .3s ease;}
+  /* diagnóstico */
+  .nm-diag{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 10px;padding:9px 12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);font-size:11.5px;color:var(--muted);}
+  .nm-diag[hidden]{display:none;} .nm-diag.busy{opacity:.6;} .nm-dg-title{font-weight:700;color:var(--text);}
+  .nm-dg-pill{border:1px solid var(--line-strong);border-radius:999px;padding:3px 10px;color:var(--text);} .nm-dg-pill b{margin-left:3px;}
+  .nm-dg-pill.good{border-color:color-mix(in srgb,var(--green) 55%,transparent);} .nm-dg-pill.good b{color:var(--green);}
+  .nm-dg-pill.ok{border-color:color-mix(in srgb,var(--amber) 55%,transparent);} .nm-dg-pill.ok b{color:var(--amber);}
+  .nm-dg-pill.bad{border-color:color-mix(in srgb,var(--red) 60%,transparent);} .nm-dg-pill.bad b{color:var(--red);}
+  .nm-dg-verdict{flex:1;min-width:200px;font-weight:700;} .nm-dg-verdict.good{color:var(--green);} .nm-dg-verdict.ok{color:var(--amber);} .nm-dg-verdict.bad{color:var(--red);}
+  .nm-diag button{font:inherit;font-size:11px;font-weight:700;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:4px 10px;cursor:pointer;} .nm-diag button:hover{border-color:var(--cyan);color:var(--cyan);}
+  /* radar */
+  .network-map-wrap.nm-radar::after{content:'';position:absolute;inset:0;border-radius:12px;pointer-events:none;z-index:6;
+    background:conic-gradient(from 0deg at 50% 50%,transparent 0deg,color-mix(in srgb,var(--green) 28%,transparent) 40deg,transparent 41deg);animation:nmRadar 2.4s linear infinite;mix-blend-mode:screen;}
+  @keyframes nmRadar{to{transform:rotate(360deg);}}
+  /* ecrã inteiro */
+  .network-map-panel.nm-full{position:fixed;inset:0;z-index:10040;margin:0;border-radius:0;overflow:auto;background:var(--bg);padding:18px 22px;animation:none !important;opacity:1 !important;transform:none !important;}
+  body.nm-full-open{overflow:hidden;}
+  @media (prefers-reduced-motion: reduce){.nm-particle{display:none;} .network-map-wrap.nm-radar::after{animation:none;}}

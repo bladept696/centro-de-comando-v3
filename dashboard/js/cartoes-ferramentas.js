@@ -116,11 +116,13 @@ async function mcScanNow(force){
     if(!resp.ok) throw new Error('scan');
     const data = await resp.json();
     const known = new Set((devices || []).map(d => d.ip));
+    try { scanResultsCache = (data.devices || []).slice(); if(data.subnet) scanResultsSubnet = data.subnet; } catch(e2) {}   // também aparecem no mapa da rede
     mc.found = (data.devices || []).filter(d => d && d.ip && !known.has(d.ip) && !mc.ignored.has(d.ip));
     if(force) setQuickActionStatus(mc.found.length ? mct('mc_nf_found', mc.found.length) : t('mc_nf_none'));
   } catch(e) { if(force) setQuickActionStatus(t('mc_nf_err')); }
   mcScanBusy = false;
   mcNewRender();
+  try { if(typeof renderNetworkMap === 'function') renderNetworkMap(); } catch(e3) {}
 }
 function mcNewRender(){
   const box = $('mcNew');
