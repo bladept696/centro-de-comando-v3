@@ -340,7 +340,52 @@ function mcTuneHint(id){
   return '<div class="mc-hint-tune">' + mct('mc_tune_better', best.f, best.eff.toFixed(1), now.f, now.eff.toFixed(1)) + '</div>';
 }
 
+// ---- pausa global dos alertas e queda de rede ----
+const MC_PAUSE_KEY = 'nerdqaxe:alerts_pause_until';
+mc.netDown = false;
+function mcPausedUntil(){ try { const v = Number(localStorage.getItem(MC_PAUSE_KEY)) || 0; return v > Date.now() ? v : 0; } catch(e) { return 0; } }
+// devolve false para os alertas que não devem sair: tudo durante a pausa e os avisos de cada máquina durante uma queda de rede
+function mcAlertFilter(message, key){
+  if(mcPausedUntil()) return false;
+  if(mc.netDown && /^(offline|health|healthok|hashdrop|portal|autorestart)/.test(String(key || ''))) return false;
+  return true;
+}
+function mcPauseAlerts(minutes){
+  try { if(minutes > 0) localStorage.setItem(MC_PAUSE_KEY, String(Date.now() + minutes * 60000)); else localStorage.removeItem(MC_PAUSE_KEY); } catch(e) {}
+  mcPausedRender();
+}
+function mcPausedRender(){
+  const box = $('mcPaused');
+  if(!box) return;
+  const u = mcPausedUntil();
+  box.hidden = !u;
+  if(!u){ box.innerHTML = ''; return; }
+  const h = '<span>' + mct('mc_paused_until', new Date(u).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' })) + '</span><button type="button" data-p="resume">' + t('mc_resume') + '</button>';
+  if(box.dataset.s !== h){ box.dataset.s = h; box.innerHTML = h; }
+}
+document.addEventListener('click', e => { if(e.target.closest('#mcPaused [data-p="resume"]')) mcPauseAlerts(0); });
+function mcNetWatch(list, states){
+  const n = list.length;
+  if(n < 2) { mc.netDown = false; return; }
+  const off = list.filter(d => states[d.id] === 'off' || states[d.id] === 'idle').length;
+  const was = list.filter(d => mc.wasOnline && mc.wasOnline[d.id]).length;
+  const down = off >= Math.max(2, Math.ceil(n * 0.8));
+  if(down && !mc.netDown && was >= 2){
+    mc.netDown = true;
+    mcLogEvent(mct('mc_net_down', off), 'bad');
+    if(typeof sendAlert === 'function') sendAlert(mct('mc_net_down', off), 'netdown');
+  } else if(mc.netDown && off < Math.max(2, Math.ceil(n * 0.8))){
+    mc.netDown = false;
+    mcLogEvent(t('mc_net_up'), 'good');
+    if(typeof sendAlert === 'function') sendAlert(t('mc_net_up'), 'netup');
+  }
+  mc.wasOnline = mc.wasOnline || {};
+  list.forEach(d => { mc.wasOnline[d.id] = states[d.id] !== 'off' && states[d.id] !== 'idle'; });
+}
+
 function mcExtraRender(list, states){
+  mcPausedRender();
+  mcNetWatch(list, states);
   mcTimelineTrack(list, states);
   mcUptimeTrack(list);
   if(typeof mcToolsRender === 'function') mcToolsRender();
