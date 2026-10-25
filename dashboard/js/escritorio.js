@@ -6,16 +6,16 @@
 // pequena equipa de técnicos espera na sala técnica e vai pelo corredor (e
 // pelo elevador, entre pisos) até às máquinas com avaria; quando o problema
 // fica resolvido, volta à pausa.
-const HO = { S: 16, R: 10, C: 5, H: 6, PH: 3.2, RB: 10, E: 4, FH: 17, SPEED: 4.5, LIFT: 6, PER_FLOOR: 6 };
+const HO = { S: 16, R: 10, C: 5, H: 6, PH: 3.2, RB: 20, E: 4, FH: 17, SPEED: 4.5, LIFT: 6, PER_FLOOR: 6 };
 const HO_STAFF = [
-  { name: 'Rui',   color: '#e8743b', skin: '#f2c49b' },
-  { name: 'Ana',   color: '#3b82c4', skin: '#c68654' },
-  { name: 'Tiago', color: '#2bb673', skin: '#e0a77a' },
-  { name: 'Marta', color: '#b65bd6', skin: '#8d5a3b' },
-  { name: 'João',  color: '#d94f5c', skin: '#f5d3b3' },
-  { name: 'Inês',  color: '#2fa8b0', skin: '#e0a77a' },
-  { name: 'Pedro', color: '#7a8cff', skin: '#c68654' },
-  { name: 'Sofia', color: '#c9a227', skin: '#f2c49b' }
+  { name: 'Rui', hair: '#3a2616',   color: '#e8743b', skin: '#f2c49b' },
+  { name: 'Ana', hair: '#15100d',   color: '#3b82c4', skin: '#c68654' },
+  { name: 'Tiago', hair: '#6b4423', color: '#2bb673', skin: '#e0a77a' },
+  { name: 'Marta', hair: '#0e0a08', color: '#b65bd6', skin: '#8d5a3b' },
+  { name: 'João', hair: '#caa05a',  color: '#d94f5c', skin: '#f5d3b3' },
+  { name: 'Inês', hair: '#4a2a18',  color: '#2fa8b0', skin: '#e0a77a' },
+  { name: 'Pedro', hair: '#1a1411', color: '#7a8cff', skin: '#c68654' },
+  { name: 'Sofia', hair: '#7a3a1c', color: '#c9a227', skin: '#f2c49b' }
 ];
 const HO_PRIORITY = { hot: 5, off: 4, portal: 3, warm: 2, warn: 1 };
 const HO_REST = [[-7.8, 8.4], [-5.4, 8.8], [-2.4, 5.4], [-4.6, 4.2], [-1.6, 8.2], [-3.4, 9.2], [-6.6, 3.8], [-2.0, 3.0]];
@@ -248,67 +248,56 @@ function hoEmptyRoomSvg(f, c, slot){
   return { wall, floor, body: `<g class="ho-room ho-free">${glass}${boxes}</g>`, hit: '' };
 }
 
-function hoSideRoomSvg(f){
-  const { R, H } = HO, x0 = -HO.RB, z0 = f * HO.FH;
-  const isBreak = f === 0;
-  let wall = `<g transform="${hoM('wallY', x0, 0, z0 + H)}"><rect width="${R}" height="${H}" fill="#24394a"/><rect y="${H - 0.35}" width="${R}" height="0.35" fill="#132029"/>` +
-    `<rect x="0.5" y="0.5" width="${isBreak ? 4 : 4.4}" height="0.9" rx="0.12" fill="#0c151c" stroke="#2c4252" stroke-width="0.06"/>` +
-    `<text x="0.8" y="1.13" font-size="0.55" font-weight="700" fill="var(--amber)">${isBreak ? '☕ SALA TÉCNICA' : '📦 ARRECADAÇÃO'}</text>`;
-  if(isBreak){
-    wall += [5.2, 6.4, 7.6].map(u => `<rect x="${u}" y="1" width="1.1" height="4.6" fill="#5d6f7d" stroke="#3a4a56" stroke-width="0.06"/><rect x="${u + 0.85}" y="2.8" width="0.08" height="0.5" fill="#cfd6dc"/><rect x="${u + 0.25}" y="1.3" width="0.6" height="0.08" fill="#3a4a56"/><rect x="${u + 0.25}" y="1.5" width="0.6" height="0.08" fill="#3a4a56"/>`).join('');
-    wall += `<rect x="0.8" y="2" width="2.6" height="1.8" fill="#f4f1ea"/><text x="2.1" y="2.7" font-size="0.32" text-anchor="middle" fill="#a3342c" font-weight="700">SEGURANÇA</text><text x="2.1" y="3.15" font-size="0.26" text-anchor="middle" fill="#333">usa sempre capacete</text>`;
-  }
-  wall += `</g>`;
-  const side = `<g transform="${hoM('wallX', x0, 0, z0 + H)}"><rect width="${R}" height="${H}" fill="#1b2c39"/><rect y="${H - 0.35}" width="${R}" height="0.35" fill="#101b23"/></g>`;
-  const floor = `<g transform="${hoM('floor', x0, 0, z0)}"><rect width="${R}" height="${R}" fill="url(${isBreak ? '#hoWood' : '#hoTile'})"/><ellipse class="ho-lamp" cx="5" cy="5" rx="4.2" ry="4.2" fill="url(#hoLampGlow)"/></g>`;
-  let things = '';
-  if(isBreak){
-    things += hoBox(-3.4, 0.6, z0, 2.8, 1.3, 1.8, '#6b4a2b');
-    things += hoBox(-3.0, 0.75, z0 + 1.8, 0.9, 0.75, 1.0, '#202326') + hoBox(-1.8, 0.85, z0 + 1.8, 0.5, 0.5, 0.35, '#f4f1ea');
-    things += hoBox(-9.2, 3.2, z0, 0.9, 0.9, 1.7, '#d9e3ea') + hoBox(-9.1, 3.3, z0 + 1.7, 0.7, 0.7, 0.9, '#7fc4ef');
-    things += hoBox(-8.6, 5.0, z0, 4.6, 0.6, 1.7, '#35506f') + hoBox(-8.6, 5.6, z0, 4.6, 1.5, 0.8, '#3d5a80');
-    things += hoBox(-8.6, 5.0, z0, 0.5, 2.1, 1.2, '#2f4864') + hoBox(-4.5, 5.0, z0, 0.5, 2.1, 1.2, '#2f4864');
-    things += hoBox(-7.4, 9.0, z0, 2.2, 0.7, 0.6, '#5a3e2b');
-  } else {
-    things += hoBox(-9.4, 0.6, z0, 3.6, 1.3, 3.8, '#4a5560') + hoBox(-5.2, 0.6, z0, 3.6, 1.3, 3.8, '#4a5560');
-    things += hoBox(-8.6, 5.0, z0, 1.4, 1.4, 1.2, '#8a6a3a') + hoBox(-6.8, 5.4, z0, 1.2, 1.2, 1.0, '#7a5a2a') + hoBox(-8.3, 5.2, z0 + 1.2, 1.0, 1.0, 0.8, '#9a7a4a');
-  }
-  return { wall: wall + side, floor, body: things };
-}
-
 function hoTechSvg(t, i){
-  const c = t.color, cd = hoShade(c, -0.25), sk = t.skin;
-  return `<g class="ho-tech idle" data-t="${i}"><ellipse rx="9" ry="3.4" fill="rgba(0,0,0,.35)"/>` +
+  const c = t.color, cd = hoShade(c, -0.28), sk = t.skin, skd = hoShade(sk, -0.18), hair = t.hair || '#2b1d14', sh = 'url(#hoShL)';
+  const leg = (cls, ox, col, px) => `<g class="ho-leg ${cls}" style="transform-origin:${ox}px -14px"><path d="M${px - 2.1} -14.5L${px - 1.7} -2.4L${px + 1.5} -2.4L${px + 2} -14.5Z" fill="${col}"/><path d="M${px - 2.1} -14.5L${px - 1.7} -2.4L${px + 1.5} -2.4L${px + 2} -14.5Z" fill="${sh}"/>` +
+    `<path d="M${px - 1.8} -8.4q1.7 .8 3.5 0" fill="none" stroke="#10182a" stroke-width=".35" opacity=".7"/>` +
+    `<path d="M${px - 2.3} -2.6h4.2l.9 2.1q.7 1.7-.9 1.8h-4.6q-.9 0-.9-1.1z" fill="#1d1d22"/><path d="M${px - 2.4} .2h5.2" stroke="#07070a" stroke-width=".7"/></g>`;
+  return `<g class="ho-tech idle" data-t="${i}"><ellipse rx="11" ry="4.2" fill="url(#hoShR)"/>` +
     `<g transform="scale(1.75)"><g class="ho-flip"><g class="ho-body">` +
-      `<g class="ho-leg ho-leg-b" style="transform-origin:-1px -14px"><path d="M-1 -14L-1 -2.2" stroke="#1f3048" stroke-width="3.4" stroke-linecap="round"/><path d="M-2.4 -1.6h4.4a1.3 1.3 0 0 1 0 2.4h-4.4z" fill="#151515"/></g>` +
-      `<g class="ho-arm ho-arm-b" style="transform-origin:-0.5px -24.5px"><path d="M-0.5 -24.5L-0.5 -16" stroke="${cd}" stroke-width="3" stroke-linecap="round"/><circle cx="-0.5" cy="-15.2" r="1.5" fill="${hoShade(sk, -0.12)}"/></g>` +
-      `<g class="ho-leg ho-leg-f" style="transform-origin:1px -14px"><path d="M1 -14L1 -2.2" stroke="#2b4160" stroke-width="3.4" stroke-linecap="round"/><path d="M-0.4 -1.6h4.4a1.3 1.3 0 0 1 0 2.4h-4.4z" fill="#1a1a1a"/></g>` +
-      `<path d="M-4.2 -14.5L-4.6 -24.5Q-4.4 -27.5 -1 -27.5L1.6 -27.5Q4.8 -27.3 4.6 -24.5L4.2 -14.5Z" fill="${c}"/>` +
-      `<path d="M-4.2 -14.5L-4.6 -24.5Q-4.4 -27.5 -1 -27.5L-0.4 -27.5L-1.2 -14.5Z" fill="${cd}" opacity=".45"/>` +
-      `<rect x="-4.5" y="-21.2" width="9" height="1.3" fill="#e8f35a" opacity=".92"/><rect x="-4.4" y="-18.2" width="8.8" height="1.1" fill="#cfd6dc" opacity=".85"/>` +
-      `<rect x="-4.3" y="-15.4" width="8.6" height="1.3" fill="#262626"/>` +
-      `<rect x="-0.9" y="-29.2" width="2.4" height="2.2" fill="${hoShade(sk, -0.15)}"/>` +
-      `<ellipse cx="0.4" cy="-32" rx="3.6" ry="4" fill="${sk}"/>` +
-      `<circle cx="-0.9" cy="-31.8" r="0.8" fill="${hoShade(sk, -0.15)}"/>` +
-      `<circle cx="2.6" cy="-32.4" r="0.55" fill="#1d1d1d"/><path d="M3.9 -31.6l0.6 0.9-0.7 0.1" fill="none" stroke="${hoShade(sk, -0.25)}" stroke-width="0.45"/>` +
-      `<path d="M1.6 -29.6q1 0.5 1.8 0" fill="none" stroke="${hoShade(sk, -0.35)}" stroke-width="0.4"/>` +
-      `<path d="M-3.5 -33.4Q-3.4 -38.7 0.6 -38.7Q4.5 -38.6 4.3 -33.4Z" fill="#f2c318"/><path d="M-1.5 -38.2Q0.6 -38.9 2.4 -38.2L1.9 -33.4H-1Z" fill="#ffe066" opacity=".45"/>` +
-      `<rect x="-3.8" y="-34.1" width="9.8" height="1.15" rx="0.5" fill="#cfa20d"/>` +
-      `<g class="ho-arm ho-arm-f" style="transform-origin:1px -24.5px"><path d="M1 -24.5L1 -16" stroke="${c}" stroke-width="3.2" stroke-linecap="round"/><circle cx="1" cy="-15.2" r="1.6" fill="${sk}"/>` +
-        `<g class="ho-wrench"><path d="M1 -15L1 -8.6" stroke="#b4bec6" stroke-width="1.1" stroke-linecap="round"/><path d="M-0.7 -8.8a1.7 1.7 0 1 0 3.4 0l-0.9 -0.1v0.9h-1.6v-0.9z" fill="#b4bec6"/></g>` +
-        `<g class="ho-cup"><rect x="-0.3" y="-16.9" width="2.7" height="3" rx="0.4" fill="#f4f1ea"/><path d="M2.4 -16.2a1 1 0 0 1 0 1.7" stroke="#f4f1ea" stroke-width="0.5" fill="none"/></g>` +
+      leg('ho-leg-b', -1, '#1c2a42', -1) +
+      `<g class="ho-arm ho-arm-b" style="transform-origin:-0.5px -24.5px"><path d="M-2 -25Q-2.4 -20 -1.8 -16.3L0.8 -16.3Q1 -21 .9 -25Z" fill="#46526b"/><path d="M-2 -25Q-2.4 -20 -1.8 -16.3L0.8 -16.3Q1 -21 .9 -25Z" fill="${sh}"/><circle cx="-0.5" cy="-15.2" r="1.5" fill="#2b2b31"/></g>` +
+      leg('ho-leg-f', 1, '#2d4263', 1) +
+      `<path d="M-4.4 -14.3L-4.8 -24.6Q-4.6 -27.7 -1.2 -27.7L1.8 -27.7Q5 -27.5 4.8 -24.6L4.4 -14.3Z" fill="${c}"/>` +
+      `<path d="M-4.4 -14.3L-4.8 -24.6Q-4.6 -27.7 -1.2 -27.7L1.8 -27.7Q5 -27.5 4.8 -24.6L4.4 -14.3Z" fill="${sh}"/>` +
+      `<path d="M-2.9 -27.6L-0.6 -23.4 -0.6 -14.4M2.9 -27.6L0.6 -23.4 0.6 -14.4" fill="none" stroke="${cd}" stroke-width=".45"/>` +
+      `<path d="M-4.7 -21.6Q0 -20.6 4.7 -21.6L4.7 -20.2Q0 -19.2 -4.7 -20.2Z" fill="#eef4fb"/><path d="M-4.6 -18.4Q0 -17.4 4.6 -18.4L4.6 -17.1Q0 -16.1 -4.6 -17.1Z" fill="#eef4fb"/>` +
+      `<path d="M-4.7 -21.6Q0 -20.6 4.7 -21.6L4.7 -20.2Q0 -19.2 -4.7 -20.2Z" fill="${sh}" opacity=".6"/>` +
+      `<path d="M-3.4 -25.4h2.2v2.1h-2.2z" fill="${cd}" opacity=".55"/><line x1="0" y1="-23.4" x2="0" y2="-14.4" stroke="${cd}" stroke-width=".35"/>` +
+      `<path d="M-4.6 -15.2Q0 -14.4 4.6 -15.2L4.5 -13.9Q0 -13.1 -4.5 -13.9Z" fill="#2c2018"/><rect x="-.8" y="-14.9" width="1.6" height="1.2" rx=".2" fill="#cfa84e"/>` +
+      `<rect x="2.2" y="-14.4" width="2.6" height="3.2" rx=".5" fill="#4a3a2a"/><rect x="2.5" y="-14.1" width="2" height=".5" fill="#6a5640"/>` +
+      `<rect x="-1" y="-29.6" width="2.6" height="2.6" fill="${skd}"/>` +
+      `<path d="M-2.8 -27.9Q.3 -26 3.4 -27.9L3.2 -27.2Q.3 -25.4 -2.6 -27.2Z" fill="#eef4fb" opacity=".75"/>` +
+      `<ellipse cx="0.4" cy="-32" rx="3.6" ry="4" fill="${sk}"/><ellipse cx="0.4" cy="-32" rx="3.6" ry="4" fill="${sh}" opacity=".7"/>` +
+      `<path d="M-3.2 -32.6Q-3.8 -30 -2.2 -28.6Q-.4 -28.9 -.2 -31Z" fill="${hair}"/>` +
+      `<ellipse cx="-1" cy="-31.7" rx=".9" ry="1.4" fill="${skd}"/>` +
+      `<ellipse cx="2.7" cy="-32.5" rx=".62" ry=".5" fill="#fff"/><circle cx="2.85" cy="-32.45" r=".34" fill="#1d1410"/>` +
+      `<path d="M1.8 -33.5Q2.8 -34 3.8 -33.4" fill="none" stroke="${hair}" stroke-width=".4" stroke-linecap="round"/>` +
+      `<path d="M3.9 -31.8l.7 1.1-.9 .15" fill="none" stroke="${hoShade(sk, -0.3)}" stroke-width=".4" stroke-linejoin="round"/>` +
+      `<path d="M1.7 -29.9q1.2 .6 2.1 0" fill="none" stroke="${hoShade(sk, -0.4)}" stroke-width=".4" stroke-linecap="round"/>` +
+      `<path d="M-3.7 -33.4Q-3.6 -39 .6 -39Q4.8 -38.9 4.5 -33.4Z" fill="#f4c20f"/><path d="M-3.7 -33.4Q-3.6 -39 .6 -39Q4.8 -38.9 4.5 -33.4Z" fill="${sh}"/>` +
+      `<path d="M-2 -38.2Q0 -39.2 2.2 -38.3" fill="none" stroke="#fff6b8" stroke-width=".7" stroke-linecap="round" opacity=".75"/>` +
+      `<path d="M-.4 -38.9L1.4 -38.9 1.2 -33.5-.2 -33.5z" fill="#d9a90b" opacity=".75"/>` +
+      `<path d="M-4.1 -34.2h10.2q.9 0 .7 .8l-.3 .55h-10.9q-.7 0-.5-.7z" fill="#d4a00a"/><path d="M-4.1 -34.2h10.2q.9 0 .7 .8l-.3 .55h-10.9q-.7 0-.5-.7z" fill="${sh}" opacity=".6"/>` +
+      `<g class="ho-arm ho-arm-f" style="transform-origin:1px -24.5px"><path d="M-.6 -25.2Q-1 -20 -.5 -16.3L2.5 -16.3Q2.9 -21 2.6 -25.2Z" fill="#46526b"/><path d="M-.6 -25.2Q-1 -20 -.5 -16.3L2.5 -16.3Q2.9 -21 2.6 -25.2Z" fill="${sh}"/>` +
+        `<path d="M-.6 -25.5Q1 -26.2 2.6 -25.5L2.6 -23.8Q1 -23.2 -.6 -23.8Z" fill="${c}"/>` +
+        `<circle cx="1" cy="-15.2" r="1.65" fill="#2b2b31"/><path d="M-.2 -15.8q1.2 -.7 2.4 0" fill="none" stroke="#4a4a52" stroke-width=".3"/>` +
+        `<g class="ho-wrench"><path d="M1 -15L1 -8.6" stroke="#cfd6dc" stroke-width="1.1" stroke-linecap="round"/><path d="M1.35 -15L1.35 -8.8" stroke="#8c979f" stroke-width=".35"/><path d="M-0.7 -8.8a1.7 1.7 0 1 0 3.4 0l-0.9 -0.1v0.9h-1.6v-0.9z" fill="#cfd6dc"/></g>` +
+        `<g class="ho-cup"><rect x="-0.3" y="-16.9" width="2.7" height="3" rx="0.4" fill="#f4f1ea"/><rect x="-.3" y="-16.9" width="2.7" height=".6" fill="#d9d4c7"/><path d="M2.4 -16.2a1 1 0 0 1 0 1.7" stroke="#f4f1ea" stroke-width="0.5" fill="none"/><path d="M.2 -17.6q.5 -1 0 -2M1.6 -17.6q.5 -1 0 -2" stroke="#fff" stroke-width=".3" fill="none" opacity=".5"/></g>` +
         `<g class="p-book" transform="rotate(52 1 -16)"><rect x="-2.2" y="-18.4" width="6.8" height="4.6" rx="0.4" fill="#2f5fa8"/><rect x="-1.7" y="-18" width="5.8" height="3.8" fill="#f4f1ea"/><line x1="1.2" y1="-18" x2="1.2" y2="-14.2" stroke="#b9b2a2" stroke-width="0.3"/><rect class="p-page" x="1.2" y="-17.8" width="2.8" height="3.4" fill="#ffffff"/></g>` +
         `<g class="p-mop"><path d="M1 -19L7.5 1" stroke="#9a6b3c" stroke-width="0.9" stroke-linecap="round"/><path d="M4.4 0.4h6.4l-0.6 1.8h-5.2z" fill="#d9dde0"/><path d="M5 2.2v1.2M6.4 2.2v1.4M7.8 2.2v1.3M9.2 2.2v1.2" stroke="#c4c9cd" stroke-width="0.5"/></g>` +
         `<g class="p-clip"><rect x="-0.8" y="-18.6" width="5" height="6.2" rx="0.4" fill="#8a6a3a"/><rect x="-0.3" y="-17.6" width="4" height="4.9" fill="#f4f1ea"/><rect x="0.6" y="-19.1" width="2.2" height="1" rx="0.3" fill="#9aa4ab"/><path d="M0.2 -16.4h3M0.2 -15.2h3M0.2 -14h2" stroke="#9aa4ab" stroke-width="0.3"/></g>` +
         `<g class="p-can"><path d="M-0.4 -17.4h4.6v3.6h-4.6z" fill="#3aa36a"/><path d="M4.2 -16.6L8.4 -18.6" stroke="#3aa36a" stroke-width="0.9" stroke-linecap="round"/><path d="M0.3 -17.4q1.8 -2.4 3.4 0" fill="none" stroke="#2c7a50" stroke-width="0.5"/>` +
           `<g class="p-drops" fill="#7fc4ef"><circle cx="8.9" cy="-17.6" r="0.35"/><circle cx="9.4" cy="-16.4" r="0.3"/><circle cx="8.7" cy="-15.4" r="0.3"/></g></g>` +
         `<g class="p-duster"><path d="M1 -15L1 -9.8" stroke="#6b4a2b" stroke-width="0.8" stroke-linecap="round"/><ellipse cx="1" cy="-7.6" rx="1.9" ry="2.8" fill="#e9b44c"/><ellipse cx="0.4" cy="-8.2" rx="0.8" ry="1.6" fill="#f6d27f"/></g>` +
+        `<g class="p-drink"><path d="M-.5 -18.4h3.6l-.4 4.4h-2.8z" fill="#cfe9f7" fill-opacity=".85" stroke="#fff" stroke-width=".25"/><path d="M-.2 -16.2h3l-.2 2.2h-2.6z" fill="#e8a33a"/></g>` +
+        `<g class="p-ball"><circle cx="2.6" cy="-17" r="1.7" fill="#f4f1ea" stroke="#333" stroke-width=".25"/><path d="M1.6 -17.6l1 -.6 1 .6-.4 1.1h-1.2z" fill="#333"/></g>` +
       `</g>` +
     `</g></g>` +
     `<g class="p-cone" transform="translate(9,0)"><path d="M-2.4 0L-0.6 -7.2h1.2L2.4 0z" fill="#f5c518"/><rect x="-3" y="-0.6" width="6" height="0.9" rx="0.3" fill="#d9a800"/><path d="M-1.2 -4.2h2.4" stroke="#1d1d1d" stroke-width="0.6"/></g>` +
     `</g>` +
-    `<text class="ho-ttag" y="-74" text-anchor="middle"></text>` +
-    `<g class="ho-bubble" transform="translate(0,-90)"><rect x="-20" y="-11" width="40" height="18" rx="8" fill="#f4f6f8"/><path d="M-3 7L0 12L3 7z" fill="#f4f6f8"/><text y="2.6" text-anchor="middle" font-size="10" fill="#1d2328"></text></g></g>`;
+    `<text class="ho-ttag" y="-76" text-anchor="middle"></text>` +
+    `<g class="ho-bubble" transform="translate(0,-92)"><rect x="-20" y="-11" width="40" height="18" rx="8" fill="#f4f6f8"/><path d="M-3 7L0 12L3 7z" fill="#f4f6f8"/><text y="2.6" text-anchor="middle" font-size="10" fill="#1d2328"></text></g></g>`;
 }
 
 // --- Elevador: poço envidraçado com colunas, cabine com portas e indicador de piso ---
@@ -401,6 +390,8 @@ function hoBuild(host, list, models){
     `<pattern id="hoCorr" width="1.6" height="1.6" patternUnits="userSpaceOnUse"><rect width="1.6" height="1.6" fill="#1b2a35"/><path d="M1.6 0H0V1.6" fill="none" stroke="#162330" stroke-width="0.05"/></pattern>` +
     `<radialGradient id="hoLampGlow"><stop offset="0" stop-color="#fff6d8" stop-opacity="0.16"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></radialGradient>` +
     `<linearGradient id="hoSky" x1="0" y1="0" x2="0" y2="1"><stop data-k="sky0" offset="0" stop-color="#7cc4ff"/><stop data-k="sky1" offset="1" stop-color="#cfe9ff"/></linearGradient>` +
+    `<linearGradient id="hoShL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>` +
+    `<radialGradient id="hoShR"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>` +
     `<clipPath id="hoDoorClip"><rect x=".3" y="0" width="${HO.C - 1.8}" height="${HO_CAB_H}"/></clipPath>` +
     `<filter id="hoGlow" x="-2" y="-2" width="5" height="5"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` +
     hoAmbientDefs() + `</defs>`;
@@ -412,9 +403,9 @@ function hoBuild(host, list, models){
     if(shown.includes(f)){ (cells[f] = cells[f] || []).push(hoRoomSvg(dev, i, f, c, models[i])); lightsIn += hoRoomLights(f, c, true); }
   });
   for(const f of [...shown].reverse()){
-    const z0 = f * FH, side = hoSideRoomSvg(f), rooms = cells[f] || [];
+    const z0 = f * FH, wings = hoWingRooms(f), rooms = cells[f] || [];
     for(let c = rooms.length; c < perFloor; c++){ rooms.push(hoEmptyRoomSvg(f, c, f * perFloor + c)); lightsIn += hoRoomLights(f, c, true); }
-    lightsIn += hoRoomLights(f, -1, false);
+    lightsIn += hoRoomLights(f, -1, false) + hoRoomLights(f, -2, false);
     // laje, corredor e plataforma do elevador
     scene += `<polygon points="${hoPts([[xmin, yc, z0 - 0.6], [xmax, yc, z0 - 0.6], [xmax, yc, z0], [xmin, yc, z0]])}" fill="#0e171e"/>`;
     scene += `<polygon points="${hoPts([[xmax, 0, z0 - 0.6], [xmax, yc, z0 - 0.6], [xmax, yc, z0], [xmax, 0, z0]])}" fill="#111c24"/>`;
@@ -424,10 +415,10 @@ function hoBuild(host, list, models){
       `<text x="${xmax + RB - 0.6}" y="${C - 0.7}" font-size="1.1" font-weight="700" text-anchor="end" fill="#2c4252">PISO ${f}</text></g>`;
     scene += `<g transform="${hoM('floor', xmin, R, z0)}"><rect width="${E}" height="${C}" fill="#2a3640" stroke="#4a6070" stroke-width="0.08"/>` +
       `<path d="M0.3 0.3H${E - 0.3}" stroke="#e0b53a" stroke-width="0.25" stroke-dasharray="0.35 0.35"/><text x="${E / 2}" y="${C / 2 + 0.3}" font-size="0.8" text-anchor="middle" fill="#6f8696" font-weight="700">ELEV.</text></g>`;
-    scene += side.wall + rooms.map(r => r.wall).join('');
-    scene += side.floor + rooms.map(r => r.floor).join('');
-    scene += side.body + rooms.map(r => r.body).join('');
-    hits += rooms.map(r => r.hit).join('');
+    scene += wings.map(w => w.wall).join('') + rooms.map(r => r.wall).join('');
+    scene += wings.map(w => w.floor).join('') + rooms.map(r => r.floor).join('');
+    scene += wings.map(w => w.body).join('') + rooms.map(r => r.body).join('');
+    hits += wings.map(w => w.hit).join('') + rooms.map(r => r.hit).join('');
   }
   // poço e cabine do elevador
   const lift = hoLiftSvg(shown, floors);
@@ -449,6 +440,7 @@ function hoBuild(host, list, models){
   ho.zoom = { k: 1, cx: 0, cy: 0 };
   const vb = ho.baseVB.map(v => v.toFixed(0)).join(' ');
   host.innerHTML = `<svg viewBox="${vb}" role="img" aria-label="Escritório: um quarto por máquina">${defs}${scene}${rails}<g class="ho-techs"></g>${hoOverlaySvg()}${lightsIn}${hits}</svg>`;
+  hoWingsBind(host);
   ho.liftEl = host.querySelector('.ho-lift');
   ho.liftInside = host.querySelector('.ho-lift-inside');
   ho.liftInd = [...host.querySelectorAll('.ho-lift-ind')];
@@ -570,10 +562,18 @@ const HO_ACTS = {
   water:   { label: 'a regar',          dur: [6, 10], room: true },
   dust:    { label: 'a limpar o pó',    dur: [8, 12], room: true },
   chat:    { label: '💬',               dur: [10, 18] },
-  stretch: { label: 'alongamentos',     dur: [5, 8] }
+  stretch: { label: 'alongamentos',     dur: [5, 8] },
+  drink:   { label: 'no bar',           dur: [10, 18], wing: 'bar' },
+  tv:      { label: 'a ver TV',         dur: [14, 26], wing: 'lounge' },
+  foos:    { label: 'matraquilhos',     dur: [10, 16], wing: 'lounge', spots: 'foos' },
+  run:     { label: 'a correr',         dur: [12, 20], wing: 'gym', spots: 'run' },
+  weights: { label: 'a treinar',        dur: [10, 16], wing: 'gym', spots: 'weights' },
+  board:   { label: 'reunião',          dur: [10, 18], wing: 'meeting' },
+  tinker:  { label: 'na oficina',       dur: [10, 16], wing: 'workshop' },
+  lib:     { label: 'a ler na biblioteca', dur: [14, 24], wing: 'library' }
 };
 const HO_CHAT = ['💬', '😂', '☕?', '⛏️ BTC!', '👍', '🤔', '📈', '🔥', '😴', '🍕'];
-const HO_COFFEE = [[-2.3, 2.6], [-1.0, 2.8]];
+const HO_COFFEE = [[-3.0, 2.7], [-1.7, 2.8]];
 const HO_CHAT_SPOTS = [[-7.2, 3.8], [-4.2, 2.6]];
 
 function hoRandomRoom(){
@@ -592,16 +592,21 @@ function hoRandomRoom(){
 
 function hoStartAct(t, kind, partner){
   t.act = kind;
+  t.sit = false;
   t.actRoom = null;
   t.look = null;
   t.partner = null;
   let dest;
-  if(kind === 'read' || kind === 'stretch'){
+  if(HO_ACTS[kind].wing){
+    const A = HO_ACTS[kind], sp = hoWingSpot(A.wing, hoWingTaken(A.wing, t, A.spots), A.spots);
+    dest = { x: sp.x, y: sp.y, f: sp.f };
+    t.look = sp.look; t.sit = sp.sit;
+  } else if(kind === 'read' || kind === 'stretch'){
     dest = hoRestSpot(t);
   } else if(kind === 'coffee'){
     const [x, y] = HO_COFFEE[t.i % 2];
     dest = { x, y, f: 0 };
-    t.look = { x: -2.45, y: 1.1 };
+    t.look = { x: -3.0, y: 1.0 };
   } else if(kind === 'chat'){
     const [x, y] = HO_CHAT_SPOTS[0], [x2, y2] = HO_CHAT_SPOTS[1];
     dest = { x, y, f: 0 };
@@ -634,6 +639,11 @@ function hoPickAct(t){
   let kinds = Object.keys(HO_ACTS).filter(k => k !== t.lastAct && !ho.techs.some(u => u !== t && u.act === k));
   if(!partner) kinds = kinds.filter(k => k !== 'chat');
   if(!(ho.list || []).length) kinds = kinds.filter(k => !HO_ACTS[k].room && k !== 'mop');
+  kinds = kinds.filter(k => !HO_ACTS[k].wing || hoWingFloorOf(HO_ACTS[k].wing) < ho.floors);
+  if(ho.view !== 'all' && ho.view != null && Math.random() < .7){
+    const here = kinds.filter(k => !HO_ACTS[k].wing || hoWingFloorOf(HO_ACTS[k].wing) === ho.view || (!HO_ACTS[k].wing && ho.view === 0));
+    if(here.length) kinds = here;
+  }
   const kind = kinds[Math.floor(Math.random() * kinds.length)];
   t.lastAct = kind;
   if(kind === 'chat') partner.lastAct = 'chat';
@@ -642,6 +652,7 @@ function hoPickAct(t){
 
 function hoEndAct(t){
   t.act = null;
+  t.sit = false;
   t.actRoom = null;
   t.partner = null;
   t.mode = 'idle';
@@ -711,7 +722,7 @@ function hoPlaceTechs(){
     const cheer = hoPartyActive() && !t.path.length && ho.mode === 'inside';
     const speaking = cheer || (acting && t.act === 'chat' && t.partner && !t.partner.path.length && Math.floor(Date.now() / 2500) % 2 === t.i % 2);
     const cls = 'ho-tech ' + mode + (acting ? ' a-' + t.act : '') + (speaking ? ' speaking' : '') + (cheer ? ' cheer' : '') +
-      (mode === 'walk' && t.act === 'mop' ? ' a-mop' : '') + (mode === 'work' && states[t.target] === 'hot' ? ' urgent' : '');
+      (!t.path.length && t.sit ? ' sit' : '') + (!t.path.length && t.dance && Date.now() < t.dance ? ' dance' : '') + (mode === 'walk' && t.act === 'mop' ? ' a-mop' : '') + (mode === 'work' && states[t.target] === 'hot' ? ' urgent' : '');
     if(t.el.getAttribute('class') !== cls) t.el.setAttribute('class', cls);
     if(speaking && !t.saying){ t.bubble.textContent = cheer ? '🎉' : HO_CHAT[Math.floor(Math.random() * HO_CHAT.length)]; }
     t.saying = speaking;
@@ -732,6 +743,84 @@ function hoPlaceTechs(){
     if(out.some((t, i) => layer.children[i] !== t.el)) out.forEach(t => layer.appendChild(t.el));
   }
   hoPlaceLift();
+  hoWingsCount();
+}
+
+// --- Salas de apoio: ocupação, estatísticas, interruptores e visitas ---
+function hoWingTaken(kind, t, list){
+  const L = HO_WING_SPOTS[list || kind], n = L.length, x0 = hoWingX0(kind);
+  const used = ho.techs.filter(u => u !== t && u.act && HO_ACTS[u.act].wing === kind && u.actDest).map(u => Math.round(u.actDest.x * 10) + ':' + Math.round(u.actDest.y * 10));
+  const free = [...Array(n).keys()].filter(k => !used.includes(Math.round((x0 + L[k].x) * 10) + ':' + Math.round(L[k].y * 10)));
+  const pool = free.length ? free : [...Array(n).keys()];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function hoWingsBind(host){
+  ho.wingCnt = [...host.querySelectorAll('[data-cnt]')].map(el => { const [kind, f] = el.dataset.cnt.split(':'); return { el, kind, f: +f, g: host.querySelector(`[data-wing-g="${kind}:${f}"]`), last: -1 }; });
+  ho.wingTxt = { hash: host.querySelector('[data-k="wingHash"]'), onl: host.querySelector('[data-k="wingOnl"]'), pow: host.querySelector('[data-k="wingPow"]') };
+  ho.toggles = ho.toggles || {};
+  Object.keys(ho.toggles).forEach(k => hoApplyToggle(k, ho.toggles[k], host));
+}
+function hoInWing(t, kind, f){
+  const x0 = hoWingX0(kind);
+  return Math.abs(t.z - f * HO.FH) < .5 && t.x >= x0 && t.x < x0 + HO.R && t.y >= 0 && t.y < HO.R + .6 && !hoInLift(t);
+}
+function hoWingsCount(){
+  (ho.wingCnt || []).forEach(w => {
+    const n = ho.techs.filter(t => hoInWing(t, w.kind, w.f)).length;
+    if(n === w.last) return;
+    w.last = n;
+    w.el.textContent = n ? ' · ' + n + ' 👷' : '';
+    if(w.g) w.g.classList.toggle('is-busy', n > 0);
+  });
+}
+function hoWingsStats(list){
+  const T = ho.wingTxt;
+  if(!T || !T.hash) return;
+  let gh = 0, on = 0, w = 0;
+  list.forEach(dev => { const r = readings[dev.id]; if(r && r.online){ on++; if(!r.hashrate_display) gh += Number(r.hashrate) || 0; w += Number(r.power) || 0; } });
+  const f = formatHashrate(gh);
+  T.hash.textContent = gh ? f.value + ' ' + f.unit : '—';
+  T.onl.textContent = on + ' / ' + list.length + ' máquinas online';
+  T.pow.textContent = w ? Math.round(w) + ' W · ' + (ho.techs.filter(t => t.target != null).length) + ' técnicos em serviço' : '';
+}
+function hoApplyToggle(key, on, host){
+  const g = (host || $('officeSvgHost')).querySelector(`[data-toggle-g="${key}"]`);
+  if(!g) return;
+  g.classList.toggle('on', on); g.classList.toggle('off', !on);
+}
+function hoToggle(key){
+  ho.toggles = ho.toggles || {};
+  const g = $('officeSvgHost').querySelector(`[data-toggle-g="${key}"]`);
+  if(!g) return;
+  const on = !g.classList.contains('on');
+  ho.toggles[key] = on;
+  hoApplyToggle(key, on);
+  // quem estiver por perto reage
+  if(key.startsWith('juke') && on) ho.techs.filter(t => !t.path.length && t.target == null).slice(0, 2).forEach(t => { t.dance = Date.now() + 5000; });
+}
+function hoVisitWing(id){
+  const [kind, f] = id.split(':');
+  const acts = Object.keys(HO_ACTS).filter(k => HO_ACTS[k].wing === kind);
+  if(!acts.length) return;
+  const busyW = t => (t.act && HO_ACTS[t.act].wing ? 1000 : 0);
+  const free = ho.techs.filter(t => t.target == null).sort((a, b) => busyW(a) - busyW(b) + Math.hypot(a.x - hoWingX0(kind), a.z - (+f) * HO.FH) - Math.hypot(b.x - hoWingX0(kind), b.z - (+f) * HO.FH));
+  const t = free[0];
+  if(!t) return;
+  if(t.act === 'chat' && t.partner){ hoEndAct(t.partner); }
+  t.lastAct = acts[0];
+  hoStartAct(t, acts[Math.floor(Math.random() * acts.length)]);
+}
+function hoWingTip(id, e, stage, tip){
+  const [kind, f] = id.split(':'), who = ho.techs.filter(t => hoInWing(t, kind, +f)).map(t => t.name);
+  tip.innerHTML = '<h4><span>' + HO_WING_ICON[kind] + ' ' + HO_WING_NAME[kind] + '</span><span class="ho-status" style="color:var(--cyan)">Piso ' + f + '</span></h4>' +
+    '<div class="ho-board-line">' + (who.length ? '👷 ' + who.join(', ') : 'Vazia') + '</div><div class="ho-board-line" style="color:var(--muted)">Clique para enviar um técnico</div>';
+  tip.hidden = false;
+  const rect = stage.getBoundingClientRect();
+  let x = e.clientX - rect.left + 16, y = e.clientY - rect.top + 16;
+  if(x + tip.offsetWidth > rect.width - 6) x = e.clientX - rect.left - tip.offsetWidth - 16;
+  if(y + tip.offsetHeight > rect.height - 6) y = Math.max(6, rect.height - tip.offsetHeight - 6);
+  tip.style.left = Math.max(6, x) + 'px';
+  tip.style.top = y + 'px';
 }
 
 function hoLog(text, kind, id){
@@ -974,6 +1063,8 @@ function hoBuildOutside(host, list){
         const id = escapeHtml(String(list[idx].id));
         glows += `<rect data-glow="${id}" class="ho-win-glow" x="${u0 - .15}" y="${wt - .15}" width="${ww + .3}" height="${wh + .3}" rx=".2" fill="var(--muted)" filter="url(#hoBlur)"/>`;
         face += `<g data-win="${id}"><rect class="ho-win-out" x="${u0}" y="${wt}" width="${ww}" height="${wh}" fill="var(--muted)" fill-opacity=".25" stroke="var(--muted)" stroke-width=".08"/>` +
+          `<rect x="${u0}" y="${wt}" width="${ww}" height="${wh}" fill="url(#hoWinShine)" pointer-events="none"/>` +
+          `<line x1="${u0 + ww / 2}" y1="${wt}" x2="${u0 + ww / 2}" y2="${wt + wh}" stroke="#07121a" stroke-width=".1" opacity=".8"/><line x1="${u0}" y1="${wt + wh * .45}" x2="${u0 + ww}" y2="${wt + wh * .45}" stroke="#07121a" stroke-width=".1" opacity=".8"/>` +
           `<line x1="${u0 + .5}" y1="${wt + .4}" x2="${u0 + 2.6}" y2="${wt + .4}" stroke="#ffffff" stroke-width=".07" opacity=".25"/>` +
           `<text x="${u0 + .35}" y="${wt + wh - .35}" font-size=".55" font-weight="700" fill="#d8e6ee">${hoRoomLabel(idx)} · ${escapeHtml(list[idx].name.length > 14 ? list[idx].name.slice(0, 13) + '…' : list[idx].name)}</text></g>`;
         hits += `<g transform="${hoM('wallY', x0, y1, top)}"><rect class="ho-hit" data-id="${id}" x="${u0}" y="${wt}" width="${ww}" height="${wh}"/></g>`;
@@ -983,34 +1074,57 @@ function hoBuildOutside(host, list){
       }
     }
   }
+  for(let u = .8; u < W; u += 1.6) face += `<line x1="${u}" y1="0" x2="${u}" y2="${top}" stroke="#06101a" stroke-width=".05" opacity=".55"/>`;
   face += `<rect class="ho-sheen" x="0" y="0" width="${W}" height="${top}" fill="url(#hoSheenG)" pointer-events="none"/>`;
   s += `<g transform="${hoM('wallY', x0, y1, top)}">${face}</g>`;
   glows = `<g transform="${hoM('wallY', x0, y1, top)}" pointer-events="none">${glows}</g>`;
-  // telhado: laje, painéis solares, ar condicionado, antena e letreiro
-  let roof = `<rect width="${W}" height="${D}" fill="#101b24"/><rect x=".25" y=".25" width="${W - .5}" height="${D - .5}" fill="none" stroke="#1f3443" stroke-width=".15"/>`;
-  for(let i = 0; i < Math.max(2, Math.floor((W - 8) / 4)); i++) for(let j = 0; j < 2; j++)
-    roof += `<rect x="${6 + i * 4}" y="${7 + j * 3.2}" width="3.4" height="2.6" fill="#16314a" stroke="#2f5a80" stroke-width=".06"/><line x1="${7.7 + i * 4}" y1="${7 + j * 3.2}" x2="${7.7 + i * 4}" y2="${9.6 + j * 3.2}" stroke="#2f5a80" stroke-width=".04"/>`;
-  s += `<g transform="${hoM('floor', x0, y0, top)}">${roof}</g>`;
+  // telhado: abóbada curva ao longo do edifício, com nervuras, claraboia, ventilação e letreiro
+  const HH = 3.6, ym = (y0 + y1) / 2, rz = y => top + HH * Math.sqrt(Math.max(0, 1 - Math.pow((y - ym) / (D / 2), 2)));
+  const NV = 16, arc = [...Array(NV + 1).keys()].map(k => y0 + D * k / NV);
+  for(let k = 0; k < NV; k++){
+    const ya = arc[k], yb = arc[k + 1], tm = (k + .5) / NV;
+    const base = hoShade('#3a5064', -.5 + .7 * Math.pow(tm, .85));
+    s += `<polygon points="${hoPts([[x0, ya, rz(ya)], [x1, ya, rz(ya)], [x1, yb, rz(yb)], [x0, yb, rz(yb)]])}" fill="${base}"/>`;
+  }
+  s += `<polygon class="ho-skylight" points="${hoPts([[x0 + 1.5, arc[6], rz(arc[6])], [x1 - 1.5, arc[6], rz(arc[6])], [x1 - 1.5, arc[10], rz(arc[10])], [x0 + 1.5, arc[10], rz(arc[10])]])}" fill="#4fd6ff" fill-opacity=".34" stroke="#0b1620" stroke-width=".6"/>`;
+  for(let xr = x0 + 5; xr < x1; xr += 5){
+    s += `<polyline points="${hoPts(arc.map(y => [xr, y, rz(y)]))}" fill="none" stroke="#14202b" stroke-width=".9" opacity=".75"/>`;
+    s += `<polyline points="${hoPts(arc.slice(6, 11).map(y => [xr, y, rz(y)]))}" fill="none" stroke="#9fe8ff" stroke-width=".5" opacity=".55"/>`;
+  }
+  // reflexo longo da luz na abóbada
+  s += `<polyline class="ho-roofshine" points="${hoPts([[x0 + 1, arc[11], rz(arc[11])], [x1 - 1, arc[11], rz(arc[11])]])}" fill="none" stroke="#fff" stroke-width="1.4" opacity=".16"/>`;
+  // empena do lado direito: arco por cima da parede
+  s += `<polygon points="${hoPts([...arc.map(y => [x1, y, rz(y)]), [x1, y1, top], [x1, y0, top]])}" fill="#0c1822"/>`;
+  [.22, .5, .78].forEach(t => { const yy = y0 + D * t; s += `<polyline points="${hoPts([[x1, yy, top], [x1, yy, rz(yy)]])}" fill="none" stroke="var(--cyan)" stroke-width="1" opacity=".5"/>`; });
   s += `<polyline points="${hoPts([[x0, y1, top], [x1, y1, top], [x1, y0, top]])}" fill="none" stroke="var(--cyan)" stroke-width="1.6" opacity=".75"/>`;
-  s += hoBox(x0 + 1.2, y0 + 1, top, 2.6, 2.2, 1.4, '#3a4652') + hoBox(x0 + 4.4, y0 + 1, top, 2.6, 2.2, 1.4, '#3a4652');
-  [[x0 + 2.5, y0 + 2.1], [x0 + 5.7, y0 + 2.1]].forEach(([fx, fy]) => { s += `<g transform="${hoM('floor', fx, fy, top + 1.4)}"><circle r=".8" fill="#0b0f12"/><g class="ho-blades" style="--fan-dur:.9s" fill="#5f6d77"><rect x="-.08" y="-.7" width=".16" height="1.4"/><rect x="-.7" y="-.08" width="1.4" height=".16"/></g></g>`; });
-  const [ax, ay] = hoP(x1 - 1.5, y0 + 1.5, top), [bx, by] = hoP(x1 - 1.5, y0 + 1.5, top + 6);
+  s += `<polyline points="${hoPts(arc.map(y => [x1, y, rz(y)]))}" fill="none" stroke="var(--cyan)" stroke-width="1.8" opacity=".9"/>`;
+  // ventilação no topo da abóbada
+  for(let i = 0; i < Math.max(2, Math.floor((W - 6) / 9)); i++){
+    const fx = x0 + 4 + i * 9;
+    s += hoBox(fx, ym - .9, top + HH - .15, 2.6, 1.8, 1.0, '#3a4652');
+    s += `<g transform="${hoM('floor', fx + 1.3, ym, top + HH + .85)}"><circle r=".72" fill="#0b0f12"/><g class="ho-blades" style="--fan-dur:.9s" fill="#7a8a96"><rect x="-.08" y="-.62" width=".16" height="1.24"/><rect x="-.62" y="-.08" width="1.24" height=".16"/></g></g>`;
+  }
+  const [ax, ay] = hoP(x1 - 1.5, ym, top + HH), [bx, by] = hoP(x1 - 1.5, ym, top + HH + 6);
   s += `<line x1="${ax.toFixed(1)}" y1="${ay.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="#4a5966" stroke-width="2"/>` +
     `<circle class="ho-beacon" cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="3.2" fill="#ff4d4d" filter="url(#hoGlow)"/>`;
-  const bw = Math.min(W - 6, 20), bx0 = x0 + (W - bw) / 2;
-  s += hoBox(bx0 + 1, y0 + 2.4, top, .3, .3, 2.4, '#4a5966') + hoBox(bx0 + bw - 1.3, y0 + 2.4, top, .3, .3, 2.4, '#4a5966');
-  s += `<g transform="${hoM('wallY', bx0, y0 + 2.7, top + 6)}"><rect width="${bw}" height="3.6" rx=".2" fill="#05121a" stroke="var(--cyan)" stroke-width=".12"/>` +
+  const bw = Math.min(W - 6, 20), bx0 = x0 + (W - bw) / 2, sgz = top + HH + 1.1 + 3.6;
+  s += hoBox(bx0 + 1, ym - .15, top + HH - .1, .3, .3, 1.3, '#4a5966') + hoBox(bx0 + bw - 1.3, ym - .15, top + HH - .1, .3, .3, 1.3, '#4a5966');
+  s += `<g transform="${hoM('wallY', bx0, ym, sgz)}"><rect width="${bw}" height="3.6" rx=".2" fill="#05121a" stroke="var(--cyan)" stroke-width=".12"/>` +
     `<text x="${bw / 2}" y="1.55" font-size="1.05" font-weight="700" text-anchor="middle" fill="var(--cyan)" filter="url(#hoGlow)">CENTRO DE COMANDO</text>` +
     `<text data-k="outStats" x="${bw / 2}" y="2.85" font-size=".72" font-weight="700" text-anchor="middle" fill="var(--amber)">—</text></g>`;
+  // alpendre da entrada
+  s += hoBox(x0 + doorU - 2.6, y1, 5.7, 5.2, 1.8, .22, '#2a3a48') + hoBox(x0 + doorU - 2.4, y1 + 1.5, 0, .22, .22, 5.7, '#3a4a58') + hoBox(x0 + doorU + 2.2, y1 + 1.5, 0, .22, .22, 5.7, '#3a4a58');
+  s += `<g transform="${hoM('floor', x0 + doorU - 2.4, y1, 5.68)}" opacity=".85"><rect class="ho-out-strip" x=".1" y="1.55" width="4.6" height=".14" fill="var(--cyan)"/></g>`;
   // limites
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  [[px0, py0, 0], [px1, py0, 0], [px1, py1, 0], [px0, py1, 0], [x0, y0, top + 7], [x1, y0, top + 7], [x1, y1, top], [x0, y1, top]].forEach(p => {
+  [[px0, py0, 0], [px1, py0, 0], [px1, py1, 0], [px0, py1, 0], [x0, y0, top + 10], [x1, y0, top + 10], [x1, y1, top], [x0, y1, top]].forEach(p => {
     const [X, Y] = hoP(p[0], p[1], p[2]); minX = Math.min(minX, X); maxX = Math.max(maxX, X); minY = Math.min(minY, Y); maxY = Math.max(maxY, Y);
   });
   const pad = 14;
   ho.baseVB = [minX - pad, minY - pad, maxX - minX + pad * 2, maxY - minY + pad * 2];
   ho.zoom = { k: 1, cx: 0, cy: 0 };
   const defs = `<defs><linearGradient id="hoOutGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10202c"/><stop offset="1" stop-color="#0a141c"/></linearGradient>` +
+    `<linearGradient id="hoWinShine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset=".35" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
     `<filter id="hoGlow" x="-2" y="-2" width="5" height="5"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>${hoAmbientDefs()}</defs>`;
   host.innerHTML = `<svg class="ho-outside" viewBox="${ho.baseVB.map(v => v.toFixed(0)).join(' ')}" role="img" aria-label="Edifício visto de fora: uma janela por máquina">${defs}${hoSkyOut(ho.baseVB)}${s}${AMB.life}${hoOverlaySvg()}${AMB.lights}${glows}${hoWxFxSvg()}${hits}</svg>`;
   ho.rooms = {}; ho.liftEl = null; ho.liftInside = null; ho.liftInd = []; ho.liftCable = null; ho.techLayer = null;
@@ -1091,6 +1205,7 @@ function renderOffice(){
   hoUpdateSky(host.querySelector('svg'));
   hoDispatch(list, states);
   hoPlaceTechs();
+  if(ho.mode === 'inside') hoWingsStats(list);
 
   const busy = ho.techs.filter(t => t.target != null).length;
   const waiting = Object.keys(states).filter(k => HO_PRIORITY[states[k]] && !ho.techs.some(t => t.target === k)).length;
@@ -1162,7 +1277,9 @@ function hoZoomAt(factor, px, py){
   if(!stage || !tip) return;
   stage.addEventListener('mousemove', e => {
     const hit = e.target.closest && e.target.closest('.ho-hit');
+    const wh = !hit && e.target.closest && e.target.closest('[data-wing]');
     const dev = hit && devices.find(d => String(d.id) === hit.dataset.id);
+    if(wh){ hoWingTip(wh.dataset.wing, e, stage, tip); return; }
     if(!dev){ tip.hidden = true; return; }
     const k = String(dev.id), state = (ho.states || {})[k] || 'idle', st = OFFICE_STATUS[state];
     tip.innerHTML = '<h4><span>' + hoRoomLabel(ho.idx[k]) + ' · ' + escapeHtml(dev.name) + '</span><span class="ho-status" style="color:' + st.color + '">' + st.label + '</span></h4>' +
@@ -1224,6 +1341,10 @@ function hoZoomAt(factor, px, py){
       return;
     }
     if(dragged){ dragged = false; return; }
+    const tg = e.target.closest && e.target.closest('[data-toggle]');
+    if(tg){ hoToggle(tg.dataset.toggle); return; }
+    const wh = e.target.closest && e.target.closest('[data-wing]');
+    if(wh){ hoVisitWing(wh.dataset.wing); return; }
     const hit = e.target.closest && e.target.closest('.ho-hit');
     const dev = hit && devices.find(d => String(d.id) === hit.dataset.id);
     if(!dev) return;
