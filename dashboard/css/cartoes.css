@@ -384,3 +384,33 @@
   .mc-ptile:hover{box-shadow:0 10px 22px -8px #000,0 0 14px -4px var(--mc-c);} .mc-ptile.dragging{cursor:grabbing;opacity:.9;z-index:5;} .mc-ptile.is-sel{outline:2px solid var(--cyan);}
   .mc-ptile b{display:block;font-size:12px;color:var(--text);} .mc-ptile small{display:block;font-size:10.5px;color:var(--muted);}
   @media (prefers-reduced-motion: reduce){.mc-ecg-run,.mc-fanico .blades,.mc-wavefx{animation:none !important;}}
+
+  /* ---------- Mais efeitos ---------- */
+  .mc-glowfx,.mc-sheenfx,.mc-embers{display:none;position:absolute;inset:0;border-radius:inherit;pointer-events:none;}
+  .mc-tile{position:relative;}
+  /* respiração: o cartão a trabalhar brilha devagar */
+  .mc-xp-breathe .mc-card[data-state="ok"]:not(.is-off) .mc-glowfx{display:block;box-shadow:0 0 22px -6px var(--mc-c),inset 0 0 22px -12px var(--mc-c);animation:mcBreathe 4.2s ease-in-out infinite;animation-delay:calc(var(--i,0) * .6s);}
+  @keyframes mcBreathe{0%,100%{opacity:.15;}50%{opacity:.95;}}
+  /* reflexo de luz que passa de vez em quando */
+  .mc-xp-sheen .mc-card[data-state="ok"]:not(.is-off) .mc-sheenfx{display:block;overflow:hidden;}
+  .mc-sheenfx::before{content:'';position:absolute;top:-10%;bottom:-10%;width:34%;left:-50%;background:linear-gradient(100deg,transparent,#ffffff1c,transparent);transform:skewX(-18deg);animation:mcSheen 8s ease-in-out infinite;animation-delay:calc(var(--i,0) * 1.1s);}
+  @keyframes mcSheen{0%,62%{left:-50%;}100%{left:130%;}}
+  /* brasas que sobem dos cartões quentes */
+  .mc-xp-embers .mc-card[data-state="hot"] .mc-embers,.mc-xp-embers .mc-card[data-state="warm"] .mc-embers{display:block;overflow:hidden;}
+  .mc-embers b{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:radial-gradient(circle,#fff6b0,#ff8a1e 60%,transparent);opacity:0;animation:mcEmber 2.6s ease-out infinite;}
+  .mc-embers b:nth-child(1){left:12%;--dx:10px;animation-delay:0s;} .mc-embers b:nth-child(2){left:28%;--dx:-8px;animation-delay:.5s;} .mc-embers b:nth-child(3){left:46%;--dx:12px;animation-delay:1.1s;}
+  .mc-embers b:nth-child(4){left:63%;--dx:-12px;animation-delay:.3s;} .mc-embers b:nth-child(5){left:80%;--dx:8px;animation-delay:1.4s;} .mc-embers b:nth-child(6){left:92%;--dx:-6px;animation-delay:.9s;}
+  .mc-card[data-state="warm"] .mc-embers b{filter:hue-rotate(15deg);opacity:0;}
+  @keyframes mcEmber{0%{transform:translate(0,0) scale(1);opacity:0;}15%{opacity:.95;}100%{transform:translate(var(--dx),-120px) scale(.2);opacity:0;}}
+  /* o traço do gráfico desenha-se */
+  .mc-xp-draw .mc-spark .line.draw{stroke-dasharray:500;animation:mcDraw 1.2s ease-out;}
+  @keyframes mcDraw{from{stroke-dashoffset:500;}to{stroke-dashoffset:0;}}
+  /* +1 que sobe */
+  .mc-float{position:absolute;z-index:4;font-size:12px;font-weight:700;color:var(--green);text-shadow:0 0 8px var(--green);pointer-events:none;animation:mcFloat 1.4s ease-out forwards;}
+  .mc-float.big{font-size:22px;text-shadow:none;}
+  @keyframes mcFloat{0%{transform:translateY(0) scale(.7);opacity:0;}15%{opacity:1;}100%{transform:translateY(-46px) scale(1.15);opacity:0;}}
+  /* onda no clique */
+  .mc-actions button,.mc-fx-btn,.mc-fchip,.mc-views button,.mc-bulk button,.mc-heat-bar button{position:relative;overflow:hidden;}
+  .mc-rip{position:absolute;border-radius:50%;background:radial-gradient(circle,#ffffff55,#ffffff00 65%);transform:scale(0);animation:mcRip .6s ease-out forwards;pointer-events:none;}
+  @keyframes mcRip{to{transform:scale(1);opacity:0;}}
+  @media (prefers-reduced-motion: reduce){.mc-glowfx,.mc-sheenfx::before,.mc-embers b,.mc-float,.mc-rip{animation:none !important;}}

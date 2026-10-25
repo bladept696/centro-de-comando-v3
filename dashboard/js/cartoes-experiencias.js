@@ -1,19 +1,18 @@
 // ---------- Cartões: experiências visuais (ligam-se e desligam-se em ⚙ > Experiências) ----------
 // Ventoinha a girar, medidor de temperatura em arco, números que contam, cartões que deslizam, linha de pulso,
 // onda de cor nas mudanças de estado, e duas vistas novas: mapa de calor e planta das máquinas.
-const MC_XP_ALL = ['fan', 'arc', 'count', 'flip', 'ecg', 'wave'];
-mc.prefs.xp = Object.assign({ fan: true, arc: true, count: true, flip: true, ecg: true, wave: true }, mc.prefs.xp || {});
+const MC_XP_ALL = ['fan', 'arc', 'count', 'flip', 'ecg', 'wave', 'float', 'breathe', 'sheen', 'embers', 'confetti', 'draw', 'ripple', 'mapflow', 'mapzones'];
+mc.prefs.xp = Object.assign({ fan: true, arc: true, count: true, flip: true, ecg: true, wave: true, float: true, breathe: true, sheen: true, embers: true, confetti: true, draw: true, ripple: true, mapflow: true, mapzones: true }, mc.prefs.xp || {});
 function mcXp(k){
   let reduced = false;
   try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) {}
   return !reduced && mc.prefs.xp[k] !== false;
 }
-function mcXpClasses(){ return MC_XP_ALL.filter(k => ['fan', 'arc', 'ecg', 'wave'].includes(k) && mcXp(k)).map(k => ' mc-xp-' + k).join(''); }
+function mcXpClasses(){ return MC_XP_ALL.filter(k => ['fan', 'arc', 'ecg', 'wave', 'breathe', 'sheen', 'embers', 'draw'].includes(k) && mcXp(k)).map(k => ' mc-xp-' + k).join(''); }
 
 // ---- números que contam até ao valor novo ----
-function mcNumSet(el, f, text){
-  const n = el.querySelector('[data-f="' + f + '"]');
-  if(!n) return;
+function mcNumSet(el, f, text){ const n = el.querySelector('[data-f="' + f + '"]'); if(n) mcNumTo(n, text); }
+function mcNumTo(n, text){
   const m = mcXp('count') ? String(text).match(/^(-?\d+(?:\.\d+)?)(.*)$/) : null;
   if(!m){ n._v = null; if(n.textContent !== text) n.textContent = text; return; }
   const to = parseFloat(m[1]), suf = m[2], dec = (m[1].split('.')[1] || '').length, from = n._v;
@@ -172,6 +171,53 @@ function mcXpOpen(){
     const c = e.target.closest('[data-xp]');
     if(!c) return;
     mc.prefs.xp[c.dataset.xp] = c.checked; mcSavePrefs(); mc.lang = null; renderMachineCards();
+    if(typeof renderNetworkMap === 'function') renderNetworkMap();
   });
   document.body.appendChild(m);
 }
+
+// ---- "+1" que sobe do cartão a cada partilha aceite ----
+function mcFloat(id, delta, big){
+  if(!mcXp('float')) return;
+  const el = mc.els.get(id), hero = el && el.querySelector('.mc-hash');
+  if(!hero || el.querySelectorAll('.mc-float').length > 3) return;
+  const f = document.createElement('span');
+  f.className = 'mc-float' + (big ? ' big' : '');
+  f.textContent = big ? '🏆' : '+' + delta;
+  f.style.left = (hero.offsetLeft + 20 + Math.random() * 70).toFixed(0) + 'px';
+  f.style.top = (hero.offsetTop + 4) + 'px';
+  el.appendChild(f);
+  setTimeout(() => f.remove(), 1500);
+}
+
+// ---- confetti no cartão da meta, uma vez por dia, quando se chega aos 100% ----
+function mcGoalConfetti(box){
+  if(!mcXp('confetti')) return;
+  const today = new Date().toDateString();
+  try { if(localStorage.getItem('nerdqaxe:goal_done') === today) return; localStorage.setItem('nerdqaxe:goal_done', today); } catch(e) {}
+  const tile = box.querySelector('[data-f="goal"]').closest('.mc-tile');
+  const burst = document.createElement('div');
+  burst.className = 'mc-burst';
+  for(let i = 0; i < 26; i++){
+    const p = document.createElement('i');
+    p.style.setProperty('--a', (i / 26 * 360 + Math.random() * 12).toFixed(0) + 'deg');
+    p.style.setProperty('--d', (50 + Math.random() * 80).toFixed(0) + 'px');
+    p.style.background = ['#ffd34a', '#21ffb0', '#4fd6ff', '#ff5d5d', '#fff'][i % 5];
+    burst.appendChild(p);
+  }
+  tile.appendChild(burst);
+  setTimeout(() => burst.remove(), 2600);
+  if(typeof mcLogEvent === 'function') mcLogEvent(t('mc_goal_done'), 'good');
+}
+
+// ---- onda que nasce no clique dos botões ----
+document.addEventListener('pointerdown', e => {
+  if(!mcXp('ripple')) return;
+  const b = e.target.closest('.mc-actions button, .mc-fx-btn, .mc-fchip, .mc-views button, .mc-bulk button, .mc-heat-bar button');
+  if(!b) return;
+  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height) * 2, rp = document.createElement('span');
+  rp.className = 'mc-rip';
+  rp.style.cssText = 'width:' + s + 'px;height:' + s + 'px;left:' + (e.clientX - r.left - s / 2) + 'px;top:' + (e.clientY - r.top - s / 2) + 'px';
+  b.appendChild(rp);
+  setTimeout(() => rp.remove(), 650);
+});

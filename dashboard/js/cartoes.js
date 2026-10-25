@@ -183,7 +183,9 @@ function mcCardEl(dev){
       '<button type="button" data-a="eco" title="' + t('mc_eco_t') + '">🌿</button><button type="button" data-a="turbo" title="' + t('mc_turbo_t') + '">🚀</button>' +
       '<button type="button" data-a="restart" title="' + t('mc_restart_t') + '">⟲</button><button type="button" data-a="plug" title="' + t('mc_plug_t') + '" hidden>⚡</button>' +
       '<button type="button" data-a="more" title="' + t('mc_more_t') + '">' + t('mc_more') + '</button>' +
-      '<button type="button" data-a="remove" class="mc-danger" title="' + t('mc_remove_t') + '">✕</button></footer><i class="mc-wavefx"></i>';
+      '<button type="button" data-a="remove" class="mc-danger" title="' + t('mc_remove_t') + '">✕</button></footer><i class="mc-wavefx"></i><i class="mc-glowfx"></i><i class="mc-sheenfx"></i><i class="mc-embers"><b></b><b></b><b></b><b></b><b></b><b></b></i>';
+  const ln = el.querySelector('.mc-spark .line');
+  ln.classList.add('draw'); setTimeout(() => ln.classList.remove('draw'), 1600);   // o traço desenha-se quando o cartão aparece
   return el;
 }
 const mcSetN = (el, f, text) => typeof mcNumSet === 'function' ? mcNumSet(el, f, text) : mcSet(el, f, text);

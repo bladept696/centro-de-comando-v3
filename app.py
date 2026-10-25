@@ -2796,6 +2796,80 @@ def send_discord_alert(webhook_url, message):
         return True
 
 
+# --- diagnóstico do caminho: router, internet e DNS (para o mapa da rede) ---
+_netcheck_cache = {"ts": 0, "data": None}
+_netcheck_lock = threading.Lock()
+
+
+def _ping_ms(host, timeout_ms=1500):
+    """Tempo de resposta (ms) de um ping, ou None se não responder. Lê o 'tempo=12ms' em vários idiomas."""
+    try:
+        if os.name == 'nt':
+            cmd, flags = ['ping', '-n', '1', '-w', str(timeout_ms), host], getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+        else:
+            cmd, flags = ['ping', '-c', '1', '-W', str(max(1, timeout_ms // 1000)), host], 0
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_ms / 1000 + 2, creationflags=flags).stdout or ""
+        m = re.search(r'(?:time|tempo|tiempo|temps|durée|zeit)\s*[=<]\s*([\d.,]+)', out, re.I)
+        if m:
+            return float(m.group(1).replace(',', '.'))
+        return None
+    except Exception:
+        return None
+
+
+def _tcp_ms(host, port, timeout=2.0):
+    try:
+        t0 = time.time()
+        with socket.create_connection((host, port), timeout=timeout):
+            return (time.time() - t0) * 1000
+    except Exception:
+        return None
+
+
+def _local_gateway():
+    """O router costuma ser o endereço .1 da rede do PC."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip.rsplit('.', 1)[0] + '.1'
+    except Exception:
+        return None
+
+
+def netcheck(force=False):
+    with _netcheck_lock:
+        if not force and _netcheck_cache["data"] and time.time() - _netcheck_cache["ts"] < 15:
+            return _netcheck_cache["data"]
+    gw = _local_gateway()
+
+    def internet():
+        vals = [v for v in (_ping_ms("1.1.1.1"), _ping_ms("8.8.8.8")) if v is not None]
+        if vals:
+            return min(vals)
+        return _tcp_ms("1.1.1.1", 443)
+
+    def dns():
+        try:
+            t0 = time.time()
+            socket.getaddrinfo("one.one.one.one", 443)
+            return (time.time() - t0) * 1000
+        except Exception:
+            return None
+
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        f_gw = ex.submit(lambda: (_ping_ms(gw) if gw else None))
+        f_net, f_dns = ex.submit(internet), ex.submit(dns)
+        gw_ms, net_ms, dns_ms = f_gw.result(), f_net.result(), f_dns.result()
+    if gw and gw_ms is None:
+        gw_ms = _tcp_ms(gw, 80, 1.0) or _tcp_ms(gw, 443, 1.0)
+    data = {"gateway": {"ip": gw, "ms": gw_ms}, "internet": {"ms": net_ms}, "dns": {"ms": dns_ms}, "ts": time.time()}
+    with _netcheck_lock:
+        _netcheck_cache.update({"ts": time.time(), "data": data})
+    return data
+
+
 _plug_lock = threading.Lock()
 _plug_busy = set()
 
@@ -3809,6 +3883,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e), "subnet": subnet, "devices": []}).encode('utf-8'))
                 return
+
+        if path == '/api/netcheck':
+            data = netcheck(force=query_params.get('force', ['0'])[0] == '1')
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode('utf-8'))
+            return
 
         if path == '/api/btc-news':
             force = query_params.get('force', ['0'])[0] == '1'

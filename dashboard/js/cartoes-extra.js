@@ -79,9 +79,10 @@ function mcWatchEvents(list){
     if(mc.lastBest[id] != null && best > mc.lastBest[id] * 1.0001){
       mc.recordUntil[id] = Date.now() + 90000;
       mcFlash(id, 'mc-flash', 2600);
+      if(typeof mcFloat === 'function') mcFloat(id, 1, true);
       mcLogEvent(mct('mc_l_record', dev.name || dev.ip), 'good', id);
     }
-    if(mc.lastAcc[id] != null && acc > mc.lastAcc[id]) mcFlash(id, 'mc-ping', 900);
+    if(mc.lastAcc[id] != null && acc > mc.lastAcc[id]){ mcFlash(id, 'mc-ping', 900); if(typeof mcFloat === 'function') mcFloat(id, acc - mc.lastAcc[id], false); }
     mc.lastBest[id] = best; mc.lastAcc[id] = acc;
   });
 }
@@ -188,7 +189,7 @@ function mcRenderSummary(list){
     const inp = $('mcPrice'); inp.value = mcPrice() || '';
     inp.addEventListener('input', () => { try { localStorage.setItem(MC_PRICE_KEY, inp.value); } catch(e) {} mcRenderSummary(devices || []); });
   }
-  const st = mcStats(list), y = mcStatsStore(st), set = (f, t) => { const n = box.querySelector('[data-f="' + f + '"]'); if(n && n.textContent !== t) n.textContent = t; return n; };
+  const st = mcStats(list), y = mcStatsStore(st), set = (f, t) => { const n = box.querySelector('[data-f="' + f + '"]'); if(n){ if(['avg', 'peak', 'kwh'].includes(f) && typeof mcNumTo === 'function') mcNumTo(n, t); else if(n.textContent !== t) n.textContent = t; } return n; };
   box.hidden = !list.length;
   set('now', mct('mc_g_online', st.online + '/' + st.total)); set('nowS', mcFmtHash(st.nowHash));
   set('avg', mcFmtHash(st.avg));
@@ -207,6 +208,7 @@ function mcRenderSummary(list){
   const goal = mcGoal(), pct = goal ? st.nowHash / (goal * 1000) * 100 : 0, gb = box.querySelector('[data-f="goalB"]');
   set('goal', goal ? pct.toFixed(0) + '%' : '—'); set('goalS', goal ? (pct >= 100 ? '✓' : mct('mc_s_goal_s', mcFmtHash(Math.max(0, goal * 1000 - st.nowHash)))) : t('mc_s_goal_none'));
   if(gb){ gb.style.width = Math.min(100, pct).toFixed(0) + '%'; gb.className = pct >= 100 ? '' : pct >= 80 ? 'warn' : 'bad'; }
+  if(goal && pct >= 100 && typeof mcGoalConfetti === 'function') mcGoalConfetti(box);
   set('ev', String(st.events)); set('evS', st.events ? t('mc_s_seelog') : t('mc_s_calm'));
 }
 
