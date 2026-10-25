@@ -1,14 +1,14 @@
 // ---------- Cartões: experiências visuais (ligam-se e desligam-se em ⚙ > Experiências) ----------
 // Ventoinha a girar, medidor de temperatura em arco, números que contam, cartões que deslizam, linha de pulso,
 // onda de cor nas mudanças de estado, e duas vistas novas: mapa de calor e planta das máquinas.
-const MC_XP_ALL = ['fan', 'arc', 'count', 'flip', 'ecg', 'wave', 'float', 'breathe', 'sheen', 'embers', 'confetti', 'draw', 'ripple', 'mapflow', 'mapzones'];
-mc.prefs.xp = Object.assign({ fan: true, arc: true, count: true, flip: true, ecg: true, wave: true, float: true, breathe: true, sheen: true, embers: true, confetti: true, draw: true, ripple: true, mapflow: true, mapzones: true }, mc.prefs.xp || {});
+const MC_XP_ALL = ['fan', 'arc', 'count', 'flip', 'ecg', 'wave', 'float', 'breathe', 'sheen', 'embers', 'confetti', 'draw', 'ripple', 'mapflow', 'mapzones', 'bgchart', 'heat3d'];
+mc.prefs.xp = Object.assign({ fan: true, arc: true, count: true, flip: true, ecg: true, wave: true, float: true, breathe: true, sheen: true, embers: true, confetti: true, draw: true, ripple: true, mapflow: true, mapzones: true, bgchart: true, heat3d: true }, mc.prefs.xp || {});
 function mcXp(k){
   let reduced = false;
   try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) {}
   return !reduced && mc.prefs.xp[k] !== false;
 }
-function mcXpClasses(){ return MC_XP_ALL.filter(k => ['fan', 'arc', 'ecg', 'wave', 'breathe', 'sheen', 'embers', 'draw'].includes(k) && mcXp(k)).map(k => ' mc-xp-' + k).join(''); }
+function mcXpClasses(){ return MC_XP_ALL.filter(k => ['fan', 'arc', 'ecg', 'wave', 'breathe', 'sheen', 'embers', 'draw', 'bgchart'].includes(k) && mcXp(k)).map(k => ' mc-xp-' + k).join(''); }
 
 // ---- números que contam até ao valor novo ----
 function mcNumSet(el, f, text){ const n = el.querySelector('[data-f="' + f + '"]'); if(n) mcNumTo(n, text); }
@@ -87,28 +87,70 @@ function mcFlipAfter(first){
   });
 }
 
-// ---- vista: mapa de calor ----
-function mcHeatColor(metric, r, max){
+// ---- vista: mapa de calor (em 3D, com a ventoinha a girar e o vento a correr) ----
+function mcHeatK(metric, r, max){
   if(!r || !r.online) return null;
   let k;   // 0 = bom, 1 = mau
   if(metric === 'temp'){ const lo = mc.th.tempWarm - 18; k = (Number(r.temp) - lo) / (mc.th.tempHot - lo); }
   else if(metric === 'eff'){ k = r.efficiency > 0 ? (Number(r.efficiency) - 12) / 12 : null; }
   else { k = max > 0 ? 1 - (Number(r.hashrate) || 0) / max : null; }
   if(k == null || !isFinite(k)) return null;
-  k = Math.max(0, Math.min(1, k));
-  return 'hsl(' + Math.round(140 - 140 * k) + ',72%,' + (38 + 8 * (1 - k)) + '%)';
+  return Math.max(0, Math.min(1, k));
 }
-function mcHeatHtml(rows){
+function mcHeatColor(metric, r, max){
+  const k = mcHeatK(metric, r, max);
+  return k == null ? null : 'hsl(' + Math.round(140 - 140 * k) + ',72%,' + (38 + 8 * (1 - k)) + '%)';
+}
+// dados de uma célula: cor, altura do "pilar" e velocidade da ventoinha
+function mcHeatCell(dev, r, st, metric, max){
+  const on = !!(r && r.online), k = mcHeatK(metric, r, max), col = mcHeatColor(metric, r, max);
+  const val = !on ? '—' : metric === 'temp' ? mcNum(r.temp, 1) + ' °C' : metric === 'eff' ? mcNum(r.efficiency, 1) + ' J/TH' : mcHashText(r).join(' ');
+  const fan = on ? (r.fanPct != null ? Number(r.fanPct) : (r.fanSpeed ? Number(r.fanSpeed) / 60 : 0)) : 0;
+  return { id: String(dev.id), name: dev.name || dev.ip || '', title: (dev.name || dev.ip) + ' · ' + MC_STATUS[st].label, col: col || 'var(--line-strong)', val,
+    hz: k == null ? 4 : Math.round(8 + k * 34), hot: k != null && k > .62, fd: fan > 2 ? (1.5 - 1.3 * Math.min(100, fan) / 100).toFixed(2) + 's' : '0s', fan: Math.round(fan), on, sel: selectedId === dev.id };
+}
+const mcFanSvg = '<svg class="mc-hfan" viewBox="0 0 24 24" aria-hidden="true"><g class="bl"><path d="M12 12c0-5 2-8 5-8 2 0 2 3 0 5z"/><path d="M12 12c5 0 8 2 8 5 0 2-3 2-5 0z"/><path d="M12 12c0 5-2 8-5 8-2 0-2-3 0-5z"/><path d="M12 12c-5 0-8-2-8-5 0-2 3-2 5 0z"/></g><circle cx="12" cy="12" r="2"/></svg>';
+function mcHeatStyle(x){ return '--hc:' + x.col + ';--hz:' + x.hz + 'px;--fd:' + x.fd; }
+function mcHeatCellHtml(x){
+  return '<div class="mc-hcell' + (x.sel ? ' is-sel' : '') + (x.hot ? ' hot' : '') + (x.fd === '0s' ? ' nofan' : '') + '" data-id="' + escapeHtml(x.id) + '" style="' + mcHeatStyle(x) + '" title="' + escapeHtml(x.title) + '">' +
+    '<b>' + escapeHtml(x.name) + '</b><span>' + escapeHtml(x.val) + '</span>' + mcFanSvg + '<i class="mc-hair"><u></u><u></u><u></u></i><i class="mc-hheat"></i></div>';
+}
+function mcHeatData(rows){
   const metric = mc.prefs.heatMetric || 'temp', max = Math.max(0, ...rows.map(x => x.r && x.r.online ? Number(x.r.hashrate) || 0 : 0));
+  return { metric, cells: rows.map(({ dev, r, st }) => mcHeatCell(dev, r, st, metric, max)) };
+}
+function mcHeatAvgFan(cells){
+  const on = cells.filter(x => x.on);
+  return on.length ? on.reduce((s, x) => s + x.fan, 0) / on.length : 0;
+}
+const mcWindDur = avg => avg > 2 ? (5 - 3.4 * Math.min(100, avg) / 100).toFixed(1) + 's' : '0s';
+function mcHeatKey(rows){ return (mc.prefs.heatMetric || 'temp') + '|' + mcXp('heat3d') + '|' + currentLang + '|' + rows.map(x => x.dev.id).join(','); }
+function mcHeatHtml(rows){
+  const { metric, cells } = mcHeatData(rows), d3 = mcXp('heat3d');
   const btn = (k, l) => '<button type="button" data-hm="' + k + '" class="' + (metric === k ? 'on' : '') + '">' + l + '</button>';
-  let h = '<div class="mc-heat-bar"><span>' + t('mc_hm_title') + '</span><div>' + btn('temp', t('mc_s_temp')) + btn('eff', t('mc_s_eff')) + btn('hash', 'Hashrate') + '</div></div><div class="mc-heat-grid">';
-  rows.forEach(({ dev, r, st }) => {
-    const col = mcHeatColor(metric, r, max), on = !!(r && r.online);
-    const val = !on ? '—' : metric === 'temp' ? mcNum(r.temp, 1) + ' °C' : metric === 'eff' ? mcNum(r.efficiency, 1) + ' J/TH' : mcHashText(r).join(' ');
-    h += '<div class="mc-hcell' + (selectedId === dev.id ? ' is-sel' : '') + '" data-id="' + escapeHtml(String(dev.id)) + '" style="--hc:' + (col || 'var(--line-strong)') + '" title="' + escapeHtml((dev.name || dev.ip) + ' · ' + MC_STATUS[st].label) + '">' +
-      '<b>' + escapeHtml(dev.name || dev.ip || '') + '</b><span>' + escapeHtml(val) + '</span></div>';
+  return '<div class="mc-heat-bar"><span>' + t('mc_hm_title') + '</span><div>' + btn('temp', t('mc_s_temp')) + btn('eff', t('mc_s_eff')) + btn('hash', 'Hashrate') + '</div></div>' +
+    '<div class="mc-heat-stage' + (d3 ? ' d3' : '') + '"><div class="mc-heat-grid">' + cells.map(mcHeatCellHtml).join('') + '</div>' +
+    (d3 ? '<div class="mc-wind" style="--wd:' + mcWindDur(mcHeatAvgFan(cells)) + '"><u></u><u></u><u></u><u></u><u></u><u></u><u></u></div>' : '') + '</div>' +
+    '<div class="mc-heat-legend"><i></i><small>' + t('mc_hm_good') + '</small><small>' + t('mc_hm_bad') + '</small></div>' + (d3 ? '<div class="mc-heat-note">💨 ' + t('mc_hm_wind') + '</div>' : '');
+}
+// atualiza as células no lugar (sem refazer o HTML), para a ventoinha e o vento não recomeçarem a cada leitura
+function mcHeatPatch(board, rows){
+  const key = mcHeatKey(rows);
+  if(board.dataset.hk !== key || !board.querySelector('.mc-heat-grid')){ board.dataset.hk = key; return false; }
+  const { cells } = mcHeatData(rows);
+  cells.forEach(x => {
+    const el = [...board.querySelectorAll('.mc-hcell')].find(n => n.dataset.id === x.id);
+    if(!el) return;
+    el.style.cssText = mcHeatStyle(x);
+    el.classList.toggle('is-sel', x.sel); el.classList.toggle('hot', x.hot); el.classList.toggle('nofan', x.fd === '0s');
+    const b = el.querySelector('b'), v = el.querySelector('span');
+    if(b.textContent !== x.name) b.textContent = x.name;
+    if(v.textContent !== x.val) v.textContent = x.val;
+    el.title = x.title;
   });
-  return h + '</div><div class="mc-heat-legend"><i></i><small>' + t('mc_hm_good') + '</small><small>' + t('mc_hm_bad') + '</small></div>';
+  const w = board.querySelector('.mc-wind');
+  if(w) w.style.setProperty('--wd', mcWindDur(mcHeatAvgFan(cells)));
+  return true;
 }
 
 // ---- vista: planta (as máquinas arrastam-se para onde estão na realidade) ----

@@ -88,6 +88,7 @@ function mcWatchEvents(list){
 }
 // chamado pela celebração de bloco encontrado
 function mcBlockFound(name){
+  mcLuckBlock();
   const dev = (devices || []).find(d => (d.name || d.ip) === name) || null;
   if(!dev) return;
   const el = mc.els.get(dev.id);
@@ -183,7 +184,8 @@ function mcRenderSummary(list){
       '<div class="mc-tile"><span>' + t('mc_s_profit') + '</span><b data-f="profit">—</b><small data-f="profitS"></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_chance') + '</span><b data-f="chance">—</b><small data-f="chanceS"></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_goal') + '</span><b data-f="goal">—</b><div class="mc-goalbar"><i data-f="goalB"></i></div><small><label>TH/s <input type="number" step="0.1" min="0" id="mcGoal" placeholder="10"></label> <em data-f="goalS"></em></small></div>' +
-      '<div class="mc-tile"><span>' + t('mc_s_events') + '</span><b data-f="ev">—</b><small data-f="evS"></small></div>';
+      '<div class="mc-tile"><span>' + t('mc_s_events') + '</span><b data-f="ev">—</b><small data-f="evS"></small></div>' +
+      '<div class="mc-tile mc-luck" data-f="luckBox"><span>🍀 ' + t('mc_lk_title') + '</span><b data-f="luck">—</b><div class="mc-luckbar"><i data-f="luckB"></i></div><small data-f="luckS"></small><small data-f="luckS2"></small></div>';
     const gi = $('mcGoal'); gi.value = mcGoal() || '';
     gi.addEventListener('input', () => { try { localStorage.setItem(MC_GOAL_KEY, gi.value); } catch(e) {} mcRenderSummary(devices || []); });
     const inp = $('mcPrice'); inp.value = mcPrice() || '';
@@ -210,6 +212,57 @@ function mcRenderSummary(list){
   if(gb){ gb.style.width = Math.min(100, pct).toFixed(0) + '%'; gb.className = pct >= 100 ? '' : pct >= 80 ? 'warn' : 'bad'; }
   if(goal && pct >= 100 && typeof mcGoalConfetti === 'function') mcGoalConfetti(box);
   set('ev', String(st.events)); set('evS', st.events ? t('mc_s_seelog') : t('mc_s_calm'));
+  mcLuckRender(box, set, eco);
+}
+
+// ---- sorte e blocos: esforço acumulado, distância do melhor share ao bloco e contador de blocos ----
+// O esforço soma os hashes feitos enquanto a dashboard está aberta, a comparar com o trabalho esperado de um bloco
+// (dificuldade × 2^32); passa dos 100% quando se tem azar e volta a zero quando se encontra um bloco.
+const MC_LUCK_KEY = 'nerdqaxe:luck';
+mc.luck = (() => { try { return Object.assign({ h: 0, n: 0, b: 0, since: Date.now() }, JSON.parse(localStorage.getItem(MC_LUCK_KEY) || '{}')); } catch(e) { return { h: 0, n: 0, b: 0, since: Date.now() }; } })();
+mc.luckTick = 0; mc.luckSaved = 0;
+function mcLuckSave(){ mc.luckSaved = Date.now(); try { localStorage.setItem(MC_LUCK_KEY, JSON.stringify(mc.luck)); } catch(e) {} }
+function mcLuckTrack(list){
+  const now = Date.now(), dt = mc.luckTick ? Math.min(now - mc.luckTick, 60000) / 1000 : 0;
+  mc.luckTick = now;
+  list.forEach(dev => {
+    const r = readings[dev.id];
+    if(!r || !r.online) return;
+    if(dt && algoGroupOf(r) === 'sha256') mc.luck.h += (Number(r.hashrate) || 0) * 1e9 * dt;
+    const b = Number(r.best);
+    if(isFinite(b) && b > mc.luck.b) mc.luck.b = b;
+  });
+  if(now - mc.luckSaved > 30000) mcLuckSave();
+}
+function mcLuckBlock(){
+  mc.luck.n++; mc.luck.h = 0; mc.luck.since = Date.now(); mcLuckSave();
+  const box = document.querySelector('#mcSummary .mc-luck');
+  if(!box) return;
+  box.classList.remove('won'); void box.offsetWidth; box.classList.add('won');
+  setTimeout(() => box.classList.remove('won'), 9000);
+  if(typeof mcXp === 'function' && !mcXp('confetti')) return;
+  const burst = document.createElement('div');
+  burst.className = 'mc-burst';
+  for(let i = 0; i < 30; i++){
+    const p = document.createElement('i');
+    p.style.setProperty('--a', (i / 30 * 360 + Math.random() * 12).toFixed(0) + 'deg');
+    p.style.setProperty('--d', (60 + Math.random() * 90).toFixed(0) + 'px');
+    p.style.background = ['#ffd34a', '#21ffb0', '#4fd6ff', '#ff5d5d', '#fff'][i % 5];
+    burst.appendChild(p);
+  }
+  box.appendChild(burst);
+  setTimeout(() => burst.remove(), 2600);
+}
+function mcLuckRender(box, set, eco){
+  const diff = typeof difficultyData !== 'undefined' && difficultyData && difficultyData.currentDifficulty;
+  if(!diff){ set('luck', '—'); set('luckS', t('mc_s_nodata')); set('luckS2', ''); return; }
+  const effort = mc.luck.h / (diff * 4294967296) * 100, best = mc.luck.b;
+  const way = best > 1 ? Math.min(100, Math.log10(best) / Math.log10(diff) * 100) : 0, f = best > 0 ? formatDiff(best) : null;
+  set('luck', effort >= 1 ? effort.toFixed(1) + ' %' : effort >= 0.001 ? effort.toFixed(3) + ' %' : effort.toExponential(1) + ' %');
+  set('luckS', f ? mct('mc_lk_best', f.value + ' ' + f.unit, way.toFixed(0)) : t('mc_lk_nobest'));
+  set('luckS2', mct('mc_lk_blocks', mc.luck.n) + (eco ? ' · ' + mcBlockText(eco) : ''));
+  const bar = box.querySelector('[data-f="luckB"]');
+  if(bar) bar.style.width = way.toFixed(1) + '%';
 }
 
 // ---- 4. estado geral: linha no topo e contagem no título do separador ----
@@ -438,6 +491,8 @@ function mcExtraRender(list, states){
   mcNetWatch(list, states);
   mcTimelineTrack(list, states);
   mcUptimeTrack(list);
+  mcLuckTrack(list);
+  if(typeof mcRulesTick === 'function') mcRulesTick(list);
   if(typeof mcToolsRender === 'function') mcToolsRender();
   mcGlobalHealth(list, states);
   mcWatchEvents(list);

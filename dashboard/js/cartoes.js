@@ -106,6 +106,21 @@ function mcSpark(vals){
   return { line, area: line + 'L120 36L0 36Z', x: pts[pts.length - 1][0], y: pts[pts.length - 1][1] };
 }
 
+// gráfico grande e discreto no fundo do cartão: hashrate (área) e temperatura (tracejado) das últimas leituras
+function mcBgChart(el, dev, on){
+  const bga = el.querySelector('[data-f="bga"]'), bgl = el.querySelector('[data-f="bgl"]'), bgt = el.querySelector('[data-f="bgt"]'), dot = el.querySelector('[data-f="bgdot"]');
+  if(!bga) return;
+  const h = on ? (histories[dev.id] || []).filter(x => x && x.hashrate != null && isFinite(x.hashrate)).slice(-90) : [];
+  if(h.length < 4){ [bga, bgl, bgt].forEach(n => n.setAttribute('d', '')); dot.style.opacity = 0; return; }
+  const hv = h.map(x => Number(x.hashrate)), min = Math.min(...hv), max = Math.max(...hv), span = (max - min) || Math.max(max * .1, 1e-9);
+  const X = i => i / (h.length - 1) * 200, Y = v => 92 - (v - min) / span * 52;
+  const line = hv.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join('');
+  bgl.setAttribute('d', line); bga.setAttribute('d', line + 'L200 100L0 100Z');
+  const tp = h.map((x, i) => isFinite(x.temp) && x.temp > 0 ? 'L' + X(i).toFixed(1) + ' ' + (96 - (Math.min(90, Math.max(30, x.temp)) - 30) / 60 * 70).toFixed(1) : '').join('');
+  bgt.setAttribute('d', tp.replace(/^L/, 'M'));
+  dot.style.opacity = 1; dot.style.top = Y(hv[hv.length - 1]).toFixed(1) + '%';
+}
+
 // avisos legíveis para cada máquina (cada um com um código, usado pelos alertas)
 function mcAlertItems(dev, r, st, trend){
   const out = [];
@@ -160,6 +175,7 @@ function mcCardEl(dev){
   el.className = 'mc-card';
   el.dataset.id = dev.id;
   el.innerHTML =
+    '<svg class="mc-bgchart" viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><path class="bga" data-f="bga"/><path class="bgt" data-f="bgt"/><path class="bgl" data-f="bgl"/></svg><i class="mc-bgscan" aria-hidden="true"></i><i class="mc-bgdot" data-f="bgdot" aria-hidden="true"></i>' +
     '<header class="mc-head"><label class="mc-pick" title="' + t('mc_pick_t') + '"><input type="checkbox" data-a="pick" aria-label="' + t('mc_pick_a') + '"></label><span class="mc-dot" data-f="dot"></span>' +
       '<div class="mc-title"><b data-f="name"></b><small data-f="ip" data-a="copyip" title="' + t('mc_copyip') + '"></small></div>' +
       '<button type="button" class="mc-star" data-a="pin" title="' + t('mc_pin') + '" aria-label="' + t('mc_pin') + '">☆</button>' +
@@ -270,6 +286,7 @@ function mcUpdateCard(el, dev, r, st, i){
   el.querySelector('[data-f="line"]').setAttribute('d', sp.line);
   el.querySelector('[data-f="area"]').setAttribute('d', sp.area);
   const lv = el.querySelector('[data-f="live"]'); lv.setAttribute('cx', sp.x.toFixed(1)); lv.setAttribute('cy', sp.y.toFixed(1));
+  mcBgChart(el, dev, on);
   const al = mcAlerts(dev, r, st, trend).join('') + (mc.rank[dev.id] || []).map(tx => '<span class="mc-chip rank">' + tx + '</span>').join('');
   const aln = el.querySelector('[data-f="alerts"]');
   if(aln.dataset.s !== al){ aln.dataset.s = al; aln.innerHTML = al; }
@@ -583,11 +600,16 @@ function renderMachineCards(){
   if(mc.prefs.view === 'heat' || mc.prefs.view === 'plan'){
     if(mc.dragging) return;
     board.className = 'mc-board ' + (mc.prefs.view === 'heat' ? 'mc-heatwrap' : 'mc-planwrap');
-    const h = mc.prefs.view === 'heat' ? mcHeatHtml(rows) : mcPlanHtml(rows);
-    if(board.dataset.s2 !== h){ board.dataset.s2 = h; board.innerHTML = h; }
+    if(mc.prefs.view === 'heat'){
+      if(!mcHeatPatch(board, rows)){ board.innerHTML = mcHeatHtml(rows); delete board.dataset.s2; }
+    } else {
+      delete board.dataset.hk;
+      const h = mcPlanHtml(rows);
+      if(board.dataset.s2 !== h){ board.dataset.s2 = h; board.innerHTML = h; }
+    }
     mc.els.clear(); mc.heads.clear(); mcRenderLog(); return;
   }
-  delete board.dataset.s2;
+  delete board.dataset.s2; delete board.dataset.hk;
   if(mc.prefs.view === 'table'){
     board.className = 'mc-board mc-tablewrap' + (mc.picked.size ? ' has-pick' : '');
     board.innerHTML = mcTableHtml(rows);

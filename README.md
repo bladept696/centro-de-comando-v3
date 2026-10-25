@@ -70,7 +70,8 @@ executável final fica em `dist/CentroDeComando.exe`.
   (`login`, `chat`, `noticias`, `donut3d`, `cartoes*`, `firebase-init`) vêm depois.
   Os `cartoes*.js` desenham os cartões das máquinas: `cartoes.js` (cartões, filtros e vistas),
   `cartoes-extra.js` (alertas, resumo e eventos), `cartoes-ferramentas.js` (menu ⚙, backup e
-  agendamentos), `cartoes-relatorios.js` (comparar, relatório e limites) e `cartoes-i18n.js` (traduções).
+  agendamentos), `cartoes-relatorios.js` (comparar, relatório e limites), `cartoes-experiencias.js` (efeitos, mapa de calor 3D e planta),
+  `cartoes-regras.js` (regras "se… então…") e `cartoes-i18n.js` (traduções).
   Para acrescentar um ficheiro novo, junta uma linha `<script src="dashboard/js/...">`
   (ou `<link>` para CSS) ao HTML, na posição certa.
 - `bitminer33-banner.png` — banner do separador "Apoiantes"
