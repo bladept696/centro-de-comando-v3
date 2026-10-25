@@ -450,6 +450,7 @@ function mcRenderBulk(){
   const q = slot => { const p = typeof getQuickSlot === 'function' ? getQuickSlot(slot) : null; return p ? p.name : null; };
   const html = '<b>' + mct(n === 1 ? 'mc_b_sel1' : 'mc_b_seln', n) + '</b>' +
     (q('eco') ? '<button type="button" data-b="eco">🌿 ' + escapeHtml(q('eco')) + '</button>' : '') + (q('turbo') ? '<button type="button" data-b="turbo">🚀 ' + escapeHtml(q('turbo')) + '</button>' : '') +
+    (n >= 2 && n <= 6 ? '<button type="button" data-b="compare">' + t('mc_b_compare') + '</button>' : '') +
     '<button type="button" data-b="restart">' + t('mc_b_restart') + '</button><button type="button" data-b="group">' + t('mc_b_group') + '</button>' +
     '<span class="mc-bulk-sp"></span><button type="button" data-b="all">' + t('mc_b_all') + '</button><button type="button" data-b="clear">' + t('mc_b_clear') + '</button>';
   if(bar.dataset.s !== html){ bar.dataset.s = html; bar.innerHTML = html; }
@@ -458,6 +459,7 @@ async function mcBulkRun(kind){
   const devs = (devices || []).filter(d => mc.picked.has(d.id));
   if(!devs.length) return;
   if(kind === 'clear'){ mc.picked.clear(); renderMachineCards(); return; }
+  if(kind === 'compare'){ if(typeof mcCompareOpen === 'function') mcCompareOpen(); return; }
   if(kind === 'all'){ (mc.visible || []).forEach(id => mc.picked.add(id)); renderMachineCards(); return; }
   if(kind === 'group'){
     const g = prompt(mct('mc_b_prompt', devs.length), devs[0].group || '');

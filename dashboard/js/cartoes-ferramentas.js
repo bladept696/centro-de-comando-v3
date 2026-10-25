@@ -17,7 +17,7 @@ function mcToggleMenu(){
   const m = document.createElement('div');
   m.id = 'mcMenu'; m.className = 'mc-menu';
   m.innerHTML = '<button type="button" data-m="export">' + t('mc_m_export') + '</button><button type="button" data-m="import">' + t('mc_m_import') + '</button>' +
-    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button>';
+    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button><button type="button" data-m="report">' + t('mc_m_report') + '</button><button type="button" data-m="help">' + t('mc_m_help') + '</button>';
   const pr = panel.getBoundingClientRect(), br = btn.getBoundingClientRect();
   m.style.top = (br.bottom - pr.top + 6) + 'px';
   m.style.right = Math.max(8, pr.right - br.right) + 'px';
@@ -32,6 +32,8 @@ document.addEventListener('click', e => {
   if(k === 'export') mcBackupExport();
   else if(k === 'import') mcBackupPick();
   else if(k === 'scan'){ mc.prefs.autoScan = !mc.prefs.autoScan; mcSavePrefs(); if(mc.prefs.autoScan){ setQuickActionStatus(t('mc_sc_scanning')); mcScanNow(true); } else { mc.found = []; mcNewRender(); } }
+  else if(k === 'report'){ if(typeof mcReportOpen === 'function') mcReportOpen(); }
+  else if(k === 'help'){ if(typeof mcHelpToggle === 'function') mcHelpToggle(); }
   else if(k === 'sched'){ const d = $('mcSched'); if(d){ d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }
 });
 
