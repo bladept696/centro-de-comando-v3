@@ -266,5 +266,7 @@
   .mc-title small[data-a="copyip"]{cursor:copy;} .mc-title small[data-a="copyip"]:hover{color:var(--cyan);}
   .mc-notechip{font-size:11px;cursor:help;} .mc-notechip[hidden]{display:none;}
   .mc-chip.rank{color:#ffd34a;border-color:#ffd34a55;background:color-mix(in srgb,#ffd34a 8%,var(--deep));}
-  .mc-edit{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .mc-edit{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;}
+  .mc-grp span{flex:none;width:44px;}
+  .mc-grp input,.mc-grp textarea{width:100%;box-sizing:border-box;}
   .mc-noteedit{align-items:flex-start;} .mc-noteedit textarea{flex:1;font:inherit;font-size:12px;letter-spacing:0;text-transform:none;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:6px 9px;resize:vertical;min-width:0;}
