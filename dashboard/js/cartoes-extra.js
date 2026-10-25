@@ -20,6 +20,35 @@ async function mcAutoRestart(dev){
   mcLogEvent(mct(res && res.ok ? 'mc_l_autorestart' : 'mc_l_autofail', dev.name || dev.ip), res && res.ok ? 'warn' : 'bad', dev.id);
   if(res && res.ok && typeof sendAlert === 'function') sendAlert(mct('mc_l_autorestart', dev.name || dev.ip), 'autorestart-' + dev.id);
 }
+// ---- ciclo de energia pela tomada inteligente (desliga, espera e volta a ligar) ----
+mc.plugAt = {}; mc.stuckAt = {};
+async function mcPlugCycle(dev, auto){
+  const name = dev.name || dev.ip;
+  setQuickActionStatus(mct('mc_plug_running', name));
+  try {
+    if(window.authReady) await window.authReady;
+    const resp = await fetch(`${API_BASE}/api/plug-cycle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ip: dev.ip }) });
+    const data = await resp.json();
+    const msg = mct(data.ok ? 'mc_plug_ok' : 'mc_plug_fail', name, data.message || '');
+    setQuickActionStatus(msg);
+    mcLogEvent(msg, data.ok ? 'warn' : 'bad', dev.id);
+    if(typeof sendAlert === 'function' && (auto || !data.ok)) sendAlert(msg, 'plug-' + dev.id);
+  } catch(e) { setQuickActionStatus(mct('mc_plug_fail', name, e.message || '')); }
+}
+// se uma máquina continua presa 25 min depois, e a tomada está configurada, faz o ciclo de energia (no máximo de 2 em 2 horas)
+function mcAutoPlug(list){
+  const now = Date.now();
+  list.forEach(dev => {
+    const stuck = (mc.health[dev.id] || []).includes('stuck');
+    if(!stuck){ delete mc.stuckAt[dev.id]; return; }
+    if(!mc.stuckAt[dev.id]) mc.stuckAt[dev.id] = now;
+    if(now - mc.stuckAt[dev.id] < 25 * 60000 || now - (mc.plugAt[dev.id] || 0) < 2 * 3600e3) return;
+    if(!dev.plugOff || !dev.plugOn || dev.mute > now) return;
+    if(typeof aiAgentConfig === 'undefined' || !aiAgentConfig.allowRestart) return;
+    mc.plugAt[dev.id] = now;
+    mcPlugCycle(dev, true);
+  });
+}
 function mcHealthWatch(list){
   const on = typeof alertsConfig !== 'undefined' && alertsConfig.notify_health !== false && typeof sendAlert === 'function';
   list.forEach(dev => {
@@ -394,6 +423,7 @@ function mcNetWatch(list, states){
 
 function mcExtraRender(list, states){
   mcPausedRender();
+  mcAutoPlug(list);
   mcNetWatch(list, states);
   mcTimelineTrack(list, states);
   mcUptimeTrack(list);

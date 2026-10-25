@@ -1612,6 +1612,7 @@ DEFAULT_POWER_CONFIG = {
         "notify_health": True,
         "notify_daily": False,
         "daily_hour": 21,
+        "webhook_url": "",
     },
     "pools": {
         "btc_address": "",
@@ -2795,6 +2796,85 @@ def send_discord_alert(webhook_url, message):
         return True
 
 
+_plug_lock = threading.Lock()
+_plug_busy = set()
+
+
+def _plug_url_ok(url):
+    """Só aceita http/https para um aparelho da rede local (IP privado ou nome sem domínio público)."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+        if parts.scheme not in ("http", "https") or not parts.hostname:
+            return False
+        host = parts.hostname
+        try:
+            ip = ipaddress.ip_address(host)
+        except ValueError:
+            ip = ipaddress.ip_address(socket.gethostbyname(host))
+        return ip.is_private or ip.is_loopback or ip.is_link_local
+    except Exception:
+        return False
+
+
+def plug_cycle(dev_ip):
+    """Desliga a tomada, espera e volta a ligar. Devolve (ok, mensagem)."""
+    with POWER_CONFIG_LOCK:
+        dev = next((d for d in power_config.get("devices", []) if d.get("ip") == dev_ip), None)
+    if not dev:
+        return False, "máquina não encontrada"
+    off_url, on_url = str(dev.get("plugOff") or ""), str(dev.get("plugOn") or "")
+    wait = max(3, min(30, int(dev.get("plugWait") or 8)))
+    if not off_url or not on_url:
+        return False, "a tomada não está configurada"
+    if not (_plug_url_ok(off_url) and _plug_url_ok(on_url)):
+        return False, "os endereços da tomada têm de ser da rede local"
+    with _plug_lock:
+        if dev_ip in _plug_busy:
+            return False, "já há um ciclo de energia em curso"
+        _plug_busy.add(dev_ip)
+    try:
+        def call(url):
+            req = urllib.request.Request(url, headers={'User-Agent': 'HashCommander-Plug'})
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                return resp.status
+        try:
+            call(off_url)
+        except Exception as e:
+            return False, f"não foi possível desligar a tomada ({e})"
+        time.sleep(wait)
+        last = None
+        for _ in range(3):
+            try:
+                call(on_url)
+                return True, f"tomada desligada {wait} s e voltou a ligar"
+            except Exception as e:
+                last = e
+                time.sleep(2)
+        return False, f"A TOMADA FICOU DESLIGADA: não foi possível voltar a ligá-la ({last}). Ligue-a à mão."
+    finally:
+        with _plug_lock:
+            _plug_busy.discard(dev_ip)
+
+
+def send_custom_webhook(url, message):
+    """Envia o alerta para um endereço à escolha. Para o ntfy manda texto simples; para os outros
+    manda JSON com os campos mais comuns (message, text, content), que serve ao Home Assistant, Slack e Discord."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        raise ValueError("endereço inválido")
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; CentroDeComando/1.0)'}
+    if "ntfy" in parts.netloc.lower():
+        payload = message.encode('utf-8')
+        headers.update({'Title': 'Centro de Comando', 'Content-Type': 'text/plain; charset=utf-8'})
+    else:
+        payload = json.dumps({"message": message, "text": message, "content": message, "source": "hash-commander"}).encode('utf-8')
+        headers['Content-Type'] = 'application/json'
+    req = urllib.request.Request(url, data=payload, method='POST', headers=headers)
+    with _urlopen_https(req, timeout=8) as resp:
+        resp.read()
+        return True
+
+
 def send_windows_toast(title, message):
     if not WINDOWS_TOAST_AVAILABLE:
         return
@@ -2831,6 +2911,13 @@ def broadcast_alert(message, title="🔔 Centro de Comando"):
             send_discord_alert(webhook_url, message)
         except Exception as e:
             errors.append(f"Discord: {e}")
+
+    custom = alerts_cfg.get("webhook_url", "").strip()
+    if custom:
+        try:
+            send_custom_webhook(custom, message)
+        except Exception as e:
+            errors.append(f"Webhook: {e}")
 
     if alerts_cfg.get("notify_windows_toast", True):
         send_windows_toast(title, message)
@@ -4203,6 +4290,16 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     item["note"] = note
                 if d.get("pin"):
                     item["pin"] = True
+                for key in ("plugOff", "plugOn"):
+                    u = str(d.get(key) or "").strip()[:300]
+                    if u.lower().startswith(("http://", "https://")):
+                        item[key] = u
+                try:
+                    pw = int(d.get("plugWait") or 0)
+                except (TypeError, ValueError):
+                    pw = 0
+                if 3 <= pw <= 30:
+                    item["plugWait"] = pw
                 try:
                     expected = float(d.get("expected") or 0)
                 except (TypeError, ValueError):
@@ -4350,6 +4447,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
             return
 
+        if path == '/api/plug-cycle':
+            ok, msg = plug_cycle(str(body.get("ip") or "").strip())
+            self.send_response(200 if ok else 400)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": ok, "message": msg}, ensure_ascii=False).encode('utf-8'))
+            return
+
         if path == '/api/alerts/config':
             with POWER_CONFIG_LOCK:
                 existing = copy.deepcopy(power_config.get("alerts", {}) or {})
@@ -4363,6 +4469,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 "telegram_bot_token": keep_or_update("telegram_bot_token"),
                 "telegram_chat_id": str(body.get("telegram_chat_id", existing.get("telegram_chat_id", ""))).strip(),
                 "discord_webhook_url": keep_or_update("discord_webhook_url"),
+                "webhook_url": keep_or_update("webhook_url"),
                 "hashrate_drop_pct": int(body.get("hashrate_drop_pct", existing.get("hashrate_drop_pct", 30)) or 30),
                 "notify_offline": bool(body.get("notify_offline", existing.get("notify_offline", True))),
                 "notify_record": bool(body.get("notify_record", existing.get("notify_record", True))),

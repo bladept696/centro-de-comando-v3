@@ -173,7 +173,7 @@ function mcCardEl(dev){
     '<footer class="mc-actions">' +
       '<button type="button" data-a="web" title="' + t('mc_web_g') + '">↗ AxeOS</button>' +
       '<button type="button" data-a="eco" title="' + t('mc_eco_t') + '">🌿</button><button type="button" data-a="turbo" title="' + t('mc_turbo_t') + '">🚀</button>' +
-      '<button type="button" data-a="restart" title="' + t('mc_restart_t') + '">⟲</button>' +
+      '<button type="button" data-a="restart" title="' + t('mc_restart_t') + '">⟲</button><button type="button" data-a="plug" title="' + t('mc_plug_t') + '" hidden>⚡</button>' +
       '<button type="button" data-a="more" title="' + t('mc_more_t') + '">' + t('mc_more') + '</button>' +
       '<button type="button" data-a="remove" class="mc-danger" title="' + t('mc_remove_t') + '">✕</button></footer>';
   return el;
@@ -296,6 +296,8 @@ function mcUpdateCard(el, dev, r, st, i){
         '<div class="mc-edit"><label class="mc-grp"><span>' + t('mc_e_name') + '</span><input type="text" data-a="name" maxlength="40"></label><label class="mc-grp"><span>IP</span><input type="text" data-a="ip" maxlength="60" inputmode="decimal"></label></div>' +
         '<label class="mc-grp"><span>' + t('mc_e_expected') + '</span><input type="number" step="0.1" min="0" data-a="expected" placeholder="TH/s"></label>' +
         '<label class="mc-grp"><span>' + t('mc_e_mute') + '</span><select data-a="mute"></select></label>' +
+        '<label class="mc-grp"><span>' + t('mc_e_plugoff') + '</span><input type="text" data-a="plugOff" maxlength="300" placeholder="http://192.168.1.60/relay/0?turn=off"></label>' +
+        '<label class="mc-grp"><span>' + t('mc_e_plugon') + '</span><input type="text" data-a="plugOn" maxlength="300" placeholder="http://192.168.1.60/relay/0?turn=on"></label>' +
         '<label class="mc-grp"><span>' + t('mc_e_group') + '</span><input type="text" list="mcGroupList" data-a="group" placeholder="' + t('mc_e_nogroup') + '" maxlength="24"></label>' +
         '<label class="mc-grp mc-noteedit"><span>' + t('mc_e_note') + '</span><textarea data-a="note" rows="2" maxlength="300" placeholder="' + t('mc_e_noteph') + '"></textarea></label>';
       more.dataset.shell = '1';
@@ -308,7 +310,7 @@ function mcUpdateCard(el, dev, r, st, i){
     const muted = dev.mute > Date.now(), mh = (muted ? '<option value="cur" selected>' + mct('mc_a_muted', new Date(dev.mute).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' })) + '</option>' : '') +
       '<option value="0"' + (muted ? '' : ' selected') + '>' + t(muted ? 'mc_mute_off' : 'mc_mute_0') + '</option><option value="60">' + t('mc_mute_1') + '</option><option value="240">' + t('mc_mute_4') + '</option><option value="1440">' + t('mc_mute_24') + '</option>';
     if(document.activeElement !== ms && ms.dataset.s !== mh){ ms.dataset.s = mh; ms.innerHTML = mh; }
-    [['group', dev.group], ['name', dev.name], ['ip', dev.ip], ['note', dev.note], ['expected', dev.expected]].forEach(([k, v]) => {
+    [['group', dev.group], ['name', dev.name], ['ip', dev.ip], ['note', dev.note], ['expected', dev.expected], ['plugOff', dev.plugOff], ['plugOn', dev.plugOn]].forEach(([k, v]) => {
       const inp = more.querySelector('[data-a="' + k + '"]');
       if(inp && document.activeElement !== inp) inp.value = v || '';
     });
@@ -319,6 +321,7 @@ function mcUpdateCard(el, dev, r, st, i){
     const b = el.querySelector('[data-a="' + slot + '"]'), prof = typeof getQuickSlot === 'function' ? getQuickSlot(slot) : null;
     if(b){ b.hidden = !prof || !on; if(prof) b.title = mct('mc_apply_t', prof.name); }
   });
+  el.querySelector('[data-a="plug"]').hidden = !(dev.plugOff && dev.plugOn) || !on;
   const web = el.querySelector('[data-a="web"]'), os = mcOsName(model);
   web.hidden = !dev.ip; web.textContent = '↗ ' + os; web.title = mct('mc_web_t', os);
 }
@@ -643,7 +646,7 @@ function renderMachineCards(){
     const label = dev.name || dev.ip;
     if(!a){ if(e.target.closest('.mc-pick, .mc-grp, .mc-edit, .mc-hist')) return; if(selectedId !== dev.id){ selectedId = dev.id; renderAll(); } return; }
     const act = a.dataset.a;
-    if(['group', 'name', 'ip', 'note', 'expected', 'mute'].includes(act)) return;
+    if(['group', 'name', 'ip', 'note', 'expected', 'mute', 'plugOff', 'plugOn'].includes(act)) return;
     e.stopPropagation();
     if(act === 'pin'){ if(dev.pin) delete dev.pin; else dev.pin = true; saveDevices(); renderMachineCards(); return; }
     if(act === 'copyip'){
@@ -659,6 +662,10 @@ function renderMachineCards(){
     if(act === 'web' && dev.ip) window.open('http://' + dev.ip, '_blank', 'noopener');
     else if(act === 'more'){ mc.open.has(dev.id) ? mc.open.delete(dev.id) : mc.open.add(dev.id); renderMachineCards(); }
     else if(act === 'remove'){ if(confirm(mct('mc_c_remove', label))) removeDevice(dev.id); }
+    else if(act === 'plug'){
+      if(!confirm(mct('mc_plug_confirm', label))) return;
+      if(typeof mcPlugCycle === 'function') mcPlugCycle(dev, false);
+    }
     else if(act === 'restart'){
       if(!confirm(mct('mc_c_restart', label))) return;
       const res = await aiRestartDevice(dev);
@@ -673,13 +680,18 @@ function renderMachineCards(){
   });
   // nome, IP, grupo e nota guardam-se ao sair do campo ou com Enter
   if(board) board.addEventListener('change', e => {
-    const inp = e.target.closest('[data-a="group"],[data-a="name"],[data-a="ip"],[data-a="note"],[data-a="expected"],[data-a="mute"]');
+    const inp = e.target.closest('[data-a="group"],[data-a="name"],[data-a="ip"],[data-a="note"],[data-a="expected"],[data-a="mute"],[data-a="plugOff"],[data-a="plugOn"]');
     const host = inp && inp.closest('[data-id]');
     const dev = host && find(host.dataset.id);
     if(!dev) return;
     const k = inp.dataset.a, v = inp.value.trim();
     if(k === 'group'){ if(v) dev.group = v.slice(0, 24); else delete dev.group; }
     else if(k === 'note'){ if(v) dev.note = v.slice(0, 300); else delete dev.note; }
+    else if(k === 'plugOff' || k === 'plugOn'){
+      if(!v) delete dev[k];
+      else if(/^https?:\/\/\S+$/i.test(v)) dev[k] = v.slice(0, 300);
+      else { inp.value = dev[k] || ''; setQuickActionStatus(t('mc_plug_badurl')); return; }
+    }
     else if(k === 'expected'){ const x = parseFloat(v.replace(',', '.')); if(x > 0) dev.expected = Math.round(x * 1000) / 1000; else delete dev.expected; }
     else if(k === 'mute'){ const m = parseInt(inp.value, 10); if(m > 0) dev.mute = Date.now() + m * 60000; else if(inp.value === '0') delete dev.mute; else return; }
     else if(k === 'name'){ if(!v){ inp.value = dev.name; return; } dev.name = v.slice(0, 40); }
