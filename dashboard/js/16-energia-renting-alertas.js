@@ -360,6 +360,7 @@ async function loadAlertsConfig(){
     // token/webhook nunca voltam do servidor completos por serem segredos -
     // só se sabe se já estão configurados através do placeholder.
     if($('alTgToken')) $('alTgToken').placeholder = cfg.telegram_bot_token ? '•••••••• (já configurado, deixa em branco para manter)' : 'ex: 123456:ABC-DEF...';
+    if($('alWebhook')) $('alWebhook').placeholder = cfg.webhook_url ? '•••••••• (' + t('mc_al_webhook_set') + ')' : 'https://ntfy.sh/o-meu-topico';
     if($('alDiscordWebhook')) $('alDiscordWebhook').placeholder = cfg.discord_webhook_url ? '•••••••• (já configurado, deixa em branco para manter)' : 'https://discord.com/api/webhooks/...';
   } catch(e) { /* servidor local pode estar indisponível */ }
 }
@@ -379,6 +380,7 @@ async function saveAlertsConfig(){
   };
   if($('alTgToken').value.trim()) body.telegram_bot_token = $('alTgToken').value.trim();
   if($('alDiscordWebhook').value.trim()) body.discord_webhook_url = $('alDiscordWebhook').value.trim();
+  if($('alWebhook') && $('alWebhook').value.trim()) body.webhook_url = $('alWebhook').value.trim();
 
   const errEl = $('alertsLiveError');
   const okEl = $('alertsLiveOk');
@@ -392,6 +394,7 @@ async function saveAlertsConfig(){
     if(data.ok){
       $('alTgToken').value = '';
       $('alDiscordWebhook').value = '';
+      if($('alWebhook')) $('alWebhook').value = '';
       okEl.textContent = 'Configuração de alertas guardada.';
       okEl.style.display = 'block';
       loadAlertsConfig();
