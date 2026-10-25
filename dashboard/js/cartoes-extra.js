@@ -11,6 +11,7 @@ Object.assign(mc, { health: {}, lastBest: {}, lastAcc: {}, lastDaily: 0, baseTit
 // Reinicia sozinha uma máquina presa, no máximo uma vez por 30 min, e só se estiver ligada a opção
 // "permitir reinício automático crítico" das proteções do assistente.
 async function mcAutoRestart(dev){
+  if(dev.mute > Date.now()) return;
   if(typeof aiAgentConfig === 'undefined' || !aiAgentConfig.allowRestart || typeof aiRestartDevice !== 'function') return;
   mc.autoAt = mc.autoAt || {};
   if(Date.now() - (mc.autoAt[dev.id] || 0) < 30 * 60000) return;
@@ -27,7 +28,7 @@ function mcHealthWatch(list){
     const items = mcAlertItems(dev, r, mcStateOf(r), mcTrendOf(dev)).filter(a => a.lvl === 'warn' || a.lvl === 'bad');
     const codes = items.map(a => a.code), prev = mc.health[dev.id];
     mc.health[dev.id] = codes;
-    if(!on || prev === undefined) return;
+    if(!on || prev === undefined || dev.mute > Date.now()) return;
     if(codes.includes('stuck') && !prev.includes('stuck')) mcAutoRestart(dev);
     items.filter(a => !prev.includes(a.code)).forEach(a => sendAlert((a.lvl === 'bad' ? '🚨 ' : '⚠️ ') + name + ': ' + a.txt.replace(/^\S+\s/, ''), 'health-' + a.code + '-' + dev.id));
     if(prev.length && !codes.length) sendAlert(mct('mc_h_back', name), 'healthok-' + dev.id);
@@ -80,10 +81,10 @@ function mcBlockFound(name){
 function mcPrice(){ try { const v = parseFloat(localStorage.getItem(MC_PRICE_KEY)); return isFinite(v) && v > 0 ? v : 0; } catch(e) { return 0; } }
 function mcStats(list){
   const now = Date.now(), cut = now - 24 * 3600e3, buckets = new Map();
-  let kwh = 0, nowHash = 0, online = 0;
+  let kwh = 0, nowHash = 0, online = 0, watts = 0;
   list.forEach(dev => {
     const r = readings[dev.id];
-    if(r && r.online){ online++; if(algoGroupOf(r) === 'sha256') nowHash += Number(r.hashrate) || 0; }
+    if(r && r.online){ online++; watts += Number(r.power) || 0; if(algoGroupOf(r) === 'sha256') nowHash += Number(r.hashrate) || 0; }
     const h = (histories[dev.id] || []).filter(x => x && x.ts >= cut);
     if(h.length < 2) return;
     const pw = h.map(x => Number(x.power)).filter(v => isFinite(v) && v > 0);
@@ -94,7 +95,7 @@ function mcStats(list){
     per.forEach((a, k) => buckets.set(k, (buckets.get(k) || 0) + a.s / a.n));
   });
   const vals = [...buckets.values()];
-  return { online, total: list.length, nowHash, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0, peak: vals.length ? Math.max(...vals) : 0, kwh, events: mc.log.length };
+  return { online, total: list.length, nowHash, watts, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0, peak: vals.length ? Math.max(...vals) : 0, kwh, events: mc.log.length };
 }
 const mcDay = t => new Date(t).toISOString().slice(0, 10);
 function mcStatsStore(st){
@@ -138,6 +139,8 @@ function mcRenderSummary(list){
       '<div class="mc-tile"><span>' + t('mc_s_avg') + '</span><b data-f="avg">—</b><small data-f="avgS"></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_peak') + '</span><b data-f="peak">—</b><small data-f="peakS"></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_energy') + '</span><b data-f="kwh">—</b><small><label>€/kWh <input type="number" step="0.01" min="0" id="mcPrice" placeholder="0.20"></label> <i data-f="cost"></i></small></div>' +
+      '<div class="mc-tile"><span>' + t('mc_s_profit') + '</span><b data-f="profit">—</b><small data-f="profitS"></small></div>' +
+      '<div class="mc-tile"><span>' + t('mc_s_chance') + '</span><b data-f="chance">—</b><small data-f="chanceS"></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_events') + '</span><b data-f="ev">—</b><small data-f="evS"></small></div>';
     const inp = $('mcPrice'); inp.value = mcPrice() || '';
     inp.addEventListener('input', () => { try { localStorage.setItem(MC_PRICE_KEY, inp.value); } catch(e) {} mcRenderSummary(devices || []); });
@@ -151,6 +154,13 @@ function mcRenderSummary(list){
   set('peak', mcFmtHash(st.peak)); set('peakS', st.peak && st.avg ? mct('mc_s_pct', (st.avg / st.peak * 100).toFixed(0)) : '');
   set('kwh', st.kwh ? st.kwh.toFixed(2) + ' kWh' : '—');
   set('cost', mcPrice() && st.kwh ? '≈ ' + (st.kwh * mcPrice()).toFixed(2) + ' €' : '');
+  const eco = mcEconomics(st.nowHash, st.watts);
+  if(!eco){ set('profit', '—'); set('profitS', t('mc_s_nodata')); set('chance', '—'); set('chanceS', t('mc_s_nodata')); }
+  else {
+    set('profit', (eco.profit >= 0 ? '+' : '') + eco.profit.toFixed(2) + ' €');
+    set('profitS', eco.hasEur ? (mcPrice() ? mct('mc_s_revenue', eco.revenue.toFixed(2)) : t('mc_s_noprice')) : t('mc_s_nodata'));
+    set('chance', mcBlockText(eco)); set('chanceS', eco.pYear >= 0.01 ? t('mc_s_peryear') : mct('mc_s_peryearpct', (eco.pYear * 100).toFixed(4)));
+  }
   set('ev', String(st.events)); set('evS', st.events ? t('mc_s_seelog') : t('mc_s_calm'));
 }
 
@@ -209,7 +219,86 @@ document.addEventListener('keydown', e => {
   else if(k === 'e'){ mcExportCsv(); }
 });
 
+// ---- lucro e chance de bloco (valor esperado; usa a dificuldade da rede e o preço do BTC) ----
+const MC_REWARD_BTC = 3.125;
+function mcEconomics(ghs, watts){
+  const diff = typeof difficultyData !== 'undefined' && difficultyData && difficultyData.currentDifficulty;
+  const eur = typeof currentRates !== 'undefined' && currentRates && currentRates.btc_eur;
+  if(!(ghs > 0) || !diff) return null;
+  const perDay = ghs * 1e9 * 86400 / (diff * 4294967296);          // blocos esperados por dia
+  const revenue = eur ? perDay * MC_REWARD_BTC * eur : 0, price = mcPrice(), cost = price ? (watts || 0) / 1000 * 24 * price : 0;
+  return { perDay, yearsPerBlock: perDay > 0 ? 1 / (perDay * 365) : Infinity, pYear: 1 - Math.exp(-perDay * 365), revenue, cost, profit: revenue - cost, hasEur: !!eur };
+}
+function mcBlockText(eco){
+  if(eco.pYear >= 0.01) return (eco.pYear * 100).toFixed(1) + ' %';
+  return mct('mc_block_1in', eco.yearsPerBlock >= 100 ? Math.round(eco.yearsPerBlock).toLocaleString(mcLocale()) : eco.yearsPerBlock.toFixed(1));
+}
+
+// ---- disponibilidade (percentagem do tempo online; conta enquanto a dashboard está aberta) ----
+const MC_UP_KEY = 'nerdqaxe:uptime_days';
+mc.up = (() => { try { return JSON.parse(localStorage.getItem(MC_UP_KEY) || '{}'); } catch(e) { return {}; } })();
+mc.upTick = 0; mc.upSaved = 0;
+function mcUptimeTrack(list){
+  const now = Date.now(), dt = mc.upTick ? Math.min(now - mc.upTick, 60000) : 0;
+  mc.upTick = now;
+  if(!dt) return;
+  const day = mcDay(now - new Date().getTimezoneOffset() * 60000);
+  list.forEach(dev => {
+    const r = readings[dev.id];
+    if(!r) return;
+    const rec = (mc.up[dev.id] = mc.up[dev.id] || {}), d = (rec[day] = rec[day] || [0, 0]);
+    d[1] += dt; if(r.online) d[0] += dt;
+  });
+  if(now - mc.upSaved > 30000){
+    mc.upSaved = now;
+    const old = mcDay(now - 35 * 86400e3);
+    Object.values(mc.up).forEach(rec => Object.keys(rec).forEach(k => { if(k < old) delete rec[k]; }));
+    try { localStorage.setItem(MC_UP_KEY, JSON.stringify(mc.up)); } catch(e) {}
+  }
+}
+function mcAvail(id, days){
+  const rec = mc.up[id] || {}, from = mcDay(Date.now() - days * 86400e3);
+  let on = 0, tot = 0;
+  Object.keys(rec).forEach(k => { if(k >= from){ on += rec[k][0]; tot += rec[k][1]; } });
+  return tot > 10 * 60000 ? on / tot * 100 : null;
+}
+function mcAvailText(id){
+  const f = v => v == null ? '—' : v.toFixed(v >= 99.95 ? 0 : 1) + '%';
+  return f(mcAvail(id, 7)) + ' · ' + f(mcAvail(id, 30));
+}
+
+// ---- notificações do navegador (neste PC), para além do Telegram e do Discord ----
+const MC_BN_KEY = 'nerdqaxe:browser_notify';
+function mcBrowserNotify(msg){
+  try {
+    if(localStorage.getItem(MC_BN_KEY) !== '1' || !('Notification' in window) || Notification.permission !== 'granted') return;
+    new Notification('Hash Commander', { body: String(msg).slice(0, 220) });
+  } catch(e) {}
+}
+function mcToggleBrowserNotify(box){
+  if(!box.checked){ try { localStorage.setItem(MC_BN_KEY, '0'); } catch(e) {} return; }
+  if(!('Notification' in window)){ box.checked = false; return; }
+  const ok = () => { try { localStorage.setItem(MC_BN_KEY, '1'); } catch(e) {} };
+  if(Notification.permission === 'granted') return ok();
+  Notification.requestPermission().then(p => { if(p === 'granted') ok(); else { box.checked = false; alert(t('mc_al_browser_denied')); } });
+}
+(function(){
+  const box = $('alNotifyBrowser');
+  if(!box) return;
+  try { box.checked = localStorage.getItem(MC_BN_KEY) === '1' && 'Notification' in window && Notification.permission === 'granted'; } catch(e) {}
+})();
+
+// os dados da rede (dificuldade e preço do BTC) precisam de estar carregados para o lucro e a chance de bloco
+function mcLoadNetwork(){
+  if(document.hidden) return;
+  try { if(typeof fetchDifficultyData === 'function') fetchDifficultyData(); } catch(e) {}
+  try { if(typeof fetchRates === 'function') fetchRates(false); } catch(e) {}
+}
+setTimeout(mcLoadNetwork, 3000);
+setInterval(mcLoadNetwork, 10 * 60000);
+
 function mcExtraRender(list, states){
+  mcUptimeTrack(list);
   mcGlobalHealth(list, states);
   mcWatchEvents(list);
   mcHealthWatch(list);
