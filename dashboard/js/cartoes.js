@@ -151,7 +151,9 @@ function mcAgo(ms){
 
 // ---- construção dos cartões ----
 function mcMeter(f, label){
-  return '<div class="mc-meter"><div class="mc-meter-top"><span>' + label + '</span><b data-f="' + f + 'V">—</b></div><div class="mc-bar"><i data-f="' + f + 'B"></i></div></div>';
+  const ico = f === 'fan' ? '<svg class="mc-fanico" viewBox="0 0 24 24" aria-hidden="true"><g class="blades"><path d="M12 12C12 6 8 3 5 5c-2 2 1 6 7 7z"/><path d="M12 12c6 0 9-4 7-7-2-2-6 1-7 7z"/><path d="M12 12c0 6 4 9 7 7 2-2-1-6-7-7z"/><path d="M12 12c-6 0-9 4-7 7 2 2 6-1 7-7z"/></g><circle cx="12" cy="12" r="2"/></svg>' : '';
+  const arc = f === 'temp' ? '<svg class="mc-arc" viewBox="0 0 64 38" aria-hidden="true"><path class="bg" d="M6 34A26 26 0 0 1 58 34" pathLength="100"/><path class="fg ok" data-f="arc" d="M6 34A26 26 0 0 1 58 34" pathLength="100"/></svg>' : '';
+  return '<div class="mc-meter mc-meter-' + f + '"><div class="mc-meter-top"><span>' + ico + label + '</span><b data-f="' + f + 'V">—</b></div><div class="mc-bar"><i data-f="' + f + 'B"></i></div>' + arc + '</div>';
 }
 function mcCardEl(dev){
   const el = document.createElement('article');
@@ -166,6 +168,7 @@ function mcCardEl(dev){
     '<div class="mc-hero"><div class="mc-hash"><b data-f="hash">—</b><small data-f="unit"></small><i class="mc-trend" data-f="trend"></i></div>' +
       '<svg class="mc-spark" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"><path class="area" data-f="area"/><path class="line" data-f="line"/><circle class="live" data-f="live" r="2.6"/></svg></div>' +
     '<div class="mc-alerts" data-f="alerts"></div>' +
+    '<div class="mc-ecg flat" aria-hidden="true"><div class="mc-ecg-run"><svg viewBox="0 0 400 20" preserveAspectRatio="none"><path d="M0 10h30l6 0l4-8l4 16l4-8h52h30l6 0l4-8l4 16l4-8h52h30l6 0l4-8l4 16l4-8h52h30l6 0l4-8l4 16l4-8h52"/></svg></div></div>' +
     '<div class="mc-meters">' + mcMeter('temp', t('mc_m_temp')) + mcMeter('fan', t('mc_m_fan')) +
       '<div class="mc-meter"><div class="mc-meter-top"><span>Wi-Fi</span><b data-f="wifiV">—</b></div><div class="mc-sig" data-f="sig"><i></i><i></i><i></i><i></i></div></div></div>' +
     '<div class="mc-facts">' +
@@ -180,9 +183,10 @@ function mcCardEl(dev){
       '<button type="button" data-a="eco" title="' + t('mc_eco_t') + '">🌿</button><button type="button" data-a="turbo" title="' + t('mc_turbo_t') + '">🚀</button>' +
       '<button type="button" data-a="restart" title="' + t('mc_restart_t') + '">⟲</button><button type="button" data-a="plug" title="' + t('mc_plug_t') + '" hidden>⚡</button>' +
       '<button type="button" data-a="more" title="' + t('mc_more_t') + '">' + t('mc_more') + '</button>' +
-      '<button type="button" data-a="remove" class="mc-danger" title="' + t('mc_remove_t') + '">✕</button></footer>';
+      '<button type="button" data-a="remove" class="mc-danger" title="' + t('mc_remove_t') + '">✕</button></footer><i class="mc-wavefx"></i>';
   return el;
 }
+const mcSetN = (el, f, text) => typeof mcNumSet === 'function' ? mcNumSet(el, f, text) : mcSet(el, f, text);
 function mcSet(el, f, text){
   const n = el.querySelector('[data-f="' + f + '"]');
   if(n && n.textContent !== text) n.textContent = text;
@@ -254,7 +258,7 @@ function mcUpdateCard(el, dev, r, st, i){
   const grp = r ? algoGroupOf(r) : 'sha256';
   mcSet(el, 'algo', grp === 'gpu' || grp === 'other' || grp === 'scrypt' ? String(r.algorithm || '').toUpperCase() : 'SHA-256');
   const [hv, hu] = mcHashText(r);
-  mcSet(el, 'hash', hv); mcSet(el, 'unit', hu);
+  mcSetN(el, 'hash', hv); mcSet(el, 'unit', hu);
   const vals = on ? mcSeries(dev.id) : [];
   const trend = on ? mcTrend(vals) : null;
   const tr = el.querySelector('[data-f="trend"]');
@@ -269,14 +273,14 @@ function mcUpdateCard(el, dev, r, st, i){
   if(aln.dataset.s !== al){ aln.dataset.s = al; aln.innerHTML = al; }
   // medidores
   if(on){
-    mcSet(el, 'tempV', mcNum(r.temp, 1) + ' °C'); mcBar(el, 'tempB', (r.temp - 25) / 60 * 100, mcTempLevel(r.temp));
+    mcSetN(el, 'tempV', mcNum(r.temp, 1) + ' °C'); mcBar(el, 'tempB', (r.temp - 25) / 60 * 100, mcTempLevel(r.temp));
     const fan = r.fanPct != null ? Math.round(r.fanPct) : null;
     mcSet(el, 'fanV', fan != null ? fan + '%' : (r.fanSpeed ? r.fanSpeed + ' rpm' : '—')); mcBar(el, 'fanB', fan != null ? fan : 0, fan != null && fan >= 90 ? 'warn' : 'ok');
     mcSet(el, 'wifiV', r.rssi != null ? r.rssi + ' dBm' : '—');
     const sig = mcSignal(r.rssi);
     el.querySelectorAll('[data-f="sig"] i').forEach((b, k) => b.classList.toggle('on', k < sig));
     el.querySelector('[data-f="sig"]').className = 'mc-sig ' + (sig <= 1 ? 'bad' : sig === 2 ? 'warn' : 'ok');
-    mcSet(el, 'power', mcNum(r.power, 1) + ' W'); mcSet(el, 'eff', mcNum(r.efficiency, 1) + ' J/TH');
+    mcSetN(el, 'power', mcNum(r.power, 1) + ' W'); mcSetN(el, 'eff', mcNum(r.efficiency, 1) + ' J/TH');
     const sh = (r.accepted || 0) + (r.rejected || 0), rej = sh ? r.rejected / sh * 100 : 0;
     mcSet(el, 'shares', (r.accepted || 0) + ' / ' + (r.rejected || 0) + (sh > 20 ? ' (' + rej.toFixed(1) + '%)' : ''));
     el.querySelector('[data-f="shares"]').className = sh > 20 && rej > mc.th.rej ? 'warn' : '';
@@ -330,6 +334,7 @@ function mcUpdateCard(el, dev, r, st, i){
   el.querySelector('[data-a="plug"]').hidden = !(dev.plugOff && dev.plugOn) || !on;
   const web = el.querySelector('[data-a="web"]'), os = mcOsName(model);
   web.hidden = !dev.ip; web.textContent = '↗ ' + os; web.title = mct('mc_web_t', os);
+  if(typeof mcXpUpdate === 'function') mcXpUpdate(el, dev, r, on);
 }
 
 // ---- tabela ----
@@ -371,7 +376,7 @@ function mcBuildToolbar(){
     '<select id="mcSort" aria-label="' + t('mc_sort_a') + '">' + MC_SORTS.map(([k, l]) => '<option value="' + k + '">' + t(l) + '</option>').join('') + '</select>' +
     '<button type="button" class="mc-fx-btn" id="mcExport" title="' + t('mc_export_t') + '">' + t('mc_export') + '</button>' +
     '<button type="button" class="mc-fx-btn" id="mcGroupBy" title="' + t('mc_groupby_t') + '">' + t('mc_groupby') + '</button>' +
-    '<button type="button" class="mc-fx-btn" id="mcFx" title="' + t('mc_fx_on') + '">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="' + t('mc_v_cards') + '">▦</button><button type="button" data-v="compact" title="' + t('mc_v_compact') + '">▥</button><button type="button" data-v="table" title="' + t('mc_v_table') + '">☰</button></div>' +
+    '<button type="button" class="mc-fx-btn" id="mcFx" title="' + t('mc_fx_on') + '">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="' + t('mc_v_cards') + '">▦</button><button type="button" data-v="compact" title="' + t('mc_v_compact') + '">▥</button><button type="button" data-v="table" title="' + t('mc_v_table') + '">☰</button><button type="button" data-v="heat" title="' + t('mc_v_heat') + '">🌡</button><button type="button" data-v="plan" title="' + t('mc_v_plan') + '">🗺</button></div>' +
     '<button type="button" class="mc-fx-btn" id="mcMenuBtn" title="' + t('mc_m_title') + '">⚙</button></div>';
   $('mcSearch').value = mc.prefs.q || '';
   $('mcFx').addEventListener('click', () => { mc.prefs.fx = !mcFxOn(); mcSavePrefs(); renderMachineCards(); });
@@ -394,6 +399,7 @@ function mcTrackStates(list, states){
     const id = dev.id, st = states[id], was = mc.prev[id], r = readings[id];
     if(r && r.online) delete mc.since[id]; else if(r && !mc.since[id]) mc.since[id] = Date.now();
     if(was && was !== st){
+      if(typeof mcWave === 'function') mcWave(id, st);
       const name = dev.name || dev.ip;
       if(st === 'hot') mcLogEvent(mct('mc_l_alarm', name, r && r.temp ? ' (' + Number(r.temp).toFixed(0) + ' °C)' : ''), 'bad', id);
       else if(st === 'off') mcLogEvent(mct('mc_l_off', name), 'bad', id);
@@ -572,13 +578,21 @@ function renderMachineCards(){
     board.innerHTML = '<div class="mc-hint">' + t('mc_nomatch') + '</div>';
     mc.els.clear(); mc.heads.clear(); mcRenderLog(); return;
   }
+  if(mc.prefs.view === 'heat' || mc.prefs.view === 'plan'){
+    if(mc.dragging) return;
+    board.className = 'mc-board ' + (mc.prefs.view === 'heat' ? 'mc-heatwrap' : 'mc-planwrap');
+    const h = mc.prefs.view === 'heat' ? mcHeatHtml(rows) : mcPlanHtml(rows);
+    if(board.dataset.s2 !== h){ board.dataset.s2 = h; board.innerHTML = h; }
+    mc.els.clear(); mc.heads.clear(); mcRenderLog(); return;
+  }
+  delete board.dataset.s2;
   if(mc.prefs.view === 'table'){
     board.className = 'mc-board mc-tablewrap' + (mc.picked.size ? ' has-pick' : '');
     board.innerHTML = mcTableHtml(rows);
     mc.els.clear(); mc.heads.clear(); mcRenderLog(); return;
   }
-  board.className = 'mc-board mc-grid' + (mc.prefs.view === 'compact' ? ' compact' : '') + (mcFxOn() ? ' mc-fx' : '') + (mc.picked.size ? ' has-pick' : '');
-  if(board.querySelector('.mc-hint, table')) board.innerHTML = '';
+  board.className = 'mc-board mc-grid' + (mc.prefs.view === 'compact' ? ' compact' : '') + (mcFxOn() ? ' mc-fx' : '') + (mc.picked.size ? ' has-pick' : '') + (typeof mcXpClasses === 'function' ? mcXpClasses() : '');
+  if(board.querySelector('.mc-hint, table, .mc-heat-grid, .mc-plan-area')) board.innerHTML = '';
 
   // ordem final dos nós: cartões, ou cabeçalhos de grupo com os respetivos cartões
   const nodes = [], useHeads = new Set();
@@ -593,6 +607,7 @@ function renderMachineCards(){
   mc.heads.forEach((el, g) => { if(!useHeads.has(g)){ el.remove(); mc.heads.delete(g); } });
   const keep = new Set(nodes.filter(n => n.dev).map(n => n.dev.id));
   mc.els.forEach((el, id) => { if(!keep.has(id)){ el.remove(); mc.els.delete(id); } });
+  const flipFirst = typeof mcFlipBefore === 'function' ? mcFlipBefore() : null;
   let ci = 0;
   nodes.forEach((n, i) => {
     let el = n;
@@ -605,6 +620,7 @@ function renderMachineCards(){
     }
     if(board.children[i] !== el) board.insertBefore(el, board.children[i] || null);
   });
+  if(flipFirst && typeof mcFlipAfter === 'function') mcFlipAfter(flipFirst);
   mcRenderLog();
 }
 
@@ -640,6 +656,7 @@ function renderMachineCards(){
   const board = $('mcBoard'), log = $('mcLog');
   const find = id => (devices || []).find(d => String(d.id) === String(id));
   if(board) board.addEventListener('click', async e => {
+    if(mc.justDragged) return;
     const gh = e.target.closest('.mc-ghead');
     if(gh){
       const g = gh.dataset.g;

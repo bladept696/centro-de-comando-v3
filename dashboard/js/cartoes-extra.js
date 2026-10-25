@@ -260,7 +260,7 @@ document.addEventListener('keydown', e => {
   if(k === '/'){ e.preventDefault(); const s = $('mcSearch'); if(s){ s.scrollIntoView({ block: 'center', behavior: 'smooth' }); s.focus(); } }
   else if(flt){ mc.prefs.filter = flt; mcSavePrefs(); renderMachineCards(); }
   else if(k === 'g'){ mc.prefs.groupBy = !mc.prefs.groupBy; mcSavePrefs(); renderMachineCards(); }
-  else if(k === 'v'){ const v = ['cards', 'compact', 'table']; mc.prefs.view = v[(v.indexOf(mc.prefs.view) + 1) % 3]; mcSavePrefs(); renderMachineCards(); }
+  else if(k === 'v'){ const v = ['cards', 'compact', 'table', 'heat', 'plan']; mc.prefs.view = v[(v.indexOf(mc.prefs.view) + 1) % v.length]; mcSavePrefs(); renderMachineCards(); }
   else if(k === 'f'){ mc.prefs.fx = !mcFxOn(); mcSavePrefs(); renderMachineCards(); }
   else if(k === 'e'){ mcExportCsv(); }
 });
