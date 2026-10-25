@@ -17,7 +17,7 @@ const MC_STATUS = {
 const MC_FILTERS = [['all', 'mc_f_all'], ['ok', 'mc_st_ok'], ['warn', 'mc_st_warn'], ['hot', 'mc_st_hot'], ['off', 'mc_st_off']];
 const MC_SORTS = [['status', 'mc_s_status'], ['name', 'mc_s_name'], ['hash', 'mc_s_hash'], ['temp', 'mc_s_temp'], ['eff', 'mc_s_eff']];
 const mc = { prefs: { filter: 'all', sort: 'status', view: 'cards', q: '', fx: 'auto', group: '', groupBy: false, range: 24 }, els: new Map(), heads: new Map(), open: new Set(), picked: new Set(), collapsed: new Set(), visible: [],
-  prev: {}, since: {}, log: [], recordUntil: {}, rank: {} };
+  prev: {}, since: {}, log: [], recordUntil: {}, rank: {}, acc: {} };
 try { Object.assign(mc.prefs, JSON.parse(localStorage.getItem(MC_KEY) || '{}')); } catch(e) {}
 try { mc.log = JSON.parse(localStorage.getItem(MC_LOG_KEY) || '[]').filter(e => new Date(e.t).toDateString() === new Date().toDateString()); } catch(e) { mc.log = []; }
 
@@ -29,12 +29,33 @@ function mcFxOn(){
   if(mc.prefs.fx === true) return true;   // escolha explícita do botão: ganha ao modo Desempenho
   return !(typeof hcPerfMode !== 'undefined' && hcPerfMode);
 }
+// Máquina "presa": online, mas sem novas partilhas aceites há MC_STUCK_MIN minutos, ou com o hashrate a zero.
+// O aviso fica na própria leitura (r.mcStuck, em minutos) para o estado e os alertas o verem.
+const MC_STUCK_MIN = 10, MC_ZERO_MIN = 3;
+function mcStuckWatch(list){
+  const now = Date.now();
+  list.forEach(dev => {
+    const r = readings[dev.id];
+    if(!r || !r.online){ delete mc.acc[dev.id]; return; }
+    const a = mc.acc[dev.id] || (mc.acc[dev.id] = { v: null, t: now, z: null });
+    const acc = Number(r.accepted);
+    const hash = Number(r.hashrate_raw != null ? r.hashrate_raw : r.hashrate);
+    if(isFinite(acc)){ if(a.v == null || acc !== a.v){ a.v = acc; a.t = now; } }   // contador mudou (ou voltou a zero num reinício)
+    if(isFinite(hash) && hash <= 0){ if(a.z == null) a.z = now; } else a.z = null;
+    const boot = Number(r.uptime) > 0 && Number(r.uptime) < MC_STUCK_MIN * 60;       // acabou de arrancar: ainda é cedo
+    const idleMin = (now - a.t) / 60000, zeroMin = a.z ? (now - a.z) / 60000 : 0;
+    if(!boot && isFinite(acc) && idleMin >= MC_STUCK_MIN) r.mcStuck = { kind: 'shares', min: Math.round(idleMin) };
+    else if(zeroMin >= MC_ZERO_MIN) r.mcStuck = { kind: 'zero', min: Math.round(zeroMin) };
+    else delete r.mcStuck;
+  });
+}
 function mcStateOf(r){
   if(!r) return 'idle';
   if(!r.online) return r.portalMode ? 'portal' : 'off';
   const temp = Number(r.temp);
   if(temp >= 75 || (r.vrTemp != null && r.vrTemp >= 85)) return 'hot';
   if(temp >= 65) return 'warm';
+  if(r.mcStuck) return 'warn';
   const shares = (r.accepted || 0) + (r.rejected || 0);
   if((shares > 20 && r.rejected / shares > 0.02) || (r.rssi != null && r.rssi <= -80) || (r.poolPing != null && r.poolPing > 400)) return 'warn';
   return 'ok';
@@ -91,6 +112,7 @@ function mcAlertItems(dev, r, st, trend){
   }
   if(mc.recordUntil[dev.id] > Date.now()) add('gold', t('mc_a_record'), 'record');
   const n0 = out.length;
+  if(r.mcStuck) add('bad', mct(r.mcStuck.kind === 'zero' ? 'mc_a_zero' : 'mc_a_stuck', r.mcStuck.min + ' ' + t('mc_u_min')), 'stuck');
   if(r.temp >= 75) add('bad', mct('mc_a_tempcrit', Number(r.temp).toFixed(0)), 'temp');
   else if(r.temp >= 65) add('warn', mct('mc_a_warm', Number(r.temp).toFixed(0)), 'temp');
   if(r.vrTemp != null && r.vrTemp >= 85) add('bad', mct('mc_a_vr', Number(r.vrTemp).toFixed(0)), 'vr');
@@ -458,6 +480,7 @@ function renderMachineCards(){
   if(mc.lang !== currentLang){ mc.lang = currentLang; mcResetUi(); }
   mcBuildToolbar();
   const list = Array.isArray(devices) ? devices : [];
+  mcStuckWatch(list);
   const states = {};
   list.forEach(d => { states[d.id] = mcStateOf(readings[d.id]); });
   mcTrackStates(list, states);
