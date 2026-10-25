@@ -16,10 +16,18 @@ const MC_STATUS = {
 };
 const MC_FILTERS = [['all', 'Todas'], ['ok', 'A trabalhar'], ['warn', 'Atenção'], ['hot', 'Alarme'], ['off', 'Offline']];
 const MC_SORTS = [['status', 'Problemas primeiro'], ['name', 'Nome'], ['hash', 'Hashrate'], ['temp', 'Temperatura'], ['eff', 'Eficiência']];
-const mc = { prefs: { filter: 'all', sort: 'status', view: 'cards', q: '' }, els: new Map(), open: new Set(), prev: {}, since: {}, log: [], ready: false };
+const mc = { prefs: { filter: 'all', sort: 'status', view: 'cards', q: '', fx: 'auto' }, els: new Map(), open: new Set(), prev: {}, since: {}, log: [], ready: false };
 try { Object.assign(mc.prefs, JSON.parse(localStorage.getItem(MC_KEY) || '{}')); } catch(e) {}
 try { mc.log = JSON.parse(localStorage.getItem(MC_LOG_KEY) || '[]').filter(e => new Date(e.t).toDateString() === new Date().toDateString()); } catch(e) { mc.log = []; }
 
+// efeitos 3D (inclinação, profundidade, reflexo): desligam-se no modo Desempenho e com "reduzir movimento"
+function mcFxOn(){
+  let reduced = false;
+  try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) {}
+  if(reduced || mc.prefs.fx === false) return false;
+  if(mc.prefs.fx === true) return true;   // escolha explícita do botão: ganha ao modo Desempenho
+  return !(typeof hcPerfMode !== 'undefined' && hcPerfMode);
+}
 function mcStateOf(r){
   if(!r) return 'idle';
   if(!r.online) return r.portalMode ? 'portal' : 'off';
@@ -60,11 +68,11 @@ function mcTrend(vals){
   return before > 0 ? (now - before) / before * 100 : null;
 }
 function mcSpark(vals){
-  if(vals.length < 3) return { line: '', area: '' };
+  if(vals.length < 3) return { line: '', area: '', x: -9, y: -9 };
   const min = Math.min(...vals), max = Math.max(...vals), span = (max - min) || Math.max(max * .1, 1e-9);
   const pts = vals.map((v, i) => [i / (vals.length - 1) * 120, 32 - (v - min) / span * 28]);
   const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
-  return { line, area: line + 'L120 36L0 36Z' };
+  return { line, area: line + 'L120 36L0 36Z', x: pts[pts.length - 1][0], y: pts[pts.length - 1][1] };
 }
 
 // avisos legíveis para cada máquina
@@ -108,7 +116,7 @@ function mcCardEl(dev){
       '<span class="mc-model" data-f="model"></span></header>' +
     '<div class="mc-status-row"><span class="mc-status" data-f="status"></span><span class="mc-algo" data-f="algo"></span></div>' +
     '<div class="mc-hero"><div class="mc-hash"><b data-f="hash">—</b><small data-f="unit"></small><i class="mc-trend" data-f="trend"></i></div>' +
-      '<svg class="mc-spark" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"><path class="area" data-f="area"/><path class="line" data-f="line"/></svg></div>' +
+      '<svg class="mc-spark" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"><path class="area" data-f="area"/><path class="line" data-f="line"/><circle class="live" data-f="live" r="2.6"/></svg></div>' +
     '<div class="mc-alerts" data-f="alerts"></div>' +
     '<div class="mc-meters">' + mcMeter('temp', 'Temp.') + mcMeter('fan', 'Ventoinha') +
       '<div class="mc-meter"><div class="mc-meter-top"><span>Wi-Fi</span><b data-f="wifiV">—</b></div><div class="mc-sig" data-f="sig"><i></i><i></i><i></i><i></i></div></div></div>' +
@@ -176,6 +184,7 @@ function mcUpdateCard(el, dev, r, st, i){
   const sp = mcSpark(vals);
   el.querySelector('[data-f="line"]').setAttribute('d', sp.line);
   el.querySelector('[data-f="area"]').setAttribute('d', sp.area);
+  const lv = el.querySelector('[data-f="live"]'); lv.setAttribute('cx', sp.x.toFixed(1)); lv.setAttribute('cy', sp.y.toFixed(1));
   const al = mcAlerts(dev, r, st, trend).join('');
   const aln = el.querySelector('[data-f="alerts"]');
   if(aln.dataset.s !== al){ aln.dataset.s = al; aln.innerHTML = al; }
@@ -246,8 +255,9 @@ function mcBuildToolbar(){
     '<div class="mc-chips" id="mcChips"></div>' +
     '<div class="mc-tools"><input type="search" id="mcSearch" placeholder="Pesquisar nome, IP ou pool" aria-label="Pesquisar máquinas">' +
     '<select id="mcSort" aria-label="Ordenar por">' + MC_SORTS.map(([k, l]) => '<option value="' + k + '">' + l + '</option>').join('') + '</select>' +
-    '<div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="Cartões">▦</button><button type="button" data-v="compact" title="Compacto">▥</button><button type="button" data-v="table" title="Tabela">☰</button></div></div>';
+    '<button type="button" class="mc-fx-btn" id="mcFx" title="Efeitos 3D nos cartões">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="Cartões">▦</button><button type="button" data-v="compact" title="Compacto">▥</button><button type="button" data-v="table" title="Tabela">☰</button></div></div>';
   $('mcSearch').value = mc.prefs.q || '';
+  $('mcFx').addEventListener('click', () => { mc.prefs.fx = !mcFxOn(); mcSavePrefs(); renderMachineCards(); });
   $('mcSort').value = mc.prefs.sort;
   $('mcSearch').addEventListener('input', e => { mc.prefs.q = e.target.value; mcSavePrefs(); renderMachineCards(); });
   $('mcSort').addEventListener('change', e => { mc.prefs.sort = e.target.value; mcSavePrefs(); renderMachineCards(); });
@@ -303,6 +313,11 @@ function renderMachineCards(){
     const html = MC_FILTERS.map(([k, l]) => '<button type="button" data-flt="' + k + '" class="mc-fchip ' + k + (mc.prefs.filter === k ? ' active' : '') + (counts[k] ? '' : ' zero') + '">' + l + ' <b>' + counts[k] + '</b></button>').join('');
     if(chips.dataset.s !== html){ chips.dataset.s = html; chips.innerHTML = html; }
   }
+  if($('mcFx')){
+    const on = mcFxOn(), perf = typeof hcPerfMode !== 'undefined' && hcPerfMode;
+    $('mcFx').classList.toggle('active', on);
+    $('mcFx').title = on ? 'Desligar os efeitos 3D' : perf && mc.prefs.fx === 'auto' ? 'O modo Desempenho está ativo. Clique para ligar os efeitos 3D mesmo assim' : 'Ligar os efeitos 3D';
+  }
   $('mcViews') && $('mcViews').querySelectorAll('[data-v]').forEach(b => b.classList.toggle('active', b.dataset.v === mc.prefs.view));
 
   // filtrar, pesquisar e ordenar
@@ -336,7 +351,7 @@ function renderMachineCards(){
     board.innerHTML = mcTableHtml(rows);
     mc.els.clear(); mcRenderLog(); return;
   }
-  board.className = 'mc-board mc-grid' + (mc.prefs.view === 'compact' ? ' compact' : '');
+  board.className = 'mc-board mc-grid' + (mc.prefs.view === 'compact' ? ' compact' : '') + (mcFxOn() ? ' mc-fx' : '');
   if(board.querySelector('.mc-hint, table')) board.innerHTML = '';
   const keep = new Set(rows.map(x => x.dev.id));
   mc.els.forEach((el, id) => { if(!keep.has(id)){ el.remove(); mc.els.delete(id); } });
@@ -344,10 +359,38 @@ function renderMachineCards(){
     let el = mc.els.get(dev.id);
     if(!el){ el = mcCardEl(dev); mc.els.set(dev.id, el); }
     mcUpdateCard(el, dev, r, st, list.indexOf(dev));
+    el.style.setProperty('--i', Math.min(i, 8));
     if(board.children[i] !== el) board.insertBefore(el, board.children[i] || null);
   });
   mcRenderLog();
 }
+
+// ---- inclinação em 3D que segue o rato ----
+(function(){
+  const board = $('mcBoard');
+  if(!board) return;
+  let cur = null, raf = 0, leaveT = 0;
+  const apply = (el, e) => {
+    const r = el.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+    el.style.setProperty('--rx', ((.5 - py) * 9).toFixed(2) + 'deg');
+    el.style.setProperty('--ry', ((px - .5) * 11).toFixed(2) + 'deg');
+    el.style.setProperty('--gx', (px * 100).toFixed(0) + '%');
+    el.style.setProperty('--gy', (py * 100).toFixed(0) + '%');
+  };
+  const reset = el => {
+    el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg');
+    clearTimeout(leaveT);
+    leaveT = setTimeout(() => { if(cur !== el) el.classList.remove('is-tilt'); }, 320);   // volta a ficar plano (texto nítido)
+  };
+  board.addEventListener('pointermove', e => {
+    if(e.pointerType !== 'mouse' || !board.classList.contains('mc-fx')) return;
+    const el = e.target.closest('.mc-card');
+    if(el !== cur){ if(cur) reset(cur); cur = el; if(el){ clearTimeout(leaveT); el.classList.add('is-tilt'); } }
+    if(!el || raf) return;
+    raf = requestAnimationFrame(() => { raf = 0; if(cur) apply(cur, e); });
+  });
+  board.addEventListener('pointerleave', () => { if(cur){ const el = cur; cur = null; reset(el); } });
+})();
 
 // ---- cliques (cartões e tabela) ----
 (function(){
