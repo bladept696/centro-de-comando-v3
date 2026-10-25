@@ -361,6 +361,42 @@ Object.assign(I18N_DICT, {
   mc_al_daily: { pt: `Resumo diário às`, en: `Daily summary at`, es: `Resumen diario a las`, fr: `Résumé quotidien à` },
   mc_al_send: { pt: `📊 Enviar resumo agora`, en: `📊 Send summary now`, es: `📊 Enviar resumen ahora`, fr: `📊 Envoyer le résumé maintenant` }
 });
+Object.assign(I18N_DICT, {
+  mc_xp_bgchart: { pt: `Gráfico ao vivo no fundo de cada cartão`, en: `Live chart in the background of each card`, es: `Gráfico en vivo al fondo de cada tarjeta`, fr: `Graphique en direct en fond de chaque carte` },
+  mc_xp_heat3d: { pt: `Mapa de calor em 3D com ventoinhas e vento`, en: `Heat map in 3D with fans and wind`, es: `Mapa de calor en 3D con ventiladores y viento`, fr: `Carte thermique en 3D avec ventilateurs et vent` },
+  mc_hm_wind: { pt: `A altura do pilar é o valor; a ventoinha gira e o vento corre ao ritmo da velocidade real.`, en: `Pillar height is the value; the fan spins and the wind blows at the real fan speed.`, es: `La altura del pilar es el valor; el ventilador gira y el viento corre a la velocidad real.`, fr: `La hauteur du pilier est la valeur ; le ventilateur tourne et le vent souffle à la vitesse réelle.` },
+  mc_lk_title: { pt: `Sorte e blocos`, en: `Luck and blocks`, es: `Suerte y bloques`, fr: `Chance et blocs` },
+  mc_lk_best: { pt: `Melhor share: {0} · {1}% do caminho até um bloco (escala log)`, en: `Best share: {0} · {1}% of the way to a block (log scale)`, es: `Mejor share: {0} · {1}% del camino hasta un bloque (escala log)`, fr: `Meilleur share : {0} · {1}% du chemin vers un bloc (échelle log)` },
+  mc_lk_nobest: { pt: `Esforço acumulado desde o último bloco`, en: `Effort since the last block`, es: `Esfuerzo acumulado desde el último bloque`, fr: `Effort cumulé depuis le dernier bloc` },
+  mc_lk_blocks: { pt: `🏆 Blocos encontrados: {0}`, en: `🏆 Blocks found: {0}`, es: `🏆 Bloques encontrados: {0}`, fr: `🏆 Blocs trouvés : {0}` },
+  mc_m_rules: { pt: `🤖 Regras "se… então…"…`, en: `🤖 "If… then…" rules…`, es: `🤖 Reglas "si… entonces…"…`, fr: `🤖 Règles « si… alors… »…` },
+  mc_ru_title: { pt: `Regras "se… então…"`, en: `"If… then…" rules`, es: `Reglas "si… entonces…"`, fr: `Règles « si… alors… »` },
+  mc_ru_if: { pt: `Se`, en: `If`, es: `Si`, fr: `Si` },
+  mc_ru_for: { pt: `durante`, en: `for`, es: `durante`, fr: `pendant` },
+  mc_ru_in: { pt: `em`, en: `on`, es: `en`, fr: `sur` },
+  mc_ru_do: { pt: `então`, en: `then`, es: `entonces`, fr: `alors` },
+  mc_ru_add: { pt: `Adicionar regra`, en: `Add rule`, es: `Añadir regla`, fr: `Ajouter la règle` },
+  mc_ru_examples: { pt: `Adicionar exemplos`, en: `Add examples`, es: `Añadir ejemplos`, fr: `Ajouter des exemples` },
+  mc_ru_empty: { pt: `Ainda não há regras. Crie uma abaixo ou adicione os exemplos.`, en: `No rules yet. Create one below or add the examples.`, es: `Aún no hay reglas. Cree una abajo o añada los ejemplos.`, fr: `Pas encore de règles. Créez-en une ci-dessous ou ajoutez les exemples.` },
+  mc_ru_note: { pt: `As regras só correm com a dashboard aberta. Cada regra volta a agir na mesma máquina, no mínimo, 30 min depois; máquinas silenciadas ficam de fora. O Eco e o Turbo usam os perfis rápidos que já tem guardados.`, en: `Rules only run while the dashboard is open. Each rule acts again on the same machine after 30 min at the earliest; muted machines are skipped. Eco and Turbo use the quick profiles you already saved.`, es: `Las reglas solo funcionan con el panel abierto. Cada regla vuelve a actuar sobre la misma máquina como mínimo 30 min después; las máquinas silenciadas se omiten. Eco y Turbo usan los perfiles rápidos que ya tiene guardados.`, fr: `Les règles ne fonctionnent que tableau de bord ouvert. Chaque règle agit de nouveau sur la même machine au plus tôt 30 min après ; les machines en sourdine sont ignorées. Éco et Turbo utilisent les profils rapides déjà enregistrés.` },
+  mc_ru_text: { pt: `Se {0}{1} → {2} ({3})`, en: `If {0}{1} → {2} ({3})`, es: `Si {0}{1} → {2} ({3})`, fr: `Si {0}{1} → {2} ({3})` },
+  mc_ru_fired: { pt: `🤖 {0}: regra ativada — {1}`, en: `🤖 {0}: rule triggered — {1}`, es: `🤖 {0}: regla activada — {1}`, fr: `🤖 {0} : règle déclenchée — {1}` },
+  mc_ru_noplug: { pt: `{0}: a regra pede a tomada, mas a tomada não está configurada.`, en: `{0}: the rule asks for the plug, but no plug is set up.`, es: `{0}: la regla pide el enchufe, pero no está configurado.`, fr: `{0} : la règle demande la prise, mais elle n'est pas configurée.` },
+  mc_ru_m_temp: { pt: `temperatura`, en: `temperature`, es: `temperatura`, fr: `température` },
+  mc_ru_m_vr: { pt: `temperatura do VR`, en: `VR temperature`, es: `temperatura del VR`, fr: `température du VR` },
+  mc_ru_m_fan: { pt: `ventoinha`, en: `fan`, es: `ventilador`, fr: `ventilateur` },
+  mc_ru_m_power: { pt: `consumo`, en: `power draw`, es: `consumo`, fr: `consommation` },
+  mc_ru_m_hash: { pt: `hashrate`, en: `hashrate`, es: `hashrate`, fr: `hashrate` },
+  mc_ru_m_rej: { pt: `rejeições`, en: `rejects`, es: `rechazos`, fr: `rejets` },
+  mc_ru_m_wifi: { pt: `sinal Wi-Fi`, en: `Wi-Fi signal`, es: `señal Wi-Fi`, fr: `signal Wi-Fi` },
+  mc_ru_m_ping: { pt: `ping da pool`, en: `pool ping`, es: `ping del pool`, fr: `ping du pool` },
+  mc_ru_m_off: { pt: `máquina offline`, en: `machine offline`, es: `máquina sin conexión`, fr: `machine hors ligne` },
+  mc_ru_a_notify: { pt: `avisar-me`, en: `notify me`, es: `avisarme`, fr: `me prévenir` },
+  mc_ru_a_eco: { pt: `🌿 perfil Eco`, en: `🌿 Eco profile`, es: `🌿 perfil Eco`, fr: `🌿 profil Éco` },
+  mc_ru_a_turbo: { pt: `🚀 perfil Turbo`, en: `🚀 Turbo profile`, es: `🚀 perfil Turbo`, fr: `🚀 profil Turbo` },
+  mc_ru_a_restart: { pt: `⟲ reiniciar`, en: `⟲ restart`, es: `⟲ reiniciar`, fr: `⟲ redémarrer` },
+  mc_ru_a_plug: { pt: `⚡ ciclo da tomada`, en: `⚡ power-cycle the plug`, es: `⚡ ciclo del enchufe`, fr: `⚡ cycle de la prise` }
+});
 // texto traduzido com {0}, {1}... substituídos
 function mct(key, ...args){
   let s = t(key);

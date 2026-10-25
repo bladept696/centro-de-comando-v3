@@ -17,7 +17,7 @@ function mcToggleMenu(){
   const m = document.createElement('div');
   m.id = 'mcMenu'; m.className = 'mc-menu';
   m.innerHTML = '<button type="button" data-m="export">' + t('mc_m_export') + '</button><button type="button" data-m="import">' + t('mc_m_import') + '</button>' +
-    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button><div class="mc-menu-row"><span>' + t('mc_m_pause') + '</span><button type="button" data-m="pause60">1 h</button><button type="button" data-m="pause240">4 h</button><button type="button" data-m="pause720">12 h</button></div><button type="button" data-m="xp">' + t('mc_m_xp') + '</button><button type="button" data-m="tariff">' + t('mc_m_tariff') + '</button><button type="button" data-m="limits">' + t('mc_m_limits') + '</button><button type="button" data-m="lock">' + t(mc.locked ? 'mc_m_unlock' : 'mc_m_lock') + '</button><button type="button" data-m="report">' + t('mc_m_report') + '</button><button type="button" data-m="help">' + t('mc_m_help') + '</button>';
+    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button><div class="mc-menu-row"><span>' + t('mc_m_pause') + '</span><button type="button" data-m="pause60">1 h</button><button type="button" data-m="pause240">4 h</button><button type="button" data-m="pause720">12 h</button></div><button type="button" data-m="rules">' + t('mc_m_rules') + '</button><button type="button" data-m="xp">' + t('mc_m_xp') + '</button><button type="button" data-m="tariff">' + t('mc_m_tariff') + '</button><button type="button" data-m="limits">' + t('mc_m_limits') + '</button><button type="button" data-m="lock">' + t(mc.locked ? 'mc_m_unlock' : 'mc_m_lock') + '</button><button type="button" data-m="report">' + t('mc_m_report') + '</button><button type="button" data-m="help">' + t('mc_m_help') + '</button>';
   if(mc.locked) m.querySelectorAll('[data-m]').forEach(b => { if(!['export', 'report', 'help', 'lock'].includes(b.dataset.m)) b.remove(); });
   m.querySelectorAll('.mc-menu-row').forEach(r => { if(mc.locked) r.remove(); });
   const pr = panel.getBoundingClientRect(), br = btn.getBoundingClientRect();
@@ -35,6 +35,7 @@ document.addEventListener('click', e => {
   else if(k === 'import') mcBackupPick();
   else if(k === 'scan'){ mc.prefs.autoScan = !mc.prefs.autoScan; mcSavePrefs(); if(mc.prefs.autoScan){ setQuickActionStatus(t('mc_sc_scanning')); mcScanNow(true); } else { mc.found = []; mcNewRender(); } }
   else if(k.startsWith('pause')){ mcPauseAlerts(Number(k.slice(5))); }
+  else if(k === 'rules'){ if(typeof mcRulesOpen === 'function') mcRulesOpen(); }
   else if(k === 'xp'){ if(typeof mcXpOpen === 'function') mcXpOpen(); }
   else if(k === 'tariff'){ if(typeof mcTariffOpen === 'function') mcTariffOpen(); }
   else if(k === 'limits'){ if(typeof mcLimitsOpen === 'function') mcLimitsOpen(); }
@@ -50,7 +51,7 @@ function mcBackupExport(){
   const data = {
     app: MC_BACKUP_APP, version: 1, date: new Date().toISOString(),
     devices: (devices || []).map(d => keep({ name: d.name, ip: d.ip, group: d.group, note: d.note, expected: d.expected, pin: d.pin })),
-    prefs: mc.prefs, thresholds: mc.th, kwhPrice: mcPrice() || null, tariff: mcTariff(), schedules: mc.sched,
+    prefs: mc.prefs, thresholds: mc.th, kwhPrice: mcPrice() || null, tariff: mcTariff(), schedules: mc.sched, rules: typeof mc.rules !== 'undefined' ? mc.rules : [],
     quickProfiles: (() => { try { return JSON.parse(localStorage.getItem(QUICK_PROFILE_KEY) || '{}'); } catch(e) { return {}; } })()
   };
   const a = document.createElement('a');
@@ -96,6 +97,7 @@ function mcBackupImport(file){
     if(Number(o.kwhPrice) > 0){ try { localStorage.setItem(MC_PRICE_KEY, String(o.kwhPrice)); } catch(e) {} }
     if(o.quickProfiles && typeof o.quickProfiles === 'object'){ try { localStorage.setItem(QUICK_PROFILE_KEY, JSON.stringify(o.quickProfiles)); } catch(e) {} }
     if(Array.isArray(o.schedules)){ mc.sched = o.schedules.filter(r => r && /^\d\d:\d\d$/.test(r.time) && Array.isArray(r.days) && ['eco', 'turbo'].includes(r.slot)).map(r => ({ id: String(r.id || Math.random().toString(36).slice(2, 8)), time: r.time, days: r.days.map(Number).filter(n => n >= 0 && n <= 6), slot: r.slot, target: String(r.target || 'all'), on: r.on !== false, last: '' })); mcSchedSave(); }
+    if(Array.isArray(o.rules) && typeof mcRulesImport === 'function') mcRulesImport(o.rules);
     mcSavePrefs(); saveDevices();
     mc.lang = null;   // refaz a interface com os valores novos
     renderAll();
