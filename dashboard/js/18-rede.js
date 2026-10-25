@@ -417,27 +417,78 @@ function nmLayoutVertical(W, list, pools, ghosts){
   return { pos, H: Math.max(560, endY + 90) };
 }
 
-// --- Mapa em 3D: o mapa fica num "palco" com perspetiva e o chão é inclinado ---
-const NM_RX = 50;   // inclinação do chão, em graus
+// --- Mapa em 3D: só o chão (grelha e ligações) é inclinado, em perspetiva. Os cartões ficam planos e
+// são colocados por cima, já projetados (posição + escala), para o texto continuar nítido. ---
+const NM_RX = 50;      // inclinação do chão, em graus
+const NM_P = 1700;     // distância da perspetiva, em px
+let nm3dGeo = null;    // geometria da projeção atual (null com o mapa plano)
 function nmStage(wrap){
   let st = wrap.parentElement;
   if (st && st.classList.contains('nm-stage')) return st;
   st = document.createElement('div'); st.className = 'nm-stage';
   wrap.parentNode.insertBefore(st, wrap); st.appendChild(wrap);
   // paralaxe suave: o ponto de vista segue o rato
-  st.addEventListener('pointermove', e => { if (!st.classList.contains('nm-3d')) return; const r = st.getBoundingClientRect(); st.style.setProperty('--nm-po-x', (30 + 40 * (e.clientX - r.left) / Math.max(1, r.width)).toFixed(1) + '%'); });
-  st.addEventListener('pointerleave', () => st.style.removeProperty('--nm-po-x'));
+  let raf = 0;
+  st.addEventListener('pointermove', e => {
+    if (!st.classList.contains('nm-3d')) return;
+    const r = st.getBoundingClientRect();
+    st.style.setProperty('--nm-po-x', (30 + 40 * (e.clientX - r.left) / Math.max(1, r.width)).toFixed(1) + '%');
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; nmProject3d(); });
+  });
+  st.addEventListener('pointerleave', () => { st.style.removeProperty('--nm-po-x'); nmProject3d(); });
   return st;
 }
+function nmFloor(wrap){
+  let f = wrap.querySelector(':scope > .nm-floor');
+  if (!f) { f = document.createElement('div'); f.className = 'nm-floor'; wrap.insertBefore(f, wrap.firstChild); }
+  return f;
+}
 function nmApply3d(wrap, H, on){
-  const st = nmStage(wrap);
+  const st = nmStage(wrap), floor = nmFloor(wrap), svg = $('networkMapSvg');
   st.classList.toggle('nm-3d', on); wrap.classList.toggle('nm-3d', on);
   if (on) {
     const c = Math.cos(NM_RX * Math.PI / 180), top = 135;
-    st.style.setProperty('--nm-rx', NM_RX + 'deg');
     st.style.height = Math.round(top + H * c + 24) + 'px';
     wrap.style.marginTop = Math.round(top - (H - H * c) / 2) + 'px';
-  } else { st.style.height = ''; wrap.style.marginTop = ''; }
+    if (svg && svg.parentNode !== floor) floor.appendChild(svg);
+    nmProject3d();
+  } else {
+    st.style.height = ''; wrap.style.marginTop = '';
+    if (svg && svg.parentNode === floor) wrap.insertBefore(svg, $('networkMapNodes'));
+    floor.style.transform = '';
+    nm3dGeo = null;
+    nmNodes.forEach(n => { ['--nm-tx', '--nm-ty', '--nm-s'].forEach(v => n.el.style.removeProperty(v)); n.el.style.zIndex = ''; });
+  }
+}
+function nmProject3d(){
+  const wrap = $('networkMapWrap');
+  if (!wrap || !wrap.classList.contains('nm-3d')) return;
+  const st = wrap.parentElement, floor = wrap.querySelector(':scope > .nm-floor');
+  const W = wrap.clientWidth, H = parseFloat(wrap.style.height) || wrap.clientHeight, mt = parseFloat(wrap.style.marginTop) || 0;
+  const po = parseFloat(st.style.getPropertyValue('--nm-po-x')) || 50;
+  const ox = po / 100 * st.clientWidth, oy = .06 * st.clientHeight - mt, cx = W / 2, cy = H / 2, a = NM_RX * Math.PI / 180;
+  // o ponto de fuga fica em (ox, oy) e o chão roda sobre o seu centro
+  floor.style.transform = `translate(${(ox - cx).toFixed(1)}px,${(oy - cy).toFixed(1)}px) perspective(${NM_P}px) translate(${(cx - ox).toFixed(1)}px,${(cy - oy).toFixed(1)}px) rotateX(${NM_RX}deg)`;
+  nm3dGeo = { W, H, ox, oy, cx, cy, cos: Math.cos(a), sin: Math.sin(a) };
+  nmNodes.forEach(n => nmProjectNode(n.el));
+}
+// Onde fica no ecrã (e a que escala) o cartão cuja base está no ponto (x, y) do chão
+function nmProjectNode(el){
+  const g = nm3dGeo;
+  if (!g) return;
+  const x = parseFloat(el.style.left) / 100 * g.W, y = parseFloat(el.style.top) / 100 * g.H;
+  const dy = y - g.cy, s = NM_P / (NM_P - dy * g.sin);
+  const X = g.ox + s * (x - g.ox), Y = g.oy + s * (g.cy + dy * g.cos - g.oy);
+  el.style.setProperty('--nm-tx', (X - x).toFixed(1) + 'px');
+  el.style.setProperty('--nm-ty', (Y - y).toFixed(1) + 'px');
+  el.style.setProperty('--nm-s', s.toFixed(3));
+  el.style.zIndex = Math.round(y);
+}
+// O inverso: ponto do ecrã (relativo ao mapa) -> ponto do chão, para arrastar os cartões
+function nmUnproject(Xs, Ys){
+  const g = nm3dGeo, q = Ys - g.oy, c0 = g.cy - g.oy;
+  const dy = NM_P * (q - c0) / (NM_P * g.cos + q * g.sin), s = NM_P / (NM_P - dy * g.sin);
+  return { x: g.ox + (Xs - g.ox) / s, y: g.cy + dy };
 }
 function nmBox(id, W, H){
   const n = nmNodes.get(id); if (!n) return null;
@@ -562,10 +613,13 @@ function nmBindNode(el){
       try { el.setPointerCapture(st.pid); } catch(_) {}
     }
     const r = $('networkMapWrap').getBoundingClientRect();
-    const fx = Math.min(0.94, Math.max(0.06, (e.clientX - r.left) / r.width));
-    const fy = Math.min(0.97, Math.max(0.04, (e.clientY + st.dy - r.top) / r.height));
+    let px = e.clientX - r.left, py = e.clientY + st.dy - r.top, W = r.width, H = r.height;
+    if (nm3dGeo) { const u = nmUnproject(px, py); px = u.x; py = u.y; W = nm3dGeo.W; H = nm3dGeo.H; }
+    const fx = Math.min(0.94, Math.max(0.06, px / W));
+    const fy = Math.min(0.97, Math.max(0.04, py / H));
     nmPos[st.id] = { x: fx, y: fy };
     el.style.left = (fx * 100) + '%'; el.style.top = (fy * 100) + '%';
+    nmProjectNode(el);
     nmUpdateEdgeGeometry();
   });
   const end = () => {
@@ -714,6 +768,7 @@ function renderNetworkMap(){
     const c = nmPos[id] || { x: L.pos[id].x, y: L.pos[id].y / H };
     el.style.left = (c.x * 100) + '%';
     el.style.top = (c.y * 100) + '%';
+    nmProjectNode(el);
   };
 
   const wanted = new Set();

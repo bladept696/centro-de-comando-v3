@@ -78,16 +78,17 @@
   .network-node .nm-add{margin-top:8px;width:100%;background:#0b1d18;border:1px solid #21ffb055;color:var(--green);font-family:inherit;font-size:10px;font-weight:700;padding:6px;border-radius:6px;cursor:pointer;}
   .network-node .nm-add:hover{background:#0d2b22;border-color:var(--green);}
   @keyframes nmFadeIn{from{opacity:0}to{opacity:1}}
-  /* Mapa em 3D: o chão (com a grelha) fica inclinado e os cartões ficam de pé sobre ele */
-  .nm-stage.nm-3d{perspective:1700px;perspective-origin:var(--nm-po-x,50%) 6%;overflow:hidden;border-radius:12px;}
-  .network-map-wrap.nm-3d{overflow:visible;transform-style:preserve-3d;transform:rotateX(var(--nm-rx,50deg));transform-origin:50% 50%;
-    box-shadow:0 30px 60px -30px #000;}
-  .network-map-wrap.nm-3d .network-map-nodes{transform-style:preserve-3d;}
-  .network-map-wrap.nm-3d .network-node{transform-origin:50% 100%;transform:translate(-50%,-100%) rotateX(calc(var(--nm-rx,50deg) * -1));}
-  .network-map-wrap.nm-3d .network-node:hover{transform:translate(-50%,-100%) rotateX(calc(var(--nm-rx,50deg) * -1)) scale(1.05);}
+  /* Mapa em 3D: só o chão (grelha e ligações) é inclinado; os cartões ficam planos e nítidos, já projetados pelo JS */
+  .nm-floor{display:none;}
+  .nm-stage.nm-3d{overflow:hidden;border-radius:12px;}
+  .network-map-wrap.nm-3d{overflow:visible;background:none;border-color:transparent;}
+  .network-map-wrap.nm-3d .nm-floor{display:block;position:absolute;inset:0;transform-origin:50% 50%;border:1px solid var(--line);border-radius:12px;box-shadow:0 30px 60px -30px #000;
+    background:radial-gradient(circle at center,var(--glow-1),transparent 34%),linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:auto,36px 36px,36px 36px;}
+  .network-map-wrap.nm-3d .network-node{transform-origin:50% 100%;transform:translate(calc(-50% + var(--nm-tx,0px)),calc(-100% + var(--nm-ty,0px))) scale(var(--nm-s,1));}
+  .network-map-wrap.nm-3d .network-node:hover{transform:translate(calc(-50% + var(--nm-tx,0px)),calc(-100% + var(--nm-ty,0px))) scale(calc(var(--nm-s,1) * 1.05));}
   /* sombra do cartão no chão */
   .network-map-wrap.nm-3d .network-node::after{content:'';position:absolute;left:50%;bottom:-9px;width:80%;height:16px;border-radius:50%;pointer-events:none;
-    transform:translateX(-50%) rotateX(var(--nm-rx,50deg));transform-origin:50% 0;background:radial-gradient(ellipse at center,#000a 0%,transparent 70%);}
+    transform:translateX(-50%) scaleY(.5);background:radial-gradient(ellipse at center,#000a 0%,transparent 70%);}
   @keyframes nmFlash{0%{box-shadow:0 0 0 2px var(--amber),0 0 34px 4px var(--amber)}100%{box-shadow:0 12px 28px -12px #000c}}
   .nm-edge{fill:none;stroke:var(--line-strong);stroke-width:1.8;stroke-linecap:round;opacity:.85;transition:stroke .4s ease,opacity .4s ease;}
   .nm-edge.lan{stroke:var(--green-dim);}
