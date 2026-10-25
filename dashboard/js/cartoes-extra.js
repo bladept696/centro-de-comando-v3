@@ -8,6 +8,17 @@ Object.assign(mc, { health: {}, lastBest: {}, lastAcc: {}, lastDaily: 0, baseTit
 // ---- 1. alertas de saúde (Telegram, Discord e aviso do Windows) ----
 // Avisa quando uma máquina passa a ter um problema novo (temperatura, rejeições, Wi-Fi, pool, queda de
 // hashrate) e quando volta ao normal. A primeira leitura não avisa; cada tipo tem 10 min de intervalo.
+// Reinicia sozinha uma máquina presa, no máximo uma vez por 30 min, e só se estiver ligada a opção
+// "permitir reinício automático crítico" das proteções do assistente.
+async function mcAutoRestart(dev){
+  if(typeof aiAgentConfig === 'undefined' || !aiAgentConfig.allowRestart || typeof aiRestartDevice !== 'function') return;
+  mc.autoAt = mc.autoAt || {};
+  if(Date.now() - (mc.autoAt[dev.id] || 0) < 30 * 60000) return;
+  mc.autoAt[dev.id] = Date.now();
+  const res = await aiRestartDevice(dev, { auto: true });
+  mcLogEvent(mct(res && res.ok ? 'mc_l_autorestart' : 'mc_l_autofail', dev.name || dev.ip), res && res.ok ? 'warn' : 'bad', dev.id);
+  if(res && res.ok && typeof sendAlert === 'function') sendAlert(mct('mc_l_autorestart', dev.name || dev.ip), 'autorestart-' + dev.id);
+}
 function mcHealthWatch(list){
   const on = typeof alertsConfig !== 'undefined' && alertsConfig.notify_health !== false && typeof sendAlert === 'function';
   list.forEach(dev => {
@@ -17,6 +28,7 @@ function mcHealthWatch(list){
     const codes = items.map(a => a.code), prev = mc.health[dev.id];
     mc.health[dev.id] = codes;
     if(!on || prev === undefined) return;
+    if(codes.includes('stuck') && !prev.includes('stuck')) mcAutoRestart(dev);
     items.filter(a => !prev.includes(a.code)).forEach(a => sendAlert((a.lvl === 'bad' ? '🚨 ' : '⚠️ ') + name + ': ' + a.txt.replace(/^\S+\s/, ''), 'health-' + a.code + '-' + dev.id));
     if(prev.length && !codes.length) sendAlert(mct('mc_h_back', name), 'healthok-' + dev.id);
   });
