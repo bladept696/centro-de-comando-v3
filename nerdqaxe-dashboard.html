@@ -3164,8 +3164,17 @@
   .update-banner .close-update:hover { color: var(--text); }
 
   /* Rodapé de notícias de Bitcoin (faixa a correr) */
-  .news-ticker{display:flex;align-items:center;gap:12px;height:34px;padding:0 14px;border-top:1px solid var(--line-strong);background:linear-gradient(90deg,#060b10,#0a131b 50%,#060b10);overflow:hidden;}
+  .news-ticker{position:fixed;bottom:0;left:0;right:0;z-index:9990;display:flex;align-items:center;gap:12px;height:34px;padding:0 14px;
+    border-top:1px solid var(--line-strong);background:linear-gradient(90deg,#060b10f2,#0a131bf2 50%,#060b10f2);backdrop-filter:blur(6px);overflow:hidden;box-shadow:0 -8px 20px -10px #000c;}
   .news-ticker[hidden]{display:none;}
+  .news-empty{font-size:11.5px;color:var(--muted);}
+  /* com a faixa visível: espaço no fundo da página e botões flutuantes acima dela */
+  body.has-news{padding-bottom:34px;}
+  body.has-news .chat-fab, body.has-news .ls-fab, body.has-news .bd-fab{bottom:52px;}
+  body.has-news .chat-panel, body.has-news .ls-panel, body.has-news .bd-panel{bottom:164px;}
+  body.has-news #authUserPill{bottom:110px;}
+  body.has-news #userCountsBar{bottom:144px;}
+  body.has-news .block-share-toast{bottom:60px;}
   .news-label{flex-shrink:0;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#05080b;background:var(--amber);padding:3px 8px;border-radius:5px;}
   .news-viewport{flex:1;min-width:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
   .news-track{display:inline-flex;align-items:center;gap:18px;white-space:nowrap;animation:newsScroll var(--news-dur,120s) linear infinite;}
@@ -5850,9 +5859,9 @@
     </div>
   </div>
 
-  <div class="news-ticker" id="newsTicker" hidden>
+  <div class="news-ticker" id="newsTicker">
     <span class="news-label">₿ Notícias</span>
-    <div class="news-viewport"><div class="news-track" id="newsTrack"></div></div>
+    <div class="news-viewport"><div class="news-track" id="newsTrack"><span class="news-empty">A carregar notícias…</span></div></div>
     <span class="news-alerts" id="newsAlerts"></span>
   </div>
 
@@ -15429,10 +15438,25 @@ function newsAgo(ts){
   const m = Math.max(1, Math.round((Date.now() / 1000 - ts) / 60));
   return m < 60 ? 'há ' + m + ' min' : m < 1440 ? 'há ' + Math.round(m / 60) + ' h' : 'há ' + Math.round(m / 1440) + ' d';
 }
+// A faixa é fixa no fundo da janela, alinhada com o painel principal
+function newsPlace(){
+  const box = $('newsTicker'), fr = $('mainFrame');
+  if(!box || !fr) return;
+  const r = fr.getBoundingClientRect();
+  if(r.width){ box.style.left = Math.max(0, r.left) + 'px'; box.style.right = Math.max(0, window.innerWidth - r.right) + 'px'; }
+}
+function newsMessage(text){
+  const track = $('newsTrack');
+  if(!track) return;
+  track.innerHTML = '<span class="news-empty">' + escapeHtml(text) + '</span>';
+  track.style.animation = 'none';
+  $('newsAlerts').textContent = '';
+}
 function newsRender(items){
   const box = $('newsTicker'), track = $('newsTrack');
   if(!box || !track) return;
-  if(!items.length){ box.hidden = true; return; }
+  if(!items.length){ newsMessage('Sem notícias de Bitcoin de momento.'); return; }
+  track.style.animation = '';
   const list = items.filter(i => i.worry).concat(items.filter(i => !i.worry)).slice(0, 25);
   const html = list.map(i => '<a class="news-item' + (i.worry ? ' worry' : '') + '" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">' +
     (i.worry ? '⚠ ' : '') + escapeHtml(i.title) + '<small>' + escapeHtml(i.source) + (i.ts ? ' · ' + newsAgo(i.ts) : '') + '</small></a>').join('<span class="news-sep">•</span>');
@@ -15440,16 +15464,20 @@ function newsRender(items){
   track.style.setProperty('--news-dur', Math.max(60, list.length * 9) + 's');
   const w = list.filter(i => i.worry).length;
   $('newsAlerts').textContent = w ? '⚠ ' + w + ' preocupante' + (w > 1 ? 's' : '') : '';
-  box.hidden = false;
 }
 async function newsFetch(){
   try {
     const res = await fetch(`${API_BASE}/api/btc-news`);
-    if(!res.ok) return;
+    if(!res.ok){ newsMessage(res.status === 404 ? 'Notícias indisponíveis: reinicia o servidor para ativar.' : 'Notícias indisponíveis de momento.'); return; }
     const d = await res.json();
     newsRender(Array.isArray(d.items) ? d.items : []);
-  } catch(e) { /* sem internet ou servidor antigo: o rodapé fica escondido */ }
+  } catch(e) { newsMessage('Notícias indisponíveis: sem ligação ao servidor ou à internet.'); }
 }
+if($('newsTicker')) document.body.appendChild($('newsTicker'));   // fora do painel: assim fica mesmo fixa na janela
+document.body.classList.add('has-news');
+newsPlace();
+window.addEventListener('resize', newsPlace);
+if(window.ResizeObserver && $('mainFrame')) new ResizeObserver(newsPlace).observe($('mainFrame'));
 newsFetch();
 setInterval(newsFetch, 10 * 60 * 1000);
 </script>
