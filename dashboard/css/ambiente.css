@@ -1,0 +1,61 @@
+  /* ---------- Ambiente do edifício: dia e noite, tempo, celebração e vida à volta ---------- */
+  /* O ambiente.js escreve --ho-light (0 noite → 1 dia) e --ho-clear (1 céu limpo → 0 muito nublado) no <svg>. */
+  .ho-sunbeam{opacity:calc(var(--ho-light,1) * var(--ho-clear,1) * .9);}
+  .ho-lampglow{opacity:calc((1 - var(--ho-light,1)) * .95 + .05);}
+  .ho-win-glow{opacity:calc((1 - var(--ho-light,1)) * .85 + .14);transition:fill .6s;}
+  .ho-streetglow,.ho-headlight{opacity:calc(1 - var(--ho-light,1) * 1.25);}
+  .ho-sheen{opacity:calc(var(--ho-light,1) * var(--ho-clear,1) * .55);}
+  .ho-stars-out{opacity:calc(1 - var(--ho-light,1) * 1.5);}
+  .ho-stars-out circle{animation:hoTwinkle 3.4s ease-in-out infinite;}
+  .ho-amb-dark,.ho-amb-tint,.ho-amb-day{transition:opacity 1.2s;}
+  .ho-sun,.ho-moon{transition:opacity 1s;}
+  @keyframes hoTwinkle{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+  /* fundo do palco: céu da hora do dia (só na vista de fora) */
+  .office-stage.is-outside{background:linear-gradient(180deg,var(--ho-sky-top,#03070f) 0%,var(--ho-sky-bot,#08121b) 78%);}
+
+  /* tempo: chuva, neve, relâmpagos (só por cima da vista de fora) */
+  .ho-fx-rain,.ho-fx-snow{display:none;}
+  svg.ho-outside.ho-wx-rain .ho-fx-rain{display:inline;}
+  svg.ho-outside.ho-wx-snow .ho-fx-snow{display:inline;}
+  .ho-ripple{display:none;transform-box:fill-box;transform-origin:center;}
+  svg.ho-wx-rain .ho-ripple{display:inline;animation:hoRipple 1.5s ease-out infinite;}
+  @keyframes hoRipple{0%{transform:scale(.3);opacity:.9;}100%{transform:scale(2.6);opacity:0;}}
+
+  /* vida à volta do edifício */
+  .ho-crate{transition:opacity 2s;}
+  .ho-crate.fade{opacity:0;}
+  .ho-drone-rotor{transform-box:fill-box;transform-origin:center;animation:hoRotorFlick .09s linear infinite;}
+  @keyframes hoRotorFlick{50%{transform:scaleX(.55);}}
+  .ho-drone-led{animation:hoBlinkLed .7s steps(2) infinite;}
+  .ho-heli-light{animation:hoBlinkLed .6s steps(2) infinite;}
+  .ho-rotor-spin{animation:hoSpin .12s linear infinite;}
+  .ho-padlights circle{opacity:.25;}
+  svg.ho-heli-active .ho-padlights circle{animation:hoPadBlink .8s ease-in-out infinite;}
+  @keyframes hoPadBlink{0%,100%{opacity:.2;}50%{opacity:1;}}
+
+  /* celebração de bloco encontrado */
+  .ho-confetti{transform-box:fill-box;transform-origin:center;animation-name:hoConfettiFall;animation-timing-function:linear;animation-iteration-count:infinite;}
+  @keyframes hoConfettiFall{0%{transform:translate(0,0) rotate(0);opacity:1;}100%{transform:translate(var(--sway),var(--fall)) rotate(var(--spin));opacity:.9;}}
+  .ho-firework{transform-box:fill-box;transform-origin:center;opacity:0;animation:hoFirework 1.7s ease-out infinite;}
+  @keyframes hoFirework{0%{transform:scale(.1);opacity:1;}60%{opacity:1;}100%{transform:scale(1.25);opacity:0;}}
+  svg.ho-party .ho-amb-party{animation:hoSiren .7s steps(2,jump-none) infinite;}
+  @keyframes hoSiren{0%{fill:#ff2a2a;opacity:.13;}100%{fill:#2a6bff;opacity:.13;}}
+  svg.ho-party .ho-beacon{animation:hoBlinkLed .25s steps(2) infinite;}
+  svg.ho-party .ho-win-out.blink{animation:hoPulse .35s ease-in-out infinite;}
+  .ho-room.ho-gold .ho-light{fill:#ffd34a !important;fill-opacity:.2 !important;animation:hoPulse .5s ease-in-out infinite;}
+  .ho-tech.cheer .ho-arm-f,.ho-tech.cheer .ho-arm-b{animation:hoCheerArms .32s ease-in-out infinite alternate;}
+  .ho-tech.cheer .ho-body{animation:hoCheerJump .32s ease-in-out infinite alternate;}
+  @keyframes hoCheerArms{from{transform:rotate(-150deg);}to{transform:rotate(-178deg);}}
+  @keyframes hoCheerJump{from{transform:translateY(0);}to{transform:translateY(-2.6px);}}
+  .office-party-banner{position:absolute;left:50%;top:14px;z-index:4;transform:translateX(-50%);padding:9px 20px;border-radius:12px;font-size:15px;font-weight:700;letter-spacing:.04em;white-space:nowrap;
+    color:#1b1300;background:linear-gradient(90deg,#ffd34a,#ffb020);box-shadow:0 0 28px #ffb020aa;pointer-events:none;opacity:0;}
+  .office-party-banner.show{animation:hoBanner 11s ease-out forwards;}
+  @keyframes hoBanner{0%{opacity:0;transform:translateX(-50%) translateY(-18px) scale(.8);}5%{opacity:1;transform:translateX(-50%) scale(1.08);}9%{transform:translateX(-50%) scale(1);}90%{opacity:1;}100%{opacity:0;}}
+  .office-mode-btn.is-icon{margin-left:6px;padding:7px 10px;border-color:var(--line-strong);color:var(--text);box-shadow:none;}
+  .office-modebar{display:flex;align-items:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    .ho-confetti,.ho-firework,.ho-ripple,.ho-stars-out circle{animation:none !important;}
+    .office-party-banner.show{animation:none;opacity:1;}
+  }

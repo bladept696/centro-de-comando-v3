@@ -45,7 +45,9 @@ executável final fica em `dist/CentroDeComando.exe`.
 - `dashboard/css/` — os estilos, por assunto (`base`, `mempool`, `escritorio`, ...)
 - `dashboard/js/` — o código, por assunto. Os ficheiros numerados (`01-` a `19-`)
   são carregados por esta ordem e partilham as mesmas variáveis; os restantes
-  (`login`, `chat`, `noticias`, `escritorio`, `firebase-init`) vêm depois.
+  (`login`, `chat`, `noticias`, `donut3d`, `ambiente`, `escritorio`, `firebase-init`) vêm depois.
+  O `ambiente.js` (dia e noite, tempo, celebração de bloco, carros, drones e helicóptero) tem de
+  carregar antes do `escritorio.js`.
   Para acrescentar um ficheiro novo, junta uma linha `<script src="dashboard/js/...">`
   (ou `<link>` para CSS) ao HTML, na posição certa.
 - `bitminer33-banner.png` — banner do separador "Apoiantes"

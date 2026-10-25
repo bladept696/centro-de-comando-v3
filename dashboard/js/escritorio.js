@@ -403,17 +403,18 @@ function hoBuild(host, list, models){
     `<linearGradient id="hoSky" x1="0" y1="0" x2="0" y2="1"><stop data-k="sky0" offset="0" stop-color="#7cc4ff"/><stop data-k="sky1" offset="1" stop-color="#cfe9ff"/></linearGradient>` +
     `<clipPath id="hoDoorClip"><rect x=".3" y="0" width="${HO.C - 1.8}" height="${HO_CAB_H}"/></clipPath>` +
     `<filter id="hoGlow" x="-2" y="-2" width="5" height="5"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` +
-    `</defs>`;
+    hoAmbientDefs() + `</defs>`;
 
-  let scene = '', hits = '', rails = '';
+  let scene = '', hits = '', rails = '', lightsIn = '';
   const cells = {};
   list.forEach((dev, i) => {
     const f = Math.floor(i / perFloor), c = i % perFloor;
-    if(shown.includes(f)) (cells[f] = cells[f] || []).push(hoRoomSvg(dev, i, f, c, models[i]));
+    if(shown.includes(f)){ (cells[f] = cells[f] || []).push(hoRoomSvg(dev, i, f, c, models[i])); lightsIn += hoRoomLights(f, c, true); }
   });
   for(const f of [...shown].reverse()){
     const z0 = f * FH, side = hoSideRoomSvg(f), rooms = cells[f] || [];
-    for(let c = rooms.length; c < perFloor; c++) rooms.push(hoEmptyRoomSvg(f, c, f * perFloor + c));
+    for(let c = rooms.length; c < perFloor; c++){ rooms.push(hoEmptyRoomSvg(f, c, f * perFloor + c)); lightsIn += hoRoomLights(f, c, true); }
+    lightsIn += hoRoomLights(f, -1, false);
     // laje, corredor e plataforma do elevador
     scene += `<polygon points="${hoPts([[xmin, yc, z0 - 0.6], [xmax, yc, z0 - 0.6], [xmax, yc, z0], [xmin, yc, z0]])}" fill="#0e171e"/>`;
     scene += `<polygon points="${hoPts([[xmax, 0, z0 - 0.6], [xmax, yc, z0 - 0.6], [xmax, yc, z0], [xmax, 0, z0]])}" fill="#111c24"/>`;
@@ -447,7 +448,7 @@ function hoBuild(host, list, models){
   ho.baseVB = [minX - pad, minY - pad, maxX - minX + pad * 2, maxY - minY + pad * 2];
   ho.zoom = { k: 1, cx: 0, cy: 0 };
   const vb = ho.baseVB.map(v => v.toFixed(0)).join(' ');
-  host.innerHTML = `<svg viewBox="${vb}" role="img" aria-label="Escritório: um quarto por máquina">${defs}${scene}${rails}<g class="ho-techs"></g>${hits}</svg>`;
+  host.innerHTML = `<svg viewBox="${vb}" role="img" aria-label="Escritório: um quarto por máquina">${defs}${scene}${rails}<g class="ho-techs"></g>${hoOverlaySvg()}${lightsIn}${hits}</svg>`;
   ho.liftEl = host.querySelector('.ho-lift');
   ho.liftInside = host.querySelector('.ho-lift-inside');
   ho.liftInd = [...host.querySelectorAll('.ho-lift-ind')];
@@ -707,11 +708,12 @@ function hoPlaceTechs(){
     t.flip.setAttribute('transform', t.face < 0 ? 'scale(-1,1)' : '');
     const mode = t.path.length ? 'walk' : t.mode;
     const acting = mode === 'act' && t.act;
-    const speaking = acting && t.act === 'chat' && t.partner && !t.partner.path.length && Math.floor(Date.now() / 2500) % 2 === t.i % 2;
-    const cls = 'ho-tech ' + mode + (acting ? ' a-' + t.act : '') + (speaking ? ' speaking' : '') +
+    const cheer = hoPartyActive() && !t.path.length && ho.mode === 'inside';
+    const speaking = cheer || (acting && t.act === 'chat' && t.partner && !t.partner.path.length && Math.floor(Date.now() / 2500) % 2 === t.i % 2);
+    const cls = 'ho-tech ' + mode + (acting ? ' a-' + t.act : '') + (speaking ? ' speaking' : '') + (cheer ? ' cheer' : '') +
       (mode === 'walk' && t.act === 'mop' ? ' a-mop' : '') + (mode === 'work' && states[t.target] === 'hot' ? ' urgent' : '');
     if(t.el.getAttribute('class') !== cls) t.el.setAttribute('class', cls);
-    if(speaking && !t.saying){ t.bubble.textContent = HO_CHAT[Math.floor(Math.random() * HO_CHAT.length)]; }
+    if(speaking && !t.saying){ t.bubble.textContent = cheer ? '🎉' : HO_CHAT[Math.floor(Math.random() * HO_CHAT.length)]; }
     t.saying = speaking;
     const i = t.target != null ? ho.idx[t.target] : null;
     let tag = t.name;
@@ -778,6 +780,7 @@ function hoUpdateRoom(dev, i, r, state){
   if(!room) return;
   const on = r && r.online;
   room.g.classList.toggle('is-sel', selectedId === dev.id);
+  room.g.classList.toggle('ho-gold', hoPartyActive() && ho.party.devId === String(dev.id));
 
   const light = { ok: ['#000', 0], warn: ['#ffb020', 0.06], warm: ['#ffb020', 0.11], hot: ['#ff2a2a', 0.2], off: ['#000', 0.5], portal: ['#4fd6ff', 0.1], idle: ['#000', 0.25] }[state];
   room.light.setAttribute('fill', light[0]);
@@ -903,6 +906,7 @@ function hoUpdateSky(svg){
   svg.classList.toggle('ho-night', h < 6.5 || h >= 20);
   svg.classList.toggle('ho-wx-rain', /chuv|rain|aguaceir|trovo|storm|drizzle/.test(cond));
   svg.classList.toggle('ho-wx-cloud', /nubl|nuve|cloud|encob|overcast|nevoeiro|fog/.test(cond));
+  hoAmbientUpdate(svg);
 }
 
 // --- Vista de fora: armazém futurista ---
@@ -926,9 +930,9 @@ function hoBuildOutside(host, list){
   ho.perFloor = perFloor; ho.floors = floors; ho.zShift = 0;
   const x0 = -RB - E, x1 = perFloor * R, y0 = 0, y1 = R + C, top = floors * FO + .8, W = x1 - x0, D = y1 - y0;
   const lobbyW = RB + E, doorU = lobbyW / 2;
-  let s = '', hits = '';
+  let s = '', hits = '', glows = '';
   // praça com grelha, caminho iluminado até à porta e plataforma de aterragem
-  const px0 = x0 - 7, px1 = x1 + 8, py0 = -5, py1 = y1 + 13;
+  const px0 = x0 - 7, px1 = x1 + 8, py0 = -5, py1 = y1 + 23;
   let grid = '';
   for(let u = 0; u <= px1 - px0; u += 3) grid += `<line x1="${u}" y1="0" x2="${u}" y2="${py1 - py0}"/>`;
   for(let v = 0; v <= py1 - py0; v += 3) grid += `<line x1="0" y1="${v}" x2="${px1 - px0}" y2="${v}"/>`;
@@ -938,6 +942,10 @@ function hoBuildOutside(host, list){
     [2, 5, 8, 11].map(v => `<path class="ho-out-arrow" d="M1 ${v + 1.2} L1.8 ${v} L2.6 ${v + 1.2}" fill="none" stroke="var(--cyan)" stroke-width=".18"/>`).join('') + `</g>`;
   s += `<g transform="${hoM('floor', x1 + 3.5, y1 + 6.5, -.01)}"><circle r="2.8" fill="#0d1d28" stroke="var(--amber)" stroke-width=".12"/><circle r="2.2" fill="none" stroke="var(--amber)" stroke-width=".05" stroke-dasharray=".3 .3"/>` +
     `<text y=".55" font-size="1.6" font-weight="700" text-anchor="middle" fill="var(--amber)">H</text></g>`;
+  // estrada, candeeiros, luzes do heliporto e vida à volta (ver ambiente.js)
+  const geo = ho.outGeo = { x0, x1, y0, y1, px0, px1, py0, py1, top };
+  const AMB = hoOutsideExtras(geo);
+  s += AMB.ground;
   // sombra do edifício
   s += `<polygon points="${hoPts([[x0, y1, 0], [x1, y1, 0], [x1 + 3, y1 + 2, 0], [x1 + 3, y0 + 2, 0], [x1, y0, 0]])}" fill="#000" opacity=".35"/>`;
   // lado direito (x = x1)
@@ -964,6 +972,7 @@ function hoBuildOutside(host, list){
       const idx = f * perFloor + c, u0 = c * R - x0 + .7, ww = R - 1.4, wt = vt + 1, wh = FO - 2.1;
       if(idx < n){
         const id = escapeHtml(String(list[idx].id));
+        glows += `<rect data-glow="${id}" class="ho-win-glow" x="${u0 - .15}" y="${wt - .15}" width="${ww + .3}" height="${wh + .3}" rx=".2" fill="var(--muted)" filter="url(#hoBlur)"/>`;
         face += `<g data-win="${id}"><rect class="ho-win-out" x="${u0}" y="${wt}" width="${ww}" height="${wh}" fill="var(--muted)" fill-opacity=".25" stroke="var(--muted)" stroke-width=".08"/>` +
           `<line x1="${u0 + .5}" y1="${wt + .4}" x2="${u0 + 2.6}" y2="${wt + .4}" stroke="#ffffff" stroke-width=".07" opacity=".25"/>` +
           `<text x="${u0 + .35}" y="${wt + wh - .35}" font-size=".55" font-weight="700" fill="#d8e6ee">${hoRoomLabel(idx)} · ${escapeHtml(list[idx].name.length > 14 ? list[idx].name.slice(0, 13) + '…' : list[idx].name)}</text></g>`;
@@ -974,7 +983,9 @@ function hoBuildOutside(host, list){
       }
     }
   }
+  face += `<rect class="ho-sheen" x="0" y="0" width="${W}" height="${top}" fill="url(#hoSheenG)" pointer-events="none"/>`;
   s += `<g transform="${hoM('wallY', x0, y1, top)}">${face}</g>`;
+  glows = `<g transform="${hoM('wallY', x0, y1, top)}" pointer-events="none">${glows}</g>`;
   // telhado: laje, painéis solares, ar condicionado, antena e letreiro
   let roof = `<rect width="${W}" height="${D}" fill="#101b24"/><rect x=".25" y=".25" width="${W - .5}" height="${D - .5}" fill="none" stroke="#1f3443" stroke-width=".15"/>`;
   for(let i = 0; i < Math.max(2, Math.floor((W - 8) / 4)); i++) for(let j = 0; j < 2; j++)
@@ -1000,12 +1011,13 @@ function hoBuildOutside(host, list){
   ho.baseVB = [minX - pad, minY - pad, maxX - minX + pad * 2, maxY - minY + pad * 2];
   ho.zoom = { k: 1, cx: 0, cy: 0 };
   const defs = `<defs><linearGradient id="hoOutGlass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10202c"/><stop offset="1" stop-color="#0a141c"/></linearGradient>` +
-    `<filter id="hoGlow" x="-2" y="-2" width="5" height="5"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-  host.innerHTML = `<svg class="ho-outside" viewBox="${ho.baseVB.map(v => v.toFixed(0)).join(' ')}" role="img" aria-label="Edifício visto de fora: uma janela por máquina">${defs}${s}${hits}</svg>`;
+    `<filter id="hoGlow" x="-2" y="-2" width="5" height="5"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>${hoAmbientDefs()}</defs>`;
+  host.innerHTML = `<svg class="ho-outside" viewBox="${ho.baseVB.map(v => v.toFixed(0)).join(' ')}" role="img" aria-label="Edifício visto de fora: uma janela por máquina">${defs}${hoSkyOut(ho.baseVB)}${s}${AMB.life}${hoOverlaySvg()}${AMB.lights}${glows}${hoWxFxSvg()}${hits}</svg>`;
   ho.rooms = {}; ho.liftEl = null; ho.liftInside = null; ho.liftInd = []; ho.liftCable = null; ho.techLayer = null;
   Object.keys(officeEls).forEach(k => delete officeEls[k]);
   ho.techs.forEach(t => { t.el = null; });
-  ho.outWins = {};
+  ho.outWins = {}; ho.outGlows = {};
+  host.querySelectorAll('[data-glow]').forEach(r => { ho.outGlows[r.dataset.glow] = r; });
   host.querySelectorAll('[data-win]').forEach(g => { ho.outWins[g.dataset.win] = g.querySelector('.ho-win-out'); });
   ho.outStats = host.querySelector('[data-k="outStats"]');
 }
@@ -1015,10 +1027,12 @@ function hoUpdateOutside(list, states){
     const k = String(dev.id), st = states[k], r = readings[dev.id], el = ho.outWins && ho.outWins[k];
     if(r && r.online){ on++; if(!r.hashrate_display) gh += Number(r.hashrate) || 0; }
     if(!el) return;
-    const color = OFFICE_STATUS[st].color;
+    const gold = hoPartyActive() && ho.party.devId === k, color = gold ? '#ffd34a' : OFFICE_STATUS[st].color;
     el.setAttribute('fill', color); el.setAttribute('stroke', color);
-    el.setAttribute('fill-opacity', st === 'off' || st === 'idle' ? '.12' : '.3');
-    el.classList.toggle('blink', st === 'hot');
+    el.setAttribute('fill-opacity', gold ? '.6' : st === 'off' || st === 'idle' ? '.12' : '.3');
+    el.classList.toggle('blink', st === 'hot' || gold);
+    const gl = ho.outGlows && ho.outGlows[k];
+    if(gl){ gl.setAttribute('fill', color); gl.style.display = st === 'off' || st === 'idle' ? 'none' : ''; }
     el.parentNode.classList.toggle('is-sel', selectedId === dev.id);
   });
   if(ho.outStats){ const f = formatHashrate(gh); ho.outStats.textContent = `${gh ? f.value + ' ' + f.unit : '—'} · ${on}/${list.length} online`; }
@@ -1029,7 +1043,8 @@ function hoRenderModeBtn(){
   const html = ho.mode === 'outside'
     ? '<button type="button" class="office-mode-btn" data-office="enter">🚪 Entrar no edifício</button>'
     : '<button type="button" class="office-mode-btn" data-office="exit">⬅ Exterior</button>';
-  if(bar.innerHTML !== html) bar.innerHTML = html;
+  const party = '<button type="button" class="office-mode-btn is-icon" data-office="party" title="Ver a celebração de um bloco encontrado (teste)">🎉</button>';
+  if(bar.innerHTML !== html + party) bar.innerHTML = html + party;
 }
 
 function renderOffice(){
@@ -1199,6 +1214,7 @@ function hoZoomAt(factor, px, py){
   });
   stage.addEventListener('click', e => {
     const ob = e.target.closest && e.target.closest('[data-office]');
+    if(ob && ob.dataset.office === 'party'){ hoCelebrate((devices[0] && devices[0].name) || ''); return; }
     if(ob){ hoSetMode(ob.dataset.office === 'enter' ? 'inside' : 'outside'); return; }
     const zb = e.target.closest && e.target.closest('[data-zoom]');
     if(zb){

@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="dashboard/css/widgets.css">
 <link rel="stylesheet" href="dashboard/css/visual-extra.css">
 <link rel="stylesheet" href="dashboard/css/escritorio.css">
+<link rel="stylesheet" href="dashboard/css/ambiente.css">
 <!-- Firebase Realtime Database SDK (compat v9) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -295,6 +296,9 @@
         <option value="matrix" data-i18n="matrix">🌿 Matrix</option>
         <option value="oled" data-i18n="oled_black">⬛ OLED Black</option>
         <option value="glass" data-i18n="tema_glass">💎 Glass 3D</option>
+        <option value="industrial" data-i18n="tema_industrial">🏭 Armazém industrial</option>
+        <option value="space" data-i18n="tema_espaco">🌌 Espaço</option>
+        <option value="night" data-i18n="tema_noite">🌙 Noite (olhos)</option>
       </select>
       <button class="sound-toggle-btn" id="soundToggleBtn" onclick="toggleSound()" aria-label="Ligar ou desligar os alertas sonoros" aria-pressed="true">
         <span data-i18n="som_ativo">🔊 Som Ativo</span>
@@ -540,7 +544,7 @@
           <div class="panel-title"><span>🌐 Mapa da Rede</span><span id="networkMapCount" style="font-size:9px;color:var(--muted-2);">0 dispositivos</span></div>
           <div class="network-map-toolbar">
             <div class="network-map-legend" id="networkMapLegend"></div>
-            <div class="network-map-controls"><select class="network-map-select" id="networkMapMode" aria-label="Colorir por"><option value="status">Cor: estado</option><option value="temp">Cor: temperatura</option><option value="eff">Cor: eficiência (por algoritmo)</option><option value="link">Cor: ligação</option></select><button class="network-map-btn active" id="networkMapAutoBtn">↻ Auto</button><button class="network-map-btn" id="networkMapRefreshBtn">⟳ Atualizar mapa</button><button class="network-map-btn" id="networkMapResetBtn">↺ Reorganizar</button></div>
+            <div class="network-map-controls"><select class="network-map-select" id="networkMapMode" aria-label="Colorir por"><option value="status">Cor: estado</option><option value="temp">Cor: temperatura</option><option value="eff">Cor: eficiência (por algoritmo)</option><option value="link">Cor: ligação</option></select><button class="network-map-btn active" id="networkMap3dBtn" title="Mapa em 3D (chão inclinado com os cartões de pé; até 6 máquinas)">⬡ 3D</button><button class="network-map-btn active" id="networkMapAutoBtn">↻ Auto</button><button class="network-map-btn" id="networkMapRefreshBtn">⟳ Atualizar mapa</button><button class="network-map-btn" id="networkMapResetBtn">↺ Reorganizar</button></div>
           </div>
           <div class="network-map-wrap" id="networkMapWrap"><svg class="network-map-svg" id="networkMapSvg" aria-hidden="true"></svg><div class="network-map-nodes" id="networkMapNodes"></div></div>
           <div class="network-map-foot"><span id="networkMapFootLeft">Clique numa máquina para a selecionar.</span><span id="networkMapFootRight">—</span></div>
@@ -1540,6 +1544,8 @@
 
 <script src="dashboard/js/chat.js"></script>
 <script src="dashboard/js/noticias.js"></script>
+<script src="dashboard/js/donut3d.js"></script>
+<script src="dashboard/js/ambiente.js"></script>
 <script src="dashboard/js/escritorio.js"></script>
 </body>
 </html>

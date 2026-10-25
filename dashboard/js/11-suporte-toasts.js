@@ -80,6 +80,7 @@ function updateNotifBadge() {
 const BLOCK_CONFETTI_COLORS = ['#ffb020', '#21ffb0', '#4fd6ff', '#ff5d5d', '#ffffff'];
 
 function celebrateBlockFound(machineName, diffVal) {
+  try { if(typeof hoCelebrate === 'function') hoCelebrate(machineName); } catch(e) {}   // o Escritório também festeja
   const overlay = $('blockCelebration');
   const layer = $('blockConfettiLayer');
   const machineLabel = $('blockCelebrationMachine');
@@ -575,6 +576,16 @@ function renderHashrateDonut(devicesList){
           <span class="donut-legend-pct">${pct}%</span>
         </div>`;
     }).join('');
+
+  // rosca em 3D (donut3d.js); se não der, fica o anel plano de sempre
+  if(typeof donut3dRender === 'function' && typeof hc3dLoad === 'function' && !hcPerfMode && !HC3D.failed){
+    if(HC3D.ready){
+      try { donut3dRender(row, slices, total, legend, dev => DONUT_COLORS[devicesList.indexOf(dev) % DONUT_COLORS.length]); return; }
+      catch(e) { console.warn('rosca 3D:', e); }
+    } else {
+      hc3dLoad().then(() => renderHashrateDonut(devicesList)).catch(() => {});
+    }
+  }
 
   row.innerHTML = `
     <div class="donut-svg-wrap">

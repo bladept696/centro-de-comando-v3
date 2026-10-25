@@ -7,21 +7,21 @@
   .mp-block{ padding-top:13px; }
   .mp-cube{
     position:relative; width:132px; height:132px; border-radius:2px;
-    background:linear-gradient(170deg, #0f1922, #070c11);
-    border:1px solid #1f303c;
+    background:linear-gradient(170deg, color-mix(in srgb, var(--panel-2) 78%, #000), color-mix(in srgb, var(--deep) 55%, #000));
+    border:1px solid var(--line-strong);
     box-shadow:0 16px 26px -16px #000;
     transition:transform .3s cubic-bezier(.16,1,.3,1), --fill-h 1.1s cubic-bezier(.22,1,.36,1);
   }
   .mp-cube::before{
     content:''; position:absolute; left:-1px; right:-1px; top:-13px; height:12px;
     transform-origin:bottom left; transform:skewX(-45deg);
-    background:linear-gradient(90deg, #142029, #1b2b37); border:1px solid #1f303c; border-bottom:none;
+    background:linear-gradient(90deg, color-mix(in srgb, var(--panel-2) 70%, #000), color-mix(in srgb, var(--panel-2) 95%, #fff)); border:1px solid var(--line-strong); border-bottom:none;
   }
   .mp-cube::after{
     content:''; position:absolute; top:-1px; bottom:-1px; right:-14px; width:12px;
     transform-origin:top left; transform:skewY(-45deg);
-    background:linear-gradient(to top, color-mix(in srgb, var(--liq, #3bb7a8) 32%, #060a0e) 0 var(--fill-h), #0a1117 var(--fill-h));
-    border:1px solid #1f303c; border-left:none;
+    background:linear-gradient(to top, color-mix(in srgb, var(--liq, #3bb7a8) 32%, #060a0e) 0 var(--fill-h), color-mix(in srgb, var(--deep) 70%, #000) var(--fill-h));
+    border:1px solid var(--line-strong); border-left:none;
   }
   .mp-block:hover .mp-cube{ transform:translateY(-4px); }
   .mp-fill{
@@ -41,7 +41,7 @@
   .mp-foot .mp-pool{ color:var(--cyan); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .mp-foot img{ width:16px; height:16px; border-radius:4px; background:#081119; object-fit:contain; flex:0 0 auto; }
   .mp-time{ font-size:10px; color:var(--muted-2); }
-  .mp-pending .mp-cube{ border-style:dashed; background:linear-gradient(170deg, #0b141b, #060a0e); }
+  .mp-pending .mp-cube{ border-style:dashed; background:linear-gradient(170deg, color-mix(in srgb, var(--panel) 80%, #000), color-mix(in srgb, var(--deep) 60%, #000)); }
   .mp-pending .mp-cube::before, .mp-pending .mp-cube::after{ opacity:.75; }
   .mp-pending .mp-foot{ color:var(--amber); font-weight:600; }
   .mp-pending.mp-next .mp-cube{ border-color:var(--amber); animation:mpNextPulse 2.4s ease-in-out infinite; }

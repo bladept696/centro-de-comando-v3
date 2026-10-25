@@ -262,6 +262,9 @@ let nmMenuEl = null;
 let nmPulseCount = 0;
 const NM_POS_KEY = 'networkMapPositions_v2';   // v2: disposição compacta em colunas
 const NM_MODE_KEY = 'networkMapMode_v1';
+const NM_3D_KEY = 'networkMap3d_v1';
+let nm3d = true;   // mapa em 3D: chão inclinado com os cartões de pé
+try { if (localStorage.getItem(NM_3D_KEY) === '0') nm3d = false; } catch(e) {}
 try { nmPos = JSON.parse(localStorage.getItem(NM_POS_KEY) || '{}') || {}; } catch(e) { nmPos = {}; }
 try { const m = localStorage.getItem(NM_MODE_KEY); if (['status','temp','eff','link'].includes(m)) networkMapMode = m; } catch(e) {}
 
@@ -352,10 +355,10 @@ function nmGrid(count, idx, W, nodeW){
 // Disposição compacta da esquerda para a direita, em colunas:
 // centro → router → máquinas → pools → rede Bitcoin. A altura só cresce
 // com a coluna mais comprida. Em ecrãs estreitos usa a disposição vertical.
-function nmLayout(W, list, pools, ghosts){
-  const ROW = 118, TOP = 66, pos = {};   // cartões com ~106 px de altura
+function nmLayout(W, list, pools, ghosts, use3d){
+  const ROW = use3d ? 215 : 118, TOP = use3d ? 80 : 66, pos = {};   // cartões com ~106 px de altura
   const machines = list.map(d => 'm:' + d.id).concat(ghosts.map(g => 'g:' + g.ip));
-  const mCols = machines.length > 12 ? 3 : machines.length > 6 ? 2 : 1;
+  const mCols = use3d ? (machines.length > 3 ? 2 : 1) : (machines.length > 12 ? 3 : machines.length > 6 ? 2 : 1);
   // sem largura para colunas de pelo menos 200 px, volta à disposição vertical
   if (W < 190 + (4 + (mCols - 1) * 0.75) * 200) return nmLayoutVertical(W, list, pools, ghosts);
   const mRows = Math.max(1, Math.ceil(machines.length / mCols));
@@ -414,10 +417,32 @@ function nmLayoutVertical(W, list, pools, ghosts){
   return { pos, H: Math.max(560, endY + 90) };
 }
 
+// --- Mapa em 3D: o mapa fica num "palco" com perspetiva e o chão é inclinado ---
+const NM_RX = 50;   // inclinação do chão, em graus
+function nmStage(wrap){
+  let st = wrap.parentElement;
+  if (st && st.classList.contains('nm-stage')) return st;
+  st = document.createElement('div'); st.className = 'nm-stage';
+  wrap.parentNode.insertBefore(st, wrap); st.appendChild(wrap);
+  // paralaxe suave: o ponto de vista segue o rato
+  st.addEventListener('pointermove', e => { if (!st.classList.contains('nm-3d')) return; const r = st.getBoundingClientRect(); st.style.setProperty('--nm-po-x', (30 + 40 * (e.clientX - r.left) / Math.max(1, r.width)).toFixed(1) + '%'); });
+  st.addEventListener('pointerleave', () => st.style.removeProperty('--nm-po-x'));
+  return st;
+}
+function nmApply3d(wrap, H, on){
+  const st = nmStage(wrap);
+  st.classList.toggle('nm-3d', on); wrap.classList.toggle('nm-3d', on);
+  if (on) {
+    const c = Math.cos(NM_RX * Math.PI / 180), top = 135;
+    st.style.setProperty('--nm-rx', NM_RX + 'deg');
+    st.style.height = Math.round(top + H * c + 24) + 'px';
+    wrap.style.marginTop = Math.round(top - (H - H * c) / 2) + 'px';
+  } else { st.style.height = ''; wrap.style.marginTop = ''; }
+}
 function nmBox(id, W, H){
   const n = nmNodes.get(id); if (!n) return null;
-  const el = n.el;
-  return { x: parseFloat(el.style.left) / 100 * W, y: parseFloat(el.style.top) / 100 * H, w: el.offsetWidth, h: el.offsetHeight };
+  const el = n.el, flat = $('networkMapWrap') && $('networkMapWrap').classList.contains('nm-3d');
+  return { x: parseFloat(el.style.left) / 100 * W, y: parseFloat(el.style.top) / 100 * H, w: flat ? 0 : el.offsetWidth, h: flat ? 0 : el.offsetHeight };
 }
 function nmPath(a, b){
   const dy = b.y - a.y, dx = b.x - a.x;
@@ -521,7 +546,8 @@ function nmBindNode(el){
   el.addEventListener('pointerdown', e => {
     if (e.target.closest && e.target.closest('button')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    st = { id: el.dataset.mapId, x: e.clientX, y: e.clientY, moved: false, pid: e.pointerId };
+    st = { id: el.dataset.mapId, x: e.clientX, y: e.clientY, moved: false, pid: e.pointerId,
+           dy: $('networkMapWrap').classList.contains('nm-3d') ? el.getBoundingClientRect().bottom - e.clientY : 0 };
     if (e.pointerType !== 'mouse') {
       const cx = e.clientX, cy = e.clientY;
       lp = setTimeout(() => { if (st && !st.moved) { st = null; nmOpenMenu(el, cx, cy); } }, 550);
@@ -537,7 +563,7 @@ function nmBindNode(el){
     }
     const r = $('networkMapWrap').getBoundingClientRect();
     const fx = Math.min(0.94, Math.max(0.06, (e.clientX - r.left) / r.width));
-    const fy = Math.min(0.97, Math.max(0.04, (e.clientY - r.top) / r.height));
+    const fy = Math.min(0.97, Math.max(0.04, (e.clientY + st.dy - r.top) / r.height));
     nmPos[st.id] = { x: fx, y: fy };
     el.style.left = (fx * 100) + '%'; el.style.top = (fy * 100) + '%';
     nmUpdateEdgeGeometry();
@@ -676,11 +702,13 @@ function renderNetworkMap(){
   });
   const hasSha = list.some(d => nmIsSha(readings[d.id]));
 
-  const L = nmLayout(W, list, pools, ghosts);
+  const use3d = nm3d && W >= 1000 && list.length + ghosts.length <= 6;   // com mais máquinas fica o mapa plano e compacto
+  const L = nmLayout(W, list, pools, ghosts, use3d);
   wrap.classList.toggle('nm-cols', !!L.cols);
   const H = L.H;
   wrap.style.minHeight = '0';
   wrap.style.height = H + 'px';
+  nmApply3d(wrap, H, use3d && !!L.cols);
   const place = (id, el) => {
     const c = nmPos[id] || { x: L.pos[id].x, y: L.pos[id].y / H };
     el.style.left = (c.x * 100) + '%';
@@ -837,6 +865,15 @@ function initNetworkMap(){
     if (networkMapAuto) renderNetworkMap();
   });
   $('networkMapResetBtn')?.addEventListener('click', () => { nmPos = {}; nmSavePos(); renderNetworkMap(); });
+  const b3 = $('networkMap3dBtn');
+  if (b3) {
+    b3.classList.toggle('active', nm3d);
+    b3.addEventListener('click', () => {
+      nm3d = !nm3d; b3.classList.toggle('active', nm3d);
+      try { localStorage.setItem(NM_3D_KEY, nm3d ? '1' : '0'); } catch(e) {}
+      renderNetworkMap();
+    });
+  }
   const sel = $('networkMapMode');
   if (sel) {
     sel.value = networkMapMode;

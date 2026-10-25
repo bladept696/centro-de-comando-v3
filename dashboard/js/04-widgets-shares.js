@@ -484,6 +484,7 @@ function toggleSound() {
 function setTheme(themeName){
   document.body.dataset.theme = themeName;
   try { localStorage.setItem(THEME_KEY, themeName); } catch(e){}
+  if(typeof bodyPolyApplyTheme === 'function') bodyPolyApplyTheme();
   const sel = $('themeSelect');
   if(sel && sel.value !== themeName) sel.value = themeName;
 }
@@ -492,6 +493,7 @@ function loadTheme(){
   let theme = 'default';
   try { theme = localStorage.getItem(THEME_KEY) || 'default'; } catch(e){}
   document.body.dataset.theme = theme;
+  if(typeof bodyPolyApplyTheme === 'function') bodyPolyApplyTheme();
   const sel = $('themeSelect');
   if(sel) sel.value = theme;
 }

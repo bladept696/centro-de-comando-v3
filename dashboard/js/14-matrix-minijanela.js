@@ -299,10 +299,32 @@ window.addEventListener('resize', () => { initFooterMatrix(); });
 let bodyMatrixAnimId = null;
 let bodyMatrixLastTs = 0;
 const BODY_POLY_CELL = 110;
-const BODY_POLY_BLUE_DARK  = [8, 20, 40];
-const BODY_POLY_BLUE_MID   = [18, 60, 110];
-const BODY_POLY_BLUE_LIGHT = [40, 120, 170];
-const BODY_POLY_GOLD = [212, 175, 90];
+let BODY_POLY_BLUE_DARK  = [8, 20, 40];
+let BODY_POLY_BLUE_MID   = [18, 60, 110];
+let BODY_POLY_BLUE_LIGHT = [40, 120, 170];
+let BODY_POLY_GOLD = [212, 175, 90];
+// Lê uma cor CSS (#rgb, #rrggbb, #rrggbbaa ou rgb()/rgba()) como [r, g, b]
+function bodyPolyParse(c){
+  c = String(c || '').trim();
+  let m;
+  if((m = c.match(/^#([0-9a-f]{3})$/i))) return [...m[1]].map(h => parseInt(h + h, 16));
+  if((m = c.match(/^#([0-9a-f]{6})/i))) return [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
+  if((m = c.match(/rgba?\(\s*(\d+)[ ,]+(\d+)[ ,]+(\d+)/i))) return [+m[1], +m[2], +m[3]];
+  return null;
+}
+// Cores dos polígonos a partir do tema atual; o tema Padrão mantém o azul e dourado originais
+function bodyPolyApplyTheme(){
+  const theme = document.body.dataset.theme || 'default';
+  if(theme === 'default'){ BODY_POLY_BLUE_DARK = [8, 20, 40]; BODY_POLY_BLUE_MID = [18, 60, 110]; BODY_POLY_BLUE_LIGHT = [40, 120, 170]; BODY_POLY_GOLD = [212, 175, 90]; return; }
+  const cs = getComputedStyle(document.body), v = n => bodyPolyParse(cs.getPropertyValue(n));
+  const mix = (a, b, t) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
+  const bg = v('--bg'), g1 = v('--glow-1'), ls = v('--line-strong'), tx = v('--text'), am = v('--amber');
+  if(!bg || !g1 || !ls || !tx || !am) return;
+  BODY_POLY_BLUE_DARK = mix(bg, g1, .35);
+  BODY_POLY_BLUE_MID = mix(g1, ls, .6);
+  BODY_POLY_BLUE_LIGHT = mix(BODY_POLY_BLUE_MID, tx, .22);
+  BODY_POLY_GOLD = am;
+}
 let bodyPolyPoints = [];
 let bodyPolyTriangles = [];
 let bodyPolyW = 0, bodyPolyH = 0;

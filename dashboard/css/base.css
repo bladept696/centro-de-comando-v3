@@ -116,6 +116,97 @@
     --frame-top: #101f47;
     --header-top: #16295c;
   }
+  /* Tema "Armazém industrial": cinzentos de betão e metal, amarelo de segurança */
+  body[data-theme="industrial"]{
+    --bg: #0d0e10;
+    --panel: #17191c;
+    --panel-2: #1e2124;
+    --line: #ffffff10;
+    --line-strong: #3b4046;
+    --green: #9be15d;
+    --green-dim: #9be15d55;
+    --amber: #ffb81c;
+    --amber-dim: #ffb81c44;
+    --red: #ff5a4a;
+    --cyan: #59c2d6;
+    --text: #e9e7e2;
+    --muted: #9a968c;
+    --muted-2: #6b685f;
+    --glow-1: #2a2417;
+    --glow-2: #1c1f22;
+    --deep: #111315;
+    --frame-top: #15171a;
+    --header-top: #1b1e21;
+    background:
+      repeating-linear-gradient(135deg, #ffffff07 0 1px, transparent 1px 7px),
+      radial-gradient(1200px 600px at 15% -10%, var(--glow-1) 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, var(--glow-2) 0%, transparent 55%),
+      var(--bg);
+  }
+
+  /* Tema "Espaço": roxos e azuis profundos, com estrelas ao fundo */
+  body[data-theme="space"]{
+    --bg: #03030a;
+    --panel: #0b0a1e;
+    --panel-2: #11102b;
+    --line: #6a5cff22;
+    --line-strong: #3a3380;
+    --green: #6fffd0;
+    --green-dim: #6fffd055;
+    --amber: #ffd37a;
+    --amber-dim: #ffd37a44;
+    --red: #ff6b8a;
+    --cyan: #7bd8ff;
+    --text: #ecebff;
+    --muted: #8f8ec4;
+    --muted-2: #5b5a92;
+    --glow-1: #241a5e;
+    --glow-2: #0e2a52;
+    --deep: #070618;
+    --frame-top: #0c0b24;
+    --header-top: #12113a;
+    background:
+      radial-gradient(1.3px 1.3px at 8% 14%, #fff 50%, transparent 55%),
+      radial-gradient(1px 1px at 17% 62%, #cfd8ff 50%, transparent 55%),
+      radial-gradient(1.6px 1.6px at 26% 31%, #fff 50%, transparent 55%),
+      radial-gradient(1px 1px at 34% 82%, #bcd0ff 50%, transparent 55%),
+      radial-gradient(1.2px 1.2px at 43% 9%, #fff 50%, transparent 55%),
+      radial-gradient(1px 1px at 52% 47%, #d9ccff 50%, transparent 55%),
+      radial-gradient(1.5px 1.5px at 61% 73%, #fff 50%, transparent 55%),
+      radial-gradient(1px 1px at 69% 22%, #cfd8ff 50%, transparent 55%),
+      radial-gradient(1.3px 1.3px at 77% 57%, #fff 50%, transparent 55%),
+      radial-gradient(1px 1px at 85% 88%, #bcd0ff 50%, transparent 55%),
+      radial-gradient(1.4px 1.4px at 91% 35%, #fff 50%, transparent 55%),
+      radial-gradient(1px 1px at 96% 66%, #d9ccff 50%, transparent 55%),
+      radial-gradient(1px 1px at 4% 90%, #fff 50%, transparent 55%),
+      radial-gradient(1200px 600px at 15% -10%, var(--glow-1) 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, var(--glow-2) 0%, transparent 55%),
+      var(--bg);
+    background-attachment: fixed;
+  }
+
+  /* Tema "Noite": tons quentes e sem azul, para os olhos à noite */
+  body[data-theme="night"]{
+    --bg: #0c0805;
+    --panel: #16100a;
+    --panel-2: #1d150d;
+    --line: #ffb45422;
+    --line-strong: #5a4128;
+    --green: #a5d66f;
+    --green-dim: #a5d66f55;
+    --amber: #ffb454;
+    --amber-dim: #ffb45444;
+    --red: #ff7a5c;
+    --cyan: #e6b87a;
+    --text: #ecdcc3;
+    --muted: #a58f72;
+    --muted-2: #756450;
+    --glow-1: #2a1a0c;
+    --glow-2: #1f1408;
+    --deep: #100b07;
+    --frame-top: #140e08;
+    --header-top: #1a120a;
+  }
   *{box-sizing:border-box;}
   body{
     margin:0;
@@ -403,7 +494,7 @@
 
   .nav-menu {
     position: relative;
-    background: #081119;
+    background: color-mix(in srgb, var(--deep) 85%, #000);
     border-bottom: 1px solid var(--line-strong);
     padding: 10px 22px;
   }
@@ -458,7 +549,7 @@
     left: 22px;
     right: 22px;
     max-width: 340px;
-    background: #0b1622;
+    background: var(--panel);
     border: 1px solid var(--line-strong);
     border-radius: 10px;
     padding: 6px;
