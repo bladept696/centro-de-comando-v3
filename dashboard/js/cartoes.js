@@ -47,6 +47,8 @@ function mcModelOf(dev, r){
   if(/nerd|qaxe|octaxe/.test(s)) return ['NerdQAxe', '⛏️'];
   return ['Bitaxe', '🔹'];
 }
+// nome da interface web de cada tipo de máquina
+function mcOsName(model){ return model === 'NerdQAxe' ? 'NerdOS' : model === 'Bitaxe' ? 'AxeOS' : 'Interface'; }
 function mcHashText(r){
   if(!r || !r.online) return ['—', ''];
   if(r.hashrate_display){ const m = String(r.hashrate_display).match(/^([\d.,]+)\s*(.*)$/); return m ? [m[1], m[2]] : [r.hashrate_display, '']; }
@@ -260,7 +262,8 @@ function mcUpdateCard(el, dev, r, st, i){
     const b = el.querySelector('[data-a="' + slot + '"]'), prof = typeof getQuickSlot === 'function' ? getQuickSlot(slot) : null;
     if(b){ b.hidden = !prof || !on; if(prof) b.title = 'Aplicar "' + prof.name + '"'; }
   });
-  el.querySelector('[data-a="web"]').hidden = !dev.ip;
+  const web = el.querySelector('[data-a="web"]'), os = mcOsName(model);
+  web.hidden = !dev.ip; web.textContent = '↗ ' + os; web.title = 'Abrir a interface da máquina (' + os + ')';
 }
 
 // ---- tabela ----
@@ -282,7 +285,7 @@ function mcTableHtml(rows){
       '<td>' + (on && r.rssi != null ? r.rssi + ' dBm' : '—') + '</td><td>' + (on && r.poolPing != null ? Math.round(r.poolPing) + ' ms' : '—') + '</td>' +
       '<td class="' + (sh > 20 && rej > 2 ? 'warn' : '') + '">' + (sh > 20 ? rej.toFixed(1) + '%' : '—') + '</td>' +
       '<td>' + (on ? formatUptime(r.uptime).text : '—') + '</td>' +
-      '<td class="mc-tact"><button type="button" data-a="web" title="Abrir AxeOS"' + (dev.ip ? '' : ' hidden') + '>↗</button><button type="button" data-a="restart" title="Reiniciar">⟲</button><button type="button" data-a="remove" class="mc-danger" title="Remover">✕</button></td></tr>';
+      '<td class="mc-tact"><button type="button" data-a="web" title="Abrir a interface da máquina"' + (dev.ip ? '' : ' hidden') + '>↗</button><button type="button" data-a="restart" title="Reiniciar">⟲</button><button type="button" data-a="remove" class="mc-danger" title="Remover">✕</button></td></tr>';
   });
   return html + '</tbody></table>';
 }
