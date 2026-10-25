@@ -652,6 +652,7 @@ function renderNetworkMap(){
     nmNodes.clear(); nmEdges.clear(); svg.innerHTML = '';
     nodesEl.innerHTML = '<div class="network-map-empty">Nenhuma máquina registada.<br>Adiciona máquinas para construir o mapa da rede.</div>';
     wrap.style.height = ''; wrap.style.minHeight = '';
+    nmApply3d(wrap, 0, false);   // sem máquinas não há mapa para inclinar
     if (footL) footL.textContent = 'Sem dispositivos.';
     if (footR) footR.textContent = '—';
     return;

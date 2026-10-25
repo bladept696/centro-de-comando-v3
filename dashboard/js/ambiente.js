@@ -107,14 +107,16 @@ function hoAmbientUpdate(svg){
   if(hoPartyActive() && !svg.querySelector('.ho-fx')) hoPartyFx(svg);   // o edifício foi redesenhado durante a festa
   hoLifeSync(svg);
 }
-// Relâmpagos ocasionais quando há trovoada
-let hoFlashTimer = 0;
+// Relâmpagos ocasionais quando há trovoada (agenda uma só vez por desenho: as atualizações não o cancelam)
+let hoFlashTimer = 0, hoFlashSvg = null;
 function hoWeatherFlash(svg, fx){
-  clearTimeout(hoFlashTimer);
-  if(!fx.thunder || !svg.classList.contains('ho-outside') || hoReducedMotion()) return;
+  const want = !!fx.thunder && svg.classList.contains('ho-outside') && !hoReducedMotion();
+  if(!want){ clearTimeout(hoFlashTimer); hoFlashTimer = 0; hoFlashSvg = null; return; }
+  if(hoFlashSvg === svg && hoFlashTimer) return;
+  clearTimeout(hoFlashTimer); hoFlashSvg = svg;
   const flash = () => {
     const el = svg.querySelector('.ho-fx-flash');
-    if(!el || !el.isConnected) return;
+    if(!el || !el.isConnected){ hoFlashTimer = 0; hoFlashSvg = null; return; }
     el.style.transition = 'none'; el.setAttribute('opacity', '.55');
     requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transition = 'opacity .5s ease-out'; el.setAttribute('opacity', '0'); }));
     hoFlashTimer = setTimeout(flash, 5000 + Math.random() * 9000);
