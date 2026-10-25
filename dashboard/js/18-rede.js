@@ -557,7 +557,7 @@ function nmOpenMenu(el, cx, cy){
   const items = [];
   if (el.dataset.type === 'machine' && dev) {
     items.push(['🎯 Selecionar', () => nmSelect(dev)]);
-    if (dev.ip) items.push(['↗ Abrir AxeOS', () => window.open('http://' + dev.ip, '_blank', 'noopener')]);
+    if (dev.ip) items.push(['↗ Abrir ' + (typeof mcModelOf === 'function' ? mcOsName(mcModelOf(dev, readings[dev.id])[0]) : 'AxeOS'), () => window.open('http://' + dev.ip, '_blank', 'noopener')]);
     if (dev.ip) items.push(['⧉ Copiar IP', () => { try { navigator.clipboard.writeText(dev.ip); } catch(e) {} }]);
     [['eco', '🌿'], ['turbo', '🚀']].forEach(([slot, icon]) => {
       const prof = nmSafe(() => getQuickSlot(slot), null);
