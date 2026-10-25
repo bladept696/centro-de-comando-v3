@@ -17,7 +17,7 @@ const MC_STATUS = {
 const MC_FILTERS = [['all', 'Todas'], ['ok', 'A trabalhar'], ['warn', 'Atenção'], ['hot', 'Alarme'], ['off', 'Offline']];
 const MC_SORTS = [['status', 'Problemas primeiro'], ['name', 'Nome'], ['hash', 'Hashrate'], ['temp', 'Temperatura'], ['eff', 'Eficiência']];
 const mc = { prefs: { filter: 'all', sort: 'status', view: 'cards', q: '', fx: 'auto', group: '', groupBy: false, range: 24 }, els: new Map(), heads: new Map(), open: new Set(), picked: new Set(), collapsed: new Set(), visible: [],
-  prev: {}, since: {}, log: [], recordUntil: {} };
+  prev: {}, since: {}, log: [], recordUntil: {}, rank: {} };
 try { Object.assign(mc.prefs, JSON.parse(localStorage.getItem(MC_KEY) || '{}')); } catch(e) {}
 try { mc.log = JSON.parse(localStorage.getItem(MC_LOG_KEY) || '[]').filter(e => new Date(e.t).toDateString() === new Date().toDateString()); } catch(e) { mc.log = []; }
 
@@ -121,9 +121,10 @@ function mcCardEl(dev){
   el.dataset.id = dev.id;
   el.innerHTML =
     '<header class="mc-head"><label class="mc-pick" title="Selecionar para ações em grupo"><input type="checkbox" data-a="pick" aria-label="Selecionar máquina"></label><span class="mc-dot" data-f="dot"></span>' +
-      '<div class="mc-title"><b data-f="name"></b><small data-f="ip"></small></div>' +
+      '<div class="mc-title"><b data-f="name"></b><small data-f="ip" data-a="copyip" title="Clique para copiar o IP"></small></div>' +
+      '<button type="button" class="mc-star" data-a="pin" title="Fixar no topo" aria-label="Fixar no topo">☆</button>' +
       '<span class="mc-model" data-f="model"></span></header>' +
-    '<div class="mc-status-row"><span class="mc-status" data-f="status"></span><span class="mc-algo" data-f="algo"></span><span class="mc-gchip" data-f="group" hidden></span></div>' +
+    '<div class="mc-status-row"><span class="mc-status" data-f="status"></span><span class="mc-algo" data-f="algo"></span><span class="mc-gchip" data-f="group" hidden></span><span class="mc-notechip" data-f="notechip" hidden>📝</span></div>' +
     '<div class="mc-hero"><div class="mc-hash"><b data-f="hash">—</b><small data-f="unit"></small><i class="mc-trend" data-f="trend"></i></div>' +
       '<svg class="mc-spark" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"><path class="area" data-f="area"/><path class="line" data-f="line"/><circle class="live" data-f="live" r="2.6"/></svg></div>' +
     '<div class="mc-alerts" data-f="alerts"></div>' +
@@ -199,6 +200,11 @@ function mcUpdateCard(el, dev, r, st, i){
   el.classList.toggle('is-off', !on);
   const pk = el.querySelector('[data-a="pick"]');
   if(pk){ pk.checked = mc.picked.has(dev.id); el.classList.toggle('is-pick', pk.checked); }
+  const star = el.querySelector('[data-a="pin"]');
+  star.textContent = dev.pin ? '★' : '☆'; star.classList.toggle('on', !!dev.pin); star.title = dev.pin ? 'Deixar de fixar' : 'Fixar no topo';
+  el.classList.toggle('is-pinned', !!dev.pin);
+  const nc = el.querySelector('[data-f="notechip"]');
+  nc.hidden = !dev.note; nc.title = dev.note || '';
   const gc = el.querySelector('[data-f="group"]');
   gc.hidden = !dev.group; mcSet(el, 'group', dev.group ? '🗂 ' + dev.group : '');
   mcSet(el, 'name', dev.name || ('Máquina ' + (i + 1)));
@@ -218,7 +224,7 @@ function mcUpdateCard(el, dev, r, st, i){
   el.querySelector('[data-f="line"]').setAttribute('d', sp.line);
   el.querySelector('[data-f="area"]').setAttribute('d', sp.area);
   const lv = el.querySelector('[data-f="live"]'); lv.setAttribute('cx', sp.x.toFixed(1)); lv.setAttribute('cy', sp.y.toFixed(1));
-  const al = mcAlerts(dev, r, st, trend).join('');
+  const al = mcAlerts(dev, r, st, trend).join('') + (mc.rank[dev.id] || []).map(t => '<span class="mc-chip rank">' + t + '</span>').join('');
   const aln = el.querySelector('[data-f="alerts"]');
   if(aln.dataset.s !== al){ aln.dataset.s = al; aln.innerHTML = al; }
   // medidores
@@ -248,13 +254,18 @@ function mcUpdateCard(el, dev, r, st, i){
   const setHtml = (n, h) => { if(n && n.dataset.s !== h){ n.dataset.s = h; n.innerHTML = h; } };
   if(mc.open.has(dev.id)){
     if(!more.dataset.shell){
-      more.innerHTML = '<div class="mc-hist"></div><div class="mc-more-grid"></div><label class="mc-grp"><span>Grupo</span><input type="text" list="mcGroupList" data-a="group" placeholder="sem grupo" maxlength="24"></label>';
+      more.innerHTML = '<div class="mc-hist"></div><div class="mc-more-grid"></div>' +
+        '<div class="mc-edit"><label class="mc-grp"><span>Nome</span><input type="text" data-a="name" maxlength="40"></label><label class="mc-grp"><span>IP</span><input type="text" data-a="ip" maxlength="60" inputmode="decimal"></label></div>' +
+        '<label class="mc-grp"><span>Grupo</span><input type="text" list="mcGroupList" data-a="group" placeholder="sem grupo" maxlength="24"></label>' +
+        '<label class="mc-grp mc-noteedit"><span>Nota</span><textarea data-a="note" rows="2" maxlength="300" placeholder="ex.: pasta térmica trocada em 12/10"></textarea></label>';
       more.dataset.shell = '1';
     }
     setHtml(more.querySelector('.mc-hist'), mcHistoryHtml(dev));
     setHtml(more.querySelector('.mc-more-grid'), mcMoreHtml(dev, r));
-    const gi = more.querySelector('[data-a="group"]');
-    if(document.activeElement !== gi) gi.value = dev.group || '';
+    [['group', dev.group], ['name', dev.name], ['ip', dev.ip], ['note', dev.note]].forEach(([k, v]) => {
+      const inp = more.querySelector('[data-a="' + k + '"]');
+      if(inp && document.activeElement !== inp) inp.value = v || '';
+    });
   } else if(more.dataset.shell){ more.innerHTML = ''; delete more.dataset.shell; }
   el.querySelector('[data-a="more"]').textContent = mc.open.has(dev.id) ? '▴ Menos' : '⋯ Detalhes';
   // atalhos de perfis só aparecem se existirem
@@ -300,13 +311,15 @@ function mcBuildToolbar(){
   tb.insertAdjacentHTML('afterend', '<div class="mc-bulk" id="mcBulk" hidden></div><datalist id="mcGroupList"></datalist>');
   tb.innerHTML =
     '<div class="mc-chips" id="mcChips"></div>' +
-    '<div class="mc-tools"><input type="search" id="mcSearch" placeholder="Pesquisar nome, IP ou pool" aria-label="Pesquisar máquinas">' +
+    '<div class="mc-tools"><input type="search" id="mcSearch" placeholder="Pesquisar (atalho: /)" aria-label="Pesquisar máquinas">' +
     '<select id="mcGroup" aria-label="Filtrar por grupo"></select>' +
     '<select id="mcSort" aria-label="Ordenar por">' + MC_SORTS.map(([k, l]) => '<option value="' + k + '">' + l + '</option>').join('') + '</select>' +
+    '<button type="button" class="mc-fx-btn" id="mcExport" title="Descarregar as máquinas e as leituras atuais (CSV)">⬇ Exportar</button>' +
     '<button type="button" class="mc-fx-btn" id="mcGroupBy" title="Mostrar as máquinas separadas por grupo">🗂 Agrupar</button>' +
     '<button type="button" class="mc-fx-btn" id="mcFx" title="Efeitos 3D nos cartões">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="Cartões">▦</button><button type="button" data-v="compact" title="Compacto">▥</button><button type="button" data-v="table" title="Tabela">☰</button></div></div>';
   $('mcSearch').value = mc.prefs.q || '';
   $('mcFx').addEventListener('click', () => { mc.prefs.fx = !mcFxOn(); mcSavePrefs(); renderMachineCards(); });
+  $('mcExport').addEventListener('click', () => { if(typeof mcExportCsv === 'function') mcExportCsv(); });
   $('mcGroupBy').addEventListener('click', () => { mc.prefs.groupBy = !mc.prefs.groupBy; mcSavePrefs(); renderMachineCards(); });
   $('mcSort').value = mc.prefs.sort;
   $('mcSearch').addEventListener('input', e => { mc.prefs.q = e.target.value; mcSavePrefs(); renderMachineCards(); });
@@ -344,6 +357,17 @@ function mcRenderLog(){
   ul.dataset.sig = sig;
   ul.innerHTML = items.length ? items.map(e => '<li class="' + e.kind + '"' + (e.id != null ? ' data-jump="' + escapeHtml(String(e.id)) + '"' : '') + '><time>' +
     new Date(e.t).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) + '</time><span>' + escapeHtml(e.text) + '</span></li>').join('') : '<li class="muted"><span>Sem eventos hoje. Tudo calmo.</span></li>';
+}
+
+// ---- selos: a mais rápida e a mais eficiente (só com 3 ou mais máquinas SHA-256 online) ----
+function mcRanks(list){
+  mc.rank = {};
+  const on = list.filter(d => { const r = readings[d.id]; return r && r.online && algoGroupOf(r) === 'sha256'; });
+  if(on.length < 3) return;
+  const fast = on.reduce((a, b) => (Number(readings[b.id].hashrate) || 0) > (Number(readings[a.id].hashrate) || 0) ? b : a);
+  const eff = on.filter(d => readings[d.id].efficiency > 0).reduce((a, b) => !a || readings[b.id].efficiency < readings[a.id].efficiency ? b : a, null);
+  (mc.rank[fast.id] = mc.rank[fast.id] || []).push('🚀 Mais rápida');
+  if(eff) (mc.rank[eff.id] = mc.rank[eff.id] || []).push('🏅 Mais eficiente');
 }
 
 // ---- grupos ----
@@ -430,6 +454,7 @@ function renderMachineCards(){
   [...mc.picked].forEach(id => { if(!list.some(d => d.id === id)) mc.picked.delete(id); });
   if($('mcCount')) $('mcCount').textContent = list.length + ' máquina' + (list.length === 1 ? '' : 's');
   mcFillGroups(list);
+  mcRanks(list);
   if(typeof mcExtraRender === 'function') mcExtraRender(list, states);
 
   // filtros com contagens
@@ -462,7 +487,7 @@ function renderMachineCards(){
     temp: byNum(r => r.temp, true),
     eff: (a, b) => ((a.r && a.r.online && a.r.efficiency > 0 ? a.r.efficiency : 1e9) - (b.r && b.r.online && b.r.efficiency > 0 ? b.r.efficiency : 1e9))
   }[mc.prefs.sort] || (() => 0);
-  rows.sort(cmp);
+  rows.sort((a, b) => (b.dev.pin ? 1 : 0) - (a.dev.pin ? 1 : 0) || cmp(a, b));
   mc.visible = rows.map(x => x.dev.id);
 
   board.dataset.view = mc.prefs.view;
@@ -556,10 +581,15 @@ function renderMachineCards(){
     if(!dev) return;
     const a = e.target.closest('[data-a]');
     const label = dev.name || dev.ip;
-    if(!a){ if(e.target.closest('.mc-pick, .mc-grp, .mc-hist')) return; if(selectedId !== dev.id){ selectedId = dev.id; renderAll(); } return; }
+    if(!a){ if(e.target.closest('.mc-pick, .mc-grp, .mc-edit, .mc-hist')) return; if(selectedId !== dev.id){ selectedId = dev.id; renderAll(); } return; }
     const act = a.dataset.a;
-    if(act === 'group') return;
+    if(['group', 'name', 'ip', 'note'].includes(act)) return;
     e.stopPropagation();
+    if(act === 'pin'){ if(dev.pin) delete dev.pin; else dev.pin = true; saveDevices(); renderMachineCards(); return; }
+    if(act === 'copyip'){
+      try { await navigator.clipboard.writeText(dev.ip); setQuickActionStatus('✓ IP ' + dev.ip + ' copiado.'); } catch(err) { setQuickActionStatus('✗ Não foi possível copiar o IP.'); }
+      return;
+    }
     if(act === 'pick'){
       a.checked ? mc.picked.add(dev.id) : mc.picked.delete(dev.id);
       const card = mc.els.get(dev.id); if(card) card.classList.toggle('is-pick', a.checked);
@@ -581,15 +611,23 @@ function renderMachineCards(){
       renderAll();
     }
   });
-  // o grupo de uma máquina guarda-se ao sair do campo ou com Enter
+  // nome, IP, grupo e nota guardam-se ao sair do campo ou com Enter
   if(board) board.addEventListener('change', e => {
-    const inp = e.target.closest('[data-a="group"]');
+    const inp = e.target.closest('[data-a="group"],[data-a="name"],[data-a="ip"],[data-a="note"]');
     const host = inp && inp.closest('[data-id]');
     const dev = host && find(host.dataset.id);
     if(!dev) return;
-    const g = inp.value.trim().slice(0, 24);
-    if(g) dev.group = g; else delete dev.group;
+    const k = inp.dataset.a, v = inp.value.trim();
+    if(k === 'group'){ if(v) dev.group = v.slice(0, 24); else delete dev.group; }
+    else if(k === 'note'){ if(v) dev.note = v.slice(0, 300); else delete dev.note; }
+    else if(k === 'name'){ if(!v){ inp.value = dev.name; return; } dev.name = v.slice(0, 40); }
+    else if(k === 'ip'){
+      if(!/^[A-Za-z0-9.\-:]{3,60}$/.test(v)){ inp.value = dev.ip; setQuickActionStatus('✗ IP inválido.'); return; }
+      if(devices.some(d => d !== dev && d.ip === v)){ inp.value = dev.ip; setQuickActionStatus('✗ Já existe uma máquina com esse IP.'); return; }
+      dev.ip = v;
+    }
     saveDevices(); renderAll();
+    if(k === 'ip' && typeof pollAll === 'function') pollAll();
   });
   const bulk = $('mcBulk') || document.body;
   document.addEventListener('click', e => {

@@ -159,6 +159,44 @@ function mcGlobalHealth(list, states){
   document.title = (bad ? '🔴 ' + bad + ' · ' : warn ? '🟠 ' + warn + ' · ' : '') + mc.baseTitle;
 }
 
+// ---- exportar as máquinas e as leituras atuais para CSV (abre no Excel) ----
+function mcExportCsv(){
+  const cols = ['Nome', 'IP', 'Grupo', 'Estado', 'Hashrate (GH/s)', 'Temp. (°C)', 'Temp. VR (°C)', 'Consumo (W)', 'Eficiência (J/TH)', 'Ventoinha (%)', 'Wi-Fi (dBm)', 'Ping pool (ms)', 'Pool', 'Aceites', 'Rejeitadas', 'Melhor dif.', 'Uptime (s)', 'Firmware', 'Nota'];
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const rows = (devices || []).map(d => {
+    const r = readings[d.id] || {};
+    return [d.name, d.ip, d.group, MC_STATUS[mcStateOf(readings[d.id])].label, r.online ? r.hashrate : '', r.temp, r.vrTemp, r.power, r.efficiency, r.fanPct, r.rssi, r.poolPing, r.pool, r.accepted, r.rejected, r.best, r.uptime, r.firmware, d.note].map(q).join(';');
+  });
+  const blob = new Blob(['\ufeff' + cols.map(q).join(';') + '\r\n' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'maquinas-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  if(typeof setQuickActionStatus === 'function') setQuickActionStatus('✓ Exportadas ' + rows.length + ' máquinas.');
+}
+
+// ---- atalhos de teclado (só com o Dashboard Geral aberto e fora dos campos de texto) ----
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target, typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+  const tab = $('mcBoard') && $('mcBoard').closest('.tab-content');
+  if(!tab || !tab.classList.contains('active')) return;
+  if(e.key === 'Escape'){
+    if(typing && t.id === 'mcSearch'){ t.value = ''; mc.prefs.q = ''; mcSavePrefs(); renderMachineCards(); t.blur(); }
+    else if(mc.picked.size){ mc.picked.clear(); renderMachineCards(); }
+    return;
+  }
+  if(typing) return;
+  const k = e.key.toLowerCase(), flt = { 1: 'all', 2: 'ok', 3: 'warn', 4: 'hot', 5: 'off' }[k];
+  if(k === '/'){ e.preventDefault(); const s = $('mcSearch'); if(s){ s.scrollIntoView({ block: 'center', behavior: 'smooth' }); s.focus(); } }
+  else if(flt){ mc.prefs.filter = flt; mcSavePrefs(); renderMachineCards(); }
+  else if(k === 'g'){ mc.prefs.groupBy = !mc.prefs.groupBy; mcSavePrefs(); renderMachineCards(); }
+  else if(k === 'v'){ const v = ['cards', 'compact', 'table']; mc.prefs.view = v[(v.indexOf(mc.prefs.view) + 1) % 3]; mcSavePrefs(); renderMachineCards(); }
+  else if(k === 'f'){ mc.prefs.fx = !mcFxOn(); mcSavePrefs(); renderMachineCards(); }
+  else if(k === 'e'){ mcExportCsv(); }
+});
+
 function mcExtraRender(list, states){
   mcGlobalHealth(list, states);
   mcWatchEvents(list);
