@@ -449,9 +449,6 @@ async function fetchRates(force){
 function startRatesAutoRefresh(){
   stopRatesAutoRefresh();
   ratesRefreshTimer = setInterval(() => fetchRates(false), 30000);
-  // Refresca o painel de Live Shares periodicamente mesmo sem shares novas,
-  // para a taxa/min ir descendo à medida que entradas antigas saem da janela.
-  setInterval(renderLiveSharesPanel, 5000);
   // Mesmo sem novos recordes, atualiza o "há Xm" do último recorde no painel Best Diff.
   setInterval(renderBestDiffPanel, 5000);
 }

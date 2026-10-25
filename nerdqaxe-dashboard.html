@@ -132,45 +132,6 @@
   <button class="kiosk-exit-btn" onclick="exitKioskMode()"><span data-i18n="sair_do_kiosk">Sair (Esc)</span></button>
 </div>
 
-<div class="ls-panel" id="lsPanel">
-  <div class="ls-panel-header">
-    <div class="ls-panel-title"><span class="ls-dot"></span><span data-i18n="live_shares">Live Shares</span></div>
-    <button class="ls-panel-close" onclick="toggleLiveSharesPanel(false)" aria-label="Fechar painel Live Shares">✕</button>
-  </div>
-  <div class="ls-stats-row">
-    <div class="ls-stat">
-      <div class="ls-stat-val green" id="lsStatAccepted">0</div>
-      <div class="ls-stat-label" data-i18n="aceites">Aceites</div>
-    </div>
-    <div class="ls-stat">
-      <div class="ls-stat-val red" id="lsStatRejected">0</div>
-      <div class="ls-stat-label" data-i18n="rejeitadas">Rejeitadas</div>
-    </div>
-    <div class="ls-stat">
-      <div class="ls-stat-val" id="lsStatRate">0</div>
-      <div class="ls-stat-label" data-i18n="por_minuto">/min</div>
-    </div>
-  </div>
-  <div class="ls-filter-row">
-    <select class="ls-filter-select" id="lsMachineFilter" onchange="onLiveSharesFilterChange(this.value)"></select>
-    <button class="ls-viewall-btn" onclick="openLiveSharesFullModal()" data-i18n="ver_tudo">Ver tudo</button>
-  </div>
-  <div class="ls-feed" id="lsFeed">
-    <div class="ls-feed-empty" data-i18n="ls_a_aguardar">A aguardar shares...</div>
-  </div>
-</div>
-
-<div class="ls-full-modal" id="lsFullModal" onclick="if(event.target===this) closeLiveSharesFullModal()">
-  <div class="ls-full-card">
-    <div class="ls-full-header">
-      <div class="ls-full-title" data-i18n="live_shares">Live Shares</div>
-      <select class="ls-filter-select" id="lsMachineFilterFull" style="max-width:150px;" onchange="onLiveSharesFilterChange(this.value)"></select>
-      <button class="ls-full-close" onclick="closeLiveSharesFullModal()" aria-label="Fechar Live Shares em ecrã completo">✕</button>
-    </div>
-    <div class="ls-full-list" id="lsFullList"></div>
-  </div>
-</div>
-
 <button class="bd-fab" id="bdFab" onclick="toggleBestDiffPanel()" title="Best Diff ao vivo">
   🏆<span class="bd-fab-badge" id="bdFabBadge">0</span>
 </button>
@@ -537,10 +498,10 @@
         </div>
 
         <div class="panel mc-panel" data-layout-id="machine-cards">
-          <div class="panel-title"><span>🖥️ As suas máquinas</span><span id="mcCount" style="font-size:9px;color:var(--muted-2);">0 máquinas</span></div>
+          <div class="panel-title"><span data-i18n="mc_title">🖥️ As suas máquinas</span><span id="mcCount" style="font-size:9px;color:var(--muted-2);">0 máquinas</span></div>
           <div class="mc-toolbar" id="mcToolbar"></div>
           <div class="mc-board" id="mcBoard"></div>
-          <details class="mc-log"><summary>📋 Eventos de hoje <b id="mcLogN">0</b></summary><ul id="mcLog"></ul></details>
+          <details class="mc-log"><summary><span data-i18n="mc_log_title">📋 Eventos de hoje</span> <b id="mcLogN">0</b></summary><ul id="mcLog"></ul></details>
         </div>
 
         <div class="panel network-map-panel" data-layout-id="network-map">
@@ -1338,8 +1299,8 @@
           <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyRecord" checked style="width:auto;"> <span data-i18n="alertas_ev_recorde">Novo recorde de dificuldade</span></label>
           <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyRental" checked style="width:auto;"> <span data-i18n="alertas_ev_rental">Rental prestes a terminar</span></label>
           <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyDrop" checked style="width:auto;"> <span data-i18n="alertas_ev_queda">Queda súbita de hashrate</span></label>
-          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyHealth" checked style="width:auto;"> <span>Problemas de saúde (temperatura, rejeições, Wi-Fi, pool)</span></label>
-          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyDaily" style="width:auto;"> <span>Resumo diário às</span> <select id="alDailyHour" style="width:auto;"><option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></label>
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyHealth" checked style="width:auto;"> <span data-i18n="mc_al_health">Problemas de saúde (temperatura, rejeições, Wi-Fi, pool)</span></label>
+          <label style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyDaily" style="width:auto;"> <span data-i18n="mc_al_daily">Resumo diário às</span> <select id="alDailyHour" style="width:auto;"><option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></label>
           <label id="alNotifyToastLabel" style="flex-direction:row; align-items:center; gap:8px;"><input type="checkbox" id="alNotifyToast" checked style="width:auto;"> <span data-i18n="alertas_ev_toast">Notificação nativa do Windows (toast)</span> <span id="alNotifyToastLock" style="display:none;" title="Indisponível neste PC">🔒</span></label>
         </div>
         <div class="hint" id="alertsToastHint" style="display:none; margin-top:6px;" data-i18n="alertas_toast_indisponivel">Notificações do Windows indisponíveis neste PC (falta o pacote `winotify` ou não estás no Windows) — os outros canais continuam a funcionar normalmente.</div>
@@ -1347,7 +1308,7 @@
         <div class="power-actions-row">
           <button class="power-save-btn" onclick="saveAlertsConfig()"><span data-i18n="guardar_alertas">💾 Guardar Alertas</span></button>
           <button class="ls-viewall-btn" onclick="testAlerts()"><span data-i18n="testar_alertas">🔔 Enviar Teste</span></button>
-          <button class="ls-viewall-btn" onclick="mcSendSummaryNow()">📊 Enviar resumo agora</button>
+          <button class="ls-viewall-btn" onclick="mcSendSummaryNow()" data-i18n="mc_al_send">📊 Enviar resumo agora</button>
         </div>
         <div class="power-live-error" id="alertsLiveError" style="display:none;"></div>
         <div class="power-live-error" id="alertsLiveOk" style="display:none; color:var(--green);"></div>
@@ -1537,6 +1498,7 @@
 <script src="dashboard/js/chat.js"></script>
 <script src="dashboard/js/noticias.js"></script>
 <script src="dashboard/js/donut3d.js"></script>
+<script src="dashboard/js/cartoes-i18n.js"></script>
 <script src="dashboard/js/cartoes.js"></script>
 <script src="dashboard/js/cartoes-extra.js"></script>
 </body>

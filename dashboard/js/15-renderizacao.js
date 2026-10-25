@@ -182,8 +182,6 @@ async function pollOneDevice(dev){
       celebrateBlockFound(dev.name, currentBest);
     }
 
-    recordShareDelta(dev, reading, oldReading, hasBaseline);
-
     // Alerta de queda de hashrate: compara a leitura atual com a média das
     // últimas amostras ANTES desta (por isso lido com o array antes de lhe
     // adicionar a leitura atual). Só dispara com histórico suficiente para

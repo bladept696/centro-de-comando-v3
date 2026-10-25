@@ -244,79 +244,7 @@
     .block-celebration-emoji{ font-size:46px; }
   }
 
-  /* --- Live Shares (widget flutuante) ----------------------------------- */
-  .ls-fab {
-    position: fixed;
-    right: 150px;
-    bottom: 18px;
-    z-index: 9998;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: var(--panel-2);
-    border: 1px solid var(--line-strong);
-    color: var(--green);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    cursor: pointer;
-    box-shadow: 0 8px 22px #000a, 0 0 0 1px #ffffff08;
-    transition: transform .15s ease, border-color .15s ease;
-  }
-  .ls-fab:hover { transform: scale(1.06); border-color: var(--green); }
-  .ls-fab-badge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 4px;
-    border-radius: 9px;
-    background: var(--green);
-    color: #04140d;
-    font-size: 10px;
-    font-weight: 700;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-family: monospace;
-  }
-  .ls-fab-badge.show { display: flex; }
-  .ls-fab.pulse { animation: ls-fab-pulse 0.5s ease; }
-  @keyframes ls-fab-pulse {
-    0% { box-shadow: 0 0 0 0 var(--green-dim); }
-    100% { box-shadow: 0 0 0 14px #21ffb000; }
-  }
-
-  .ls-panel {
-    position: fixed;
-    right: 18px;
-    bottom: 130px;
-    z-index: 9998;
-    width: min(320px, calc(100vw - 32px));
-    max-height: 320px;
-    background: var(--panel-2);
-    border: 1px solid var(--line-strong);
-    border-radius: 12px;
-    box-shadow: 0 12px 32px #000c, 0 0 0 1px #ffffff08;
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .ls-panel.open { display: flex; animation: toast-in 0.2s ease-out; }
-  .ls-panel-header {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .ls-panel-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; }
-  .ls-panel-title .ls-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .ls-panel-close { background: none; border: none; color: var(--muted-2); font-size: 15px; cursor: pointer; line-height: 1; }
-  .ls-panel-close:hover { color: var(--text); }
+  /* --- Painéis flutuantes (estatísticas, lista e janela completa; usados pelo Best Diff) --- */
   .ls-stats-row {
     display: flex;
     gap: 6px;
@@ -364,10 +292,6 @@
   .ls-feed-text { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ls-feed-time { font-family: monospace; font-size: 10px; color: var(--muted-2); flex-shrink: 0; }
   .ls-feed-empty { text-align: center; color: var(--muted); font-size: 11.5px; padding: 24px 10px; }
-  @media (max-width: 600px) {
-    .ls-panel { right: 8px; left: 8px; width: auto; bottom: 130px; }
-    .ls-fab { right: 130px; bottom: 12px; }
-  }
 
   .ls-filter-row {
     display: flex;
