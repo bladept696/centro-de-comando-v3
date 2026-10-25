@@ -317,6 +317,7 @@ async function sendAlert(message, cooldownKey){
     if(Date.now() - last < ALERT_COOLDOWN_MS) return;
     alertCooldowns[cooldownKey] = Date.now();
   }
+  try { if(typeof mcBrowserNotify === 'function') mcBrowserNotify(message); } catch(e) {}
   try {
     await fetch(`${API_BASE}/api/alerts/notify`, {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message })

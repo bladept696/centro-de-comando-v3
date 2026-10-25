@@ -4203,6 +4203,18 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                     item["note"] = note
                 if d.get("pin"):
                     item["pin"] = True
+                try:
+                    expected = float(d.get("expected") or 0)
+                except (TypeError, ValueError):
+                    expected = 0
+                if 0 < expected < 100000:
+                    item["expected"] = round(expected, 3)
+                try:
+                    mute = int(d.get("mute") or 0)
+                except (TypeError, ValueError):
+                    mute = 0
+                if mute > time.time() * 1000:
+                    item["mute"] = mute
                 clean.append(item)
 
             with POWER_CONFIG_LOCK:

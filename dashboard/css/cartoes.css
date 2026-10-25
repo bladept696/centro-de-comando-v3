@@ -270,3 +270,8 @@
   .mc-grp span{flex:none;width:44px;}
   .mc-grp input,.mc-grp textarea{width:100%;box-sizing:border-box;}
   .mc-noteedit{align-items:flex-start;} .mc-noteedit textarea{flex:1;font:inherit;font-size:12px;letter-spacing:0;text-transform:none;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:6px 9px;resize:vertical;min-width:0;}
+
+  /* ---------- Esperado, silêncio, lucro ---------- */
+  .mc-grp span{width:auto;min-width:44px;}
+  .mc-grp select{flex:1;font:inherit;font-size:12px;letter-spacing:0;text-transform:none;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:5px 9px;min-width:0;}
+  .mc-facts b[title]{cursor:help;}

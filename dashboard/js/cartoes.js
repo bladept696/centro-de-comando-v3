@@ -113,6 +113,11 @@ function mcAlertItems(dev, r, st, trend){
   if(mc.recordUntil[dev.id] > Date.now()) add('gold', t('mc_a_record'), 'record');
   const n0 = out.length;
   if(r.mcStuck) add('bad', mct(r.mcStuck.kind === 'zero' ? 'mc_a_zero' : 'mc_a_stuck', r.mcStuck.min + ' ' + t('mc_u_min')), 'stuck');
+  if(dev.expected > 0){
+    const sv = mcSeries(dev.id).slice(-5);
+    if(sv.length >= 3){ const pct = sv.reduce((a, b) => a + b, 0) / sv.length / (dev.expected * 1000) * 100; if(pct < 85) add('warn', mct('mc_a_below', pct.toFixed(0)), 'below'); }
+  }
+  if(dev.mute > Date.now()) add('info', mct('mc_a_muted', new Date(dev.mute).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' })), 'mute');
   if(r.temp >= 75) add('bad', mct('mc_a_tempcrit', Number(r.temp).toFixed(0)), 'temp');
   else if(r.temp >= 65) add('warn', mct('mc_a_warm', Number(r.temp).toFixed(0)), 'temp');
   if(r.vrTemp != null && r.vrTemp >= 85) add('bad', mct('mc_a_vr', Number(r.vrTemp).toFixed(0)), 'vr');
@@ -155,7 +160,8 @@ function mcCardEl(dev){
     '<div class="mc-facts">' +
       '<div><span>' + t('mc_k_power') + '</span><b data-f="power">—</b></div><div><span>' + t('mc_k_eff') + '</span><b data-f="eff">—</b></div>' +
       '<div><span>' + t('mc_k_shares') + '</span><b data-f="shares">—</b></div><div><span>' + t('mc_k_best') + '</span><b data-f="best">—</b></div>' +
-      '<div><span>Uptime</span><b data-f="uptime">—</b></div><div><span>' + t('mc_k_ping') + '</span><b data-f="ping">—</b></div></div>' +
+      '<div><span>Uptime</span><b data-f="uptime">—</b></div><div><span>' + t('mc_k_ping') + '</span><b data-f="ping">—</b></div>' +
+      '<div><span>' + t('mc_k_profit') + '</span><b data-f="profit" title="' + t('mc_prof_tip') + '">—</b></div><div><span>' + t('mc_k_block') + '</span><b data-f="block">—</b></div></div>' +
     '<div class="mc-pool"><span>Pool</span><b data-f="pool">—</b></div>' +
     '<div class="mc-more" data-f="more"></div>' +
     '<footer class="mc-actions">' +
@@ -186,7 +192,8 @@ function mcMoreHtml(dev, r){
   return row(t('mc_d_vr'), r && r.online ? mcNum(r.vrTemp, 1) + ' °C' : '—') + row(t('mc_d_freq'), r && r.online ? mcNum(r.frequency, 0) + ' MHz' : '—') +
     row(t('mc_d_input'), inParts.length ? inParts.join(' · ') : '—') + row(t('mc_d_lat'), r && r.online ? mcNum(r.localLatency, 0) + ' ms' : '—') +
     row('Firmware', r && r.online && r.firmware ? r.firmware : '—') + row(t('mc_d_model'), r && (r.asicModel || r.deviceModel) ? (r.asicModel || r.deviceModel) : '—') +
-    row(t('mc_d_algo'), r && r.algorithm ? String(r.algorithm).toUpperCase() : 'SHA256') + row(t('mc_d_maint'), last && typeof formatMaintDate === 'function' ? formatMaintDate(last) : t('mc_d_never'));
+    row(t('mc_d_algo'), r && r.algorithm ? String(r.algorithm).toUpperCase() : 'SHA256') + row(t('mc_d_maint'), last && typeof formatMaintDate === 'function' ? formatMaintDate(last) : t('mc_d_never')) +
+    row(t('mc_d_avail'), typeof mcAvailText === 'function' ? mcAvailText(dev.id) : '—');
 }
 // histórico (hashrate e temperatura) da máquina nas últimas 1, 6 ou 24 horas
 function mcHistoryHtml(dev){
@@ -266,8 +273,11 @@ function mcUpdateCard(el, dev, r, st, i){
     mcSet(el, 'best', best); mcSet(el, 'uptime', formatUptime(r.uptime).text);
     mcSet(el, 'ping', r.poolPing != null ? Math.round(r.poolPing) + ' ms' : '—');
     mcSet(el, 'pool', r.pool ? String(r.pool).replace(/^[a-z+]+:\/\//, '') : '—');
+    const eco = typeof mcEconomics === 'function' ? mcEconomics(algoGroupOf(r) === 'sha256' ? Number(r.hashrate) || 0 : 0, Number(r.power) || 0) : null;
+    mcSet(el, 'profit', eco ? (eco.profit >= 0 ? '+' : '') + eco.profit.toFixed(2) + ' €' : '—');
+    mcSet(el, 'block', eco ? mcBlockText(eco) : '—');
   } else {
-    ['tempV', 'fanV', 'wifiV', 'power', 'eff', 'shares', 'best', 'uptime', 'ping', 'pool'].forEach(f => mcSet(el, f, '—'));
+    ['tempV', 'fanV', 'wifiV', 'power', 'eff', 'shares', 'best', 'uptime', 'ping', 'pool', 'profit', 'block'].forEach(f => mcSet(el, f, '—'));
     ['tempB', 'fanB'].forEach(f => mcBar(el, f, 0, 'ok'));
     el.querySelectorAll('[data-f="sig"] i').forEach(b => b.classList.remove('on'));
   }
@@ -278,13 +288,19 @@ function mcUpdateCard(el, dev, r, st, i){
     if(!more.dataset.shell){
       more.innerHTML = '<div class="mc-hist"></div><div class="mc-more-grid"></div>' +
         '<div class="mc-edit"><label class="mc-grp"><span>' + t('mc_e_name') + '</span><input type="text" data-a="name" maxlength="40"></label><label class="mc-grp"><span>IP</span><input type="text" data-a="ip" maxlength="60" inputmode="decimal"></label></div>' +
+        '<label class="mc-grp"><span>' + t('mc_e_expected') + '</span><input type="number" step="0.1" min="0" data-a="expected" placeholder="TH/s"></label>' +
+        '<label class="mc-grp"><span>' + t('mc_e_mute') + '</span><select data-a="mute"></select></label>' +
         '<label class="mc-grp"><span>' + t('mc_e_group') + '</span><input type="text" list="mcGroupList" data-a="group" placeholder="' + t('mc_e_nogroup') + '" maxlength="24"></label>' +
         '<label class="mc-grp mc-noteedit"><span>' + t('mc_e_note') + '</span><textarea data-a="note" rows="2" maxlength="300" placeholder="' + t('mc_e_noteph') + '"></textarea></label>';
       more.dataset.shell = '1';
     }
     setHtml(more.querySelector('.mc-hist'), mcHistoryHtml(dev));
     setHtml(more.querySelector('.mc-more-grid'), mcMoreHtml(dev, r));
-    [['group', dev.group], ['name', dev.name], ['ip', dev.ip], ['note', dev.note]].forEach(([k, v]) => {
+    const ms = more.querySelector('[data-a="mute"]');
+    const muted = dev.mute > Date.now(), mh = (muted ? '<option value="cur" selected>' + mct('mc_a_muted', new Date(dev.mute).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' })) + '</option>' : '') +
+      '<option value="0"' + (muted ? '' : ' selected') + '>' + t(muted ? 'mc_mute_off' : 'mc_mute_0') + '</option><option value="60">' + t('mc_mute_1') + '</option><option value="240">' + t('mc_mute_4') + '</option><option value="1440">' + t('mc_mute_24') + '</option>';
+    if(document.activeElement !== ms && ms.dataset.s !== mh){ ms.dataset.s = mh; ms.innerHTML = mh; }
+    [['group', dev.group], ['name', dev.name], ['ip', dev.ip], ['note', dev.note], ['expected', dev.expected]].forEach(([k, v]) => {
       const inp = more.querySelector('[data-a="' + k + '"]');
       if(inp && document.activeElement !== inp) inp.value = v || '';
     });
@@ -616,7 +632,7 @@ function renderMachineCards(){
     const label = dev.name || dev.ip;
     if(!a){ if(e.target.closest('.mc-pick, .mc-grp, .mc-edit, .mc-hist')) return; if(selectedId !== dev.id){ selectedId = dev.id; renderAll(); } return; }
     const act = a.dataset.a;
-    if(['group', 'name', 'ip', 'note'].includes(act)) return;
+    if(['group', 'name', 'ip', 'note', 'expected', 'mute'].includes(act)) return;
     e.stopPropagation();
     if(act === 'pin'){ if(dev.pin) delete dev.pin; else dev.pin = true; saveDevices(); renderMachineCards(); return; }
     if(act === 'copyip'){
@@ -646,13 +662,15 @@ function renderMachineCards(){
   });
   // nome, IP, grupo e nota guardam-se ao sair do campo ou com Enter
   if(board) board.addEventListener('change', e => {
-    const inp = e.target.closest('[data-a="group"],[data-a="name"],[data-a="ip"],[data-a="note"]');
+    const inp = e.target.closest('[data-a="group"],[data-a="name"],[data-a="ip"],[data-a="note"],[data-a="expected"],[data-a="mute"]');
     const host = inp && inp.closest('[data-id]');
     const dev = host && find(host.dataset.id);
     if(!dev) return;
     const k = inp.dataset.a, v = inp.value.trim();
     if(k === 'group'){ if(v) dev.group = v.slice(0, 24); else delete dev.group; }
     else if(k === 'note'){ if(v) dev.note = v.slice(0, 300); else delete dev.note; }
+    else if(k === 'expected'){ const x = parseFloat(v.replace(',', '.')); if(x > 0) dev.expected = Math.round(x * 1000) / 1000; else delete dev.expected; }
+    else if(k === 'mute'){ const m = parseInt(inp.value, 10); if(m > 0) dev.mute = Date.now() + m * 60000; else if(inp.value === '0') delete dev.mute; else return; }
     else if(k === 'name'){ if(!v){ inp.value = dev.name; return; } dev.name = v.slice(0, 40); }
     else if(k === 'ip'){
       if(!/^[A-Za-z0-9.\-:]{3,60}$/.test(v)){ inp.value = dev.ip; setQuickActionStatus(t('mc_c_ipbad')); return; }
