@@ -240,3 +240,5 @@ function mct(key, ...args){
 }
 // data e hora no idioma escolhido
 function mcLocale(){ return currentLang === 'pt' ? 'pt-PT' : currentLang; }
+// Os textos fixos do HTML (data-i18n="mc_...") já foram traduzidos antes deste ficheiro carregar; volta a fazê-lo agora
+document.querySelectorAll('[data-i18n^="mc_"]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
