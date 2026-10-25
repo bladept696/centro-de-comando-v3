@@ -22,8 +22,7 @@
 <link rel="stylesheet" href="dashboard/css/graficos.css">
 <link rel="stylesheet" href="dashboard/css/widgets.css">
 <link rel="stylesheet" href="dashboard/css/visual-extra.css">
-<link rel="stylesheet" href="dashboard/css/escritorio.css">
-<link rel="stylesheet" href="dashboard/css/ambiente.css">
+<link rel="stylesheet" href="dashboard/css/cartoes.css">
 <!-- Firebase Realtime Database SDK (compat v9) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -540,6 +539,13 @@
           <div class="hint" style="margin-bottom:12px;"><span data-i18n="requer_o_servidor_local_nerdqaxe_server_">Requer o servidor local (`nerdqaxe_server.py`) a correr em localhost:8765.</span></div>
         </div>
 
+        <div class="panel mc-panel" data-layout-id="machine-cards">
+          <div class="panel-title"><span>🖥️ As suas máquinas</span><span id="mcCount" style="font-size:9px;color:var(--muted-2);">0 máquinas</span></div>
+          <div class="mc-toolbar" id="mcToolbar"></div>
+          <div class="mc-board" id="mcBoard"></div>
+          <details class="mc-log"><summary>📋 Eventos de hoje <b id="mcLogN">0</b></summary><ul id="mcLog"></ul></details>
+        </div>
+
         <div class="panel network-map-panel" data-layout-id="network-map">
           <div class="panel-title"><span>🌐 Mapa da Rede</span><span id="networkMapCount" style="font-size:9px;color:var(--muted-2);">0 dispositivos</span></div>
           <div class="network-map-toolbar">
@@ -548,20 +554,6 @@
           </div>
           <div class="network-map-wrap" id="networkMapWrap"><svg class="network-map-svg" id="networkMapSvg" aria-hidden="true"></svg><div class="network-map-nodes" id="networkMapNodes"></div></div>
           <div class="network-map-foot"><span id="networkMapFootLeft">Clique numa máquina para a selecionar.</span><span id="networkMapFootRight">—</span></div>
-        </div>
-
-        <div class="panel office-panel" data-layout-id="office">
-          <div class="panel-title"><span>🏢 Escritório</span><span id="officeCount" style="font-size:9px;color:var(--muted-2);">0 quartos</span></div>
-          <div class="office-lobby" id="officeLobby"></div>
-          <div class="office-floors" id="officeFloors" hidden></div>
-          <div class="office-stage" id="officeStage"><div id="officeSvgHost"></div>
-            <div class="office-modebar" id="officeModeBar"></div>
-            <div class="office-zoom"><button type="button" data-zoom="in" title="Aproximar (ou Ctrl + roda do rato)">＋</button><button type="button" data-zoom="out" title="Afastar">－</button><button type="button" data-zoom="reset" title="Ver tudo (ou duplo clique)">⤢</button></div>
-            <div class="office-tip" id="officeTip" hidden></div></div>
-          <div class="office-bottom">
-            <div class="office-detail" id="officeDetail"></div>
-            <div class="office-log"><div class="office-log-title">📋 Registo de avarias de hoje</div><ul id="officeLog"></ul></div>
-          </div>
         </div>
 
         <div class="charts" data-layout-id="main-charts">
@@ -1545,8 +1537,6 @@
 <script src="dashboard/js/chat.js"></script>
 <script src="dashboard/js/noticias.js"></script>
 <script src="dashboard/js/donut3d.js"></script>
-<script src="dashboard/js/ambiente.js"></script>
-<script src="dashboard/js/escritorio-salas.js"></script>
-<script src="dashboard/js/escritorio.js"></script>
+<script src="dashboard/js/cartoes.js"></script>
 </body>
 </html>

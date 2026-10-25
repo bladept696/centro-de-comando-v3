@@ -42,12 +42,11 @@ executável final fica em `dist/CentroDeComando.exe`.
 
 - `app.py` — servidor local + launcher
 - `nerdqaxe-dashboard.html` — a estrutura (HTML) do painel
-- `dashboard/css/` — os estilos, por assunto (`base`, `mempool`, `escritorio`, ...)
+- `dashboard/css/` — os estilos, por assunto (`base`, `mempool`, `cartoes`, ...)
 - `dashboard/js/` — o código, por assunto. Os ficheiros numerados (`01-` a `19-`)
   são carregados por esta ordem e partilham as mesmas variáveis; os restantes
-  (`login`, `chat`, `noticias`, `donut3d`, `ambiente`, `escritorio`, `firebase-init`) vêm depois.
-  O `ambiente.js` (dia e noite, tempo, celebração de bloco, carros, drones e helicóptero) tem de
-  carregar antes do `escritorio.js`.
+  (`login`, `chat`, `noticias`, `donut3d`, `cartoes`, `firebase-init`) vêm depois.
+  O `cartoes.js` desenha os cartões das máquinas (filtros, pesquisa, ordenação e vistas).
   Para acrescentar um ficheiro novo, junta uma linha `<script src="dashboard/js/...">`
   (ou `<link>` para CSS) ao HTML, na posição certa.
 - `bitminer33-banner.png` — banner do separador "Apoiantes"

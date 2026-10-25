@@ -420,7 +420,7 @@ function renderAll(){
   $('sCount').textContent = devices.length;
 
   if(typeof networkMapAuto !== 'undefined' && networkMapAuto) renderNetworkMap();
-  if(typeof renderOffice === 'function') renderOffice();
+  if(typeof renderMachineCards === 'function') renderMachineCards();
   renderHashrateDonut(devices);
   renderSimulator();
 

@@ -544,8 +544,8 @@ function nmPulse(key, color, reverse, dur){
 
 function nmSelect(dev){
   selectedId = dev.id; renderAll();
-  const room = typeof officeEls !== 'undefined' && officeEls[dev.id];
-  if (room) room.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const card = typeof mc !== 'undefined' && mc.els.get(dev.id);
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function nmCloseMenu(){ if (nmMenuEl) { nmMenuEl.remove(); nmMenuEl = null; } }
 function nmOpenMenu(el, cx, cy){
