@@ -258,3 +258,13 @@
   @keyframes mcLine{50%{opacity:.35;}}
   @media (max-width:640px){.mc-summary{grid-template-columns:repeat(2,1fr);} .mc-bulk{top:40px;}}
   @media (prefers-reduced-motion: reduce){.mc-gold,.mc-flash,.mc-ping .mc-dot,.health-line,.mc-burst i{animation:none !important;}}
+
+  /* ---------- Favoritos, notas, edição, selos ---------- */
+  .mc-star{flex:none;font:inherit;font-size:15px;line-height:1;color:var(--muted-2);background:none;border:none;cursor:pointer;padding:2px 4px;transition:color .2s,transform .2s;}
+  .mc-star:hover{color:#ffd34a;transform:scale(1.2);} .mc-star.on{color:#ffd34a;text-shadow:0 0 10px #ffd34a99;}
+  .mc-card.is-pinned::before{box-shadow:0 0 14px var(--mc-c),0 0 0 1px #ffd34a55;}
+  .mc-title small[data-a="copyip"]{cursor:copy;} .mc-title small[data-a="copyip"]:hover{color:var(--cyan);}
+  .mc-notechip{font-size:11px;cursor:help;} .mc-notechip[hidden]{display:none;}
+  .mc-chip.rank{color:#ffd34a;border-color:#ffd34a55;background:color-mix(in srgb,#ffd34a 8%,var(--deep));}
+  .mc-edit{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .mc-noteedit{align-items:flex-start;} .mc-noteedit textarea{flex:1;font:inherit;font-size:12px;letter-spacing:0;text-transform:none;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:6px 9px;resize:vertical;min-width:0;}

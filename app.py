@@ -4189,12 +4189,21 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 ip = str(d.get("ip") or "").strip()
                 if not dev_id or not ip:
                     continue
-                clean.append({
+                item = {
                     "id": dev_id,
                     "name": name or ip,
                     "ip": ip,
                     "poolAuto": bool(d.get("poolAuto", False)),
-                })
+                }
+                group = str(d.get("group") or "").strip()[:24]
+                note = str(d.get("note") or "").strip()[:300]
+                if group:
+                    item["group"] = group
+                if note:
+                    item["note"] = note
+                if d.get("pin"):
+                    item["pin"] = True
+                clean.append(item)
 
             with POWER_CONFIG_LOCK:
                 new_cfg = copy.deepcopy(power_config)
