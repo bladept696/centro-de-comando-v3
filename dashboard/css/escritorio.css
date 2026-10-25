@@ -151,6 +151,77 @@
   @keyframes hoWork{from{transform:rotate(-112deg);}to{transform:rotate(-66deg);}}
   @keyframes hoSip{0%,78%,100%{transform:rotate(-72deg);}84%,92%{transform:rotate(-138deg);}}
   @keyframes hoBreath{0%,100%{transform:translateY(0);}50%{transform:translateY(-.5px);}}
+  /* ---------- Salas de apoio (bar, descanso, ginásio, reuniões, oficina, biblioteca) ---------- */
+  .ho-whit,.ho-thit{fill:transparent;cursor:pointer;}
+  .ho-whit:hover{fill:rgba(255,255,255,.035);}
+  .ho-thit:hover{fill:rgba(255,255,255,.1);}
+  .ho-cnt{font-weight:700;}
+  .ho-tv.off .ho-tv-live{display:none;}
+  .ho-tv.on .ho-tv-off{display:none;}
+  .ho-tv-line{stroke-dasharray:3.4;animation:hoTvLine 3.2s linear infinite;}
+  .ho-tv.on .ho-tv-scr{animation:hoTvGlow 5s ease-in-out infinite alternate;}
+  @keyframes hoTvLine{from{stroke-dashoffset:3.4;}to{stroke-dashoffset:0;}}
+  @keyframes hoTvGlow{from{fill:#0e2a44;}to{fill:#16384f;}}
+  .ho-neon{animation:hoNeon 5s steps(1) infinite;}
+  @keyframes hoNeon{0%,92%,96%,100%{opacity:1;}93%,95%{opacity:.35;}}
+  .ho-juke .ho-note{opacity:0;}
+  .ho-juke.on .ho-note{animation:hoNote 2.6s ease-out infinite;}
+  .ho-juke.on .ho-note.n2{animation-delay:.9s;}
+  .ho-juke.on .ho-note.n3{animation-delay:1.7s;}
+  .ho-juke.on .ho-jl rect{animation:hoBlinkLed .9s steps(2) infinite;}
+  .ho-juke.on .ho-jl rect:nth-child(2){animation-delay:.3s;}
+  .ho-juke.on .ho-jl rect:nth-child(3){animation-delay:.6s;}
+  @keyframes hoNote{0%{transform:translate(0,0) scale(.6);opacity:0;}15%{opacity:1;}100%{transform:translate(8px,-34px) scale(1.15);opacity:0;}}
+  .ho-plant{transform-origin:0 0;animation:hoPlantSway 4.5s ease-in-out infinite alternate;}
+  @keyframes hoPlantSway{from{transform:rotate(-2.2deg);}to{transform:rotate(2.2deg);}}
+  .ho-steam{opacity:0;animation:hoWisp 3.2s ease-in infinite;}
+  .ho-steam.s2{animation-delay:1.3s;}
+  .ho-vend-led{animation:hoBlinkLed 1.6s steps(2) infinite;}
+  .ho-tread-led{animation:hoBlinkLed 1.1s steps(2) infinite;}
+  .ho-cursor{animation:hoBlinkLed .9s steps(2) infinite;}
+  .ho-bar{transform-box:fill-box;transform-origin:50% 100%;animation:hoBars 1.4s ease-in-out infinite alternate;}
+  @keyframes hoBars{from{transform:scaleY(.25);}to{transform:scaleY(1);}}
+  .ho-wing.is-busy .ho-rod.r0{animation:hoRodA .55s ease-in-out infinite alternate;}
+  .ho-wing.is-busy .ho-rod.r1{animation:hoRodA .55s ease-in-out infinite alternate-reverse;}
+  .ho-wing.is-busy .ho-ball{animation:hoBall 1.1s ease-in-out infinite alternate;}
+  @keyframes hoRodA{from{transform:translateX(-.35px);}to{transform:translateX(.35px);}}
+  @keyframes hoBall{from{transform:translate(-.3px,-.5px);}to{transform:translate(.3px,.6px);}}
+  .ho-wing.is-busy .ho-belt{animation:hoBelt .42s linear infinite;}
+  @keyframes hoBelt{from{transform:translateY(0);}to{transform:translateY(.3px);}}
+  .ho-lampglow-l{animation:hoPulse 5s ease-in-out infinite;}
+
+  .p-drink,.p-ball{display:none;}
+  .ho-tech.a-drink .p-drink,.ho-tech.a-tv .p-drink,.ho-tech.a-lib .p-book,.ho-tech.a-tinker .ho-wrench,.ho-tech.a-board .p-clip{display:inline;}
+  .ho-tech.a-foos .p-ball{display:none;}
+  .ho-tech.sit .ho-body{animation:none;transform:translateY(6px);}
+  .ho-tech.sit .ho-leg-f,.ho-tech.sit .ho-leg-b{animation:none;transform:rotate(-88deg);}
+  .ho-tech.sit .ho-leg-b{transform:rotate(-80deg);}
+  .ho-tech.a-drink .ho-arm-f{animation:hoSip 4.5s ease-in-out infinite;}
+  .ho-tech.a-tv .ho-arm-f{animation:hoSip 6s ease-in-out infinite;}
+  .ho-tech.a-tv .ho-arm-b{transform:rotate(-14deg);}
+  .ho-tech.a-lib .ho-arm-f{transform:rotate(-62deg);}
+  .ho-tech.a-lib .ho-arm-b{transform:rotate(-48deg);}
+  .ho-tech.a-lib .p-page{transform-origin:1.2px 0;animation:hoPage 4.5s ease-in-out infinite;}
+  .ho-tech.a-foos .ho-arm-f{animation:hoFoos .34s ease-in-out infinite alternate;}
+  .ho-tech.a-foos .ho-arm-b{animation:hoFoos .34s ease-in-out infinite alternate-reverse;}
+  .ho-tech.a-foos .ho-body{animation:hoBob .34s ease-in-out infinite alternate;}
+  .ho-tech.a-run .ho-leg-f{animation:hoStep .3s ease-in-out infinite alternate;}
+  .ho-tech.a-run .ho-leg-b{animation:hoStep .3s ease-in-out infinite alternate-reverse;}
+  .ho-tech.a-run .ho-arm-f{animation:hoSwing .3s ease-in-out infinite alternate-reverse;}
+  .ho-tech.a-run .ho-arm-b{animation:hoSwing .3s ease-in-out infinite alternate;}
+  .ho-tech.a-run .ho-body{animation:hoBob .15s ease-in-out infinite alternate;}
+  .ho-tech.a-weights .ho-arm-f,.ho-tech.a-weights .ho-arm-b{animation:hoLift 1.1s ease-in-out infinite alternate;}
+  .ho-tech.a-weights .ho-body{animation:hoSquat 1.1s ease-in-out infinite alternate;}
+  .ho-tech.a-board .ho-arm-f{animation:hoDust .55s ease-in-out infinite alternate;}
+  .ho-tech.a-tinker .ho-arm-f{animation:hoWork .38s ease-in-out infinite alternate;}
+  .ho-tech.a-tinker .ho-arm-b{transform:rotate(-40deg);}
+  .ho-tech.a-tinker .ho-body{animation:hoBob .38s ease-in-out infinite alternate;}
+  .ho-tech.dance .ho-arm-f,.ho-tech.dance .ho-arm-b{animation:hoCheerArms .4s ease-in-out infinite alternate;}
+  .ho-tech.dance .ho-body{animation:hoCheerJump .4s ease-in-out infinite alternate;}
+  @keyframes hoFoos{from{transform:rotate(-78deg);}to{transform:rotate(-104deg);}}
+  @keyframes hoLift{from{transform:rotate(-24deg);}to{transform:rotate(-172deg);}}
+  @keyframes hoSquat{from{transform:translateY(0);}to{transform:translateY(1.4px);}}
+
   @media (prefers-reduced-motion: reduce){
     .office-stage *{animation:none !important;}
   }
