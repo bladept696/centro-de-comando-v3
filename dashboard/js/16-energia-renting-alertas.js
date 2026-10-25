@@ -312,6 +312,7 @@ const ALERT_COOLDOWN_MS = 10 * 60 * 1000; // 10 min por tipo/máquina
 let alertsConfig = { notify_offline: true, notify_record: true, notify_rental_ending: true, notify_hashrate_drop: true, notify_windows_toast: true, notify_health: true, notify_daily: false, daily_hour: 21, hashrate_drop_pct: 30 };
 
 async function sendAlert(message, cooldownKey){
+  try { if(typeof mcAlertFilter === 'function' && mcAlertFilter(message, cooldownKey) === false) return; } catch(e) {}
   if(cooldownKey){
     const last = alertCooldowns[cooldownKey] || 0;
     if(Date.now() - last < ALERT_COOLDOWN_MS) return;
