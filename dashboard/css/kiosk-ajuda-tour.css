@@ -1,0 +1,399 @@
+  /* --- Modo Kiosk (ecrã grande / TV dedicada) --------------------------
+     Quando body.kiosk-active está presente: esconde tudo o que serve para
+     editar/navegar (nav, formulário de adicionar máquina, assistente,
+     botões de config) e aumenta o tamanho dos números principais para
+     serem lidos à distância. Um controlo flutuante (kioskFloatBar) fica
+     invisível por omissão e só aparece por breves segundos quando há
+     movimento do rato/toque, para o ecrã ficar limpo o resto do tempo. */
+  body.kiosk-active { padding: 0; }
+  body.kiosk-active .frame { max-width: none; border: none; border-radius: 0; }
+  body.kiosk-active .update-banner { display: none !important; }
+  body.kiosk-active header .header-actions > *:not(#kioskToggleBtn) { display: none !important; }
+  body.kiosk-active header { padding: 14px 26px; }
+  body.kiosk-active header h1 { font-size: 20px; }
+  body.kiosk-active .subtitle { font-size: 13px; }
+  body.kiosk-active .nav-menu { display: none !important; }
+  body.kiosk-active .blocks-toolbar .blocks-refresh-hint { display: none; }
+  body.kiosk-active #tab-dashboard .config,
+  body.kiosk-active #tab-dashboard .hint,
+  body.kiosk-active .ai-agent-panel,
+  body.kiosk-active #clearLogBtn {
+    display: none !important;
+  }
+  body.kiosk-active .gauge .value { font-size: 34px; }
+  body.kiosk-active .gauge .label { font-size: 11px; }
+  body.kiosk-active .gauge .unit { font-size: 12px; }
+  body.kiosk-active .panel-title { font-size: 14px; }
+  body.kiosk-active .chart-title { font-size: 14px; }
+
+  .kiosk-float-bar {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #0b1622ee;
+    border: 1px solid var(--line-strong);
+    border-radius: 30px;
+    padding: 8px 10px 8px 16px;
+    box-shadow: 0 14px 34px -10px #000c;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  body.kiosk-active .kiosk-float-bar.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .kiosk-clock { font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: var(--muted); letter-spacing: 0.05em; }
+  .kiosk-rotate-label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); cursor: pointer; user-select: none; }
+  .kiosk-exit-btn {
+    background: var(--green-dim);
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .kiosk-exit-btn:hover { border-color: var(--green); }
+  .kiosk-toggle-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .kiosk-toggle-btn:hover { border-color: var(--cyan); }
+  .layout-edit-toggle-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  /* --- Badges de Algoritmo & Filtros Multi-Miner --- */
+  .layout-edit-toggle-btn:hover { border-color: var(--green); }
+  .layout-edit-toggle-btn.active {
+    background: var(--green-dim);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .layout-reset-btn {
+    display: none;
+    background: transparent;
+    border: 1px solid #ff5d5d55;
+    color: var(--red);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .layout-reset-btn:hover { background: #ff5d5d1a; }
+  body.layout-edit-mode .layout-reset-btn { display: inline-flex; }
+
+  /* --- Botão de Ajuda (FAQ) ---------------------------------------------- */
+  .help-toggle-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .help-toggle-btn:hover { border-color: var(--amber); }
+
+  /* --- Modal de Ajuda / FAQ ----------------------------------------------- */
+  .help-modal-card { width: min(560px, 100%); max-height: min(78vh, 680px); }
+  .help-modal-body {
+    flex: 1; overflow-y: auto; padding: 14px 16px; display: flex;
+    flex-direction: column; gap: 8px;
+  }
+  .help-tour-again {
+    background: transparent; border: 1px solid var(--line-strong); color: var(--muted);
+    font-family: inherit; font-size: 10.5px; font-weight: 600; padding: 5px 12px;
+    border-radius: 20px; cursor: pointer; white-space: nowrap;
+  }
+  .help-tour-again:hover { border-color: var(--green); color: var(--green); }
+  .help-faq-item {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden;
+  }
+  .help-faq-item summary {
+    padding: 11px 13px; cursor: pointer; font-size: 12px; font-weight: 700;
+    color: var(--text); list-style: none; display: flex; align-items: center; gap: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .help-faq-item summary::-webkit-details-marker { display: none; }
+  .help-faq-item summary::before { content: '▸'; color: var(--green); flex: 0 0 auto; transition: transform .15s ease; }
+  .help-faq-item[open] summary::before { transform: rotate(90deg); }
+  .help-faq-item .help-faq-answer {
+    padding: 0 13px 13px 31px; font-size: 11.5px; line-height: 1.6; color: var(--muted);
+  }
+  .help-faq-answer code {
+    background: #000a; border: 1px solid var(--line-strong); border-radius: 4px;
+    padding: 1px 5px; font-size: 11px; color: var(--green);
+  }
+  .help-faq-footer {
+    padding: 10px 16px; border-top: 1px solid var(--line); font-size: 10.5px;
+    color: var(--muted-2); text-align: center;
+  }
+
+  /* --- Tour guiado --------------------------------------------------------- */
+  #tourLayer { display: none; }
+  .tour-highlight {
+    position: fixed; z-index: 20001; border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.78);
+    border: 2px solid var(--green);
+    pointer-events: none;
+    transition: left .25s ease, top .25s ease, width .25s ease, height .25s ease;
+  }
+  .tour-tooltip {
+    position: fixed; z-index: 20002; width: 280px; max-width: calc(100vw - 24px);
+    background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: 12px;
+    padding: 14px 16px; box-shadow: 0 20px 60px #000c;
+    font-size: 12px; line-height: 1.55; color: var(--muted);
+    transition: left .25s ease, top .25s ease;
+  }
+  .tour-tooltip-title {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px;
+    color: var(--green); margin-bottom: 6px;
+  }
+  .tour-tooltip-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; gap: 8px;
+  }
+  .tour-skip-btn {
+    background: none; border: none; color: var(--muted-2); font-size: 10.5px;
+    cursor: pointer; font-family: inherit; padding: 0;
+  }
+  .tour-skip-btn:hover { color: var(--text); }
+  .tour-step-counter { font-size: 10px; color: var(--muted-2); white-space: nowrap; }
+  .tour-next-btn {
+    background: var(--green); color: #04150a; border: none; border-radius: 7px;
+    padding: 6px 14px; font-size: 11px; font-weight: 700; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; white-space: nowrap;
+  }
+  .tour-next-btn:hover { filter: brightness(1.1); }
+  @media (max-width: 640px) {
+    .tour-tooltip { width: 240px; padding: 12px 14px; }
+  }
+
+  /* Modo de edição de layout: cada bloco marcado com data-layout-id fica
+     arrastável. Um contorno tracejado + um "pega" (⠿) no canto indicam
+     que dá para reordenar; o resto do painel comporta-se como sempre. */
+  body.layout-edit-mode [data-layout-id]{
+    position: relative;
+    cursor: grab;
+    outline: 1px dashed var(--line-strong);
+    outline-offset: 3px;
+    transition: outline-color .15s ease, opacity .15s ease, transform .12s ease;
+  }
+  body.layout-edit-mode [data-layout-id]:hover{ outline-color: var(--green); }
+  body.layout-edit-mode [data-layout-id]::after{
+    content: '⠿ arrastar';
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 10px;
+    letter-spacing: .04em;
+    color: var(--green);
+    background: var(--panel);
+    border: 1px solid var(--green-dim);
+    border-radius: 6px;
+    padding: 2px 7px;
+    pointer-events: none;
+    z-index: 6;
+    opacity: .85;
+  }
+  [data-layout-id].layout-dragging{
+    opacity: .35;
+    cursor: grabbing;
+    transform: scale(.98);
+  }
+  [data-layout-id].layout-drop-target{
+    outline-color: var(--cyan) !important;
+    outline-style: solid !important;
+  }
+  @media(max-width:900px){
+    body.layout-edit-mode [data-layout-id]::after{ font-size:9px; padding:1px 5px; }
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 11px 12px;
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    position: relative;
+    text-align: left;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tab-btn:hover { color: var(--text); background: #0f1e2c; }
+  .tab-btn.active { color: var(--green); background: var(--green-dim); }
+  .tab-btn.amber-tab.active { color: var(--amber); background: #2b220d; }
+  .tab-btn.cyan-tab.active { color: var(--cyan); background: #0d2530; }
+
+  /* Ícones animados de cada aba do menu - animação contínua e subtil */
+  @keyframes tabIconFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-2px) scale(1.1); }
+  }
+  .tab-icon {
+    display: inline-block;
+    font-size: 14px;
+    line-height: 1;
+    animation: tabIconFloat 2.4s ease-in-out infinite;
+    animation-delay: var(--tab-icon-delay, 0s);
+    will-change: transform;
+  }
+  .tab-btn:hover .tab-icon { animation-duration: 1s; }
+  @media (prefers-reduced-motion: reduce) {
+    .tab-icon { animation: none; }
+  }
+
+  /* Ícone oficial da Parasite Pool (o "ácaro" da marca), a substituir o
+     emoji genérico 🦠 — usado no separador do menu e no título da secção. */
+  .icon-parasite-mite {
+    display: inline-block;
+    height: 15px;
+    width: auto;
+    vertical-align: -3px;
+    filter: drop-shadow(0 0 3px #00000088);
+  }
+  .title .icon-parasite-mite {
+    height: 18px;
+    vertical-align: -4px;
+    margin-right: 2px;
+  }
+
+  .badge-counter {
+    position: static;
+    margin-left: auto;
+    background: var(--amber);
+    color: #000;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 10px;
+    display: none;
+  }
+  .badge-counter.badge-pop{ animation: badgePop .45s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes badgePop{
+    0%{ transform:scale(1); }
+    35%{ transform:scale(1.55); box-shadow:0 0 10px var(--amber); }
+    100%{ transform:scale(1); }
+  }
+
+  /* Ripple genérico ao clicar em botões — feedback tátil instantâneo. */
+  .ui-ripple{
+    position:absolute; border-radius:50%; pointer-events:none;
+    background:#ffffff3a; transform:scale(0); opacity:1;
+    animation: rippleGrow .55s ease-out forwards;
+  }
+  @keyframes rippleGrow{
+    to{ transform:scale(1); opacity:0; }
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: tabFadeIn .4s ease both; }
+  @keyframes tabFadeIn{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .tab-content.active .panel{ animation: panelRise .45s cubic-bezier(.16,1,.3,1) both; }
+  .tab-content.active .panel:nth-of-type(2){ animation-delay:.05s; }
+  .tab-content.active .panel:nth-of-type(3){ animation-delay:.1s; }
+  .tab-content.active .panel:nth-of-type(4){ animation-delay:.15s; }
+  .tab-content.active .panel:nth-of-type(5){ animation-delay:.2s; }
+  @keyframes panelRise{
+    0%{ opacity:0; transform:translateY(14px) scale(.985); }
+    70%{ opacity:1; transform:translateY(-2px) scale(1.003); }
+    100%{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  .sidebar .gauge{ animation: panelRise .4s cubic-bezier(.16,1,.3,1) both; }
+  .sidebar .gauge:nth-child(1){ animation-delay:.02s; }
+  .sidebar .gauge:nth-child(2){ animation-delay:.06s; }
+  .sidebar .gauge:nth-child(3){ animation-delay:.1s; }
+  .sidebar .gauge:nth-child(4){ animation-delay:.14s; }
+  .sidebar .gauge:nth-child(5){ animation-delay:.18s; }
+  .sidebar .gauge:nth-child(6){ animation-delay:.22s; }
+
+  .blocks-container{ padding: 16px 22px; }
+  .blocks-toolbar{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;
+  }
+  .blocks-toolbar .title{font-size:11px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; font-weight:600;}
+  .blocks-refresh-hint{font-size:10px; color:var(--muted-2);}
+  .blocks-scroll{
+    display:flex; gap:12px; overflow-x:auto; padding-bottom:10px;
+    scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
+  }
+  .blocks-scroll::-webkit-scrollbar{height:6px;}
+  .blocks-scroll::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:6px;}
+  .block-card{
+    min-width:210px; flex:0 0 auto; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:10px; padding:14px; transition:transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease, border-color .2s ease;
+    position:relative; overflow:hidden;
+  }
+  .block-card::after{
+    content:''; position:absolute; top:0; left:-60%; width:35%; height:100%;
+    background:linear-gradient(115deg, transparent, #ffffff10, transparent);
+    transform:skewX(-20deg); transition: left .7s ease; pointer-events:none;
+  }
+  .block-card:hover::after{ left:140%; }
+  .block-card:hover{border-color:var(--green-dim); transform:translateY(-4px) scale(1.015); box-shadow:0 14px 28px -10px #000c;}
+  .block-card:first-child{border-color:var(--green-dim); box-shadow:0 0 0 1px var(--green-dim); }
+  /* Bloco novo a entrar: desliza da esquerda, faz um "pop" e pisca a
+     verde uma vez, para chamar a atenção quando surge um bloco novo. */
+  .block-card.bc-new{
+    animation: blockCardEnter .6s cubic-bezier(.22,1,.36,1) both,
+               blockCardEnterFlash 1.3s ease-out .1s both;
+  }
+  @keyframes blockCardEnter{
+    0%{ opacity:0; transform:translateX(-26px) scale(.94); }
+    100%{ opacity:1; transform:translateX(0) scale(1); }
+  }
+  @keyframes blockCardEnterFlash{
+    0%{ box-shadow:0 0 0 1px var(--green-dim), 0 0 0px var(--green-dim); }
+    30%{ box-shadow:0 0 0 1px var(--green-dim), 0 0 34px -2px var(--green-dim); }
+    100%{ box-shadow:0 0 0 1px transparent, 0 0 0px transparent; }
+  }
+  .block-card .bc-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    border-bottom:1px solid var(--line); padding-bottom:9px; margin-bottom:9px;
+  }
+  .block-card .bc-height{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; color:var(--text);}
+  .block-card .bc-time{font-size:10px; color:var(--muted-2);}
+  .block-card .bc-row{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); margin-bottom:7px;}
+  .block-card .bc-row .bc-ico{color:var(--muted); font-size:11px; width:14px; text-align:center;}
+  .block-card .bc-pool{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    border-top:1px solid var(--line); padding-top:9px; margin-top:2px;
+  }
+  .block-card .bc-pool-name{font-size:11px; color:var(--cyan); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .block-card .bc-pool-logo{width:18px; height:18px; border-radius:4px; background:#081119; object-fit:contain; flex:0 0 auto;}
+  .blocks-empty{text-align:center; color:var(--muted); font-size:12px; padding:30px;}
+

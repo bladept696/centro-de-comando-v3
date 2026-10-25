@@ -26,6 +26,7 @@ python -m PyInstaller --noconfirm --onefile --windowed ^
     --name "CentroDeComando" ^
     --icon "app_icon.ico" ^
     --add-data "nerdqaxe-dashboard.html;." ^
+    --add-data "dashboard;dashboard" ^
     --add-data "overlay-obs.html;." ^
     --add-data "bitminer33-banner.png;." ^
     --add-data "baroneclub-banner.png;." ^

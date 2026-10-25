@@ -1,0 +1,474 @@
+
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #060d14;
+    --panel: #0d1a26;
+    --panel-2: #0f2130;
+    --line: #16334033;
+    --line-strong: #1c3a49;
+    --green: #21ffb0;
+    --green-dim: #21ffb055;
+    --amber: #ffb020;
+    --amber-dim: #ffb02044;
+    --red: #ff5d5d;
+    --cyan: #4fd6ff;
+    --text: #eaf6f7;
+    --muted: #6f95a3;
+    --muted-2: #4a6975;
+    --glow-1: #0d2230;
+    --glow-2: #0a2a24;
+    --deep: #09141e;
+    --frame-top: #0b1723;
+    --header-top: #0e1e2c;
+  }
+
+  body[data-theme="cyberpunk"]{
+    --bg: #0a0514;
+    --panel: #170a24;
+    --panel-2: #1d0e2e;
+    --line: #4a247033;
+    --line-strong: #5c2d8a;
+    --green: #39ff8a;
+    --green-dim: #39ff8a55;
+    --amber: #ff2ec4;
+    --amber-dim: #ff2ec444;
+    --red: #ff2050;
+    --cyan: #00f0ff;
+    --text: #f3e8ff;
+    --muted: #a487c9;
+    --muted-2: #6b4a94;
+    --glow-1: #2d0a4a;
+    --glow-2: #3a0a2e;
+    --deep: #12061e;
+    --frame-top: #180a28;
+    --header-top: #1d0e30;
+  }
+
+  body[data-theme="matrix"]{
+    --bg: #000603;
+    --panel: #001a0a;
+    --panel-2: #002611;
+    --line: #00ff4133;
+    --line-strong: #00c73655;
+    --green: #00ff41;
+    --green-dim: #00ff4155;
+    --amber: #baff29;
+    --amber-dim: #baff2944;
+    --red: #ff3b3b;
+    --cyan: #00ffc8;
+    --text: #c3ffd1;
+    --muted: #4d9e63;
+    --muted-2: #2f6b41;
+    --glow-1: #001f0d;
+    --glow-2: #00140a;
+    --deep: #000f06;
+    --frame-top: #001309;
+    --header-top: #00190c;
+  }
+
+  body[data-theme="oled"]{
+    --bg: #000000;
+    --panel: #070707;
+    --panel-2: #0b0b0b;
+    --line: #ffffff14;
+    --line-strong: #ffffff26;
+    --green: #21ffb0;
+    --green-dim: #21ffb055;
+    --amber: #ffb020;
+    --amber-dim: #ffb02044;
+    --red: #ff5d5d;
+    --cyan: #4fd6ff;
+    --text: #f5f5f5;
+    --muted: #888888;
+    --muted-2: #555555;
+    --glow-1: #050505;
+    --glow-2: #050505;
+    --deep: #000000;
+    --frame-top: #050505;
+    --header-top: #080808;
+  }
+
+  /* Tema "Glass" — inspirado em dashboards de vidro/3D (painéis
+     translúcidos com blur, gradientes azul/ciano, brilho suave). Usa a
+     mesma estrutura de variáveis dos outros temas, por isso todos os
+     componentes existentes (panels, gauges, cards) herdam-no sem
+     precisarem de CSS extra — o blur/reflexo extra é adicionado mais
+     abaixo, só para este tema. */
+  body[data-theme="glass"]{
+    --bg: #0a1330;
+    --panel: rgba(24, 43, 84, 0.55);
+    --panel-2: rgba(16, 30, 63, 0.65);
+    --line: #3a5fa02e;
+    --line-strong: #5f8cff88;
+    --green: #2fd0ff;
+    --green-dim: #2fd0ff55;
+    --amber: #7c9bff;
+    --amber-dim: #7c9bff44;
+    --red: #ff5d7d;
+    --cyan: #6fe8ff;
+    --text: #eef4ff;
+    --muted: #90a6d1;
+    --muted-2: #5f76a5;
+    --glow-1: #1d3f92;
+    --glow-2: #12326c;
+    --deep: rgba(9, 17, 43, 0.65);
+    --frame-top: #101f47;
+    --header-top: #16295c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, var(--glow-1) 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, var(--glow-2) 0%, transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    min-height:100vh;
+    padding:22px;
+    transition: background 0.3s ease, color 0.3s ease;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Fundo ambiente: dois brilhos que derivam lentamente pelo ecrã, dando
+     sensação de painel "vivo" sem nunca distrair da leitura dos dados. */
+  body::before, body::after{
+    content:''; position:fixed; z-index:-1; pointer-events:none;
+    border-radius:50%; will-change:transform;
+  }  body::before{
+    width:520px; height:520px; top:-180px; left:-140px;
+    background:radial-gradient(circle, var(--glow-1), transparent 70%);
+    /* Duas animações com períodos diferentes (24s posição, 7.3s "respirar")
+       - decorrelacionadas de propósito, para o movimento nunca parecer um
+       único loop perfeitamente sincronizado a repetir-se. */
+    animation: driftBlobA 24s ease-in-out infinite, blobBreathe 7.3s ease-in-out infinite;
+  }
+  body::after{
+    width:460px; height:460px; bottom:-150px; right:-110px;
+    background:radial-gradient(circle, var(--glow-2), transparent 70%);
+    animation: driftBlobB 30s ease-in-out infinite, blobBreathe 9.1s ease-in-out infinite reverse;
+  }
+  @keyframes driftBlobA{
+    0%{ transform:translate(0,0) scale(1) rotate(0deg); }
+    28%{ transform:translate(55px,-20px) scale(1.08) rotate(6deg); }
+    52%{ transform:translate(70px,55px) scale(1.18) rotate(-4deg); }
+    77%{ transform:translate(15px,80px) scale(1.05) rotate(3deg); }
+    100%{ transform:translate(0,0) scale(1) rotate(0deg); }
+  }
+  @keyframes driftBlobB{
+    0%{ transform:translate(0,0) scale(1) rotate(0deg); }
+    30%{ transform:translate(-45px,15px) scale(1.1) rotate(-5deg); }
+    58%{ transform:translate(-60px,-35px) scale(1.12) rotate(4deg); }
+    82%{ transform:translate(-10px,-60px) scale(1.04) rotate(-2deg); }
+    100%{ transform:translate(0,0) scale(1) rotate(0deg); }
+  }
+  /* Período propositadamente "primo" em relação aos das animações de
+     posição, para o padrão combinado só se repetir ao fim de vários
+     minutos - imperceptível a olho, evita o efeito "loop de 20s óbvio". */
+  @keyframes blobBreathe{
+    0%,100%{ opacity:.42; }
+    50%{ opacity:.62; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    body::before, body::after{ animation: none; opacity: .55; }
+  }
+
+  /* Fundo animado "low-poly" azul/dourado, dentro da própria .frame (por
+     trás de todo o conteúdo, preenchendo os espaços entre painéis e o
+     cabeçalho) — cobre a altura toda da frame, ajustada dinamicamente por JS.
+     Substitui o antigo efeito de chuva Matrix. */
+  #bodyMatrixCanvas{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    width:100vw; height:100vh; opacity:.5;
+  }
+  @media (prefers-reduced-motion: reduce){
+    #bodyMatrixCanvas{ display:none; }
+  }
+
+  .frame{
+    max-width:1500px;
+    margin:0 auto;
+    border:1px solid var(--line-strong);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow: 0 0 0 1px #ffffff08, 0 30px 80px -30px #000c;
+    background:linear-gradient(180deg, var(--frame-top), var(--bg) 60%);
+    position:relative;
+  }
+
+  /* Grelha subtil tipo terminal, a deslizar muito devagar por trás de tudo
+     — dá a sensação de "centro de comando" sempre ativo. */
+  .frame::before{
+    content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 42px 42px;
+    opacity:.35;
+    animation: gridDrift 40s linear infinite;
+    mask-image: linear-gradient(180deg, #000 0%, #000 60%, transparent 100%);
+  }
+  @keyframes gridDrift{
+    from{ background-position: 0 0, 0 0; }
+    to{ background-position: 420px 0, 0 420px; }
+  }
+
+  /* Holofote que segue o rato pelo painel — atualizado via JS (--mx/--my). */
+  .frame::after{
+    content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+    background: radial-gradient(320px circle at var(--mx,50%) var(--my,0%), #21ffb014, transparent 65%);
+    transition: background .1s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .frame::before{ animation:none; }
+  }
+
+  /* Easter eggs sazonais — puramente decorativos: um pequeno ícone junto
+     ao título e partículas suaves a flutuar (neve no Natal, morcegos no
+     Halloween). Nada disto tem qualquer efeito funcional; é só um toque
+     de carinho para quem passa por aqui numa data especial. */
+  .seasonal-particle-layer{
+    position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden;
+  }
+  .seasonal-particle{
+    position:absolute; top:-8%; will-change:transform; user-select:none;
+  }
+  .seasonal-snow{
+    color:var(--cyan);
+    animation-name: seasonalSnowFall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  .seasonal-bat{
+    color:var(--muted);
+    animation-name: seasonalBatDrift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+  .seasonal-pizza{
+    animation-name: seasonalPizzaFall;
+    animation-timing-function: ease-in;
+    animation-iteration-count: infinite;
+  }
+  @keyframes seasonalSnowFall{
+    0%{ transform: translate(0, -10vh) rotate(0deg); }
+    22%{ transform: translate(calc(var(--sway, 20px) * 0.6), 16vh) rotate(35deg); }
+    46%{ transform: translate(calc(var(--sway, 20px) * -0.9), 40vh) rotate(-25deg); }
+    71%{ transform: translate(calc(var(--sway, 20px) * 0.7), 74vh) rotate(55deg); }
+    100%{ transform: translate(calc(var(--sway, 20px) * -0.2), 110vh) rotate(15deg); }
+  }
+  @keyframes seasonalBatDrift{
+    0%, 100%{ transform: translate(0,0); }
+    50%{ transform: translate(-38vw, 18px); }
+  }
+  @keyframes seasonalPizzaFall{
+    0%{ transform: translateY(-10vh) rotate(0deg); }
+    100%{ transform: translateY(110vh) rotate(360deg); }
+  }
+  #seasonalIcon{
+    display:inline-block;
+    filter: drop-shadow(0 0 6px var(--green-dim));
+    animation: seasonalIconBob 3.4s ease-in-out infinite;
+  }
+  @keyframes seasonalIconBob{
+    0%, 100%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-2px) rotate(-4deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .seasonal-particle-layer{ display:none; }
+    #seasonalIcon{ animation:none; }
+  }
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 22px;
+    border-bottom:1px solid var(--line-strong);
+    background:linear-gradient(180deg,var(--header-top),var(--frame-top));
+  }
+  header h1{
+    font-size:15px;
+    letter-spacing:.14em;
+    margin:0;
+    font-weight:700;
+    text-transform:uppercase;
+    color:#dff7f2;
+    animation: bootFlicker 1.8s ease-in-out;
+  }
+  @keyframes bootFlicker{
+    0%{ opacity:0; }
+    4%{ opacity:1; }
+    8%{ opacity:.2; }
+    12%{ opacity:1; }
+    18%{ opacity:.4; }
+    22%{ opacity:1; }
+    100%{ opacity:1; }
+  }
+  header h1 span{color:var(--green); text-shadow:0 0 12px var(--green-dim);}
+  .subtitle{font-size:11px; color:var(--muted); margin-top:3px; letter-spacing:.04em;}
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sound-toggle-btn {
+    background: var(--green-dim);
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+  .sound-toggle-btn.muted {
+    background: var(--red-dim, #2b0d0d);
+    border-color: #ff5d5d55;
+    color: var(--red);
+  }
+  .theme-select {
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    outline: none;
+  }
+  .theme-select:hover { border-color: var(--cyan); }
+
+  .status-pill{
+    display:flex; align-items:center; gap:8px;
+    font-size:11px; padding:6px 12px; border-radius:20px;
+    border:1px solid var(--line-strong); color:var(--green);
+    background:var(--green-dim);
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green); box-shadow:0 0 8px var(--green); animation: dotPulse 2.2s ease-in-out infinite;}
+  @keyframes dotPulse{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.2); }
+  }
+
+  .critical-alarm-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(90deg, #4a0a0a, #6b0f0f);
+    border-bottom: 2px solid var(--red);
+    padding: 10px 22px;
+    animation: criticalPulse 1s infinite;
+  }
+  @keyframes criticalPulse {
+    0%, 100% { background: linear-gradient(90deg, #4a0a0a, #6b0f0f); }
+    50% { background: linear-gradient(90deg, #6b0f0f, #8f1414); }
+  }
+  .critical-alarm-icon { font-size: 16px; display:inline-block; animation: alarmShake 1s ease-in-out infinite; }
+  @keyframes alarmShake{
+    0%,100%{ transform:rotate(0deg); }
+    20%{ transform:rotate(-14deg); }
+    40%{ transform:rotate(12deg); }
+    60%{ transform:rotate(-8deg); }
+    80%{ transform:rotate(6deg); }
+  }
+  .critical-alarm-text {
+    flex: 1;
+    color: #ffdede;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .critical-alarm-silence {
+    background: #2b0d0d;
+    border: 1px solid var(--red);
+    color: #ffdede;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .critical-alarm-silence:hover { background: #3a1010; }
+
+  .nav-menu {
+    position: relative;
+    background: #081119;
+    border-bottom: 1px solid var(--line-strong);
+    padding: 10px 22px;
+  }
+  .nav-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    max-width: 340px;
+    background: var(--panel, #0b1622);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 11px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .nav-menu-btn:hover { border-color: var(--green); }
+  .nav-menu-btn { position: relative; overflow: hidden; transition: border-color .2s ease; }
+  .nav-menu-btn::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--green), var(--cyan), var(--amber), var(--green));
+    background-size: 300% 100%;
+    animation: navBarFlow 6s linear infinite;
+    opacity: .55;
+  }
+  @keyframes navBarFlow {
+    0% { background-position: 0% 0; }
+    100% { background-position: 300% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nav-menu-btn::before { animation: none; }
+  }
+  .nav-menu-btn .nav-menu-badges { display: flex; gap: 6px; margin-left: auto; }
+  .nav-menu-caret {
+    color: var(--muted);
+    font-size: 10px;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .nav-menu.open .nav-menu-caret { transform: rotate(180deg); }
+  .nav-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 22px;
+    right: 22px;
+    max-width: 340px;
+    background: #0b1622;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 80;
+    box-shadow: 0 16px 34px -10px #000c;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .nav-menu.open .nav-menu-dropdown { display: flex; }
+

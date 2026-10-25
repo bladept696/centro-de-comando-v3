@@ -63,6 +63,7 @@ Source: "app_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 ; PyInstaller já os inclui dentro do --onefile, podes remover estas linhas
 ; para não duplicar.
 Source: "nerdqaxe-dashboard.html"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dashboard\*"; DestDir: "{app}\dashboard"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "overlay-obs.html"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "rainmeter-skin\*"; DestDir: "{app}\rainmeter-skin"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 ; NOTA: config.json (MQTT, IPs das máquinas, perfis) NÃO é copiado aqui de

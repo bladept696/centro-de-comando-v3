@@ -1,0 +1,64 @@
+
+#authGate{position:fixed;inset:0;z-index:2147483000;background:radial-gradient(circle at 30% 20%,#1b1f2a,#0b0d12 70%);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec}
+#authGate.hidden{display:none}
+#authGate .ag-card{width:min(380px,92vw);background:#14171f;border:1px solid #2a2f3c;border-radius:14px;padding:28px 26px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+#authGate h1{margin:0 0 4px;font-size:20px;color:#f7931a}
+#authGate p.ag-sub{margin:0 0 18px;font-size:13px;color:#9aa0ae}
+#authGate label{display:block;font-size:12px;color:#9aa0ae;margin:12px 0 4px}
+#authGate input{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #2a2f3c;background:#0d1016;color:#fff;font-size:14px;outline:none}
+#authGate input:focus{border-color:#f7931a}
+#authGate button.ag-main{width:100%;margin-top:18px;padding:11px;border:0;border-radius:8px;background:#f7931a;color:#111;font-weight:700;font-size:14px;cursor:pointer}
+#authGate button.ag-main:disabled{opacity:.6;cursor:wait}
+#authGate .ag-links{display:flex;justify-content:space-between;margin-top:14px;font-size:12px}
+#authGate .ag-links a{color:#f7931a;cursor:pointer;text-decoration:none}
+#authGate .ag-msg{min-height:18px;margin-top:12px;font-size:12.5px}
+#authGate .ag-msg.err{color:#ff6b6b}
+#authGate .ag-msg.ok{color:#5fd38d}
+#authUserPill{position:fixed;right:12px;bottom:76px;z-index:10001;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
+#authUserPill button{background:none;border:0;color:#f7931a;cursor:pointer;font-size:12px;padding:0}
+#authUserPill button#authDelete{color:#ff6b6b}
+#authUserPill .ap-sep{color:#2a2f3c}
+#userCountsBar{position:fixed;right:12px;bottom:110px;z-index:10001;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
+#userCountsBar .uc-dot{width:7px;height:7px;border-radius:50%;background:#5fd38d;box-shadow:0 0 5px #5fd38d;flex-shrink:0}
+#userCountsBar .uc-num{font-weight:700;color:#e8e8ec}
+#authDeleteModal{position:fixed;inset:0;z-index:2147483100;background:rgba(5,7,12,.72);display:none;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec;backdrop-filter:blur(3px)}
+#authDeleteModal.open{display:flex}
+#authDeleteModal .adm-card{width:min(400px,92vw);background:#14171f;border:1px solid #3a2030;border-radius:14px;padding:26px 24px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#authDeleteModal h2{margin:0 0 6px;font-size:18px;color:#ff6b6b}
+#authDeleteModal p.adm-sub{margin:0 0 6px;font-size:13px;color:#9aa0ae;line-height:1.5}
+#authDeleteModal label{display:block;font-size:12px;color:#9aa0ae;margin:12px 0 4px}
+#authDeleteModal input{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #2a2f3c;background:#0d1016;color:#fff;font-size:14px;outline:none}
+#authDeleteModal input:focus{border-color:#ff6b6b}
+#authDeleteModal .adm-msg{min-height:18px;margin-top:10px;font-size:12.5px;color:#ff6b6b}
+#authDeleteModal .adm-actions{display:flex;gap:10px;margin-top:18px}
+#authDeleteModal button{flex:1;padding:11px;border:0;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer}
+#authDeleteModal button:disabled{opacity:.6;cursor:wait}
+#authDeleteModal .adm-cancel{background:#2a2f3c;color:#e8e8ec}
+#authDeleteModal .adm-confirm{background:#ff5a5a;color:#fff}
+#authProfileModal{position:fixed;inset:0;z-index:2147483100;background:rgba(5,7,12,.72);display:none;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec;backdrop-filter:blur(3px)}
+#authProfileModal.open{display:flex}
+#authProfileModal .apm-card{width:min(460px,94vw);max-height:88vh;overflow:auto;background:#14171f;border:1px solid #2a2f3c;border-radius:14px;padding:24px}
+#authProfileModal h2{margin:0 0 2px;font-size:19px;color:#f7931a}
+#authProfileModal .apm-close{float:right;background:none;border:0;color:#9aa0ae;font-size:20px;cursor:pointer;line-height:1}
+#authProfileModal .apm-meta{font-size:12.5px;color:#9aa0ae;margin:6px 0 14px;line-height:1.7}
+#authProfileModal .apm-meta b{color:#e8e8ec;font-weight:600}
+#authProfileModal .apm-sec{border-top:1px solid #2a2f3c;padding-top:14px;margin-top:14px}
+#authProfileModal .apm-sec h3{margin:0 0 8px;font-size:13px;color:#cfd3dc;text-transform:uppercase;letter-spacing:.4px}
+#authProfileModal label{display:block;font-size:12px;color:#9aa0ae;margin:8px 0 4px}
+#authProfileModal input{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid #2a2f3c;background:#0d1016;color:#fff;font-size:14px;outline:none}
+#authProfileModal input:focus{border-color:#f7931a}
+#authProfileModal .apm-btn{margin-top:10px;padding:9px 14px;border:0;border-radius:8px;background:#f7931a;color:#111;font-weight:700;font-size:13px;cursor:pointer}
+#authProfileModal .apm-btn:disabled{opacity:.6;cursor:wait}
+#authProfileModal .apm-rowmsg{min-height:16px;margin-top:8px;font-size:12px}
+#authProfileModal .apm-rowmsg.err{color:#ff6b6b}
+#authProfileModal .apm-rowmsg.ok{color:#5fd38d}
+#authProfileModal .apm-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:middle}
+#authProfileModal .apm-badge.ver{background:#143d28;color:#5fd38d}
+#authProfileModal .apm-badge.unver{background:#4a2420;color:#ff8f6b}
+#authProfileModal .apm-act{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+#authProfileModal .apm-act th,#authProfileModal .apm-act td{text-align:left;padding:5px 6px;border-bottom:1px solid #20242e;color:#c3c8d2}
+#authProfileModal .apm-act th{color:#8a90a0;font-weight:600}
+#authVerifyBanner{position:fixed;left:50%;transform:translateX(-50%);top:0;z-index:2147482500;display:none;align-items:center;gap:12px;padding:8px 16px;border-radius:0 0 10px 10px;background:#4a2420;border:1px solid #6a3328;border-top:0;color:#ffcbb8;font:13px system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#authVerifyBanner.show{display:flex}
+#authVerifyBanner button{background:#ff8f3a;border:0;border-radius:6px;color:#111;font-weight:700;font-size:12px;padding:5px 10px;cursor:pointer}
+#authVerifyBanner .avb-x{background:none;color:#ffcbb8;font-size:14px;padding:0 2px}

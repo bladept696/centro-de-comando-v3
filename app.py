@@ -4507,8 +4507,13 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
-        if str(getattr(self, 'path', '')).split('?')[0].endswith('.html'):
+        _p = str(getattr(self, 'path', '')).split('?')[0]
+        if _p.endswith('.html'):
             self.send_header('Cache-Control', 'no-store')
+        elif _p.endswith(('.js', '.css')):
+            # a dashboard está dividida em ficheiros: o browser tem de os rever sempre,
+            # senão uma atualização podia misturar páginas novas com scripts antigos
+            self.send_header('Cache-Control', 'no-cache')
         super().end_headers()
 
 

@@ -41,7 +41,13 @@ executável final fica em `dist/CentroDeComando.exe`.
 ## Ficheiros
 
 - `app.py` — servidor local + launcher
-- `nerdqaxe-dashboard.html` — o painel/dashboard
+- `nerdqaxe-dashboard.html` — a estrutura (HTML) do painel
+- `dashboard/css/` — os estilos, por assunto (`base`, `mempool`, `escritorio`, ...)
+- `dashboard/js/` — o código, por assunto. Os ficheiros numerados (`01-` a `19-`)
+  são carregados por esta ordem e partilham as mesmas variáveis; os restantes
+  (`login`, `chat`, `noticias`, `escritorio`, `firebase-init`) vêm depois.
+  Para acrescentar um ficheiro novo, junta uma linha `<script src="dashboard/js/...">`
+  (ou `<link>` para CSS) ao HTML, na posição certa.
 - `bitminer33-banner.png` — banner do separador "Apoiantes"
 - `baroneclub-banner.png` — banner do separador "Apoiantes"
 - `lightning-qrcode.png` — QR code Lightning para doações

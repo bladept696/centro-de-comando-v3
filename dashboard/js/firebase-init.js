@@ -1,0 +1,1 @@
+window.hcFbInit = function(apiKey, dbUrl){ if(!firebase.apps.length) firebase.initializeApp({ apiKey: apiKey, authDomain: 'dashboard-a07d4.firebaseapp.com', databaseURL: dbUrl || 'https://dashboard-a07d4-default-rtdb.firebaseio.com' }); return firebase.app(); };
