@@ -88,3 +88,32 @@ document.addEventListener('keydown', e => {
   const tab = $('mcBoard') && $('mcBoard').closest('.tab-content');
   if(tab && tab.classList.contains('active')) mcHelpToggle();
 });
+
+// ---- limites de alerta ----
+const MC_TH_FIELDS = [['tempWarm', 'mc_th_tempwarm', 30, 120, 1], ['tempHot', 'mc_th_temphot', 30, 130, 1], ['vrHot', 'mc_th_vr', 30, 150, 1], ['rej', 'mc_th_rej', 0.1, 50, 0.1], ['wifi', 'mc_th_wifi', -100, -40, 1], ['ping', 'mc_th_ping', 50, 5000, 10], ['stuckMin', 'mc_th_stuck', 3, 120, 1]];
+function mcLimitsOpen(){
+  mcCompareClose();
+  const m = document.createElement('div');
+  m.id = 'mcCompare'; m.className = 'mc-cmp';
+  m.innerHTML = '<div class="mc-cmp-card mc-help" role="dialog" aria-modal="true"><div class="mc-cmp-head"><b>🎚 ' + t('mc_th_title') + '</b><button type="button" data-cmp="close" aria-label="' + t('mc_cmp_close') + '">✕</button></div>' +
+    '<div class="mc-th-form">' + MC_TH_FIELDS.map(([k, key, min, max, step]) => '<label><span>' + t(key) + '</span><input type="number" data-th="' + k + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + mc.th[k] + '"></label>').join('') + '</div>' +
+    '<div class="mc-cmp-note">' + t('mc_th_note') + '</div><div class="mc-th-actions"><button type="button" data-th-act="reset">' + t('mc_th_reset') + '</button><button type="button" data-th-act="save" class="primary">' + t('mc_th_save') + '</button></div></div>';
+  m.addEventListener('click', e => {
+    if(e.target === m || e.target.closest('[data-cmp="close"]')){ m.remove(); return; }
+    const a = e.target.closest('[data-th-act]');
+    if(!a) return;
+    if(a.dataset.thAct === 'reset'){ m.querySelectorAll('[data-th]').forEach(i => { i.value = MC_TH_DEFAULT[i.dataset.th]; }); return; }
+    const v = {};
+    for(const [k, , min, max] of MC_TH_FIELDS){
+      const n = parseFloat(m.querySelector('[data-th="' + k + '"]').value);
+      if(!isFinite(n) || n < min || n > max){ alert(t('mc_th_bad')); return; }
+      v[k] = n;
+    }
+    if(v.tempWarm >= v.tempHot){ alert(t('mc_th_bad')); return; }
+    mc.th = v;
+    try { localStorage.setItem(MC_TH_KEY, JSON.stringify(v)); } catch(e2) {}
+    m.remove(); renderAll();
+    setQuickActionStatus(t('mc_th_saved'));
+  });
+  document.body.appendChild(m);
+}

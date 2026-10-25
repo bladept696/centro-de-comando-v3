@@ -297,7 +297,51 @@ function mcLoadNetwork(){
 setTimeout(mcLoadNetwork, 3000);
 setInterval(mcLoadNetwork, 10 * 60000);
 
+// ---- linha do tempo do estado nas últimas 24 h (só guarda as mudanças) ----
+const MC_TL_KEY = 'nerdqaxe:timeline';
+mc.tl = (() => { try { return JSON.parse(localStorage.getItem(MC_TL_KEY) || '{}'); } catch(e) { return {}; } })();
+mc.tlSaved = 0;
+function mcTimelineTrack(list, states){
+  const now = Date.now(), cut = now - 24 * 3600e3;
+  list.forEach(dev => {
+    const arr = mc.tl[dev.id] = mc.tl[dev.id] || [], st = states[dev.id];
+    if(!arr.length || arr[arr.length - 1].s !== st) arr.push({ t: now, s: st });
+    while(arr.length > 1 && arr[1].t < cut) arr.shift();      // fica uma entrada anterior às 24 h para o início da barra
+  });
+  if(now - mc.tlSaved > 30000){ mc.tlSaved = now; try { localStorage.setItem(MC_TL_KEY, JSON.stringify(mc.tl)); } catch(e) {} }
+}
+function mcTimelineHtml(id){
+  const arr = mc.tl[id];
+  if(!arr || !arr.length) return '';
+  const now = Date.now(), from = now - 24 * 3600e3, W = now - from, tm = ts => new Date(ts).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' });
+  let segs = '';
+  if(arr[0].t > from) segs += '<i style="width:' + ((arr[0].t - from) / W * 100).toFixed(2) + '%;background:var(--line-strong);opacity:.4" title="' + t('mc_tl_none') + '"></i>';
+  arr.forEach((e, i) => {
+    const a = Math.max(e.t, from), b = i + 1 < arr.length ? arr[i + 1].t : now;
+    if(b <= a) return;
+    segs += '<i style="width:' + ((b - a) / W * 100).toFixed(2) + '%;background:' + MC_STATUS[e.s].color + '" title="' + MC_STATUS[e.s].label + ' · ' + tm(a) + ' → ' + tm(b) + '"></i>';
+  });
+  return '<div class="mc-hist-head"><span>' + t('mc_tl_title') + '</span></div><div class="mc-tl-bar">' + segs + '</div><div class="mc-hist-axis"><span>' + t('mc_tl_ago') + '</span><span>' + t('mc_tl_now') + '</span></div>';
+}
+
+// ---- sugestão de afinação: compara a eficiência (J/TH) observada em cada frequência nas últimas 24 h ----
+function mcTuneHint(id){
+  const h = (histories[id] || []).filter(x => x && x.ts >= Date.now() - 24 * 3600e3 && Number(x.frequency) > 0 && Number(x.hashrate) > 0 && Number(x.power) > 0);
+  if(h.length < 16) return '';
+  const g = {};
+  h.forEach(x => {
+    const f = Math.round(Number(x.frequency) / 5) * 5, e = (g[f] = g[f] || { n: 0, eff: 0 });
+    e.n++; e.eff += Number(x.efficiency) > 0 ? Number(x.efficiency) : Number(x.power) / (Number(x.hashrate) / 1000);
+  });
+  const rows = Object.keys(g).map(f => ({ f: Number(f), n: g[f].n, eff: g[f].eff / g[f].n })).filter(r => r.n >= 8);
+  if(rows.length < 2) return '';
+  const cur = Math.round(Number(h[h.length - 1].frequency) / 5) * 5, now = rows.find(r => r.f === cur), best = rows.reduce((a, b) => b.eff < a.eff ? b : a);
+  if(!now || best.f === now.f || best.eff > now.eff * 0.97) return '';
+  return '<div class="mc-hint-tune">' + mct('mc_tune_better', best.f, best.eff.toFixed(1), now.f, now.eff.toFixed(1)) + '</div>';
+}
+
 function mcExtraRender(list, states){
+  mcTimelineTrack(list, states);
   mcUptimeTrack(list);
   if(typeof mcToolsRender === 'function') mcToolsRender();
   mcGlobalHealth(list, states);
