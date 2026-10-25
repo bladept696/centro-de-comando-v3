@@ -21,6 +21,12 @@ const mc = { prefs: { filter: 'all', sort: 'status', view: 'cards', q: '', fx: '
 try { Object.assign(mc.prefs, JSON.parse(localStorage.getItem(MC_KEY) || '{}')); } catch(e) {}
 try { mc.log = JSON.parse(localStorage.getItem(MC_LOG_KEY) || '[]').filter(e => new Date(e.t).toDateString() === new Date().toDateString()); } catch(e) { mc.log = []; }
 
+// limites que decidem o estado e os avisos (configuráveis no menu ⚙ > Limites de alerta)
+const MC_TH_KEY = 'nerdqaxe:thresholds';
+const MC_TH_DEFAULT = { tempWarm: 65, tempHot: 75, vrHot: 85, rej: 2, wifi: -80, ping: 400, stuckMin: 10 };
+mc.th = Object.assign({}, MC_TH_DEFAULT);
+try { Object.assign(mc.th, JSON.parse(localStorage.getItem(MC_TH_KEY) || '{}')); } catch(e) {}
+
 // efeitos 3D (inclinação, profundidade, reflexo): desligam-se no modo Desempenho e com "reduzir movimento"
 function mcFxOn(){
   let reduced = false;
@@ -31,7 +37,7 @@ function mcFxOn(){
 }
 // Máquina "presa": online, mas sem novas partilhas aceites há MC_STUCK_MIN minutos, ou com o hashrate a zero.
 // O aviso fica na própria leitura (r.mcStuck, em minutos) para o estado e os alertas o verem.
-const MC_STUCK_MIN = 10, MC_ZERO_MIN = 3;
+const MC_ZERO_MIN = 3;
 function mcStuckWatch(list){
   const now = Date.now();
   list.forEach(dev => {
@@ -42,9 +48,9 @@ function mcStuckWatch(list){
     const hash = Number(r.hashrate_raw != null ? r.hashrate_raw : r.hashrate);
     if(isFinite(acc)){ if(a.v == null || acc !== a.v){ a.v = acc; a.t = now; } }   // contador mudou (ou voltou a zero num reinício)
     if(isFinite(hash) && hash <= 0){ if(a.z == null) a.z = now; } else a.z = null;
-    const boot = Number(r.uptime) > 0 && Number(r.uptime) < MC_STUCK_MIN * 60;       // acabou de arrancar: ainda é cedo
+    const SM = mc.th.stuckMin, boot = Number(r.uptime) > 0 && Number(r.uptime) < SM * 60;       // acabou de arrancar: ainda é cedo
     const idleMin = (now - a.t) / 60000, zeroMin = a.z ? (now - a.z) / 60000 : 0;
-    if(!boot && isFinite(acc) && idleMin >= MC_STUCK_MIN) r.mcStuck = { kind: 'shares', min: Math.round(idleMin) };
+    if(!boot && isFinite(acc) && idleMin >= SM) r.mcStuck = { kind: 'shares', min: Math.round(idleMin) };
     else if(zeroMin >= MC_ZERO_MIN) r.mcStuck = { kind: 'zero', min: Math.round(zeroMin) };
     else delete r.mcStuck;
   });
@@ -53,11 +59,11 @@ function mcStateOf(r){
   if(!r) return 'idle';
   if(!r.online) return r.portalMode ? 'portal' : 'off';
   const temp = Number(r.temp);
-  if(temp >= 75 || (r.vrTemp != null && r.vrTemp >= 85)) return 'hot';
-  if(temp >= 65) return 'warm';
+  if(temp >= mc.th.tempHot || (r.vrTemp != null && r.vrTemp >= mc.th.vrHot)) return 'hot';
+  if(temp >= mc.th.tempWarm) return 'warm';
   if(r.mcStuck) return 'warn';
   const shares = (r.accepted || 0) + (r.rejected || 0);
-  if((shares > 20 && r.rejected / shares > 0.02) || (r.rssi != null && r.rssi <= -80) || (r.poolPing != null && r.poolPing > 400)) return 'warn';
+  if((shares > 20 && r.rejected / shares > mc.th.rej / 100) || (r.rssi != null && r.rssi <= mc.th.wifi) || (r.poolPing != null && r.poolPing > mc.th.ping)) return 'warn';
   return 'ok';
 }
 function mcFilterOf(st){ return st === 'warm' ? 'warn' : st === 'portal' ? 'off' : st; }
@@ -78,7 +84,7 @@ function mcHashText(r){
 }
 const mcNum = (v, d) => (v != null && isFinite(v) && Number(v) !== 0) ? Number(v).toFixed(d) : '—';
 const mcSignal = rssi => rssi == null ? 0 : rssi >= -55 ? 4 : rssi >= -65 ? 3 : rssi >= -75 ? 2 : rssi >= -85 ? 1 : 0;
-function mcTempLevel(t){ return t >= 75 ? 'bad' : t >= 65 ? 'warn' : 'ok'; }
+function mcTempLevel(t){ return t >= mc.th.tempHot ? 'bad' : t >= mc.th.tempWarm ? 'warn' : 'ok'; }
 
 // série de hashrate recente da máquina (do histórico que a dashboard já guarda)
 function mcTrendOf(dev){ return mcTrend(mcSeries(dev.id)); }
@@ -118,13 +124,13 @@ function mcAlertItems(dev, r, st, trend){
     if(sv.length >= 3){ const pct = sv.reduce((a, b) => a + b, 0) / sv.length / (dev.expected * 1000) * 100; if(pct < 85) add('warn', mct('mc_a_below', pct.toFixed(0)), 'below'); }
   }
   if(dev.mute > Date.now()) add('info', mct('mc_a_muted', new Date(dev.mute).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' })), 'mute');
-  if(r.temp >= 75) add('bad', mct('mc_a_tempcrit', Number(r.temp).toFixed(0)), 'temp');
-  else if(r.temp >= 65) add('warn', mct('mc_a_warm', Number(r.temp).toFixed(0)), 'temp');
-  if(r.vrTemp != null && r.vrTemp >= 85) add('bad', mct('mc_a_vr', Number(r.vrTemp).toFixed(0)), 'vr');
+  if(r.temp >= mc.th.tempHot) add('bad', mct('mc_a_tempcrit', Number(r.temp).toFixed(0)), 'temp');
+  else if(r.temp >= mc.th.tempWarm) add('warn', mct('mc_a_warm', Number(r.temp).toFixed(0)), 'temp');
+  if(r.vrTemp != null && r.vrTemp >= mc.th.vrHot) add('bad', mct('mc_a_vr', Number(r.vrTemp).toFixed(0)), 'vr');
   const sh = (r.accepted || 0) + (r.rejected || 0);
-  if(sh > 20 && r.rejected / sh > 0.02) add('warn', mct('mc_a_rej', (r.rejected / sh * 100).toFixed(1)), 'rej');
-  if(r.rssi != null && r.rssi <= -80) add('warn', mct('mc_a_wifi', r.rssi), 'wifi');
-  if(r.poolPing != null && r.poolPing > 400) add('warn', mct('mc_a_ping', Math.round(r.poolPing)), 'ping');
+  if(sh > 20 && r.rejected / sh > mc.th.rej / 100) add('warn', mct('mc_a_rej', (r.rejected / sh * 100).toFixed(1)), 'rej');
+  if(r.rssi != null && r.rssi <= mc.th.wifi) add('warn', mct('mc_a_wifi', r.rssi), 'wifi');
+  if(r.poolPing != null && r.poolPing > mc.th.ping) add('warn', mct('mc_a_ping', Math.round(r.poolPing)), 'ping');
   if(r.poolInfo && r.poolInfo.usingFallback) add('info', t('mc_a_fallback'), 'fallback');
   if(trend != null && trend <= -30) add('warn', mct('mc_a_drop', Math.abs(trend).toFixed(0)), 'drop');
   if(out.length === n0) add('good', t('mc_a_ok'), 'ok');
@@ -268,7 +274,7 @@ function mcUpdateCard(el, dev, r, st, i){
     mcSet(el, 'power', mcNum(r.power, 1) + ' W'); mcSet(el, 'eff', mcNum(r.efficiency, 1) + ' J/TH');
     const sh = (r.accepted || 0) + (r.rejected || 0), rej = sh ? r.rejected / sh * 100 : 0;
     mcSet(el, 'shares', (r.accepted || 0) + ' / ' + (r.rejected || 0) + (sh > 20 ? ' (' + rej.toFixed(1) + '%)' : ''));
-    el.querySelector('[data-f="shares"]').className = sh > 20 && rej > 2 ? 'warn' : '';
+    el.querySelector('[data-f="shares"]').className = sh > 20 && rej > mc.th.rej ? 'warn' : '';
     let best = '—'; if(r.best){ const f = formatDiff(r.best); best = f.value + ' ' + f.unit; }
     mcSet(el, 'best', best); mcSet(el, 'uptime', formatUptime(r.uptime).text);
     mcSet(el, 'ping', r.poolPing != null ? Math.round(r.poolPing) + ' ms' : '—');
@@ -286,7 +292,7 @@ function mcUpdateCard(el, dev, r, st, i){
   const setHtml = (n, h) => { if(n && n.dataset.s !== h){ n.dataset.s = h; n.innerHTML = h; } };
   if(mc.open.has(dev.id)){
     if(!more.dataset.shell){
-      more.innerHTML = '<div class="mc-hist"></div><div class="mc-more-grid"></div>' +
+      more.innerHTML = '<div class="mc-hist"></div><div class="mc-tl"></div><div class="mc-tune"></div><div class="mc-more-grid"></div>' +
         '<div class="mc-edit"><label class="mc-grp"><span>' + t('mc_e_name') + '</span><input type="text" data-a="name" maxlength="40"></label><label class="mc-grp"><span>IP</span><input type="text" data-a="ip" maxlength="60" inputmode="decimal"></label></div>' +
         '<label class="mc-grp"><span>' + t('mc_e_expected') + '</span><input type="number" step="0.1" min="0" data-a="expected" placeholder="TH/s"></label>' +
         '<label class="mc-grp"><span>' + t('mc_e_mute') + '</span><select data-a="mute"></select></label>' +
@@ -295,6 +301,8 @@ function mcUpdateCard(el, dev, r, st, i){
       more.dataset.shell = '1';
     }
     setHtml(more.querySelector('.mc-hist'), mcHistoryHtml(dev));
+    setHtml(more.querySelector('.mc-tl'), typeof mcTimelineHtml === 'function' ? mcTimelineHtml(dev.id) : '');
+    setHtml(more.querySelector('.mc-tune'), typeof mcTuneHint === 'function' ? mcTuneHint(dev.id) : '');
     setHtml(more.querySelector('.mc-more-grid'), mcMoreHtml(dev, r));
     const ms = more.querySelector('[data-a="mute"]');
     const muted = dev.mute > Date.now(), mh = (muted ? '<option value="cur" selected>' + mct('mc_a_muted', new Date(dev.mute).toLocaleTimeString(mcLocale(), { hour: '2-digit', minute: '2-digit' })) + '</option>' : '') +
@@ -332,7 +340,7 @@ function mcTableHtml(rows){
       '<td class="' + (on ? mcTempLevel(r.temp) : '') + '">' + (on ? mcNum(r.temp, 1) + ' °C' : '—') + '</td>' +
       '<td>' + (on ? mcNum(r.power, 1) + ' W' : '—') + '</td><td>' + (on ? mcNum(r.efficiency, 1) : '—') + '</td>' +
       '<td>' + (on && r.rssi != null ? r.rssi + ' dBm' : '—') + '</td><td>' + (on && r.poolPing != null ? Math.round(r.poolPing) + ' ms' : '—') + '</td>' +
-      '<td class="' + (sh > 20 && rej > 2 ? 'warn' : '') + '">' + (sh > 20 ? rej.toFixed(1) + '%' : '—') + '</td>' +
+      '<td class="' + (sh > 20 && rej > mc.th.rej ? 'warn' : '') + '">' + (sh > 20 ? rej.toFixed(1) + '%' : '—') + '</td>' +
       '<td>' + (on ? formatUptime(r.uptime).text : '—') + '</td>' +
       '<td class="mc-tact"><button type="button" data-a="web" title="' + t('mc_web_g') + '"' + (dev.ip ? '' : ' hidden') + '>↗</button><button type="button" data-a="restart" title="' + t('mc_restart_g') + '">⟲</button><button type="button" data-a="remove" class="mc-danger" title="' + t('mc_remove_g') + '">✕</button></td></tr>';
   });
