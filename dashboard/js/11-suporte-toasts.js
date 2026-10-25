@@ -80,7 +80,6 @@ function updateNotifBadge() {
 const BLOCK_CONFETTI_COLORS = ['#ffb020', '#21ffb0', '#4fd6ff', '#ff5d5d', '#ffffff'];
 
 function celebrateBlockFound(machineName, diffVal) {
-  try { if(typeof hoCelebrate === 'function') hoCelebrate(machineName); } catch(e) {}   // o Escritório também festeja
   const overlay = $('blockCelebration');
   const layer = $('blockConfettiLayer');
   const machineLabel = $('blockCelebrationMachine');
