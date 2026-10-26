@@ -83,6 +83,10 @@ function mcWatchEvents(list){
       mcLogEvent(mct('mc_l_record', dev.name || dev.ip), 'good', id);
       if(best >= 1e9 && typeof hcChatAnnounce === 'function'){ const f = formatDiff(best); hcChatAnnounce('record', dev.name || dev.ip, f.value + ' ' + f.unit); }
     }
+    const rej = Number(r.rejected) || 0;
+    mc.lastRej = mc.lastRej || {};
+    if(typeof mcRainDrop === 'function' && ((mc.lastAcc[id] != null && acc > mc.lastAcc[id]) || (mc.lastRej[id] != null && rej > mc.lastRej[id]))) mcRainDrop(id, Math.max(0, acc - (mc.lastAcc[id] || acc)), Math.max(0, rej - (mc.lastRej[id] || rej)));
+    mc.lastRej[id] = rej;
     if(mc.lastAcc[id] != null && acc > mc.lastAcc[id]){ mcFlash(id, 'mc-ping', 900); if(typeof mcFloat === 'function') mcFloat(id, acc - mc.lastAcc[id], false); }
     mc.lastBest[id] = best; mc.lastAcc[id] = acc;
   });
@@ -187,6 +191,7 @@ function mcRenderSummary(list){
       '<div class="mc-tile"><span>' + t('mc_s_chance') + '</span><b data-f="chance">—</b><small data-f="chanceS"></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_goal') + '</span><b data-f="goal">—</b><div class="mc-goalbar"><i data-f="goalB"></i></div><small><label>TH/s <input type="number" step="0.1" min="0" id="mcGoal" placeholder="10"></label> <em data-f="goalS"></em></small></div>' +
       '<div class="mc-tile"><span>' + t('mc_s_events') + '</span><b data-f="ev">—</b><small data-f="evS"></small></div>' +
+      (typeof mcCountTile === 'function' ? mcCountTile() : '') +
       '<div class="mc-tile mc-luck" data-f="luckBox"><span>🍀 ' + t('mc_lk_title') + '</span><b data-f="luck">—</b><div class="mc-luckbar"><i data-f="luckB"></i></div><small data-f="luckS"></small><small data-f="luckS2"></small></div>';
     const gi = $('mcGoal'); gi.value = mcGoal() || '';
     gi.addEventListener('input', () => { try { localStorage.setItem(MC_GOAL_KEY, gi.value); } catch(e) {} mcRenderSummary(devices || []); });

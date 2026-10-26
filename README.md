@@ -73,7 +73,8 @@ executável final fica em `dist/CentroDeComando.exe`.
   agendamentos), `cartoes-relatorios.js` (comparar, relatório e limites), `cartoes-experiencias.js` (efeitos, mapa de calor 3D e planta),
   `cartoes-regras.js` (regras "se… então…") e `cartoes-i18n.js` (traduções).
   O `chat.js` é o chat da comunidade (Firebase): respostas, reações, edição, menções, partilha de máquinas,
-  comandos `/hash` e `/btc`, pesquisa e proteções contra spam. Para as reações, editar, apagar e o
+  canais (geral, ajuda, trocas), mensagens privadas (clique num utilizador online), comandos `/hash` e `/btc`,
+  pesquisa e proteções contra spam. `cartoes-contador.js` tem a contagem do ajuste e do halving e a chuva de shares. Para as reações, editar, apagar e o
   «a escrever…» funcionarem, junte as regras de `firebase-chat-rules.json` às regras da base de dados
   (Firebase Console > Realtime Database > Regras); sem elas o chat continua a funcionar como antes.
   Para acrescentar um ficheiro novo, junta uma linha `<script src="dashboard/js/...">`

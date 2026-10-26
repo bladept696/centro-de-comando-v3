@@ -397,6 +397,16 @@ Object.assign(I18N_DICT, {
   mc_ru_a_restart: { pt: `⟲ reiniciar`, en: `⟲ restart`, es: `⟲ reiniciar`, fr: `⟲ redémarrer` },
   mc_ru_a_plug: { pt: `⚡ ciclo da tomada`, en: `⚡ power-cycle the plug`, es: `⚡ ciclo del enchufe`, fr: `⚡ cycle de la prise` }
 });
+Object.assign(I18N_DICT, {
+  mc_xp_rain: { pt: `Chuva de shares: uma gota por cada share (verde aceite, vermelha rejeitada)`, en: `Share rain: a drop for each share (green accepted, red rejected)`, es: `Lluvia de shares: una gota por cada share (verde aceptado, rojo rechazado)`, fr: `Pluie de shares : une goutte par share (verte acceptée, rouge rejetée)` },
+  mc_ct_title: { pt: `Contagem da rede`, en: `Network countdown`, es: `Cuenta atrás de la red`, fr: `Compte à rebours du réseau` },
+  mc_ct_adj: { pt: `Próximo ajuste de dificuldade`, en: `Next difficulty adjustment`, es: `Próximo ajuste de dificultad`, fr: `Prochain ajustement de difficulté` },
+  mc_ct_halv: { pt: `Próximo halving`, en: `Next halving`, es: `Próximo halving`, fr: `Prochain halving` },
+  mc_ct_blocks: { pt: `{0} blocos`, en: `{0} blocks`, es: `{0} bloques`, fr: `{0} blocs` },
+  mc_ct_wait: { pt: `a obter dados da rede…`, en: `getting network data…`, es: `obteniendo datos de la red…`, fr: `récupération des données du réseau…` },
+  mc_ct_day: { pt: `dia`, en: `day`, es: `día`, fr: `jour` },
+  mc_ct_days: { pt: `dias`, en: `days`, es: `días`, fr: `jours` }
+});
 // texto traduzido com {0}, {1}... substituídos
 function mct(key, ...args){
   let s = t(key);
