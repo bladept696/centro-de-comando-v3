@@ -491,8 +491,8 @@
   @keyframes mcRingPulse{50%{opacity:.45;}}
   .mc-ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin:0;font-size:11px;color:var(--text);}
   .mc-ct-txt{min-width:0;} .mc-ct-txt em{display:block;font-style:normal;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted-2);}
-  .mc-ct-txt b{display:block;font-size:15px;color:var(--text);margin:2px 0 1px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .mc-ct-txt small{display:block;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mc-ct-txt b{display:block;font-size:14px;line-height:1.2;color:var(--text);margin:2px 0 2px;font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere;}
+  .mc-ct-txt small{display:block;font-size:10px;line-height:1.35;color:var(--muted);white-space:normal;overflow-wrap:anywhere;}
   @media (max-width:640px){.mc-count{grid-column:span 2;} .mc-ct-row{grid-template-columns:1fr;}}
   @media (prefers-reduced-motion: reduce){.mc-ring.soon .fg{animation:none;}}
   /* chuva de shares */

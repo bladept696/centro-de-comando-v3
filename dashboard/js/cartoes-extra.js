@@ -413,6 +413,10 @@ function mcLoadNetwork(){
 }
 setTimeout(mcLoadNetwork, 3000);
 setInterval(mcLoadNetwork, 10 * 60000);
+// enquanto não houver dados, tenta de novo a cada 20 s e assim que a janela volta a ser visível
+const mcNetReady = () => typeof difficultyData !== 'undefined' && difficultyData && difficultyData.currentDifficulty;
+setInterval(() => { if(!mcNetReady()) mcLoadNetwork(); }, 20000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden && !mcNetReady()) mcLoadNetwork(); });
 
 // ---- linha do tempo do estado nas últimas 24 h (só guarda as mudanças) ----
 const MC_TL_KEY = 'nerdqaxe:timeline';

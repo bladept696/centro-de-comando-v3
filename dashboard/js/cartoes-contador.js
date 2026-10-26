@@ -21,7 +21,7 @@ function mcCountTick(){
   const set = (f, v) => { const n = box.querySelector('[data-f="' + f + '"]'); if(n && n.textContent !== v) n.textContent = v; };
   const ring = (k, pct, soon) => { const fg = box.querySelector('[data-f="' + k + 'Fg"]'); if(fg) fg.style.strokeDashoffset = (100 - Math.max(0, Math.min(100, pct))).toFixed(2); box.querySelector('[data-f="' + k + 'R"]').classList.toggle('soon', !!soon); };
   const d = typeof difficultyData !== 'undefined' ? difficultyData : null;
-  if(!d || !d.currentHeight){ ['adj', 'hal'].forEach(k => { set(k + 'T', '—'); set(k + 'S', t('mc_ct_wait')); set(k + 'P', '—'); }); return; }
+  if(!d || !d.currentHeight){ const late = performance.now() > 60000; ['adj', 'hal'].forEach(k => { set(k + 'T', '—'); set(k + 'S', t(late ? 'mc_ct_fail' : 'mc_ct_wait')); set(k + 'P', '—'); }); return; }
   const loc = typeof mcLocale === 'function' ? mcLocale() : undefined;
   // próximo ajuste de dificuldade
   const left = d.estimatedRetargetDate ? (d.estimatedRetargetDate - Date.now()) / 1000 : NaN, pct = Number(d.progressPercent) || 0;

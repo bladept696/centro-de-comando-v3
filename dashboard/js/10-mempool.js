@@ -354,16 +354,21 @@ function stopSimAutoRefresh() {
 
 async function fetchDifficultyData() {
   const hint = $('simHint');
+  // cada pedido é independente: se o da hashrate falhar, a dificuldade e a altura vêm da lista de blocos
+  const get = async (url, asText) => { try { const r = await fetch(url); if(!r.ok) return null; return asText ? await r.text() : await r.json(); } catch(e) { return null; } };
   try {
-    const [adjRes, hrRes, heightRes] = await Promise.all([
-      fetch('https://mempool.space/api/v1/difficulty-adjustment'),
-      fetch('https://mempool.space/api/v1/mining/hashrate/3d'),
-      fetch('https://mempool.space/api/blocks/tip/height')
+    const [adj, hr, heightText] = await Promise.all([
+      get('https://mempool.space/api/v1/difficulty-adjustment'),
+      get('https://mempool.space/api/v1/mining/hashrate/3d'),
+      get('https://mempool.space/api/blocks/tip/height', true)
     ]);
-    if(!adjRes.ok || !hrRes.ok || !heightRes.ok) throw new Error('HTTP error');
-    const adj = await adjRes.json();
-    const hr = await hrRes.json();
-    const heightText = await heightRes.text();
+    if(!adj) throw new Error('HTTP error');
+    let currentDifficulty = hr && hr.currentDifficulty, currentHeight = parseInt(heightText, 10);
+    if(!currentDifficulty || !isFinite(currentHeight)){
+      const blocks = await get('https://mempool.space/api/v1/blocks');
+      if(blocks && blocks[0]){ if(!currentDifficulty) currentDifficulty = blocks[0].difficulty; if(!isFinite(currentHeight)) currentHeight = blocks[0].height; }
+    }
+    if(!currentDifficulty || !isFinite(currentHeight)) throw new Error('sem dificuldade');
 
     difficultyData = {
       progressPercent: adj.progressPercent,
@@ -371,8 +376,8 @@ async function fetchDifficultyData() {
       remainingBlocks: adj.remainingBlocks,
       estimatedRetargetDate: adj.estimatedRetargetDate,
       timeAvg: adj.timeAvg,
-      currentDifficulty: hr.currentDifficulty,
-      currentHeight: parseInt(heightText, 10)
+      currentDifficulty,
+      currentHeight
     };
     renderSimulator();
   } catch(e) {
