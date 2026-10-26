@@ -310,6 +310,87 @@
           ".write": "auth != null && auth.uid === $uid",
           ".validate": "newData.hasChildren(['nick'])"
         }
+      },
+      "community": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['nick', 'ghs', 'n', 'ts'])",
+          "nick": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "ghs": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 100000000"
+          },
+          "n": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10000"
+          },
+          "best": {
+            ".validate": "newData.isNumber()"
+          },
+          "ts": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "blocks": {
+        ".read": "auth != null",
+        ".indexOn": [
+          "ts"
+        ],
+        "$id": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['nick', 'uid', 'ts']) && newData.child('uid').val() === auth.uid",
+          "nick": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "uid": {
+            ".validate": "true"
+          },
+          "machine": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "best": {
+            ".validate": "newData.isNumber()"
+          },
+          "ts": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "records": {
+        ".read": "auth != null",
+        ".indexOn": [
+          "ts"
+        ],
+        "$id": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['nick', 'uid', 'ts']) && newData.child('uid').val() === auth.uid",
+          "nick": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "uid": {
+            ".validate": "true"
+          },
+          "machine": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "best": {
+            ".validate": "newData.isNumber()"
+          },
+          "ts": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
       }
     }
   }
@@ -678,6 +759,8 @@
       S.admin = admins.includes(String(_ccEmail()).toLowerCase());
       _db.ref('chat/admins/' + S.uid).once('value').then(s => { if(s.val() === true){ S.admin = true; queueRender(); } }).catch(() => {});
       _inited = true;
+      window.hcFb = { db: _db, uid: S.uid, nick: myNick() };
+      document.dispatchEvent(new Event('hc-chat-ready'));
     } catch(e){
       console.warn('[chat] Firebase RTDB init failed:', e);
       note(T('chat_db_off'));

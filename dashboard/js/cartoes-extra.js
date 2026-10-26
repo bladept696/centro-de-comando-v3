@@ -82,6 +82,7 @@ function mcWatchEvents(list){
       mcFlash(id, 'mc-flash', 2600);
       if(typeof mcFloat === 'function') mcFloat(id, 1, true);
       mcLogEvent(mct('mc_l_record', dev.name || dev.ip), 'good', id);
+      if(best >= 1e9 && typeof mcComRecord === 'function') mcComRecord(dev.name || dev.ip, best);
       if(best >= 1e9 && typeof hcChatAnnounce === 'function'){ const f = formatDiff(best); hcChatAnnounce('record', dev.name || dev.ip, f.value + ' ' + f.unit); }
     }
     const rej = Number(r.rejected) || 0;
@@ -99,6 +100,7 @@ function mcWatchEvents(list){
 // chamado pela celebração de bloco encontrado
 function mcBlockFound(name){
   mcLuckBlock();
+  if(typeof mcComBlock === 'function') mcComBlock(name);
   if(typeof hcChatAnnounce === 'function') hcChatAnnounce('block', name);
   const dev = (devices || []).find(d => (d.name || d.ip) === name) || null;
   if(!dev) return;
@@ -511,6 +513,7 @@ function mcExtraRender(list, states){
   mcWatchEvents(list);
   mcHealthWatch(list);
   mcRenderSummary(list);
+  if(typeof mcComEnsure === 'function') mcComEnsure();
   if(Date.now() - mc.lastDaily > 60000){ mc.lastDaily = Date.now(); mcDailyCheck(list); }
 }
 
