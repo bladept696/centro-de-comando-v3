@@ -166,9 +166,6 @@ function switchTab(tabName, btnEl) {
   if(tabName === 'latency') {
     renderPingTab();
   }
-  if(tabName === 'pool') {
-    renderPoolTab();
-  }
   if(tabName === 'parasite') {
     renderParasiteSection();
   }

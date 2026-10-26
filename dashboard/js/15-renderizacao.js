@@ -442,9 +442,6 @@ function renderAll(){
   const latTab = $('tab-latency');
   if(latTab && latTab.classList.contains('active')) renderPingTab();
 
-  const poolTab = $('tab-pool');
-  if(poolTab && poolTab.classList.contains('active')) renderPoolTab();
-
   const thermalTab = $('tab-thermal');
   if(thermalTab && thermalTab.classList.contains('active')) renderThermalTab();
 }

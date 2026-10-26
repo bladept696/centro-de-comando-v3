@@ -246,7 +246,7 @@ const TOUR_STEPS = [
   { selector: '#langSelect', titleKey: 'tour_lang_titulo', textKey: 'tour_lang_texto' },
   { selector: '#themeSelect', titleKey: 'tour_tema_titulo', textKey: 'tour_tema_texto' },
   { selector: '#kioskToggleBtn', titleKey: 'tour_kiosk_titulo', textKey: 'tour_kiosk_texto' },
-  { selector: '#layoutEditBtn', titleKey: 'tour_layout_titulo', textKey: 'tour_layout_texto' },
+  { selector: '#wgBtn', titleKey: 'tour_layout_titulo', textKey: 'tour_layout_texto' },
   { selector: '#helpBtn', titleKey: 'tour_ajuda_titulo', textKey: 'tour_ajuda_texto' },
   { selector: '#statusDot', titleKey: 'tour_status_titulo', textKey: 'tour_status_texto' },
 ];

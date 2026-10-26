@@ -13,6 +13,14 @@ function loadThermalProtectionSettings(){
   if(sustainEl) sustainEl.value = thermalProtectionSettings.sustainSec;
 }
 
+function updateThermalShieldChip(){
+  const chip = $('thermalShieldChip');
+  if(!chip) return;
+  const sp = thermalProtectionSettings;
+  chip.className = 'th-chip ' + (sp.enabled ? 'on' : 'off');
+  chip.textContent = sp.enabled ? mct('th_shield_on', sp.criticalTemp, sp.sustainSec) : t('th_shield_off');
+}
+
 function saveThermalProtectionSettings(){
   thermalProtectionSettings = {
     enabled: $('thermalProtectionEnabled').checked,
@@ -20,6 +28,7 @@ function saveThermalProtectionSettings(){
     sustainSec: Math.max(5, Number($('thermalProtectionSustain').value) || 45)
   };
   try { localStorage.setItem(THERMAL_PROTECTION_KEY, JSON.stringify(thermalProtectionSettings)); } catch(e){}
+  updateThermalShieldChip();
   if(!thermalProtectionSettings.enabled){
     Object.keys(thermalCriticalState).forEach(id => { thermalCriticalState[id] = { since: null, alarmed: false }; });
     updateCriticalAlarmUI();
@@ -365,7 +374,7 @@ function computeThermalForecast(devId){
 function formatForecastEta(days){
   if(days == null) return null;
   const date = new Date(Date.now() + days * 86400000);
-  return { days, label: days <= 0 ? 'agora' : `~${Math.ceil(days)} dias`, date: date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' }) };
+  return { days, label: days <= 0 ? 'agora' : days >= 365 ? `~${(days / 365).toFixed(1).replace('.', ',')} anos` : `~${Math.ceil(days)} dias`, date: date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' }) };
 }
 
 // Dispara (uma única vez por transição) uma notificação preditiva quando a janela
@@ -428,6 +437,15 @@ function miniSparklineSVG(vals){
   </svg>`;
 }
 
+// qualidade da ligação ao pool: cor, etiqueta e classe
+function pingQuality(ms){
+  if(ms == null || isNaN(ms)) return { k: 'none', label: '—', color: '#4fd6ff' };
+  if(ms < 50) return { k: 'great', label: t('lt_great'), color: '#21ffb0' };
+  if(ms < 100) return { k: 'good', label: t('lt_good'), color: '#21ffb0' };
+  if(ms < 250) return { k: 'warn', label: t('lt_warn'), color: '#ffb020' };
+  return { k: 'bad', label: t('lt_bad'), color: '#ff5d5d' };
+}
+
 function renderPingTab(){
   const grid = $('pingGrid');
   if(!grid) return;
@@ -448,6 +466,8 @@ function renderPingTab(){
 
   const livePings = [];
   grid.innerHTML = '';
+  const withPing = devices.filter(d => readings[d.id] && readings[d.id].online && readings[d.id].poolPing != null).sort((a, b) => readings[a.id].poolPing - readings[b.id].poolPing);
+  const rank = withPing.length >= 2 ? { fast: withPing[0].id, slow: withPing[withPing.length - 1].id } : {};
 
   devices.forEach(dev => {
     const r = readings[dev.id];
@@ -457,12 +477,18 @@ function renderPingTab(){
     const localLat = online ? r.localLatency : null;
     if(online && poolPing != null) livePings.push(poolPing);
 
+    const q = pingQuality(online ? poolPing : null);
     const card = document.createElement('div');
-    card.className = 'ping-card' + (dev.id === selectedId ? ' selected' : '') + (!online ? ' offline' : '');
+    card.className = 'ping-card q-' + (online ? q.k : 'down') + (dev.id === selectedId ? ' selected' : '') + (!online ? ' offline' : '');
 
     const riskClass = online && poolPing != null ? getLatencyRiskClass(poolPing) : (online ? '' : 'risk-red');
-    const valueHtml = online && poolPing != null ? poolPing.toFixed(2) : (online ? 'N/D' : '—');
-    const spark = miniSparklineSVG((histories[dev.id] || []).map(x => x?.poolPing));
+    const valueHtml = online && poolPing != null ? poolPing.toFixed(2) : (online ? t('lt_nd') : '—');
+    const series = (histories[dev.id] || []).map(x => x && x.poolPing).filter(v => v != null && isFinite(v)).slice(-80);
+    const spark = thermalSpark(series, q.color);
+    const rng = series.length > 3 ? mct('lt_range', Math.min(...series).toFixed(0), Math.max(...series).toFixed(0)) : '';
+    const lossCls = poolLoss == null ? '' : poolLoss >= 2 ? 'bad' : poolLoss >= 0.5 ? 'warn' : 'ok';
+    const gaugeHtml = online && poolPing != null
+      ? `<div class="thermal-gauge ping-gauge"><i class="z ok" style="width:${100 / 300 * 100}%"></i><i class="z warn" style="width:${150 / 300 * 100}%"></i><i class="z crit"></i><b class="mk q-${q.k}" style="left:${(Math.min(300, poolPing) / 300 * 100).toFixed(1)}%"></b></div>` : '';
 
     card.innerHTML = `
       <div class="ping-card-head">
@@ -476,13 +502,17 @@ function renderPingTab(){
       </div>
       <div class="ping-value-row">
         <span class="ping-value ${riskClass}">${valueHtml}</span>
-        <span class="ping-unit">${online && poolPing != null ? 'ms (ping ao pool)' : ''}</span>
+        <span class="ping-unit">${online && poolPing != null ? t('lt_unit') : ''}</span>
+        ${online && poolPing != null ? `<span class="ping-q q-${q.k}">${q.label}</span>` : ''}
       </div>
+      ${gaugeHtml}
       ${spark}
+      <div class="ping-range">${rng}</div>
       <div class="ping-stats-mini">
-        <span>${online && poolLoss != null ? `Perda: ${poolLoss.toFixed(2)}%` : 'Perda: —'}</span>
-        <span>${online && localLat != null ? `Rede local: ${localLat} ms` : 'Rede local: —'}</span>
+        <span class="ping-loss ${lossCls}">${t('lt_loss')}: ${online && poolLoss != null ? poolLoss.toFixed(2) + '%' : '—'}</span>
+        <span>${t('lt_local')}: ${online && localLat != null ? localLat + ' ms' : '—'}</span>
       </div>
+      ${rank.fast === dev.id ? `<div class="ping-tag fast">${t('lt_fast')}</div>` : rank.slow === dev.id ? `<div class="ping-tag slow">${t('lt_slow')}</div>` : ''}
     `;
     card.onclick = () => { selectedId = dev.id; renderPingTab(); renderAll(); };
     grid.appendChild(card);
@@ -499,80 +529,21 @@ function renderPingTab(){
     $('pingWorstAll').textContent = '—';
   }
   $('pingOnlineCount').textContent = `${devices.filter(d => readings[d.id]?.online).length} / ${devices.length}`;
+  const tone = (id, v) => { const el = $(id) && $(id).closest('.ping-summary-card'); if(el) el.dataset.tone = v; };
+  const tn = ms => ms == null ? 'none' : ms < 100 ? 'ok' : ms < 250 ? 'warn' : 'bad';
+  tone('pingAvgAll', livePings.length ? tn(livePings.reduce((a, b) => a + b, 0) / livePings.length) : 'none');
+  tone('pingBestAll', livePings.length ? tn(Math.min(...livePings)) : 'none');
+  tone('pingWorstAll', livePings.length ? tn(Math.max(...livePings)) : 'none');
+  const onl = devices.filter(d => readings[d.id]?.online).length;
+  tone('pingOnlineCount', !devices.length ? 'none' : onl === devices.length ? 'ok' : onl ? 'warn' : 'bad');
 
   const selDev = devices.find(d => d.id === selectedId) || devices[0];
   if(selDev){
     $('pingDetailName').textContent = `${selDev.name} (${selDev.ip})`;
-    drawPingChart('chartPing', (histories[selDev.id] || []).map(x => x?.poolPing));
+    drawPingChart('chartPing', (histories[selDev.id] || []).map(x => x && x.poolPing), (histories[selDev.id] || []).map(x => x && x.ts));
   } else {
     $('pingDetailName').textContent = '—';
     $('chartPing').innerHTML = '';
   }
-}
-
-function renderPoolTab(){
-  const grid = $('poolGrid');
-  if(!grid) return;
-
-  if(!devices.length){
-    grid.innerHTML = `<div class="pool-empty">${t('pool_sem_dados')}</div>`;
-    return;
-  }
-
-  grid.innerHTML = '';
-
-  devices.forEach(dev => {
-    const r = readings[dev.id];
-    const online = !!(r && r.online);
-    const info = online ? (r.poolInfo || { primary: {}, fallback: null, usingFallback: false }) : { primary: {}, fallback: null, usingFallback: false };
-    const p = info.primary || {};
-    const fb = info.fallback;
-    const accepted = online ? r.accepted : null;
-    const rejected = online ? r.rejected : null;
-    const rejectHigh = rejected != null && accepted != null && (accepted + rejected) > 0 && (rejected / (accepted + rejected)) > 0.02;
-
-    const card = document.createElement('div');
-    card.className = 'pool-card' + (!online ? ' offline' : '') + (online && info.usingFallback ? ' using-fallback' : '');
-
-    const statusBadge = !online
-      ? `<span class="pool-badge down"><span class="pdot"></span>Offline</span>`
-      : (info.usingFallback
-          ? `<span class="pool-badge fallback"><span class="pdot"></span>${t('a_usar_pool_reserva')}</span>`
-          : `<span class="pool-badge primary"><span class="pdot"></span>${t('a_usar_pool_principal')}</span>`);
-
-    const primaryUrl = online ? (p.url && p.url !== '—' ? p.url.replace(/^stratum\+tcp:\/\//, '') : (r.pool && r.pool !== '—' ? r.pool.replace(/^stratum\+tcp:\/\//, '') : '—')) : '—';
-
-    let html = `
-      <div class="pool-card-head">
-        <div>
-          <div class="name">${dev.name}</div>
-          <div class="ip">${dev.ip}</div>
-        </div>
-        ${statusBadge}
-      </div>
-      <div class="pool-section">
-        <div class="pool-section-title">${t('pool_principal')}</div>
-        <div class="pool-url">${primaryUrl}</div>
-        <div class="pool-row"><span>${t('porta')}</span><b>${online && p.port != null ? p.port : '—'}</b></div>
-        <div class="pool-row stacked"><span>${t('utilizador')}</span><b>${online && p.user ? p.user : '—'}</b></div>
-        <div class="pool-row"><span>${t('dificuldade_pool')}</span><b>${online && p.difficulty != null ? p.difficulty : '—'}</b></div>
-        <div class="pool-row"><span>${t('shares_aceites_rejeitadas')}</span><b class="${rejectHigh ? 'warn' : ''}">${online && accepted != null ? `${accepted} / ${rejected ?? 0}` : '—'}</b></div>
-      </div>
-    `;
-
-    if(online && fb && fb.url){
-      html += `
-      <div class="pool-fallback-block pool-section">
-        <div class="pool-section-title">${t('pool_reserva')}</div>
-        <div class="pool-url" style="font-size:12px; color:var(--amber); text-shadow:none;">${fb.url.replace(/^stratum\+tcp:\/\//, '')}</div>
-        <div class="pool-row"><span>${t('porta')}</span><b>${fb.port != null ? fb.port : '—'}</b></div>
-        <div class="pool-row stacked"><span>${t('utilizador')}</span><b>${fb.user ? fb.user : '—'}</b></div>
-      </div>
-      `;
-    }
-
-    card.innerHTML = html;
-    grid.appendChild(card);
-  });
 }
 

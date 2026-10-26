@@ -189,7 +189,7 @@ function aiFindProfile(text){
 function aiFindTab(text){
   const n = aiNormalize(text);
   const aliases = {
-    dashboard:['dashboard','painel geral','inicio','maquinas'], logs:['logs','consola'], notifications:['notificacoes','notificações','avisos'], simulator:['simulador'], latency:['latencia','latência','ping'], pool:['pool'], parasite:['parasite'], thermal:['termica','térmica','temperatura','saude termica','saúde térmica'], oc:['overclock','undervolt','oc'], converter:['conversor','btc'], donate:['doar','apoio'], supporters:['apoiantes'], support:['suporte'], renting:['renting','rental'], alerts:['alertas','telegram','discord'],
+    dashboard:['dashboard','painel geral','inicio','maquinas'], logs:['logs','consola'], notifications:['notificacoes','notificações','avisos'], simulator:['simulador'], latency:['latencia','latência','ping'], parasite:['parasite'], thermal:['termica','térmica','temperatura','saude termica','saúde térmica'], oc:['overclock','undervolt','oc'], converter:['conversor','btc'], donate:['doar','apoio'], supporters:['apoiantes'], support:['suporte'], renting:['renting','rental'], alerts:['alertas','telegram','discord'],
   };
   for(const [tab, words] of Object.entries(aliases)) if(words.some(w => n.includes(aiNormalize(w)))) return tab;
   return null;
@@ -309,13 +309,6 @@ async function aiExecuteCommand(question, opts={}){
   if(/kiosk|quiosque|ecrã inteiro|tela inteira|fullscreen/i.test(q) && /(desliga|sai|exit|off)/i.test(q)){
     exitKioskMode(); return '🖥️ Modo kiosk desativado.';
   }
-  if(/(editar|modo de edicao|modo de edição|arrastar)/i.test(q) && /(layout|painel|bloco)/i.test(q)){
-    const on = document.body.classList.contains('layout-edit-mode');
-    if(!on) toggleLayoutEditMode();
-    return '🧩 Modo de edição do layout ativado. As alterações ficam guardadas neste navegador.';
-  }
-  if(/(repor|reset|restaurar).*(layout|painel)/i.test(q)){ resetLayout(); return '↩️ Pedi para repor o layout.'; }
-
   if(/(coloca|põe|poe|move|mover|leva|levar|mete|meter)/i.test(q) && /(topo|primeiro|cima|inicio|início)/i.test(q)){
     const block=aiFindLayoutBlock(q);
     if(block && aiMoveLayoutBlock(block.id, block.group, true)){
