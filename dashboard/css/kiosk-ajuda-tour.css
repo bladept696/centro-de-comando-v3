@@ -89,21 +89,6 @@
     border-color: var(--green);
     color: var(--green);
   }
-  .layout-reset-btn {
-    display: none;
-    background: transparent;
-    border: 1px solid #ff5d5d55;
-    color: var(--red);
-    font-family: inherit;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 5px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-  }
-  .layout-reset-btn:hover { background: #ff5d5d1a; }
-  body.layout-edit-mode .layout-reset-btn { display: inline-flex; }
-
   /* --- Botão de Ajuda (FAQ) ---------------------------------------------- */
   .help-toggle-btn {
     background: var(--panel-2);
@@ -192,46 +177,6 @@
   .tour-next-btn:hover { filter: brightness(1.1); }
   @media (max-width: 640px) {
     .tour-tooltip { width: 240px; padding: 12px 14px; }
-  }
-
-  /* Modo de edição de layout: cada bloco marcado com data-layout-id fica
-     arrastável. Um contorno tracejado + um "pega" (⠿) no canto indicam
-     que dá para reordenar; o resto do painel comporta-se como sempre. */
-  body.layout-edit-mode [data-layout-id]{
-    position: relative;
-    cursor: grab;
-    outline: 1px dashed var(--line-strong);
-    outline-offset: 3px;
-    transition: outline-color .15s ease, opacity .15s ease, transform .12s ease;
-  }
-  body.layout-edit-mode [data-layout-id]:hover{ outline-color: var(--green); }
-  body.layout-edit-mode [data-layout-id]::after{
-    content: '⠿ arrastar';
-    position: absolute;
-    top: 6px;
-    right: 10px;
-    font-size: 10px;
-    letter-spacing: .04em;
-    color: var(--green);
-    background: var(--panel);
-    border: 1px solid var(--green-dim);
-    border-radius: 6px;
-    padding: 2px 7px;
-    pointer-events: none;
-    z-index: 6;
-    opacity: .85;
-  }
-  [data-layout-id].layout-dragging{
-    opacity: .35;
-    cursor: grabbing;
-    transform: scale(.98);
-  }
-  [data-layout-id].layout-drop-target{
-    outline-color: var(--cyan) !important;
-    outline-style: solid !important;
-  }
-  @media(max-width:900px){
-    body.layout-edit-mode [data-layout-id]::after{ font-size:9px; padding:1px 5px; }
   }
 
   .tab-btn {

@@ -163,10 +163,10 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && kioskActive) exitKioskMode();
 });
 
-// --- Editor de layout (arrastar e reordenar painéis) -----------------
+// --- Ordem dos painéis (escolhida no 🧩 Gestor de widgets) -------------
 // Marca-se cada painel/card reordenável no HTML com data-layout-id="...".
 // Dentro de cada "grupo" (um contentor direto, ex: .sidebar, .main,
-// .charts) os filhos marcados podem ser arrastados entre si. A ordem
+// .charts) os filhos marcados podem ser reordenados. A ordem
 // final é gravada por grupo no localStorage (mesmo padrão já usado para
 // tema/idioma/kiosk) e reaplicada no arranque seguinte. Nada disto toca
 // em dados - é só a ordem visual dos blocos.
@@ -175,7 +175,6 @@ const LAYOUT_GROUPS = [
   { key: 'nerdqaxe:layout-main', selector: '.main' },
   { key: 'nerdqaxe:layout-charts', selector: '.charts' },
 ];
-let _layoutDragEl = null;
 
 function layoutGroupItems(container){
   return [...container.children].filter(el => el.dataset && el.dataset.layoutId);
@@ -194,78 +193,12 @@ function saveLayoutOrder(container, storageKey){
   try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch(e){}
 }
 
-function layoutElementAfterPoint(container, x, y){
-  // Escolhe, de entre os blocos do grupo (exceto o que está a ser
-  // arrastado), qual deve ficar IMEDIATAMENTE A SEGUIR ao ponto onde o
-  // rato/dedo está agora - baseado no centro vertical de cada bloco.
-  // Funciona bem para os grupos verticais (.sidebar, .main); em .charts
-  // (grid 2 colunas) o resultado é uma aproximação razoável.
-  const els = layoutGroupItems(container).filter(el => el !== _layoutDragEl);
-  let closest = { offset: -Infinity, element: null };
-  for(const el of els){
-    const box = el.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if(offset < 0 && offset > closest.offset){
-      closest = { offset, element: el };
-    }
-  }
-  return closest.element;
-}
-
-function wireLayoutGroup(container, storageKey){
-  container.addEventListener('dragstart', (e) => {
-    if(!document.body.classList.contains('layout-edit-mode')) { e.preventDefault(); return; }
-    const item = e.target.closest('[data-layout-id]');
-    if(!item || item.parentElement !== container) return;
-    _layoutDragEl = item;
-    item.classList.add('layout-dragging');
-    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.dataset.layoutId); } catch(err){}
-  });
-
-  container.addEventListener('dragend', () => {
-    if(_layoutDragEl) _layoutDragEl.classList.remove('layout-dragging');
-    container.querySelectorAll('.layout-drop-target').forEach(el => el.classList.remove('layout-drop-target'));
-    _layoutDragEl = null;
-    saveLayoutOrder(container, storageKey);
-  });
-
-  container.addEventListener('dragover', (e) => {
-    if(!_layoutDragEl || _layoutDragEl.parentElement !== container) return;
-    e.preventDefault();
-    const after = layoutElementAfterPoint(container, e.clientX, e.clientY);
-    container.querySelectorAll('.layout-drop-target').forEach(el => el.classList.remove('layout-drop-target'));
-    if(after){
-      after.classList.add('layout-drop-target');
-      container.insertBefore(_layoutDragEl, after);
-    } else {
-      container.appendChild(_layoutDragEl);
-    }
-  });
-}
-
 function initLayoutEditor(){
   LAYOUT_GROUPS.forEach(g => {
     const container = document.querySelector(g.selector);
     if(!container) return;
     applySavedLayoutOrder(container, g.key);
-    wireLayoutGroup(container, g.key);
   });
-}
-
-function toggleLayoutEditMode(){
-  const on = document.body.classList.toggle('layout-edit-mode');
-  document.querySelectorAll('[data-layout-id]').forEach(el => {
-    el.setAttribute('draggable', on ? 'true' : 'false');
-  });
-  const btn = $('layoutEditBtn');
-  if(btn) btn.classList.toggle('active', on);
-  if(on) logEvent(t('layout_edicao_ativada'), '', 'Sistema', 'sys');
-}
-
-function resetLayout(){
-  if(!confirm(t('confirm_repor_layout'))) return;
-  LAYOUT_GROUPS.forEach(g => { try { localStorage.removeItem(g.key); } catch(e){} });
-  location.reload();
 }
 
 function initKioskMode() {
@@ -282,7 +215,6 @@ const TAB_LABEL_KEYS = {
   notifications: 'notificacoes_block_best_diff',
   simulator: 'simulador',
   latency: 'latencia',
-  pool: 'aba_pool',
   parasite: 'aba_parasite',
   thermal: 'saude_termica',
   oc: 'overclock',

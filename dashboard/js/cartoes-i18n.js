@@ -453,6 +453,100 @@ Object.assign(I18N_DICT, {
   mc_cm_loc_hide: { pt: `🙈 Não mostrar a minha localização`, en: `🙈 Do not show my location`, es: `🙈 No mostrar mi ubicación`, fr: `🙈 Ne pas afficher ma localisation` },
   mc_cm_map_privacy: { pt: `No mapa aparece só o seu país, com um desvio aleatório; nunca a morada.`, en: `The map only shows your country, with a random offset; never your address.`, es: `En el mapa solo aparece su país, con un desvío aleatorio; nunca la dirección.`, fr: `La carte n'affiche que votre pays, avec un décalage aléatoire ; jamais votre adresse.` }
 });
+Object.assign(I18N_DICT, {
+  th_info: { pt: `ℹ Como funciona`, en: `ℹ How it works`, es: `ℹ Cómo funciona`, fr: `ℹ Comment ça marche` },
+  th_samples: { pt: `{0}/{1} amostras · faltam ~{2} h`, en: `{0}/{1} samples · ~{2} h to go`, es: `{0}/{1} muestras · faltan ~{2} h`, fr: `{0}/{1} échantillons · ~{2} h restantes` },
+  th_now: { pt: `agora`, en: `now`, es: `ahora`, fr: `maintenant` },
+  th_base: { pt: `base`, en: `base`, es: `base`, fr: `base` },
+  th_maint: { pt: `manutenção`, en: `maintenance`, es: `mantenimiento`, fr: `maintenance` },
+  th_shield_on: { pt: `🛡️ Ativa · {0} °C durante {1} s`, en: `🛡️ On · {0} °C for {1} s`, es: `🛡️ Activa · {0} °C durante {1} s`, fr: `🛡️ Active · {0} °C pendant {1} s` },
+  th_shield_off: { pt: `🛡️ Desligada`, en: `🛡️ Off`, es: `🛡️ Desactivada`, fr: `🛡️ Désactivée` },
+  th_today: { pt: `Hoje`, en: `Today`, es: `Hoy`, fr: `Aujourd'hui` },
+  th_clean: { pt: `Limpeza`, en: `Cleaning`, es: `Limpieza`, fr: `Nettoyage` },
+  th_throttle: { pt: `Throttle`, en: `Throttle`, es: `Throttle`, fr: `Throttle` },
+  th_far: { pt: `mais de 1 ano`, en: `over 1 year`, es: `más de 1 año`, fr: `plus d'un an` }
+});
+Object.assign(I18N_DICT, {
+  lt_great: { pt: `Excelente`, en: `Excellent`, es: `Excelente`, fr: `Excellent` },
+  lt_good: { pt: `Boa`, en: `Good`, es: `Buena`, fr: `Bonne` },
+  lt_warn: { pt: `Alta`, en: `High`, es: `Alta`, fr: `Élevée` },
+  lt_bad: { pt: `Crítica`, en: `Critical`, es: `Crítica`, fr: `Critique` },
+  lt_loss: { pt: `Perda`, en: `Loss`, es: `Pérdida`, fr: `Perte` },
+  lt_local: { pt: `Rede local`, en: `Local network`, es: `Red local`, fr: `Réseau local` },
+  lt_fast: { pt: `🏆 Mais rápida`, en: `🏆 Fastest`, es: `🏆 Más rápida`, fr: `🏆 Plus rapide` },
+  lt_slow: { pt: `🐌 Mais lenta`, en: `🐌 Slowest`, es: `🐌 Más lenta`, fr: `🐌 Plus lente` },
+  lt_range: { pt: `mín {0} · máx {1} ms`, en: `min {0} · max {1} ms`, es: `mín {0} · máx {1} ms`, fr: `min {0} · max {1} ms` },
+  lt_jitter: { pt: `Jitter (variação)`, en: `Jitter (variation)`, es: `Jitter (variación)`, fr: `Gigue (variation)` },
+  lt_p95: { pt: `95% abaixo de`, en: `95% below`, es: `95% por debajo de`, fr: `95% en dessous de` },
+  lt_unit: { pt: `ms`, en: `ms`, es: `ms`, fr: `ms` },
+  lt_nd: { pt: `N/D`, en: `N/A`, es: `N/D`, fr: `N/D` },
+  lt_wait: { pt: `A aguardar dados em tempo real (ou esta pool não reporta ping)...`, en: `Waiting for live data (or this pool does not report ping)...`, es: `Esperando datos en tiempo real (o este pool no informa el ping)...`, fr: `En attente de données en direct (ou ce pool ne rapporte pas le ping)...` }
+});
+Object.assign(I18N_DICT, {
+  cl_chip_on: { pt: `🟢 A monitorizar`, en: `🟢 Monitoring`, es: `🟢 Monitorizando`, fr: `🟢 Surveillance active` },
+  cl_chip_off: { pt: `⚪ Desativada`, en: `⚪ Off`, es: `⚪ Desactivada`, fr: `⚪ Désactivée` },
+  cl_chip_warn: { pt: `⚠️ Sem resposta`, en: `⚠️ No response`, es: `⚠️ Sin respuesta`, fr: `⚠️ Sans réponse` },
+  cl_chip_trip: { pt: `🛑 Killswitch acionado`, en: `🛑 Killswitch tripped`, es: `🛑 Killswitch activado`, fr: `🛑 Killswitch déclenché` },
+  cl_flow: { pt: `Fluxo`, en: `Flow`, es: `Caudal`, fr: `Débit` },
+  cl_in: { pt: `Líquido à entrada`, en: `Coolant in`, es: `Líquido a la entrada`, fr: `Liquide à l'entrée` },
+  cl_out: { pt: `Líquido à saída`, en: `Coolant out`, es: `Líquido a la salida`, fr: `Liquide à la sortie` },
+  cl_delta: { pt: `ΔT (saída − entrada)`, en: `ΔT (out − in)`, es: `ΔT (salida − entrada)`, fr: `ΔT (sortie − entrée)` },
+  cl_sub_min: { pt: `mínimo {0} L/min`, en: `minimum {0} L/min`, es: `mínimo {0} L/min`, fr: `minimum {0} L/min` },
+  cl_sub_max: { pt: `limite {0} °C`, en: `limit {0} °C`, es: `límite {0} °C`, fr: `limite {0} °C` },
+  cl_sub_cold: { pt: `lado frio do circuito`, en: `cold side of the loop`, es: `lado frío del circuito`, fr: `côté froid du circuit` },
+  cl_sub_delta: { pt: `quanto o líquido aquece`, en: `how much the coolant heats up`, es: `cuánto se calienta el líquido`, fr: `de combien le liquide chauffe` },
+  cl_pump: { pt: `Bomba`, en: `Pump`, es: `Bomba`, fr: `Pompe` },
+  cl_miners: { pt: `Máquinas`, en: `Miners`, es: `Máquinas`, fr: `Machines` },
+  cl_rad: { pt: `Radiador`, en: `Radiator`, es: `Radiador`, fr: `Radiateur` },
+  cl_c_flow: { pt: `Fluxo (L/min)`, en: `Flow (L/min)`, es: `Caudal (L/min)`, fr: `Débit (L/min)` },
+  cl_c_temp: { pt: `Temperatura do líquido (°C)`, en: `Coolant temperature (°C)`, es: `Temperatura del líquido (°C)`, fr: `Température du liquide (°C)` },
+  cl_leg_in: { pt: `entrada`, en: `in`, es: `entrada`, fr: `entrée` },
+  cl_leg_out: { pt: `saída`, en: `out`, es: `salida`, fr: `sortie` },
+  cl_nodata: { pt: `Sem dados ainda`, en: `No data yet`, es: `Aún sin datos`, fr: `Pas encore de données` },
+  cl_cfg: { pt: `⚙ Configuração do sensor, do relé e dos limites`, en: `⚙ Sensor, relay and limits setup`, es: `⚙ Configuración del sensor, el relé y los límites`, fr: `⚙ Configuration du capteur, du relais et des limites` },
+  cl_cfg_mon: { pt: `Ativar monitorização`, en: `Enable monitoring`, es: `Activar monitorización`, fr: `Activer la surveillance` },
+  cl_cfg_ks: { pt: `Ativar killswitch (cortar relé)`, en: `Enable killswitch (cut relay)`, es: `Activar killswitch (cortar relé)`, fr: `Activer le killswitch (couper le relais)` },
+  cl_cfg_sensor: { pt: `URL do sensor hub`, en: `Sensor hub URL`, es: `URL del sensor hub`, fr: `URL du capteur` },
+  cl_cfg_off: { pt: `URL do relé — desligar`, en: `Relay URL — turn off`, es: `URL del relé — apagar`, fr: `URL du relais — éteindre` },
+  cl_cfg_on: { pt: `URL do relé — religar (opcional)`, en: `Relay URL — turn on (optional)`, es: `URL del relé — encender (opcional)`, fr: `URL du relais — rallumer (optionnel)` },
+  cl_cfg_minflow: { pt: `Fluxo mínimo (L/min)`, en: `Minimum flow (L/min)`, es: `Caudal mínimo (L/min)`, fr: `Débit minimum (L/min)` },
+  cl_cfg_grace: { pt: `Tolerância (s)`, en: `Grace period (s)`, es: `Tolerancia (s)`, fr: `Tolérance (s)` },
+  cl_cfg_maxout: { pt: `Saída máx. do líquido (°C)`, en: `Max coolant out (°C)`, es: `Salida máx. del líquido (°C)`, fr: `Sortie max. du liquide (°C)` },
+  cl_g_sensor: { pt: `Sensor`, en: `Sensor`, es: `Sensor`, fr: `Capteur` },
+  cl_g_relay: { pt: `Relé de segurança`, en: `Safety relay`, es: `Relé de seguridad`, fr: `Relais de sécurité` },
+  cl_g_limits: { pt: `Limites`, en: `Limits`, es: `Límites`, fr: `Limites` },
+  cl_save: { pt: `Guardar`, en: `Save`, es: `Guardar`, fr: `Enregistrer` },
+  cl_saved: { pt: `✓ Guardado`, en: `✓ Saved`, es: `✓ Guardado`, fr: `✓ Enregistré` },
+  cl_b_trip: { pt: `KILLSWITCH ACIONADO`, en: `KILLSWITCH TRIPPED`, es: `KILLSWITCH ACTIVADO`, fr: `KILLSWITCH DÉCLENCHÉ` },
+  cl_b_reset: { pt: `Limpar bloqueio`, en: `Clear lock`, es: `Limpiar bloqueo`, fr: `Effacer le blocage` },
+  cl_b_noresp: { pt: `Sensor sem resposta: {0}. O killswitch não consegue atuar sem leituras.`, en: `Sensor not responding: {0}. The killswitch cannot act without readings.`, es: `Sensor sin respuesta: {0}. El killswitch no puede actuar sin lecturas.`, fr: `Capteur sans réponse : {0}. Le killswitch ne peut pas agir sans mesures.` },
+  cl_b_off: { pt: `Monitorização desativada. Ative-a na configuração para ver o circuito ao vivo.`, en: `Monitoring is off. Turn it on in the setup to see the loop live.`, es: `La monitorización está desactivada. Actívela en la configuración para ver el circuito en vivo.`, fr: `La surveillance est désactivée. Activez-la dans la configuration pour voir le circuit en direct.` },
+  vd_set: { pt: `Definida / Real`, en: `Set / Actual`, es: `Definida / Real`, fr: `Définie / Réelle` },
+  vd_now: { pt: `Droop atual`, en: `Current droop`, es: `Droop actual`, fr: `Droop actuel` },
+  vd_avg: { pt: `Droop médio / máx.`, en: `Average / max droop`, es: `Droop medio / máx.`, fr: `Droop moyen / max.` },
+  vd_cv: { pt: `Estabilidade do hashrate`, en: `Hashrate stability`, es: `Estabilidad del hashrate`, fr: `Stabilité du hashrate` },
+  vd_nodata: { pt: `Sem leituras de coreVoltageActual (a máquina precisa de expor este campo no firmware).`, en: `No coreVoltageActual readings (the machine must expose this field in its firmware).`, es: `Sin lecturas de coreVoltageActual (la máquina debe exponer este campo en el firmware).`, fr: `Aucune mesure coreVoltageActual (la machine doit exposer ce champ dans son firmware).` },
+  vd_ok: { pt: `✅ Droop e hashrate estáveis na janela atual.`, en: `✅ Droop and hashrate are stable in the current window.`, es: `✅ Droop y hashrate estables en la ventana actual.`, fr: `✅ Droop et hashrate stables sur la fenêtre actuelle.` },
+  vd_w_droop: { pt: `⚠️ droop acima de 5% da tensão definida — o VRM pode estar no limite`, en: `⚠️ droop above 5% of the set voltage — the VRM may be at its limit`, es: `⚠️ droop por encima del 5% de la tensión definida — el VRM puede estar al límite`, fr: `⚠️ droop supérieur à 5% de la tension définie — le VRM est peut-être à sa limite` },
+  vd_w_cv: { pt: `⚠️ hashrate instável (variação > 5%)`, en: `⚠️ unstable hashrate (variation > 5%)`, es: `⚠️ hashrate inestable (variación > 5%)`, fr: `⚠️ hashrate instable (variation > 5%)` },
+  vd_limit: { pt: `limite 5%`, en: `5% limit`, es: `límite 5%`, fr: `limite 5%` },
+  vd_avgref: { pt: `média`, en: `average`, es: `media`, fr: `moyenne` },
+  vd_c_title: { pt: `Droop do núcleo ao longo do tempo (mV)`, en: `Core droop over time (mV)`, es: `Droop del núcleo a lo largo del tiempo (mV)`, fr: `Droop du cœur dans le temps (mV)` }
+});
+Object.assign(I18N_DICT, {
+  nf_all: { pt: `Todas`, en: `All`, es: `Todas`, fr: `Toutes` },
+  nf_block: { pt: `🚀 Blocos`, en: `🚀 Blocks`, es: `🚀 Bloques`, fr: `🚀 Blocs` },
+  nf_best: { pt: `🏆 Recordes`, en: `🏆 Records`, es: `🏆 Récords`, fr: `🏆 Records` },
+  nf_thermal: { pt: `🧬 Térmicos`, en: `🧬 Thermal`, es: `🧬 Térmicos`, fr: `🧬 Thermiques` },
+  nf_machine: { pt: `⚠️ Máquinas`, en: `⚠️ Machines`, es: `⚠️ Máquinas`, fr: `⚠️ Machines` },
+  nf_empty: { pt: `Ainda não existem notificações registadas.`, en: `No notifications recorded yet.`, es: `Aún no hay notificaciones registradas.`, fr: `Aucune notification enregistrée pour l'instant.` },
+  nf_empty_f: { pt: `Sem alertas deste tipo.`, en: `No alerts of this type.`, es: `Sin alertas de este tipo.`, fr: `Aucune alerte de ce type.` },
+  nf_today: { pt: `Hoje`, en: `Today`, es: `Hoy`, fr: `Aujourd'hui` },
+  nf_yesterday: { pt: `Ontem`, en: `Yesterday`, es: `Ayer`, fr: `Hier` },
+  ab_s_channels: { pt: `Canais de aviso`, en: `Alert channels`, es: `Canales de aviso`, fr: `Canaux d'alerte` },
+  ab_s_events: { pt: `O que quer saber`, en: `What you want to know`, es: `Qué quiere saber`, fr: `Ce que vous voulez savoir` },
+  ab_s_how: { pt: `Como receber`, en: `How to receive`, es: `Cómo recibir`, fr: `Comment recevoir` }
+});
 // texto traduzido com {0}, {1}... substituídos
 function mct(key, ...args){
   let s = t(key);
@@ -462,4 +556,4 @@ function mct(key, ...args){
 // data e hora no idioma escolhido
 function mcLocale(){ return currentLang === 'pt' ? 'pt-PT' : currentLang; }
 // Os textos fixos do HTML (data-i18n="mc_...") já foram traduzidos antes deste ficheiro carregar; volta a fazê-lo agora
-document.querySelectorAll('[data-i18n^="mc_"]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+document.querySelectorAll('[data-i18n^="mc_"], [data-i18n^="th_"], [data-i18n^="lt_"], [data-i18n^="cl_"], [data-i18n^="vd_"], [data-i18n^="ab_"], [data-i18n^="nf_"]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });

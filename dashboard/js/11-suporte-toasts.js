@@ -430,14 +430,28 @@ function clearNotifications() {
   renderNotifications();
 }
 
+let notifFilter = 'all';
+const NOTIF_GROUP = { block: 'block', best: 'best', thermal: 'thermal', 'thermal-warning': 'thermal', critical: 'thermal', anomaly: 'machine', offline: 'machine' };
 function renderNotifications() {
   const list = $('notifList');
   if(!list) return;
-  if(notifications.length === 0) {
-    list.innerHTML = '<div style="text-align:center; color: var(--muted); font-size: 12px; padding: 30px;">Ainda não existem notificações registadas.</div>';
+  // filtros por tipo, com a contagem de cada um
+  let chips = $('notifChips');
+  if(!chips){
+    chips = document.createElement('div'); chips.id = 'notifChips'; chips.className = 'notif-chips';
+    list.parentNode.insertBefore(chips, list);
+    chips.addEventListener('click', e => { const b = e.target.closest('[data-nf]'); if(b){ notifFilter = b.dataset.nf; renderNotifications(); } });
+  }
+  const counts = { all: notifications.length, block: 0, best: 0, thermal: 0, machine: 0 };
+  notifications.forEach(n => { counts[NOTIF_GROUP[n.type] || 'best']++; });
+  chips.innerHTML = [['all', 'nf_all'], ['block', 'nf_block'], ['best', 'nf_best'], ['thermal', 'nf_thermal'], ['machine', 'nf_machine']]
+    .map(([k, key]) => `<button type="button" data-nf="${k}" class="nf-chip ${k}${notifFilter === k ? ' on' : ''}${counts[k] ? '' : ' zero'}">${t(key)} <b>${counts[k]}</b></button>`).join('');
+  const items = notifications.filter(n => notifFilter === 'all' || (NOTIF_GROUP[n.type] || 'best') === notifFilter);
+  if(!items.length) {
+    list.innerHTML = `<div class="notif-empty">${t(notifications.length ? 'nf_empty_f' : 'nf_empty')}</div>`;
     return;
   }
-  
+
   const NOTIF_STYLES = {
     block:            { itemClass: 'type-block',            tagClass: 'block',            label: '🚀 Bloco Encontrado!' },
     best:             { itemClass: 'type-best',              tagClass: 'best',              label: '🏆 Recorde de Dificuldade' },
@@ -449,7 +463,18 @@ function renderNotifications() {
   };
 
   list.innerHTML = '';
-  notifications.forEach(n => {
+  let day = '';
+  items.forEach(n => {
+    if(n.ts){
+      const d = new Date(n.ts), key = d.toDateString();
+      if(key !== day){
+        day = key;
+        const sep = document.createElement('div');
+        sep.className = 'notif-day';
+        sep.textContent = key === new Date().toDateString() ? t('nf_today') : key === new Date(Date.now() - 864e5).toDateString() ? t('nf_yesterday') : d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+        list.appendChild(sep);
+      }
+    }
     const el = document.createElement('div');
     const style = NOTIF_STYLES[n.type] || NOTIF_STYLES.best;
     el.className = `notif-item ${style.itemClass}`;

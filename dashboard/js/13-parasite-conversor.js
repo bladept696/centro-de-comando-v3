@@ -200,88 +200,81 @@ async function fetchParasiteRefinery(forceUi){
   }
 }
 
-function drawPingChart(svgId, vals){
+function drawPingChart(svgId, rawVals, rawTs){
   const svg = $(svgId);
-  vals = (vals || []).filter(v => v != null);
+  const pts0 = [];
+  (rawVals || []).forEach((v, i) => { if(v != null && isFinite(v)) pts0.push({ v: Number(v), t: rawTs && rawTs[i] ? rawTs[i] : null }); });
+  const W = Math.max(360, Math.round(svg.clientWidth || (svg.parentElement && svg.parentElement.clientWidth) || 720)), H = 250;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('preserveAspectRatio', 'xMidYMid meet'); svg.style.height = 'auto';
+  const setStats = (now, avg, mm, jit, p95) => { $('valPingNow').textContent = now; $('valPingAvg').textContent = avg; $('valPingMinMax').textContent = mm; if($('valPingJitter')) $('valPingJitter').textContent = jit; if($('valPingP95')) $('valPingP95').textContent = p95; };
 
-  if(vals.length < 2){
-    svg.innerHTML = '<text x="50%" y="50%" fill="#4a6975" font-size="11" text-anchor="middle">A aguardar dados em tempo real (ou este pool não reporta ping)...</text>';
-    $('valPingNow').textContent = '—';
-    $('valPingAvg').textContent = '—';
-    $('valPingMinMax').textContent = '—';
+  if(pts0.length < 2){
+    svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" fill="#4a6975" font-size="12" text-anchor="middle">${t('lt_wait')}</text>`;
+    setStats('—', '—', '—', '—', '—');
+    const b = $('pingDetailBadge'); if(b){ b.className = 'thermal-badge'; b.textContent = ''; }
+    svg.onmousemove = svg.onmouseleave = null;
     return;
   }
 
-  let min = Math.min(...vals), max = Math.max(...vals), range = (max-min) || 1;
-  const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
-  const latest = vals[vals.length - 1];
+  const vals = pts0.map(p => p.v), n = vals.length;
+  const avg = vals.reduce((a, b) => a + b, 0) / n, min = Math.min(...vals), max = Math.max(...vals), latest = vals[n - 1];
+  const sd = Math.sqrt(vals.reduce((a, b) => a + (b - avg) * (b - avg), 0) / n), sorted = [...vals].sort((a, b) => a - b), p95 = sorted[Math.min(n - 1, Math.floor(n * .95))];
+  const q = pingQuality(latest), color = q.color;
+  setStats(`${latest.toFixed(2)} ms`, `${avg.toFixed(2)} ms`, `${min.toFixed(2)} / ${max.toFixed(2)} ms`, `±${sd.toFixed(2)} ms`, `${p95.toFixed(2)} ms`);
+  const bd = $('pingDetailBadge'); if(bd){ bd.className = 'thermal-badge ' + ({ great: 'status-normal', good: 'status-normal', warn: 'status-warning', bad: 'status-critical' })[q.k]; bd.textContent = q.label; }
 
-  $('valPingNow').textContent = `${latest.toFixed(2)} ms`;
-  $('valPingAvg').textContent = `${avg.toFixed(2)} ms`;
-  $('valPingMinMax').textContent = `${min.toFixed(2)} / ${max.toFixed(2)} ms`;
-
-  const paddingY = 16;
-  const w = 300, h = 130;
-  const usableH = h - (paddingY * 2);
-
-  const pts = vals.map((v, i) => {
-    const x = 10 + i * ((w - 20) / (vals.length - 1));
-    const y = h - paddingY - ((v - min) / range) * usableH;
-    return {x, y, val: v};
-  });
-
-  const ptsString = pts.map(p => `${p.x},${p.y}`).join(' L');
-  const avgY = h - paddingY - ((avg - min) / range) * usableH;
-  const lastPt = pts[pts.length - 1];
-
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="cyan_grad_${svgId}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#4fd6ff" stop-opacity="0.35"/>
-        <stop offset="100%" stop-color="#4fd6ff" stop-opacity="0.0"/>
-      </linearGradient>
-      <filter id="glow_${svgId}" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="2" result="glow" />
-        <feComposite in="SourceGraphic" in2="glow" operator="over" />
-      </filter>
-    </defs>
-
-    <line x1="10" y1="${avgY}" x2="290" y2="${avgY}" stroke="#4fd6ff66" stroke-dasharray="4,4" stroke-width="1"/>
-    <path d="M${pts[0].x},${h} L${ptsString} L${pts[pts.length-1].x},${h} Z" fill="url(#cyan_grad_${svgId})"></path>
-    <path fill="none" stroke="#4fd6ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow_${svgId})" d="M${ptsString}"></path>
-    <circle cx="${lastPt.x}" cy="${lastPt.y}" r="4.5" fill="#4fd6ff" stroke="#0d1a26" stroke-width="2"/>
-
-    <g id="tooltip_${svgId}" style="display:none;">
-      <line x1="0" y1="0" x2="0" y2="${h}" stroke="#4fd6ff88" stroke-dasharray="3,3" stroke-width="1"></line>
-      <circle r="4" fill="#4fd6ff" stroke="#060d14" stroke-width="2"></circle>
-    </g>
-  `;
-
-  svg.onmousemove = (e) => {
-    const rect = svg.getBoundingClientRect();
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-
-    let closest = pts[0];
-    let minDist = Infinity;
-    for(const p of pts){
-      const dist = Math.abs(p.x - mouseX);
-      if(dist < minDist){ minDist = dist; closest = p; }
-    }
-
-    const tip = svg.querySelector(`#tooltip_${svgId}`);
-    if(tip){
-      tip.style.display = 'block';
-      tip.setAttribute('transform', `translate(${closest.x}, 0)`);
-      tip.querySelector('circle').setAttribute('cy', closest.y);
-      const res = closest.val;
-      $('valPingNow').textContent = `${res.toFixed(2)} ms`;
-    }
+  const L = 50, R = 16, T = 14, B = 28, pw = W - L - R, ph = H - T - B, hasT = pts0.every(p => p.t);
+  const t0 = hasT ? pts0[0].t : 0, t1 = hasT ? pts0[n - 1].t : n - 1, span = Math.max(1, t1 - t0);
+  let lo = Math.max(0, Math.min(min, avg) - (max - min) * .1 - 2), hi = max + (max - min) * .12 + 2;
+  hi = Math.max(hi, Math.min(max * 1.1, 120)); if(hi - lo < 10) hi = lo + 10;
+  const X = (p, i) => L + ((hasT ? p.t - t0 : i) / span) * pw, Y = v => T + (1 - (v - lo) / (hi - lo)) * ph;
+  const win = Math.max(1, Math.round(n / 50));
+  const sm = vals.map((_, i) => { let s = 0, c = 0; for(let k = Math.max(0, i - win); k <= Math.min(n - 1, i + win); k++){ s += vals[k]; c++; } return s / c; });
+  const P = pts0.map((p, i) => ({ x: X(p, i), y: Y(sm[i]), raw: p.v, t: p.t }));
+  const line = P.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join('');
+  const rawLine = pts0.map((p, i) => (i ? 'L' : 'M') + X(p, i).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join('');
+  const fmt = v => (hi - lo) < 20 ? v.toFixed(1) : v.toFixed(0);
+  let g = '';
+  // zonas de qualidade (100 ms e 250 ms)
+  const zone = (a, b, col) => { const ya = Math.max(T, Math.min(T + ph, Y(b))), yb = Math.max(T, Math.min(T + ph, Y(a))); if(yb - ya > 0.5) g += `<rect x="${L}" y="${ya.toFixed(1)}" width="${pw}" height="${(yb - ya).toFixed(1)}" fill="${col}" opacity=".07"/>`; };
+  zone(0, 100, '#21ffb0'); zone(100, 250, '#ffb020'); zone(250, 99999, '#ff5d5d');
+  for(let k = 0; k <= 4; k++){ const v = lo + (hi - lo) * k / 4, y = Y(v); g += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W - R}" y2="${y.toFixed(1)}" stroke="#ffffff10"/><text x="${L - 8}" y="${(y + 3.5).toFixed(1)}" fill="#6b8794" font-size="10" text-anchor="end">${fmt(v)}</text>`; }
+  g += `<text x="${L - 8}" y="${T - 3}" fill="#6b8794" font-size="9.5" text-anchor="end">ms</text>`;
+  // eixo do tempo
+  if(hasT){ for(let k = 0; k <= 4; k++){ const tt = t0 + span * k / 4; g += `<text x="${(L + pw * k / 4).toFixed(1)}" y="${H - 9}" fill="#6b8794" font-size="10" text-anchor="${k === 0 ? 'start' : k === 4 ? 'end' : 'middle'}">${new Date(tt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</text>`; } }
+  // referências: média e limiares
+  const ref = (v, col, label, dash) => { if(v < lo || v > hi) return ''; const y = Y(v); return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W - R}" y2="${y.toFixed(1)}" stroke="${col}" stroke-dasharray="${dash}" stroke-width="1" opacity=".85"/><text x="${W - R - 4}" y="${(y - 4).toFixed(1)}" fill="${col}" font-size="9.5" text-anchor="end">${label}</text>`; };
+  g += ref(avg, '#4fd6ff', 'média ' + avg.toFixed(1), '5 4') + ref(100, '#ffb020', '100 ms', '2 4') + ref(250, '#ff5d5d', '250 ms', '2 4');
+  // mínimo e máximo
+  const imin = vals.indexOf(min), imax = vals.indexOf(max);
+  const mark = (i, col, txt, dy) => `<circle cx="${P[i].x.toFixed(1)}" cy="${Y(vals[i]).toFixed(1)}" r="3.4" fill="${col}" stroke="#0d1a26" stroke-width="1.5"/><text x="${Math.min(W - R - 14, Math.max(L + 14, P[i].x)).toFixed(1)}" y="${(Y(vals[i]) + dy).toFixed(1)}" fill="${col}" font-size="9.5" text-anchor="middle">${txt}</text>`;
+  const last = P[n - 1], gid = 'pg_' + svgId;
+  svg.innerHTML = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".36"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient>
+      <filter id="${gid}f" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    ${g}
+    <path d="${rawLine}" fill="none" stroke="${color}" stroke-width="1" opacity=".22" stroke-linejoin="round"/>
+    <path d="${line}L${last.x.toFixed(1)} ${T + ph}L${P[0].x.toFixed(1)} ${T + ph}Z" fill="url(#${gid})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" filter="url(#${gid}f)"/>
+    ${mark(imin, '#21ffb0', fmt(min), 14)}${max > min ? mark(imax, '#ff7b6b', fmt(max), -8) : ''}
+    <circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="5" fill="${color}" stroke="#0d1a26" stroke-width="2"/>
+    <g id="tip_${svgId}" style="display:none;pointer-events:none;"><line y1="${T}" y2="${T + ph}" stroke="${color}88" stroke-dasharray="3 3"/><circle r="4.5" fill="${color}" stroke="#060d14" stroke-width="2"/><g class="bub"><rect rx="6" width="118" height="34" fill="#08121a" stroke="${color}88"/><text x="8" y="14" fill="#e8f6ff" font-size="11" font-weight="700"></text><text x="8" y="27" fill="#6b8794" font-size="9.5"></text></g></g>`;
+  svg.onmousemove = e => {
+    const r = svg.getBoundingClientRect(), mx = (e.clientX - r.left) / r.width * W;
+    let c = P[0], md = Infinity;
+    for(const p of P){ const d = Math.abs(p.x - mx); if(d < md){ md = d; c = p; } }
+    const tip = svg.querySelector('#tip_' + svgId);
+    if(!tip) return;
+    tip.style.display = 'block'; tip.setAttribute('transform', `translate(${c.x.toFixed(1)},0)`);
+    tip.querySelector('circle').setAttribute('cy', c.y.toFixed(1));
+    const bub = tip.querySelector('.bub'), bx = c.x > W - 140 ? -126 : 10;
+    bub.setAttribute('transform', `translate(${bx},${Math.max(T, Math.min(T + ph - 36, c.y - 40))})`);
+    const tx = bub.querySelectorAll('text'); tx[0].textContent = c.raw.toFixed(2) + ' ms'; tx[1].textContent = c.t ? new Date(c.t).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+    $('valPingNow').textContent = `${c.raw.toFixed(2)} ms`;
   };
-
   svg.onmouseleave = () => {
-    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    const tip = svg.querySelector('#tip_' + svgId);
     if(tip) tip.style.display = 'none';
-    $('valPingNow').textContent = `${vals[vals.length - 1].toFixed(2)} ms`;
+    $('valPingNow').textContent = `${latest.toFixed(2)} ms`;
   };
 }
 
@@ -319,10 +312,12 @@ function renderOcTab(){
         <div class="oc-field">
           <label data-i18n="frequencia_mhz">Frequência (MHz)</label>
           <input type="number" class="oc-freq-input" placeholder="ex: 550" value="${r?.frequency ? r.frequency : ''}">
+          <small class="oc-delta" data-k="f"></small>
         </div>
         <div class="oc-field">
           <label data-i18n="corevoltage_mv">CoreVoltage (mV)</label>
           <input type="number" class="oc-volt-input" placeholder="ex: 1150" value="${r?.coreVoltage != null ? r.coreVoltage : ''}">
+          <small class="oc-delta" data-k="v"></small>
         </div>
       </div>
       <div class="oc-card-actions">
@@ -337,6 +332,14 @@ function renderOcTab(){
     const saveBtn = card.querySelector('.oc-btn-save');
     const restartBtn = card.querySelector('.oc-btn-restart');
     const statusEl = card.querySelector('.oc-card-status');
+    // diferença face ao valor atual, com aviso nos saltos grandes
+    const showDelta = () => {
+      const f0 = Number(r?.frequency), v0 = Number(r?.coreVoltage), f1 = Number(freqInput.value), v1 = Number(voltInput.value);
+      const put = (k, txt, cls, tip) => { const el = card.querySelector('.oc-delta[data-k="' + k + '"]'); el.textContent = txt; el.className = 'oc-delta ' + cls; el.title = tip || ''; };
+      if(f0 && freqInput.value && f1 !== f0){ const d = f1 - f0, pct = d / f0 * 100; put('f', `Δ ${d > 0 ? '+' : ''}${d} MHz (${pct > 0 ? '+' : ''}${pct.toFixed(1)}%)${pct > 12 ? ' ⚠' : ''}`, pct > 12 ? 'bad' : pct > 6 ? 'warn' : d > 0 ? 'up' : 'down', pct > 12 ? 'Salto grande de frequência: aumente aos poucos e vigie a temperatura.' : ''); } else put('f', '', '');
+      if(v0 && voltInput.value && v1 !== v0){ const d = v1 - v0; put('v', `Δ ${d > 0 ? '+' : ''}${d} mV${d > 60 ? ' ⚠' : ''}`, d > 100 ? 'bad' : d > 40 ? 'warn' : d > 0 ? 'up' : 'down', d > 60 ? 'Subida grande de tensão: aquece mais e gasta mais energia.' : ''); } else put('v', '', '');
+    };
+    freqInput.addEventListener('input', showDelta); voltInput.addEventListener('input', showDelta);
 
     saveBtn.onclick = async () => {
       const freq = freqInput.value.trim();
@@ -597,22 +600,29 @@ function renderThermalTab(){
     if(forecast.status === 'insufficient'){
       fcText = '🔮 Ainda sem dias suficientes para tendência';
     } else if(forecast.status === 'ok'){
-      if(forecast.daysToCrit != null){
-        fcClass = 'fc-crit';
-        const eta = formatForecastEta(forecast.daysToCrit);
-        fcText = `🔮 Risco de throttle em ${eta.label} (${eta.date})`;
-      } else if(forecast.daysToWarn != null){
-        fcClass = 'fc-warn';
-        const eta = formatForecastEta(forecast.daysToWarn);
-        fcText = `🔮 Limpeza recomendada em ${eta.label} (${eta.date})`;
-      } else {
+      const days = forecast.daysToCrit != null ? forecast.daysToCrit : forecast.daysToWarn;
+      if(days == null){
         fcClass = 'fc-stable';
         fcText = '🔮 Sem degradação — sem manutenção prevista';
+      } else {
+        const eta = formatForecastEta(days), crit = forecast.daysToCrit != null;
+        fcClass = days <= 30 ? 'fc-crit' : days <= 120 ? 'fc-warn' : 'fc-stable';
+        fcText = days > 365 ? `🔮 Sem risco no próximo ano (${eta.label})`
+          : crit ? `🔮 Risco de throttle em ${eta.label} (${eta.date})` : `🔮 Limpeza recomendada em ${eta.label} (${eta.date})`;
       }
     }
 
+    // indicador por zonas (normal / atenção / crítico) com o marcador na variação atual
+    const gMax = THERMAL_CRIT_PCT * 1.5, gPos = health.changePct != null ? Math.max(0, Math.min(gMax, health.changePct)) / gMax * 100 : null;
+    const gauge = health.status === 'collecting'
+      ? (() => { const n = health.points.length, left = Math.max(0, THERMAL_MIN_BASELINE_SNAPSHOTS - n), pct = Math.min(100, n / THERMAL_MIN_BASELINE_SNAPSHOTS * 100);
+          return `<div class="thermal-prog"><div class="bar"><i style="width:${pct.toFixed(0)}%"></i></div><span>${mct('th_samples', n, THERMAL_MIN_BASELINE_SNAPSHOTS, Math.ceil(left * THERMAL_SNAPSHOT_INTERVAL_MS / 3600000))}</span></div>`; })()
+      : `<div class="thermal-gauge" title="${changeLabel}"><i class="z ok" style="width:${THERMAL_WARN_PCT / gMax * 100}%"></i><i class="z warn" style="width:${(THERMAL_CRIT_PCT - THERMAL_WARN_PCT) / gMax * 100}%"></i><i class="z crit"></i><b class="mk ${badgeClass}" style="left:${gPos.toFixed(1)}%"></b></div>`;
+    const sparkColor = ({ normal: '#21ffb0', warning: '#ffb020', critical: '#ff5d5d' })[health.status] || '#4fd6ff';
+    const spark2 = thermalSpark(health.points.map(p => p.effort), sparkColor);
+
     const card = document.createElement('div');
-    card.className = 'thermal-card' + (dev.id === thermalSelectedId ? ' selected' : '') + (!online ? ' offline' : '');
+    card.className = 'thermal-card ' + badgeClass + (dev.id === thermalSelectedId ? ' selected' : '') + (!online ? ' offline' : '');
     card.innerHTML = `
       <div class="thermal-card-head">
         <div>
@@ -625,10 +635,11 @@ function renderThermalTab(){
         <span class="thermal-value ${badgeClass}">${changeLabel}</span>
         <span class="thermal-unit">vs baseline histórico</span>
       </div>
-      ${spark}
+      ${gauge}
+      ${spark2}
       <div class="thermal-stats-mini">
-        <span>${online && r.temp != null ? `Temp: ${r.temp.toFixed(1)}°C` : 'Temp: —'}</span>
-        <span>${online ? `Ventoinha: ${(r.fanSpeed || 0).toFixed(0)}` : 'Ventoinha: —'}</span>
+        <span>🌡 ${online && r.temp != null ? `${r.temp.toFixed(1)} °C` : '—'}</span>
+        <span>🌀 ${online ? `${(r.fanSpeed || 0).toFixed(0)} rpm` : '—'}</span>
       </div>
       <div class="thermal-forecast-line ${fcClass}">${fcText}</div>
     `;
@@ -641,8 +652,14 @@ function renderThermalTab(){
   $('thermalMinDays').textContent = minDays !== null ? `${minDays.toFixed(1)} dias` : '—';
   $('thermalTracked').textContent = `${tracked} / ${devices.length}`;
   $('thermalNextEta').textContent = soonestEta
-    ? `${Math.ceil(soonestEta.days)}d — ${soonestEta.dev.name}`
+    ? `${soonestEta.days >= 365 ? '>1 ano' : Math.ceil(soonestEta.days) + 'd'} — ${soonestEta.dev.name}`
     : '—';
+  const tone = (id, v) => { const el = $(id) && $(id).closest('.ping-summary-card'); if(el) el.dataset.tone = v; };
+  tone('thermalAtRisk', !tracked ? 'none' : atRisk ? 'bad' : 'ok');
+  tone('thermalWorst', worstPct === null ? 'none' : worstPct >= THERMAL_CRIT_PCT ? 'bad' : worstPct >= THERMAL_WARN_PCT ? 'warn' : 'ok');
+  tone('thermalMinDays', 'none'); tone('thermalTracked', tracked ? 'ok' : 'none');
+  tone('thermalNextEta', !soonestEta ? 'none' : soonestEta.days <= 30 ? 'bad' : soonestEta.days <= 120 ? 'warn' : 'ok');
+  updateThermalShieldChip();
 
   if(!thermalSelectedId || !devices.find(d => d.id === thermalSelectedId)){
     thermalSelectedId = devices[0]?.id || null;
@@ -651,7 +668,9 @@ function renderThermalTab(){
   if(selDev){
     const health = computeThermalHealth(selDev.id);
     $('thermalDetailName').textContent = `${selDev.name} (${selDev.ip})`;
-    drawThermalChart('chartThermal', health.points, health.status);
+    drawThermalChart('chartThermal', health.points, health.status, { health, devId: selDev.id });
+    const db = $('thermalDetailBadge');
+    if(db){ db.className = 'thermal-badge status-' + health.status; db.textContent = ({ normal: '✅ Normal', warning: '⚠️ Atenção', critical: '🔴 Crítico' })[health.status] || '🧬 A recolher dados'; }
     $('valThermalBaseline').textContent = health.baselineEffort != null ? health.baselineEffort.toFixed(2) : '—';
     $('valThermalChange').textContent = health.changePct != null ? `${health.changePct >= 0 ? '+' : ''}${health.changePct.toFixed(1)}%` : '—';
     $('valThermalDays').textContent = health.points.length ? `${health.daysRecorded.toFixed(1)} dias (${health.points.length} amostras)` : '—';
@@ -694,20 +713,28 @@ function renderForecastBody(selDev){
   const trendLabel = forecast.slope > 0.0001
     ? `+${forecast.slope.toFixed(3)} / dia (a degradar)`
     : (forecast.slope < -0.0001 ? `${forecast.slope.toFixed(3)} / dia (a melhorar)` : 'estável');
+  const tone = d => d == null ? 'none' : d <= 30 ? 'crit' : d <= 120 ? 'warn' : 'ok';
+  const maxD = Math.max(60, Math.min(365, Math.max(forecast.daysToWarn || 0, forecast.daysToCrit || 0) * 1.2 || 90));
+  const pos = d => Math.max(0, Math.min(100, d / maxD * 100));
+  const mk = (d, cls, label, eta) => d == null ? '' : `<b class="fc-mk ${cls}" style="left:${pos(d).toFixed(1)}%"><em>${label}</em><span>${d > maxD ? '›' : ''}${eta ? eta.label : ''}</span></b>`;
+  const timeline = `<div class="fc-timeline"><div class="fc-track"><b class="fc-mk now" style="left:0"><em>${t('th_today')}</em></b>${mk(forecast.daysToWarn, 'warn', t('th_clean'), warnEta)}${mk(forecast.daysToCrit, 'crit', t('th_throttle'), critEta)}</div>
+      <div class="fc-scale"><span>0</span><span>+${Math.round(maxD / 2)} d</span><span>+${Math.round(maxD)} d${maxD >= 365 ? '+' : ''}</span></div></div>`;
+  const far = e => e && e.days > 365 ? t('th_far') : null;
 
   body.innerHTML = `
     <div class="forecast-grid">
-      <div class="forecast-eta-card ${warnEta ? 'fc-warn' : ''}">
+      <div class="forecast-eta-card tone-${tone(forecast.daysToWarn)}">
         <div class="forecast-eta-label">⚠️ Previsão — Limpeza Recomendada</div>
-        <div class="forecast-eta-value">${warnEta ? warnEta.label : (forecast.daysToWarn === 0 ? 'já atingido' : 'sem previsão')}</div>
+        <div class="forecast-eta-value">${warnEta ? (far(warnEta) || warnEta.label) : (forecast.daysToWarn === 0 ? 'já atingido' : 'sem previsão')}</div>
         <div class="forecast-eta-date">${warnEta ? `por volta de ${warnEta.date}` : 'sem tendência de degradação detetada'}</div>
       </div>
-      <div class="forecast-eta-card ${critEta ? 'fc-crit' : ''}">
+      <div class="forecast-eta-card tone-${tone(forecast.daysToCrit)}">
         <div class="forecast-eta-label">🔴 Previsão — Risco de Thermal Throttle</div>
-        <div class="forecast-eta-value">${critEta ? critEta.label : (forecast.daysToCrit === 0 ? 'já atingido' : 'sem previsão')}</div>
+        <div class="forecast-eta-value">${critEta ? (far(critEta) || critEta.label) : (forecast.daysToCrit === 0 ? 'já atingido' : 'sem previsão')}</div>
         <div class="forecast-eta-date">${critEta ? `por volta de ${critEta.date}` : 'sem tendência de degradação detetada'}</div>
       </div>
     </div>
+    ${timeline}
     <div class="forecast-confidence">
       Tendência: <b>${trendLabel}</b> · Confiança: <b>${forecast.confidence}</b>
       (${forecast.daysRecorded} dias de dados, ajuste R²=${forecast.rSquared.toFixed(2)}) ·
@@ -716,87 +743,91 @@ function renderForecastBody(selDev){
   `;
 }
 
-function drawThermalChart(svgId, points, status){
-  const svg = $(svgId);
-  const vals = (points || []).map(p => p.effort).filter(v => v != null && isFinite(v));
+// linha pequena e suave para os cartões (sem distorcer o traço)
+function thermalSpark(vals, color){
+  vals = (vals || []).filter(v => v != null && isFinite(v));
+  if(vals.length < 3) return '<svg class="thermal-spark" viewBox="0 0 260 44"><text x="130" y="26" fill="#4a6975" font-size="9" text-anchor="middle">a recolher dados...</text></svg>';
+  const w = 260, h = 44, pad = 4, win = Math.max(2, Math.round(vals.length / 30));
+  const sm = vals.map((_, i) => { let s = 0, n = 0; for(let k = Math.max(0, i - win); k <= Math.min(vals.length - 1, i + win); k++){ s += vals[k]; n++; } return s / n; });
+  const min = Math.min(...sm), max = Math.max(...sm), range = (max - min) || 1;
+  const pts = sm.map((v, i) => [pad + i * ((w - pad * 2) / (sm.length - 1)), h - pad - ((v - min) / range) * (h - pad * 2)]);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
+  const id = 'sp' + Math.random().toString(36).slice(2, 7), last = pts[pts.length - 1];
+  return `<svg class="thermal-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".35"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${line}L${pts[pts.length - 1][0].toFixed(1)} ${h}L${pts[0][0].toFixed(1)} ${h}Z" fill="url(#${id})"/><path d="${line}" fill="none" stroke="${color}" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.6" fill="${color}"/></svg>`;
+}
 
-  if(vals.length < 2){
-    svg.innerHTML = `
-      <text x="150" y="58" fill="#4a6975" font-size="11" text-anchor="middle">A recolher dados térmicos...</text>
-      <text x="150" y="76" fill="#4a6975" font-size="9.5" text-anchor="middle">são precisas algumas horas de funcionamento</text>
-    `;
+// gráfico da assinatura térmica: série suavizada, linha de base, zonas de atenção e crítico, eixos e manutenções
+function drawThermalChart(svgId, points, status, extra){
+  const svg = $(svgId);
+  const pts0 = (points || []).filter(p => p.effort != null && isFinite(p.effort));
+  const W = Math.max(360, Math.round(svg.clientWidth || (svg.parentElement && svg.parentElement.clientWidth) || 720)), H = 250;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('preserveAspectRatio', 'xMidYMid meet'); svg.style.height = 'auto';
+
+  if(pts0.length < 2){
+    svg.innerHTML = `<text x="${W / 2}" y="${H / 2 - 4}" fill="#4a6975" font-size="13" text-anchor="middle">A recolher dados térmicos...</text>
+      <text x="${W / 2}" y="${H / 2 + 16}" fill="#4a6975" font-size="11" text-anchor="middle">são precisas algumas horas de funcionamento</text>`;
     $('valThermalNow').textContent = '—';
+    svg.onmousemove = svg.onmouseleave = null;
     return;
   }
 
-  const colorMap = { normal: '#21ffb0', warning: '#ffb020', critical: '#ff5d5d', collecting: '#4fd6ff' };
-  const color = colorMap[status] || '#4fd6ff';
-
-  let min = Math.min(...vals), max = Math.max(...vals), range = (max-min) || 1;
-  const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
-  const latest = vals[vals.length - 1];
-
-  $('valThermalNow').textContent = latest.toFixed(2);
-
-  const paddingY = 16;
-  const w = 300, h = 130;
-  const usableH = h - (paddingY * 2);
-
-  const pts = vals.map((v, i) => {
-    const x = 10 + i * ((w - 20) / (vals.length - 1));
-    const y = h - paddingY - ((v - min) / range) * usableH;
-    return {x, y, val: v};
-  });
-
-  const ptsString = pts.map(p => `${p.x},${p.y}`).join(' L');
-  const avgY = h - paddingY - ((avg - min) / range) * usableH;
-  const lastPt = pts[pts.length - 1];
-
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="thermal_grad_${svgId}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
-        <stop offset="100%" stop-color="${color}" stop-opacity="0.0"/>
-      </linearGradient>
-      <filter id="thermal_glow_${svgId}" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="2" result="glow" />
-        <feComposite in="SourceGraphic" in2="glow" operator="over" />
-      </filter>
-    </defs>
-
-    <line x1="10" y1="${avgY}" x2="290" y2="${avgY}" stroke="${color}66" stroke-dasharray="4,4" stroke-width="1"/>
-    <path d="M${pts[0].x},${h} L${ptsString} L${pts[pts.length-1].x},${h} Z" fill="url(#thermal_grad_${svgId})"></path>
-    <path fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#thermal_glow_${svgId})" d="M${ptsString}"></path>
-    <circle cx="${lastPt.x}" cy="${lastPt.y}" r="4.5" fill="${color}" stroke="#0d1a26" stroke-width="2"/>
-
-    <g id="tooltip_${svgId}" style="display:none;">
-      <line x1="0" y1="0" x2="0" y2="${h}" stroke="${color}88" stroke-dasharray="3,3" stroke-width="1"></line>
-      <circle r="4" fill="${color}" stroke="#060d14" stroke-width="2"></circle>
-    </g>
-  `;
-
-  svg.onmousemove = (e) => {
-    const rect = svg.getBoundingClientRect();
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-
-    let closest = pts[0];
-    let minDist = Infinity;
-    for(const p of pts){
-      const dist = Math.abs(p.x - mouseX);
-      if(dist < minDist){ minDist = dist; closest = p; }
-    }
-
-    const tip = svg.querySelector(`#tooltip_${svgId}`);
-    if(tip){
-      tip.style.display = 'block';
-      tip.setAttribute('transform', `translate(${closest.x}, 0)`);
-      tip.querySelector('circle').setAttribute('cy', closest.y);
-      $('valThermalNow').textContent = closest.val.toFixed(2);
-    }
+  const color = ({ normal: '#21ffb0', warning: '#ffb020', critical: '#ff5d5d', collecting: '#4fd6ff' })[status] || '#4fd6ff';
+  const L = 54, R = 18, T = 16, B = 30, pw = W - L - R, ph = H - T - B;
+  const t0 = pts0[0].t, t1 = pts0[pts0.length - 1].t, span = Math.max(1, t1 - t0), vals = pts0.map(p => p.effort);
+  const win = Math.max(2, Math.round(vals.length / 36));
+  const sm = vals.map((_, i) => { let s = 0, n = 0; for(let k = Math.max(0, i - win); k <= Math.min(vals.length - 1, i + win); k++){ s += vals[k]; n++; } return s / n; });
+  const base = extra && extra.health && extra.health.baselineEffort, warnV = base ? base * (1 + THERMAL_WARN_PCT / 100) : null, critV = base ? base * (1 + THERMAL_CRIT_PCT / 100) : null;
+  let min = Math.min(...vals, ...(base ? [base] : [])), max = Math.max(...vals, ...(critV ? [critV * 1.02] : []));
+  const padV = (max - min) * .08 || 1; min -= padV; max += padV;
+  const X = t => L + (t - t0) / span * pw, Y = v => T + (1 - (v - min) / (max - min)) * ph, fmt = v => (max - min) < 12 ? v.toFixed(2) : v.toFixed(0);
+  const P = pts0.map((p, i) => ({ x: X(p.t), y: Y(sm[i]), raw: p.effort, t: p.t }));
+  const line = P.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join('');
+  const rawLine = pts0.map((p, i) => (i ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p.effort).toFixed(1)).join('');
+  let g = '';
+  // zonas
+  if(warnV != null){
+    const yw = Math.max(T, Math.min(T + ph, Y(warnV))), yc = Math.max(T, Math.min(T + ph, Y(critV)));
+    g += `<rect x="${L}" y="${T}" width="${pw}" height="${yc - T}" fill="#ff5d5d" opacity=".07"/><rect x="${L}" y="${yc}" width="${pw}" height="${Math.max(0, yw - yc)}" fill="#ffb020" opacity=".07"/>`;
+  }
+  // grelha e eixo Y
+  for(let k = 0; k <= 4; k++){ const v = min + (max - min) * k / 4, y = Y(v); g += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W - R}" y2="${y.toFixed(1)}" stroke="#ffffff10"/><text x="${L - 8}" y="${(y + 3.5).toFixed(1)}" fill="#6b8794" font-size="10" text-anchor="end">${fmt(v)}</text>`; }
+  // eixo X (dias atrás)
+  const days = span / 864e5, step = days <= 1.5 ? 0 : days <= 4 ? 1 : days <= 10 ? 2 : days <= 21 ? 5 : 10;
+  if(step){ for(let d = Math.floor(days / step) * step; d >= 0; d -= step){ const x = X(t1 - d * 864e5); if(x < L - 1) continue; g += `<text x="${x.toFixed(1)}" y="${H - 10}" fill="#6b8794" font-size="10" text-anchor="${d === 0 ? 'end' : 'middle'}">${d === 0 ? t('th_now') : '-' + d + 'd'}</text>`; } }
+  else { for(let k = 0; k <= 4; k++){ const tt = t0 + span * k / 4; g += `<text x="${X(tt).toFixed(1)}" y="${H - 10}" fill="#6b8794" font-size="10" text-anchor="${k === 0 ? 'start' : k === 4 ? 'end' : 'middle'}">${new Date(tt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</text>`; } }
+  // linhas de referência
+  const ref = (v, col, label, dash) => { if(v == null) return ''; const y = Y(v); if(y < T || y > T + ph) return ''; return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W - R}" y2="${y.toFixed(1)}" stroke="${col}" stroke-dasharray="${dash}" stroke-width="1" opacity=".85"/><text x="${W - R - 4}" y="${(y - 4).toFixed(1)}" fill="${col}" font-size="9.5" text-anchor="end">${label}</text>`; };
+  g += ref(base, '#4fd6ff', t('th_base') + ' ' + fmt(base || 0), '5 4') + ref(warnV, '#ffb020', '+' + THERMAL_WARN_PCT + '%', '2 4') + ref(critV, '#ff5d5d', '+' + THERMAL_CRIT_PCT + '%', '2 4');
+  // manutenções registadas
+  const ml = (extra && extra.devId && maintenanceLog[extra.devId]) || [];
+  ml.filter(m => m.t >= t0 && m.t <= t1).forEach(m => { const x = X(m.t); g += `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${T + ph}" stroke="#b07cff" stroke-dasharray="3 3" opacity=".8"/><text x="${x.toFixed(1)}" y="${T - 3}" fill="#c9a7ff" font-size="9.5" text-anchor="middle">🔧 ${t('th_maint')}</text>`; });
+  const last = P[P.length - 1], gid = 'tg_' + svgId;
+  $('valThermalNow').textContent = vals[vals.length - 1].toFixed(2);
+  svg.innerHTML = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".38"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient>
+      <filter id="${gid}f" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    ${g}
+    <path d="${rawLine}" fill="none" stroke="${color}" stroke-width="1" opacity=".22" stroke-linejoin="round"/>
+    <path d="${line}L${last.x.toFixed(1)} ${T + ph}L${P[0].x.toFixed(1)} ${T + ph}Z" fill="url(#${gid})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" filter="url(#${gid}f)"/>
+    <circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="5" fill="${color}" stroke="#0d1a26" stroke-width="2"/>
+    <g id="tip_${svgId}" style="display:none;pointer-events:none;"><line y1="${T}" y2="${T + ph}" stroke="${color}88" stroke-dasharray="3 3"/><circle r="4.5" fill="${color}" stroke="#060d14" stroke-width="2"/><g class="bub"><rect rx="6" width="132" height="34" fill="#08121a" stroke="${color}88"/><text x="8" y="14" fill="#e8f6ff" font-size="11" font-weight="700"></text><text x="8" y="27" fill="#6b8794" font-size="9.5"></text></g></g>`;
+  svg.onmousemove = e => {
+    const r = svg.getBoundingClientRect(), mx = (e.clientX - r.left) / r.width * W;
+    let c = P[0], md = Infinity;
+    for(const p of P){ const d = Math.abs(p.x - mx); if(d < md){ md = d; c = p; } }
+    const tip = svg.querySelector('#tip_' + svgId);
+    if(!tip) return;
+    tip.style.display = 'block'; tip.setAttribute('transform', `translate(${c.x.toFixed(1)},0)`);
+    tip.querySelector('circle').setAttribute('cy', c.y.toFixed(1));
+    const bub = tip.querySelector('.bub'), bx = c.x > W - 160 ? -140 : 10;
+    bub.setAttribute('transform', `translate(${bx},${Math.max(T, Math.min(T + ph - 36, c.y - 40))})`);
+    const tx = bub.querySelectorAll('text'); tx[0].textContent = c.raw.toFixed(2) + ' rpm/TH/s'; tx[1].textContent = new Date(c.t).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    $('valThermalNow').textContent = c.raw.toFixed(2);
   };
-
   svg.onmouseleave = () => {
-    const tip = svg.querySelector(`#tooltip_${svgId}`);
+    const tip = svg.querySelector('#tip_' + svgId);
     if(tip) tip.style.display = 'none';
     $('valThermalNow').textContent = vals[vals.length - 1].toFixed(2);
   };
