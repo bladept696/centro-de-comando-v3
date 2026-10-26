@@ -212,6 +212,18 @@
           },
           "$other": {
             ".validate": "false"
+          },
+          "cc": {
+            ".validate": "newData.isString() && newData.val().length == 2"
+          },
+          "lat": {
+            ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90"
+          },
+          "lon": {
+            ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180"
+          },
+          "sh": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
           }
         }
       },

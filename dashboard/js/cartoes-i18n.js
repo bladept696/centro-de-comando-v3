@@ -445,6 +445,14 @@ Object.assign(I18N_DICT, {
   mc_cm_boom: { pt: `BLOCO ENCONTRADO!`, en: `BLOCK FOUND!`, es: `¡BLOQUE ENCONTRADO!`, fr: `BLOC TROUVÉ !` },
   mc_cm_boom_by: { pt: `{0} acertou com {1}. A comunidade ganhou!`, en: `{0} hit it with {1}. The community won!`, es: `{0} acertó con {1}. ¡La comunidad ganó!`, fr: `{0} a réussi avec {1}. La communauté a gagné !` }
 });
+Object.assign(I18N_DICT, {
+  mc_xp_map: { pt: `Mapa-múndi vivo na comunidade`, en: `Live world map in the community`, es: `Mapamundi vivo en la comunidad`, fr: `Planisphère vivant dans la communauté` },
+  mc_cm_map_lbl: { pt: `🌍 {0} mineiros no mapa · {1} países · o lado escuro é a noite agora`, en: `🌍 {0} miners on the map · {1} countries · the dark side is night right now`, es: `🌍 {0} mineros en el mapa · {1} países · el lado oscuro es la noche ahora`, fr: `🌍 {0} mineurs sur la carte · {1} pays · le côté sombre est la nuit en ce moment` },
+  mc_cm_map_full: { pt: `Ecrã inteiro`, en: `Full screen`, es: `Pantalla completa`, fr: `Plein écran` },
+  mc_cm_loc: { pt: `Localização (só o país)`, en: `Location (country only)`, es: `Ubicación (solo el país)`, fr: `Localisation (pays seulement)` },
+  mc_cm_loc_hide: { pt: `🙈 Não mostrar a minha localização`, en: `🙈 Do not show my location`, es: `🙈 No mostrar mi ubicación`, fr: `🙈 Ne pas afficher ma localisation` },
+  mc_cm_map_privacy: { pt: `No mapa aparece só o seu país, com um desvio aleatório; nunca a morada.`, en: `The map only shows your country, with a random offset; never your address.`, es: `En el mapa solo aparece su país, con un desvío aleatorio; nunca la dirección.`, fr: `La carte n'affiche que votre pays, avec un décalage aléatoire ; jamais votre adresse.` }
+});
 // texto traduzido com {0}, {1}... substituídos
 function mct(key, ...args){
   let s = t(key);
