@@ -50,7 +50,7 @@
     dm_new: ['✉ {0} enviou-lhe uma mensagem privada', '✉ {0} sent you a private message', '✉ {0} le envió un mensaje privado', '✉ {0} vous a envoyé un message privé'],
     copy_rules: ['📋 Copiar as regras do Firebase', '📋 Copy the Firebase rules', '📋 Copiar las reglas de Firebase', '📋 Copier les règles Firebase'],
     rules_copied: ['✓ Regras copiadas. No Firebase Console > Realtime Database > Regras, cole-as dentro de "rules" (junte ao que já lá está, sem apagar o resto) e carregue em Publicar.', '✓ Rules copied. In Firebase Console > Realtime Database > Rules, paste them inside "rules" (merge with what is there, do not delete the rest) and press Publish.', '✓ Reglas copiadas. En Firebase Console > Realtime Database > Reglas, péguelas dentro de "rules" (únalas a lo que ya hay, sin borrar el resto) y pulse Publicar.', '✓ Règles copiées. Dans Firebase Console > Realtime Database > Règles, collez-les dans "rules" (fusionnez avec l’existant, sans effacer le reste) et cliquez sur Publier.'],
-    perm: ['Esta função (reações, editar, apagar, «a escrever…», canais ou mensagens privadas) precisa das regras novas do Firebase. É por isso que a reação desaparece logo a seguir.', 'This feature (reactions, edit, delete, "typing…", channels or private messages) needs the new Firebase rules. That is why the reaction disappears right after.', 'Esta función (reacciones, editar, borrar, «escribiendo…», canales o mensajes privados) necesita las reglas nuevas de Firebase. Por eso la reacción desaparece enseguida.', 'Cette fonction (réactions, modifier, supprimer, « écrit… », canaux ou messages privés) demande les nouvelles règles Firebase. C’est pour cela que la réaction disparaît aussitôt.'],
+    perm: ['Esta função (reações, editar, apagar, «a escrever…», canais ou mensagens privadas) precisa das regras novas do Firebase. Se a mensagem ou a reação desaparece logo a seguir, é porque as regras atuais a recusam: copie as regras e publique-as.', 'This feature (reactions, edit, delete, "typing…", channels or private messages) needs the new Firebase rules. If a message or reaction vanishes right after, the current rules refuse it: copy the rules and publish them.', 'Esta función (reacciones, editar, borrar, «escribiendo…», canales o mensajes privados) necesita las reglas nuevas de Firebase. Si un mensaje o una reacción desaparece enseguida, las reglas actuales lo rechazan: copie las reglas y publíquelas.', 'Cette fonction (réactions, modifier, supprimer, « écrit… », canaux ou messages privés) demande les nouvelles règles Firebase. Si un message ou une réaction disparaît aussitôt, les règles actuelles le refusent : copiez les règles et publiez-les.'],
     me: ['eu', 'me', 'yo', 'moi'], admin: ['admin', 'admin', 'admin', 'admin'],
     t_search: ['Pesquisar', 'Search', 'Buscar', 'Rechercher'], t_settings: ['Definições do chat', 'Chat settings', 'Ajustes del chat', 'Réglages du chat'],
     t_size: ['Mudar o tamanho', 'Change size', 'Cambiar el tamaño', 'Changer la taille'], t_close: ['Fechar', 'Close', 'Cerrar', 'Fermer'],
@@ -154,6 +154,12 @@
           },
           "$other": {
             ".validate": "false"
+          },
+          "ts": {
+            ".validate": "true"
+          },
+          "cid": {
+            ".validate": "newData.isString() && newData.val().length <= 80"
           }
         }
       },
@@ -219,6 +225,12 @@
               },
               "$other": {
                 ".validate": "false"
+              },
+              "ts": {
+                ".validate": "true"
+              },
+              "cid": {
+                ".validate": "newData.isString() && newData.val().length <= 80"
               }
             }
           },
@@ -274,6 +286,12 @@
               },
               "$other": {
                 ".validate": "false"
+              },
+              "ts": {
+                ".validate": "true"
+              },
+              "cid": {
+                ".validate": "newData.isString() && newData.val().length <= 80"
               }
             }
           },
@@ -412,12 +430,15 @@
     try { navigator.clipboard.writeText(RULES_JSON).then(done, fallback); } catch(e) { fallback(); }
     function fallback(){ try { const ta = document.createElement('textarea'); ta.value = RULES_JSON; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done(); } catch(e) {} }
   }
-  function denied(){
-    if(Date.now() - S.denied < 60000) return;
-    S.denied = Date.now();
+  function permNote(){
     const k = 'local-' + (++S.local);
     S.msgs.set(k, { key: k, type: 'system', text: T('perm'), ts: Date.now(), local: true, action: 'copyrules' });
     S.stick = true; queueRender();
+  }
+  function denied(){
+    if(Date.now() - S.denied < 60000) return;
+    S.denied = Date.now();
+    permNote();
   }
 
   /* ---- texto: links, imagens, menções e palavras bloqueadas ---- */
@@ -796,7 +817,9 @@
     try { await _msgRef.push(full); touchDm(); return true; }
     catch(e){
       if(Object.keys(extra || {}).length){ try { await _msgRef.push(base); touchDm(); return true; } catch(e2) { e = e2; } }
-      console.warn('[chat] send error', e); note(T('send_fail')); return false;
+      console.warn('[chat] send error', e);
+      if(deny(e)) permNote(); else note(T('send_fail'));
+      return false;
     }
   }
   function baseMsg(text){ return { author: myNick(), text, ts: firebase.database.ServerValue.TIMESTAMP, cid: CID }; }
