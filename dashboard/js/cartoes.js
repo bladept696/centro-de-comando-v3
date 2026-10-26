@@ -395,7 +395,7 @@ function mcBuildToolbar(){
     '<select id="mcSort" aria-label="' + t('mc_sort_a') + '">' + MC_SORTS.map(([k, l]) => '<option value="' + k + '">' + t(l) + '</option>').join('') + '</select>' +
     '<button type="button" class="mc-fx-btn" id="mcExport" title="' + t('mc_export_t') + '">' + t('mc_export') + '</button>' +
     '<button type="button" class="mc-fx-btn" id="mcGroupBy" title="' + t('mc_groupby_t') + '">' + t('mc_groupby') + '</button>' +
-    '<button type="button" class="mc-fx-btn" id="mcFx" title="' + t('mc_fx_on') + '">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="' + t('mc_v_cards') + '">▦</button><button type="button" data-v="compact" title="' + t('mc_v_compact') + '">▥</button><button type="button" data-v="table" title="' + t('mc_v_table') + '">☰</button><button type="button" data-v="heat" title="' + t('mc_v_heat') + '">🌡</button><button type="button" data-v="plan" title="' + t('mc_v_plan') + '">🗺</button></div>' +
+    '<button type="button" class="mc-fx-btn" id="mcFx" title="' + t('mc_fx_on') + '">✨ 3D</button><div class="mc-views" id="mcViews"><button type="button" data-v="cards" title="' + t('mc_v_cards') + '">▦</button><button type="button" data-v="compact" title="' + t('mc_v_compact') + '">▥</button><button type="button" data-v="table" title="' + t('mc_v_table') + '">☰</button><button type="button" data-v="heat" title="' + t('mc_v_heat') + '">🌡</button><button type="button" data-v="plan" title="' + t('mc_v_plan') + '">🗺</button><button type="button" data-v="arena" title="' + t('mc_v_arena') + '">🎯</button></div><button type="button" class="mc-fx-btn" id="mcVoiceBtn" title="' + t('mc_vo_btn') + '">🎤</button>' +
     '<button type="button" class="mc-fx-btn" id="mcMenuBtn" title="' + t('mc_m_title') + '">⚙</button></div>';
   $('mcSearch').value = mc.prefs.q || '';
   $('mcFx').addEventListener('click', () => { mc.prefs.fx = !mcFxOn(); mcSavePrefs(); renderMachineCards(); });
@@ -597,6 +597,10 @@ function renderMachineCards(){
     board.innerHTML = '<div class="mc-hint">' + t('mc_nomatch') + '</div>';
     mc.els.clear(); mc.heads.clear(); mcRenderLog(); return;
   }
+  if(mc.prefs.view === 'arena'){
+    board.className = 'mc-board mc-arenawrap'; delete board.dataset.s2; delete board.dataset.hk;
+    mc.els.clear(); mc.heads.clear(); mcArenaRender(board, rows); mcRenderLog(); return;
+  }
   if(mc.prefs.view === 'heat' || mc.prefs.view === 'plan'){
     if(mc.dragging) return;
     board.className = 'mc-board ' + (mc.prefs.view === 'heat' ? 'mc-heatwrap' : 'mc-planwrap');
@@ -616,7 +620,7 @@ function renderMachineCards(){
     mc.els.clear(); mc.heads.clear(); mcRenderLog(); return;
   }
   board.className = 'mc-board mc-grid' + (mc.prefs.view === 'compact' ? ' compact' : '') + (mcFxOn() ? ' mc-fx' : '') + (mc.picked.size ? ' has-pick' : '') + (typeof mcXpClasses === 'function' ? mcXpClasses() : '');
-  if(board.querySelector('.mc-hint, table, .mc-heat-grid, .mc-plan-area')) board.innerHTML = '';
+  if(board.querySelector('.mc-hint, table, .mc-heat-grid, .mc-plan-area, .mc-arena')) board.innerHTML = '';
 
   // ordem final dos nós: cartões, ou cabeçalhos de grupo com os respetivos cartões
   const nodes = [], useHeads = new Set();
