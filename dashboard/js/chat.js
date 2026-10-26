@@ -34,7 +34,6 @@
     set_muted: ['Silenciados: {0}', 'Muted: {0}', 'Silenciados: {0}', 'Masqués : {0}'],
     set_unmute: ['Reativar todos', 'Unmute all', 'Reactivar todos', 'Tout réactiver'],
     set_rules: ['Reações, edição, apagar e «a escrever…» precisam das regras do Firebase (ver firebase-chat-rules.json).', 'Reactions, editing, deleting and "typing…" need the Firebase rules (see firebase-chat-rules.json).', 'Reacciones, edición, borrar y «escribiendo…» necesitan las reglas de Firebase (ver firebase-chat-rules.json).', 'Réactions, modification, suppression et « écrit… » demandent les règles Firebase (voir firebase-chat-rules.json).'],
-    perm: ['Esta função precisa das regras novas do Firebase (ver firebase-chat-rules.json).', 'This feature needs the new Firebase rules (see firebase-chat-rules.json).', 'Esta función necesita las reglas nuevas de Firebase (ver firebase-chat-rules.json).', 'Cette fonction demande les nouvelles règles Firebase (voir firebase-chat-rules.json).'],
     share_title: ['Partilhar uma máquina', 'Share a machine', 'Compartir una máquina', 'Partager une machine'],
     share_none: ['Ainda não há máquinas.', 'No machines yet.', 'Aún no hay máquinas.', 'Pas encore de machines.'],
     cmd_help: ['Comandos: /hash partilha o seu hashrate · /btc preço e dificuldade · /ajuda esta lista', 'Commands: /hash shares your hashrate · /btc price and difficulty · /help this list', 'Comandos: /hash comparte su hashrate · /btc precio y dificultad · /ayuda esta lista', 'Commandes : /hash partage votre hashrate · /btc prix et difficulté · /aide cette liste'],
@@ -49,6 +48,9 @@
     dm_open: ['Mensagem privada', 'Private message', 'Mensaje privado', 'Message privé'],
     dm_note: ['🔒 Conversa privada com {0}: só vocês os dois a veem.', '🔒 Private chat with {0}: only the two of you can see it.', '🔒 Conversación privada con {0}: solo ustedes dos la ven.', '🔒 Conversation privée avec {0} : seuls vous deux la voyez.'],
     dm_new: ['✉ {0} enviou-lhe uma mensagem privada', '✉ {0} sent you a private message', '✉ {0} le envió un mensaje privado', '✉ {0} vous a envoyé un message privé'],
+    copy_rules: ['📋 Copiar as regras do Firebase', '📋 Copy the Firebase rules', '📋 Copiar las reglas de Firebase', '📋 Copier les règles Firebase'],
+    rules_copied: ['✓ Regras copiadas. No Firebase Console > Realtime Database > Regras, cole-as dentro de "rules" (junte ao que já lá está, sem apagar o resto) e carregue em Publicar.', '✓ Rules copied. In Firebase Console > Realtime Database > Rules, paste them inside "rules" (merge with what is there, do not delete the rest) and press Publish.', '✓ Reglas copiadas. En Firebase Console > Realtime Database > Reglas, péguelas dentro de "rules" (únalas a lo que ya hay, sin borrar el resto) y pulse Publicar.', '✓ Règles copiées. Dans Firebase Console > Realtime Database > Règles, collez-les dans "rules" (fusionnez avec l’existant, sans effacer le reste) et cliquez sur Publier.'],
+    perm: ['Esta função (reações, editar, apagar, «a escrever…», canais ou mensagens privadas) precisa das regras novas do Firebase. É por isso que a reação desaparece logo a seguir.', 'This feature (reactions, edit, delete, "typing…", channels or private messages) needs the new Firebase rules. That is why the reaction disappears right after.', 'Esta función (reacciones, editar, borrar, «escribiendo…», canales o mensajes privados) necesita las reglas nuevas de Firebase. Por eso la reacción desaparece enseguida.', 'Cette fonction (réactions, modifier, supprimer, « écrit… », canaux ou messages privés) demande les nouvelles règles Firebase. C’est pour cela que la réaction disparaît aussitôt.'],
     me: ['eu', 'me', 'yo', 'moi'], admin: ['admin', 'admin', 'admin', 'admin'],
     t_search: ['Pesquisar', 'Search', 'Buscar', 'Rechercher'], t_settings: ['Definições do chat', 'Chat settings', 'Ajustes del chat', 'Réglages du chat'],
     t_size: ['Mudar o tamanho', 'Change size', 'Cambiar el tamaño', 'Changer la taille'], t_close: ['Fechar', 'Close', 'Cerrar', 'Fermer'],
@@ -81,7 +83,7 @@
     msgs: new Map(), reacts: {}, typing: {}, typingSeen: {}, online: {}, local: 0,
     live: false, hasMore: true, loadingOlder: false, open: false, unread: 0, mention: false,
     lr: lrLoad(), chan: 'geral', dms: {}, chUnread: {}, dmUnread: {}, offs: [], dmLive: false, tok: 0, firstUnreadKey: null, replyTo: null, editKey: null, search: '', stick: true, keepScroll: null,
-    admin: false, uid: null, sent: [], lastTypingSet: 0, typingTimer: 0, denied: false,
+    admin: false, uid: null, sent: [], lastTypingSet: 0, typingTimer: 0, denied: 0,
     prefs: Object.assign({ sound: true, notif: false, announce: true, previews: true, words: '', size: 'normal', w: 0, h: 0 }, lsGet('hc_chat_prefs', {})),
     muted: new Set(lsGet('hc_chat_muted', [])), annAt: {}
   };
@@ -118,7 +120,212 @@
     S.msgs.set(k, { key: k, type: 'system', text, ts: Date.now(), local: true });
     S.stick = true; queueRender();
   }
-  function denied(){ if(!S.denied){ S.denied = true; note(T('perm')); } }
+  const RULES_JSON = `{
+  "rules": {
+    "chat": {
+      "messages": {
+        ".read": "auth != null",
+        ".indexOn": [
+          "ts"
+        ],
+        "$id": {
+          ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid || root.child('chat/admins/' + auth.uid).val() === true)",
+          ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
+          "text": {
+            ".validate": "newData.isString() && newData.val().length <= 500"
+          },
+          "author": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "reply": {
+            ".validate": "newData.hasChildren(['k', 'a', 't'])"
+          },
+          "card": {
+            ".validate": "newData.hasChildren(['n'])"
+          },
+          "type": {
+            ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+          },
+          "uid": {
+            ".validate": "newData.val() === auth.uid"
+          },
+          "edited": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "reactions": {
+        ".read": "auth != null",
+        "$msg": {
+          "$emoji": {
+            "$cid": {
+              ".write": "auth != null",
+              ".validate": "newData.val() === true"
+            }
+          }
+        }
+      },
+      "typing": {
+        ".read": "auth != null",
+        "$cid": {
+          ".write": "auth != null"
+        }
+      },
+      "presence": {
+        ".read": "auth != null",
+        "$cid": {
+          ".write": "auth != null"
+        }
+      },
+      "admins": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": false
+        }
+      },
+      "ch": {
+        "$ch": {
+          "messages": {
+            ".read": "auth != null",
+            ".indexOn": [
+              "ts"
+            ],
+            "$id": {
+              ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid || root.child('chat/admins/' + auth.uid).val() === true)",
+              ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
+              "text": {
+                ".validate": "newData.isString() && newData.val().length <= 500"
+              },
+              "author": {
+                ".validate": "newData.isString() && newData.val().length <= 60"
+              },
+              "reply": {
+                ".validate": "newData.hasChildren(['k', 'a', 't'])"
+              },
+              "card": {
+                ".validate": "newData.hasChildren(['n'])"
+              },
+              "type": {
+                ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+              },
+              "uid": {
+                ".validate": "newData.val() === auth.uid"
+              },
+              "edited": {
+                ".validate": "true"
+              },
+              "$other": {
+                ".validate": "false"
+              }
+            }
+          },
+          "reactions": {
+            ".read": "auth != null",
+            "$msg": {
+              "$emoji": {
+                "$cid": {
+                  ".write": "auth != null",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            }
+          },
+          "typing": {
+            ".read": "auth != null",
+            "$cid": {
+              ".write": "auth != null"
+            }
+          }
+        }
+      },
+      "dm": {
+        "$pair": {
+          "messages": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            ".indexOn": [
+              "ts"
+            ],
+            "$id": {
+              ".write": "auth != null && $pair.contains(auth.uid) && (!data.exists() || data.child('uid').val() === auth.uid)",
+              ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
+              "text": {
+                ".validate": "newData.isString() && newData.val().length <= 500"
+              },
+              "author": {
+                ".validate": "newData.isString() && newData.val().length <= 60"
+              },
+              "reply": {
+                ".validate": "newData.hasChildren(['k', 'a', 't'])"
+              },
+              "card": {
+                ".validate": "newData.hasChildren(['n'])"
+              },
+              "type": {
+                ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+              },
+              "uid": {
+                ".validate": "newData.val() === auth.uid"
+              },
+              "edited": {
+                ".validate": "true"
+              },
+              "$other": {
+                ".validate": "false"
+              }
+            }
+          },
+          "reactions": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            "$msg": {
+              "$emoji": {
+                "$cid": {
+                  ".write": "auth != null && $pair.contains(auth.uid)",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            }
+          },
+          "typing": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            "$cid": {
+              ".write": "auth != null && $pair.contains(auth.uid)"
+            }
+          }
+        }
+      },
+      "dmidx": {
+        "$uid": {
+          "$peer": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && (auth.uid === $uid || auth.uid === $peer)"
+          }
+        }
+      },
+      "users": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['nick'])"
+        }
+      }
+    }
+  }
+}`;
+  function copyRules(){
+    const done = () => note(T('rules_copied'));
+    try { navigator.clipboard.writeText(RULES_JSON).then(done, fallback); } catch(e) { fallback(); }
+    function fallback(){ try { const ta = document.createElement('textarea'); ta.value = RULES_JSON; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done(); } catch(e) {} }
+  }
+  function denied(){
+    if(Date.now() - S.denied < 60000) return;
+    S.denied = Date.now();
+    const k = 'local-' + (++S.local);
+    S.msgs.set(k, { key: k, type: 'system', text: T('perm'), ts: Date.now(), local: true, action: 'copyrules' });
+    S.stick = true; queueRender();
+  }
 
   /* ---- texto: links, imagens, menções e palavras bloqueadas ---- */
   const blockedWords = () => String(S.prefs.words || '').split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
@@ -165,7 +372,9 @@
   function msgEl(m, prev){
     const self = isSelfMsg(m);
     if(m.type === 'system'){
-      const d = document.createElement('div'); d.className = 'chat-msg chat-msg-sys'; d.textContent = m.text; return d;
+      const d = document.createElement('div'); d.className = 'chat-msg chat-msg-sys'; d.textContent = m.text;
+      if(m.action === 'copyrules'){ d.classList.add('has-act'); const b = document.createElement('button'); b.type = 'button'; b.dataset.act = 'copyrules'; b.textContent = T('copy_rules'); d.appendChild(b); }
+      return d;
     }
     if(m.type === 'event'){
       const d = document.createElement('div'); d.className = 'chat-event'; d.dataset.k = m.key;
@@ -262,6 +471,7 @@
     if(typeof m.ts !== 'number') m.ts = Date.now();
     const isNew = !S.msgs.has(snap.key);
     S.msgs.set(snap.key, m);
+    if(isNew && m.type === 'msg' && m.author) pushCounts();
     if(S.live && isNew && m.type !== 'system'){ onIncoming(m); if(S.open) S.stick = true; }
     queueRender();
   }
@@ -324,6 +534,21 @@
     const names = Object.keys(S.typing).filter(cid => cid !== CID && now - (S.typingSeen[cid] || 0) < 6000).map(cid => S.typing[cid].nick || '?').filter(n => !S.muted.has(String(n).toLowerCase()));
     el.textContent = !names.length ? '' : names.length === 1 ? T('typing1', names[0]) : names.length === 2 ? T('typing2', names[0], names[1]) : T('typingN');
   }
+  /* números da comunidade para o selo "online · registados" do canto: online = pessoas distintas na presença;
+     registados = registo em chat/users + quem está online + autores já vistos nas mensagens */
+  S.regNicks = new Set();
+  function pushCounts(){
+    const online = new Set(Object.values(S.online || {}).map(u => (u && (u.uid || u.nick)) || '')); online.delete('');
+    const all = new Set([...S.regNicks].map(n => String(n).toLowerCase()));
+    Object.values(S.online || {}).forEach(u => u && u.nick && all.add(String(u.nick).toLowerCase()));
+    S.msgs.forEach(m => { if(m.type === 'msg' && m.author && !m.local) all.add(String(m.author).toLowerCase()); });
+    window.hcFbCounts = { online: online.size, total: all.size };
+    if(typeof window.hcRefreshCounts === 'function') window.hcRefreshCounts();
+  }
+  function listenUsers(){
+    if(S.uid) _db.ref('chat/users/' + S.uid).set({ nick: myNick(), ts: firebase.database.ServerValue.TIMESTAMP }).catch(() => {});
+    _db.ref('chat/users').on('value', snap => { S.regNicks = new Set(Object.values(snap.val() || {}).map(u => u && u.nick).filter(Boolean)); pushCounts(); }, () => {});
+  }
   function listenPresence(){
     const myEmail = _ccEmail(); if(!myEmail) return;
     const mine = _presRef.child(CID);
@@ -332,7 +557,8 @@
     beat(); setInterval(beat, 25000);
     _presRef.on('value', snap => {
       S.online = snap.val() || {};
-      const users = Object.values(S.online), cnt = _c$('chatOnlineCount'), list = _c$('chatOnlineUsers');
+      pushCounts();
+      const seenU = new Set(), users = Object.values(S.online).filter(u => { const k = (u && (u.uid || u.nick)) || ''; if(!k || seenU.has(k)) return false; seenU.add(k); return true; }), cnt = _c$('chatOnlineCount'), list = _c$('chatOnlineUsers');
       if(cnt) cnt.textContent = users.length;
       if(list){
         list.replaceChildren();
@@ -447,7 +673,7 @@
       S.uid = fbUser.uid;
       _db = firebase.database();
       _presRef = _db.ref('chat/presence');
-      listenPresence(); enterChan(); watchOthers();
+      listenPresence(); listenUsers(); enterChan(); watchOthers();
       const admins = c && Array.isArray(c.adminEmails) ? c.adminEmails.map(x => String(x).toLowerCase()) : [];
       S.admin = admins.includes(String(_ccEmail()).toLowerCase());
       _db.ref('chat/admins/' + S.uid).once('value').then(s => { if(s.val() === true){ S.admin = true; queueRender(); } }).catch(() => {});
@@ -546,7 +772,7 @@
     if(mine) delete S.reacts[key][emo][CID]; else S.reacts[key][emo][CID] = true;
     queueRender();
     try { await (mine ? ref.remove() : ref.set(true)); }
-    catch(e){ if(mine) S.reacts[key][emo][CID] = true; else delete S.reacts[key][emo][CID]; queueRender(); deny(e) ? denied() : 0; }
+    catch(e){ if(mine) S.reacts[key][emo][CID] = true; else delete S.reacts[key][emo][CID]; queueRender(); console.warn('[chat] reação recusada', e); denied(); }
   }
   async function deleteMsg(key){
     if(!_msgRef || !confirm(T('del_confirm'))) return;
@@ -618,6 +844,7 @@
     return ck('sound', 'set_sound') + ck('notif', 'set_notif') + ck('announce', 'set_announce') + ck('previews', 'set_previews') +
       '<label class="col"><span>' + escHtml(T('set_words')) + '</span><input type="text" data-set="words" value="' + escHtml(S.prefs.words || '') + '" maxlength="200"></label>' +
       '<div class="chat-set-row"><span>' + escHtml(T('set_muted', S.muted.size)) + '</span>' + (S.muted.size ? '<button type="button" data-set-act="unmute">' + escHtml(T('set_unmute')) + '</button>' : '') + '</div>' +
+      '<div class="chat-set-row"><button type="button" data-set-act="copyrules">' + escHtml(T('copy_rules')) + '</button></div>' +
       '<div class="chat-set-note">' + escHtml(T('set_rules')) + '</div>';
   }
   function toggleSettings(){
@@ -725,13 +952,15 @@
       }
       savePrefs(); queueRender();
     });
-    _c$('chatSettings')?.addEventListener('click', e => { if(e.target.closest('[data-set-act="unmute"]')){ S.muted.clear(); saveMuted(); toggleSettings(); toggleSettings(); queueRender(); } });
+    _c$('chatSettings')?.addEventListener('click', e => { if(e.target.closest('[data-set-act="copyrules"]')){ copyRules(); return; }
+      if(e.target.closest('[data-set-act="unmute"]')){ S.muted.clear(); saveMuted(); toggleSettings(); toggleSettings(); queueRender(); } });
     // ações nas mensagens (responder, reagir, editar, apagar, silenciar, saltar para a citada, carregar antigas)
     _c$('chatMessages')?.addEventListener('click', e => {
       const b = e.target.closest('[data-act]');
       if(!b) return;
       const row = b.closest('[data-k]'), key = row && row.dataset.k, m = key && S.msgs.get(key), act = b.dataset.act;
       if(act === 'older'){ loadOlder(); return; }
+      if(act === 'copyrules'){ copyRules(); return; }
       if(act === 'jump'){ const t = _c$('chatMessages').querySelector('[data-k="' + CSS.escape(b.dataset.rk) + '"]'); if(t){ t.scrollIntoView({ block: 'center', behavior: 'smooth' }); t.classList.add('flash'); setTimeout(() => t.classList.remove('flash'), 1600); } return; }
       if(!m) return;
       if(act === 'reply'){ S.editKey = null; S.replyTo = m; composeBar(); _c$('chatInput')?.focus(); }

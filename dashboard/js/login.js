@@ -282,7 +282,14 @@
       updateUserCountsUI(d.online, d.total);
     } catch(e){}
   }
-  function updateUserCountsUI(online, total){
+  // os números do servidor local só conhecem quem passou por esta máquina; quando o chat (Firebase) está ligado,
+  // os números da comunidade (window.hcFbCounts) têm prioridade
+  let _srvCounts = { online: null, total: null };
+  window.hcRefreshCounts = function(){ updateUserCountsUI(_srvCounts.online, _srvCounts.total, true); };
+  function updateUserCountsUI(online, total, fromFb){
+    if(!fromFb) _srvCounts = { online, total };
+    const fb = window.hcFbCounts;
+    if(fb && typeof fb.online === 'number'){ online = fb.online; if(typeof fb.total === 'number') total = Math.max(fb.total, fb.online); }
     const on = $('ucOnline'), tot = $('ucTotal');
     if (on) on.textContent = (typeof online === 'number') ? online : '—';
     if (tot) tot.textContent = (typeof total === 'number') ? total : '—';
