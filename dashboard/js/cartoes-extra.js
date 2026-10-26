@@ -91,6 +91,7 @@ function mcWatchEvents(list){
       const dA = Math.max(0, acc - (mc.lastAcc[id] || acc)), dR = Math.max(0, rej - (mc.lastRej[id] || rej));
       if(typeof mcRainDrop === 'function') mcRainDrop(id, dA, dR);
       if(typeof mcArenaShot === 'function') mcArenaShot(id, dA, dR, false);
+      if(typeof mcMapOwnShare === 'function' && dA) mcMapOwnShare(dA);
     }
     mc.lastRej[id] = rej;
     if(mc.lastAcc[id] != null && acc > mc.lastAcc[id]){ mcFlash(id, 'mc-ping', 900); if(typeof mcFloat === 'function') mcFloat(id, acc - mc.lastAcc[id], false); }

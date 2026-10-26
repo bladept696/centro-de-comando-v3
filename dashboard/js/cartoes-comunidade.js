@@ -14,7 +14,7 @@ function mcComStart(){
   if(mcCom.started || !fb || !fb.db) return;
   mcCom.started = true; mcCom.db = fb.db; mcCom.uid = fb.uid; mcCom.nick = fb.nick;
   const db = mcCom.db;
-  db.ref('chat/community').on('value', snap => { mcCom.list = snap.val() || {}; mcComRender(); }, () => {});
+  db.ref('chat/community').on('value', snap => { mcCom.list = snap.val() || {}; if(typeof mcMapUpdate === 'function') mcMapUpdate(mcCom.list); mcComRender(); }, () => {});
   const feed = (kind, celebrate) => {
     const q = db.ref('chat/' + kind).orderByChild('ts').limitToLast(12);
     q.on('child_added', snap => {
@@ -35,14 +35,14 @@ document.addEventListener('hc-chat-ready', mcComStart);
 setTimeout(mcComStart, 4000); setInterval(mcComStart, 8000);
 
 function mcComMine(){
-  let ghs = 0, n = 0, best = 0;
+  let ghs = 0, n = 0, best = 0, sh = 0;
   (devices || []).forEach(d => {
     const r = readings[d.id];
     if(!r || !r.online) return;
-    n++; if(algoGroupOf(r) === 'sha256') ghs += Number(r.hashrate) || 0;
+    n++; sh += Number(r.accepted) || 0; if(algoGroupOf(r) === 'sha256') ghs += Number(r.hashrate) || 0;
     best = Math.max(best, Number(r.best) || 0);
   });
-  return { ghs, n, best };
+  return { ghs, n, best, sh };
 }
 function mcComPublish(){
   if(!mcCom.db || !mcCom.uid) return;
@@ -50,7 +50,8 @@ function mcComPublish(){
   if(!mcComShare()){ ref.remove().catch(() => {}); return; }
   const m = mcComMine();
   ref.onDisconnect().remove();
-  ref.set({ nick: mcCom.nick, ghs: Math.round(m.ghs * 100) / 100, n: m.n, best: m.best, ts: firebase.database.ServerValue.TIMESTAMP }).catch(() => { mcCom.denied = true; mcComRender(); });
+  const loc = typeof mcMapMyLoc === 'function' ? mcMapMyLoc(mcCom.uid) : null, extra = loc ? { cc: loc.cc, lat: loc.lat, lon: loc.lon } : {};
+  ref.set(Object.assign({ nick: mcCom.nick, ghs: Math.round(m.ghs * 100) / 100, n: m.n, best: m.best, sh: m.sh, ts: firebase.database.ServerValue.TIMESTAMP }, extra)).catch(() => { mcCom.denied = true; mcComRender(); });
 }
 function mcComSetShare(on){
   try { localStorage.setItem(MC_COM_KEY, on ? '1' : '0'); } catch(e) {}
@@ -86,6 +87,7 @@ function mcComCelebrate(v){
   el.querySelector('button').addEventListener('click', () => el.remove());
   setTimeout(() => el.remove(), 9000);
   if(typeof mcArenaBoom === 'function') mcArenaBoom();
+  if(typeof mcMapBurst === 'function') mcMapBurst(v.uid);
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if(AC && typeof mcXp === 'function' && mcXp('confetti')){ const ac = new AC(); [523, 659, 784, 1047].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + i * .13; o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.08, t0 + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + .4); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + .42); }); }
@@ -99,12 +101,15 @@ function mcComEnsure(){
   if(!sum) return;
   const el = document.createElement('section');
   el.id = 'mcCom'; el.className = 'mc-com';
+  el.innerHTML = '<div id="mcCmHead"></div><div class="mc-cm-mapwrap" id="mcCmMapWrap"><canvas id="mcCmMap"></canvas><button type="button" class="mc-cm-full" data-cm="mapfull">⛶</button><div class="mc-cm-maplbl" id="mcCmMapLbl"></div></div><div id="mcCmBody"></div>';
   sum.parentNode.insertBefore(el, sum);
+  el.addEventListener('change', e => { const s = e.target.closest('[data-cm-loc]'); if(s) mcMapSetCountry(s.value); });
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-cm]');
     if(!b) return;
     if(b.dataset.cm === 'share') mcComSetShare(true);
     else if(b.dataset.cm === 'stop') mcComSetShare(false);
+    else if(b.dataset.cm === 'mapfull'){ const w = $('mcCmMapWrap'); try { document.fullscreenElement ? document.exitFullscreen() : w.requestFullscreen(); } catch(x) {} }
     else if(b.dataset.cm === 'hide'){ mc.prefs.comHidden = !mc.prefs.comHidden; mcSavePrefs(); mcComRender(); }
   });
   mcComRender();
@@ -130,13 +135,18 @@ function mcComRender(){
   const mural = feed.map(v => { const ago = mcAgo(Math.max(0, Date.now() - Number(v.ts || Date.now()))); const bf = v.k === 'r' && v.best ? formatDiff(Number(v.best)) : null;
     return '<li class="' + v.k + '"><i>' + (v.k === 'b' ? '🏆' : '🎯') + '</i><span>' + escapeHtml(v.k === 'b' ? mct('mc_cm_m_block', v.nick || '?', v.machine || '—') : mct('mc_cm_m_rec', v.nick || '?', bf ? bf.value + ' ' + bf.unit : '—')) + '</span><small>' + ago + '</small></li>'; }).join('');
   const action = sharing
-    ? '<div class="mc-cm-share on">✓ ' + t('mc_cm_sharing') + ' <button type="button" data-cm="stop">' + t('mc_cm_stop') + '</button>' + (mcCom.denied ? '<em>' + t('mc_cm_denied') + '</em>' : '') + '</div>'
+    ? '<div class="mc-cm-share on">✓ ' + t('mc_cm_sharing') + ' <button type="button" data-cm="stop">' + t('mc_cm_stop') + '</button><label class="mc-cm-loc" title="' + t('mc_cm_map_privacy') + '">📍 <select data-cm-loc>' + (typeof mcMapOptions === 'function' ? mcMapOptions() : '') + '</select></label>' + (mcCom.denied ? '<em>' + t('mc_cm_denied') + '</em>' : '') + '</div>'
     : '<div class="mc-cm-share"><button type="button" class="join" data-cm="share">🌐 ' + t('mc_cm_join') + '</button><small>' + t('mc_cm_privacy') + '</small></div>';
-  const html = '<div class="mc-cm-head"><b>🌐 ' + t('mc_cm_title') + '</b><span class="mc-cm-live"><i></i>' + (window.hcFbCounts ? mct('mc_cm_online', window.hcFbCounts.online) : '') + '</span><button type="button" data-cm="hide" title="' + t(hidden ? 'mc_ls_show' : 'mc_ls_hide') + '">' + (hidden ? '▸' : '▾') + '</button></div>' +
-    (hidden ? '' : '<div class="mc-cm-body"><div class="mc-cm-big"><span>' + t('mc_cm_total') + '</span><b id="mcCmBig">—</b><small>' + mct('mc_cm_miners', entries.length, machines) + '</small><div class="mc-cm-odds"><span>' + t('mc_cm_odds') + '</span><b>' + oddsTxt + '</b></div></div>' +
+  const headHtml = '<div class="mc-cm-head"><b>🌐 ' + t('mc_cm_title') + '</b><span class="mc-cm-live"><i></i>' + (window.hcFbCounts ? mct('mc_cm_online', window.hcFbCounts.online) : '') + '</span><button type="button" data-cm="hide" title="' + t(hidden ? 'mc_ls_show' : 'mc_ls_hide') + '">' + (hidden ? '▸' : '▾') + '</button></div>';
+  const bodyHtml = (hidden ? '' : '<div class="mc-cm-body"><div class="mc-cm-big"><span>' + t('mc_cm_total') + '</span><b id="mcCmBig">—</b><small>' + mct('mc_cm_miners', entries.length, machines) + '</small><div class="mc-cm-odds"><span>' + t('mc_cm_odds') + '</span><b>' + oddsTxt + '</b></div></div>' +
       '<div class="mc-cm-col"><h4>' + t('mc_cm_rank') + '</h4><ol class="mc-cm-rank">' + (rank || '<li class="empty">' + t('mc_cm_empty') + '</li>') + '</ol></div>' +
       '<div class="mc-cm-col"><h4>' + t('mc_cm_mural') + '</h4><ul class="mc-cm-mural">' + (mural || '<li class="empty">' + t('mc_cm_mural_empty') + '</li>') + '</ul></div></div>' + action);
-  if(el.dataset.s !== html){ el.dataset.s = html; el.classList.toggle('collapsed', hidden); el.innerHTML = html; }
+  el.classList.toggle('collapsed', hidden);
+  const sel = el.querySelector('[data-cm-loc]'), busy = sel && document.activeElement === sel;
+  if(!busy && el.dataset.s !== headHtml + bodyHtml){ el.dataset.s = headHtml + bodyHtml; $('mcCmHead').innerHTML = headHtml; $('mcCmBody').innerHTML = bodyHtml; }
+  const withLoc = entries.filter(([, e]) => typeof e.lat === 'number'), countries = new Set(withLoc.map(([, e]) => e.cc).filter(Boolean));
+  const lbl = $('mcCmMapLbl'); if(lbl){ const txt = mct('mc_cm_map_lbl', withLoc.length, countries.size); if(lbl.textContent !== txt) lbl.textContent = txt; }
+  if(typeof mcMapEnsure === 'function') mcMapEnsure();
   const big = $('mcCmBig');
   if(big){ if(typeof mcNumTo === 'function') mcNumTo(big, fh); else big.textContent = fh; }
 }

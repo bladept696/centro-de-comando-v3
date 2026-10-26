@@ -554,3 +554,13 @@
   @keyframes mcBoomIn{from{opacity:0;}} @keyframes mcBoomPop{from{transform:scale(.4);opacity:0;}}
   @keyframes mcBoomSpin{50%{transform:rotate(14deg) scale(1.12);}} @keyframes mcConfetti{to{transform:translateY(110vh) rotate(var(--r));}}
   @media (prefers-reduced-motion: reduce){.mc-com-boom i,.mc-cb-ico,.mc-cb-card{animation:none !important;}}
+  /* mapa-múndi vivo */
+  .mc-cm-mapwrap{position:relative;height:230px;border-bottom:1px solid var(--line);background:#040c13;}
+  .mc-com.collapsed .mc-cm-mapwrap{display:none;}
+  #mcCmMap{display:block;width:100%;height:100%;cursor:crosshair;}
+  .mc-cm-full{position:absolute;top:8px;right:10px;background:#0008;border:1px solid var(--line-strong);border-radius:8px;color:var(--muted);cursor:pointer;padding:1px 8px;font-size:13px;}
+  .mc-cm-full:hover{color:var(--text);}
+  .mc-cm-maplbl{position:absolute;left:12px;bottom:8px;font-size:10.5px;color:var(--muted);text-shadow:0 1px 3px #000;pointer-events:none;}
+  .mc-cm-mapwrap:fullscreen{height:100vh;} .mc-cm-mapwrap:fullscreen #mcCmMap{height:100vh;}
+  .mc-cm-loc{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);}
+  .mc-cm-loc select{font:inherit;font-size:11.5px;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:8px;padding:4px 8px;max-width:220px;}
