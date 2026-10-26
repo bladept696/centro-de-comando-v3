@@ -81,6 +81,7 @@ function mcWatchEvents(list){
       mcFlash(id, 'mc-flash', 2600);
       if(typeof mcFloat === 'function') mcFloat(id, 1, true);
       mcLogEvent(mct('mc_l_record', dev.name || dev.ip), 'good', id);
+      if(best >= 1e9 && typeof hcChatAnnounce === 'function'){ const f = formatDiff(best); hcChatAnnounce('record', dev.name || dev.ip, f.value + ' ' + f.unit); }
     }
     if(mc.lastAcc[id] != null && acc > mc.lastAcc[id]){ mcFlash(id, 'mc-ping', 900); if(typeof mcFloat === 'function') mcFloat(id, acc - mc.lastAcc[id], false); }
     mc.lastBest[id] = best; mc.lastAcc[id] = acc;
@@ -89,6 +90,7 @@ function mcWatchEvents(list){
 // chamado pela celebração de bloco encontrado
 function mcBlockFound(name){
   mcLuckBlock();
+  if(typeof hcChatAnnounce === 'function') hcChatAnnounce('block', name);
   const dev = (devices || []).find(d => (d.name || d.ip) === name) || null;
   if(!dev) return;
   const el = mc.els.get(dev.id);
