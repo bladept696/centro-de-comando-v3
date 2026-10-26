@@ -420,6 +420,31 @@ Object.assign(I18N_DICT, {
   mc_ar_best: { pt: `Melhor share: {0}`, en: `Best share: {0}`, es: `Mejor share: {0}`, fr: `Meilleur share : {0}` },
   mc_vo_btn: { pt: `Falar com a farm (voz)`, en: `Talk to the farm (voice)`, es: `Hablar con la granja (voz)`, fr: `Parler à la ferme (voix)` }
 });
+Object.assign(I18N_DICT, {
+  mc_xp_community: { pt: `Painel da comunidade (hashrate combinado, ranking e mural)`, en: `Community panel (combined hashrate, ranking and wall)`, es: `Panel de la comunidad (hashrate combinado, ranking y mural)`, fr: `Panneau de la communauté (hashrate combiné, classement et mur)` },
+  mc_cm_title: { pt: `Comunidade Hash Commander`, en: `Hash Commander community`, es: `Comunidad Hash Commander`, fr: `Communauté Hash Commander` },
+  mc_cm_online: { pt: `{0} online agora`, en: `{0} online now`, es: `{0} en línea ahora`, fr: `{0} en ligne maintenant` },
+  mc_cm_total: { pt: `A comunidade, como um só mineiro`, en: `The community, as a single miner`, es: `La comunidad, como un solo minero`, fr: `La communauté, comme un seul mineur` },
+  mc_cm_miners: { pt: `{0} mineiros a partilhar · {1} máquinas`, en: `{0} miners sharing · {1} machines`, es: `{0} mineros compartiendo · {1} máquinas`, fr: `{0} mineurs partagent · {1} machines` },
+  mc_cm_odds: { pt: `Um bloco a cada (em média)`, en: `One block every (on average)`, es: `Un bloque cada (de media)`, fr: `Un bloc tous les (en moyenne)` },
+  mc_cm_odds_h: { pt: `~{0} horas`, en: `~{0} hours`, es: `~{0} horas`, fr: `~{0} heures` },
+  mc_cm_odds_d: { pt: `~{0} dias`, en: `~{0} days`, es: `~{0} días`, fr: `~{0} jours` },
+  mc_cm_odds_y: { pt: `~{0} anos`, en: `~{0} years`, es: `~{0} años`, fr: `~{0} ans` },
+  mc_cm_rank: { pt: `Top mineiros`, en: `Top miners`, es: `Mejores mineros`, fr: `Meilleurs mineurs` },
+  mc_cm_empty: { pt: `Ainda ninguém está a partilhar. Seja o primeiro!`, en: `Nobody is sharing yet. Be the first!`, es: `Nadie está compartiendo aún. ¡Sea el primero!`, fr: `Personne ne partage encore. Soyez le premier !` },
+  mc_cm_you: { pt: `você`, en: `you`, es: `usted`, fr: `vous` },
+  mc_cm_mural: { pt: `Mural de blocos e recordes`, en: `Blocks and records wall`, es: `Mural de bloques y récords`, fr: `Mur des blocs et records` },
+  mc_cm_mural_empty: { pt: `Ainda sem blocos nem recordes. O primeiro bloco da comunidade vai aparecer aqui e celebrar no ecrã de todos.`, en: `No blocks or records yet. The community’s first block will show up here and celebrate on everyone’s screen.`, es: `Aún sin bloques ni récords. El primer bloque de la comunidad aparecerá aquí y se celebrará en la pantalla de todos.`, fr: `Pas encore de blocs ni de records. Le premier bloc de la communauté apparaîtra ici et sera fêté sur l'écran de tous.` },
+  mc_cm_m_block: { pt: `{0} encontrou um BLOCO com {1}!`, en: `{0} found a BLOCK with {1}!`, es: `{0} encontró un BLOQUE con {1}!`, fr: `{0} a trouvé un BLOC avec {1} !` },
+  mc_cm_m_rec: { pt: `{0} bateu o recorde: {1}`, en: `{0} broke the record: {1}`, es: `{0} batió el récord: {1}`, fr: `{0} a battu le record : {1}` },
+  mc_cm_join: { pt: `Partilhar o meu hashrate com a comunidade`, en: `Share my hashrate with the community`, es: `Compartir mi hashrate con la comunidad`, fr: `Partager mon hashrate avec la communauté` },
+  mc_cm_privacy: { pt: `Só partilha o seu nome de utilizador, o hashrate total, o número de máquinas e o melhor share. Pode parar quando quiser.`, en: `It only shares your username, total hashrate, number of machines and best share. You can stop any time.`, es: `Solo comparte su nombre de usuario, el hashrate total, el número de máquinas y el mejor share. Puede parar cuando quiera.`, fr: `Ne partage que votre nom d'utilisateur, le hashrate total, le nombre de machines et le meilleur share. Vous pouvez arrêter à tout moment.` },
+  mc_cm_sharing: { pt: `A partilhar com a comunidade`, en: `Sharing with the community`, es: `Compartiendo con la comunidad`, fr: `Partage avec la communauté` },
+  mc_cm_stop: { pt: `Parar`, en: `Stop`, es: `Parar`, fr: `Arrêter` },
+  mc_cm_denied: { pt: `O Firebase recusou: cole as regras novas (⚙ do chat > Copiar as regras).`, en: `Firebase refused: paste the new rules (chat ⚙ > Copy the rules).`, es: `Firebase lo rechazó: pegue las reglas nuevas (⚙ del chat > Copiar las reglas).`, fr: `Firebase a refusé : collez les nouvelles règles (⚙ du chat > Copier les règles).` },
+  mc_cm_boom: { pt: `BLOCO ENCONTRADO!`, en: `BLOCK FOUND!`, es: `¡BLOQUE ENCONTRADO!`, fr: `BLOC TROUVÉ !` },
+  mc_cm_boom_by: { pt: `{0} acertou com {1}. A comunidade ganhou!`, en: `{0} hit it with {1}. The community won!`, es: `{0} acertó con {1}. ¡La comunidad ganó!`, fr: `{0} a réussi avec {1}. La communauté a gagné !` }
+});
 // texto traduzido com {0}, {1}... substituídos
 function mct(key, ...args){
   let s = t(key);
