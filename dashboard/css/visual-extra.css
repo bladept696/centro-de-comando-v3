@@ -3,13 +3,13 @@
   #hcBanner{
     position: relative;
     width: 100%;
-    height: 130px;
+    height: 140px;
     margin: 0 0 14px 0;
     border-radius: 14px;
     overflow: hidden;
-    background: radial-gradient(ellipse at center, #0a2530 0%, #050e14 75%);
-    border: 1px solid var(--line-strong, #1c3a49);
-    box-shadow: 0 8px 30px -10px #000a;
+    background: radial-gradient(ellipse 70% 120% at 50% 130%, #5a3206 0%, #24130a 42%, #070b10 78%);
+    border: 1px solid #3d2c14;
+    box-shadow: 0 8px 30px -10px #000a, inset 0 -18px 40px -22px #ff9d1c55;
   }
   #hcBanner canvas{
     position: absolute;
@@ -22,45 +22,83 @@
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(60,180,220,0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(60,180,220,0.06) 1px, transparent 1px);
-    background-size: 24px 24px;
+      linear-gradient(rgba(255,170,60,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,170,60,0.045) 1px, transparent 1px);
+    background-size: 26px 26px;
     pointer-events: none;
   }
   #hcBannerText{
     position: absolute;
-    top: 50%;
+    top: 44%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-family: 'Space Grotesk', Arial, sans-serif;
-    font-weight: 700;
-    font-size: clamp(22px, 4.4vw, 48px);
-    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.38em;
+    font-family: 'Orbitron', 'Space Grotesk', Arial, sans-serif;
+    font-weight: 900;
+    font-size: clamp(20px, 4.1vw, 44px);
+    letter-spacing: 0.14em;
     white-space: nowrap;
-    color: transparent;
-    background: linear-gradient(180deg, #eafcff 0%, #7fe6ff 40%, #17b7e6 70%, #0a5f7a 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    filter: drop-shadow(0 0 18px rgba(70,220,255,0.85)) drop-shadow(0 0 40px rgba(30,180,255,0.5));
-    animation: hcFlicker 3.2s infinite ease-in-out;
     pointer-events: none;
     user-select: none;
-    mix-blend-mode: screen;
+    filter: drop-shadow(0 2px 0 #3a1d02) drop-shadow(0 0 16px rgba(255,160,40,0.55)) drop-shadow(0 0 38px rgba(255,120,20,0.32));
+    animation: hcFlicker 4.2s infinite ease-in-out;
   }
+  #hcBannerText .hc-w{
+    display: inline-flex;
+    align-items: center;
+    color: transparent;
+    background: linear-gradient(180deg, #fff3c9 0%, #ffd45a 36%, #ff9d1c 68%, #7a3f05 100%), linear-gradient(105deg, transparent 40%, #ffffffcc 50%, transparent 60%);
+    background-size: 100% 100%, 260% 100%;
+    background-repeat: no-repeat;
+    background-position: 0 0, 160% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-stroke: 0.5px #ffd98a55;
+    animation: hcShine 6.5s infinite ease-in-out;
+  }
+  #hcBannerText .hc-w + .hc-w{ animation-delay: .35s; }
+  /* o "O" de COMMANDER é uma moeda de bitcoin a rodar */
+  #hcBannerText .hc-coin{
+    display: inline-grid;
+    place-items: center;
+    width: 0.86em;
+    height: 0.86em;
+    margin: 0 0.07em;
+    border-radius: 50%;
+    font-style: normal;
+    font-size: 1em;
+    line-height: 1;
+    color: #5a3300;
+    background: radial-gradient(circle at 34% 28%, #fff1b8 0%, #ffcf4a 38%, #f0911a 72%, #8a4a07 100%);
+    box-shadow: inset 0 0 0 0.07em #ffe08a, inset 0 0 0 0.13em #b8700f, 0 0 14px #ffb02099;
+    -webkit-text-fill-color: #5a3300;
+    text-stroke: 0;
+    -webkit-text-stroke: 0;
+    animation: hcCoin 3.6s infinite ease-in-out;
+    transform-style: preserve-3d;
+  }
+  @keyframes hcCoin { 0%, 100% { transform: perspective(160px) rotateY(-32deg); } 50% { transform: perspective(160px) rotateY(32deg); } }
+  @keyframes hcShine { 0%, 55% { background-position: 0 0, 160% 0; } 80%, 100% { background-position: 0 0, -60% 0; } }
   @keyframes hcFlicker {
-    0%, 100% { opacity: 1; filter: drop-shadow(0 0 18px rgba(70,220,255,0.85)) drop-shadow(0 0 40px rgba(30,180,255,0.5)); }
-    45% { opacity: 0.92; }
-    50% { opacity: 0.75; filter: drop-shadow(0 0 9px rgba(70,220,255,0.5)) drop-shadow(0 0 22px rgba(30,180,255,0.3)); }
-    55% { opacity: 0.95; }
+    0%, 100% { opacity: 1; }
+    46% { opacity: 0.94; }
+    50% { opacity: 0.82; }
+    54% { opacity: 0.97; }
   }
   #hcBannerVignette{
     position: absolute;
     inset: 0;
-    box-shadow: inset 0 0 60px 20px #050e14;
+    box-shadow: inset 0 0 60px 18px #06090d;
     pointer-events: none;
   }
   @media (max-width: 640px){
-    #hcBanner{ height: 92px; }
+    #hcBanner{ height: 100px; }
+    #hcBannerText{ letter-spacing: 0.08em; gap: 0.25em; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #hcBannerText, #hcBannerText .hc-w, #hcBannerText .hc-coin{ animation: none; }
   }
   /* ===== Fundo animado low-poly (azul/dourado), fixo atrás de tudo ===== */
   #lowPolyBg{

@@ -404,6 +404,7 @@ Object.assign(I18N_DICT, {
   mc_ct_halv: { pt: `Próximo halving`, en: `Next halving`, es: `Próximo halving`, fr: `Prochain halving` },
   mc_ct_blocks: { pt: `{0} blocos`, en: `{0} blocks`, es: `{0} bloques`, fr: `{0} blocs` },
   mc_ct_wait: { pt: `a obter dados da rede…`, en: `getting network data…`, es: `obteniendo datos de la red…`, fr: `récupération des données du réseau…` },
+  mc_ct_fail: { pt: `sem resposta do mempool.space — a tentar de novo…`, en: `no answer from mempool.space — retrying…`, es: `sin respuesta de mempool.space — reintentando…`, fr: `pas de réponse de mempool.space — nouvelle tentative…` },
   mc_ct_day: { pt: `dia`, en: `day`, es: `día`, fr: `jour` },
   mc_ct_days: { pt: `dias`, en: `days`, es: `días`, fr: `jours` }
 });

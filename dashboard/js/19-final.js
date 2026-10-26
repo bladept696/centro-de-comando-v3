@@ -337,73 +337,105 @@ function shutdownServer() {
   document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:JetBrains Mono,monospace;color:var(--muted);font-size:14px;">${t('servidor_desligado_msg')}</div>`;
 }
 
-/* ===== Animação de rede neural do banner "Hash Commander" ===== */
+/* ===== Banner "Hash Commander": cena de mineração =====
+   Chuva de hashes (alguns começam por zeros, como uma prova de trabalho válida), uma cadeia de blocos em baixo
+   e faíscas quando um bloco "é minerado". Se a dashboard já conhece a altura real do último bloco, é essa que
+   aparece no bloco mais recente e a cadeia avança quando chega um bloco novo de verdade. */
 (function initHashCommanderBanner(){
   const wrap = document.getElementById('hcBanner');
   const canvas = document.getElementById('hcBannerCanvas');
   if (!wrap || !canvas) return;
   const ctx = canvas.getContext('2d');
-  let W, H, DPR, nodes;
+  const HEX = '0123456789abcdef', STEP = 58, BS = 30;
+  let W = 0, H = 0, DPR = 1, cols = [], chain = [], sparks = [], shift = 0, lastReal = 0, nextFake = 30 + Math.random() * 25, t0 = performance.now(), lastT = 0;
+  const rnd = n => { let s = ''; for(let i = 0; i < n; i++) s += HEX[Math.floor(Math.random() * 16)]; return s; };
+  const realHeight = () => {
+    try { if(typeof seenBlockHeights !== 'undefined' && seenBlockHeights.size) return Math.max(...seenBlockHeights); } catch(e) {}
+    try { if(typeof difficultyData !== 'undefined' && difficultyData && difficultyData.currentHeight) return difficultyData.currentHeight; } catch(e) {}
+    return 0;
+  };
+  const newBlock = x => ({ x, id: '00' + rnd(4), born: performance.now(), fresh: 0 });
 
   function resize(){
     DPR = Math.min(window.devicePixelRatio || 1, 2);
-    W = canvas.clientWidth = wrap.clientWidth;
-    H = canvas.clientHeight = wrap.clientHeight;
-    canvas.width = W * DPR;
-    canvas.height = H * DPR;
+    W = wrap.clientWidth; H = wrap.clientHeight;
+    canvas.width = W * DPR; canvas.height = H * DPR;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    const count = Math.max(18, Math.round((W * H) / 9000));
-    nodes = Array.from({ length: count }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.18,
-      vy: (Math.random() - 0.5) * 0.18,
-      r: Math.random() * 1.3 + 0.6,
-      pulse: Math.random() * Math.PI * 2
-    }));
+    cols = Array.from({ length: Math.max(8, Math.floor(W / 22)) }, (_, i) => ({ x: i * 22 + 11, y: -Math.random() * H * 1.5, v: 16 + Math.random() * 30, len: 5 + Math.floor(Math.random() * 7), s: rnd(16), win: false }));
+    chain = []; for(let x = W + STEP; x > -STEP; x -= STEP) chain.unshift(newBlock(x));
   }
   window.addEventListener('resize', resize);
   resize();
 
-  const LINK_DIST = 90;
-  let lastT = 0;
-  function draw(ts){
-    ts = ts || performance.now();
-    if(hcPaused() || ts - lastT < 33){ requestAnimationFrame(draw); return; }
-    lastT = ts;
+  function burst(x, y, n){
+    for(let i = 0; i < n && sparks.length < 90; i++){ const a = -Math.PI * (.15 + Math.random() * .7), v = 30 + Math.random() * 70; sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: .5 + Math.random() * .6 }); }
+  }
+  function mine(real){
+    const last = chain[chain.length - 1], nb = newBlock(last.x + STEP);
+    nb.fresh = 1; if(real) nb.real = real;
+    chain.push(nb); shift += STEP; burst(nb.x, H - 36, 18);
+  }
+
+  function frame(ts, still){
+    const dt = Math.min(.1, still ? 0 : (ts - lastT) / 1000); lastT = ts;
     ctx.clearRect(0, 0, W, H);
-    for (let i = 0; i < nodes.length; i++){
-      for (let j = i + 1; j < nodes.length; j++){
-        const a = nodes[i], b = nodes[j];
-        const dx = a.x - b.x, dy = a.y - b.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < LINK_DIST){
-          const alpha = (1 - dist / LINK_DIST) * 0.3;
-          ctx.strokeStyle = `rgba(150, 230, 255, ${alpha})`;
-          ctx.lineWidth = 0.6;
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-        }
+    // chuva de hashes
+    ctx.font = '11px "JetBrains Mono", monospace'; ctx.textBaseline = 'top';
+    for(const col of cols){
+      col.y += col.v * dt;
+      for(let k = 0; k < col.len; k++){
+        const y = col.y - k * 13; if(y < -13 || y > H) continue;
+        const ch = col.s[k % col.s.length], a = (1 - k / col.len);
+        if(col.win && k < 4) ctx.fillStyle = `rgba(255,205,90,${(.35 + a * .6).toFixed(2)})`;
+        else ctx.fillStyle = k === 0 ? 'rgba(245,232,205,.85)' : `rgba(225,165,85,${(a * .5).toFixed(2)})`;
+        ctx.fillText(col.win && k < 4 ? '0' : ch, col.x, y);
+      }
+      if(col.y - col.len * 13 > H){
+        if(col.win) burst(col.x, H - 36, 8);
+        col.y = -20 - Math.random() * 60; col.s = rnd(16); col.win = Math.random() < .08; col.v = 16 + Math.random() * 30;
       }
     }
-    for (const n of nodes){
-      n.x += n.vx * 2; n.y += n.vy * 2;
-      if (n.x < -10) n.x = W + 10;
-      if (n.x > W + 10) n.x = -10;
-      if (n.y < -10) n.y = H + 10;
-      if (n.y > H + 10) n.y = -10;
-      n.pulse += 0.04;
-      const glow = (Math.sin(n.pulse) + 1) / 2;
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, n.r + glow * 0.6, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(200, 245, 255, ${0.5 + glow * 0.5})`;
-      ctx.fill();
+    // cadeia de blocos
+    const rh = realHeight();
+    if(rh && lastReal && rh > lastReal) mine(rh);
+    if(rh) lastReal = rh;
+    if(!rh && !still && (ts - t0) / 1000 > nextFake){ mine(0); nextFake = (ts - t0) / 1000 + 40 + Math.random() * 40; }
+    if(shift > 0){ const d = Math.min(shift, 40 * dt + shift * .08); shift -= d; chain.forEach(b => { b.x -= d; }); }
+    while(chain.length > 2 && chain[0].x < -STEP) chain.shift();
+    const by = H - 36;
+    for(let i = 0; i < chain.length; i++){
+      const b = chain[i];
+      if(i) { ctx.strokeStyle = 'rgba(255,170,60,.35)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(chain[i - 1].x + BS / 2, by + BS / 2); ctx.lineTo(b.x - BS / 2, by + BS / 2); ctx.stroke(); }
+      const age = Math.max(0, 1 - (performance.now() - b.born) / 4000), glow = b.fresh ? age : 0, last = i === chain.length - 1;
+      const g = ctx.createLinearGradient(0, by, 0, by + BS);
+      g.addColorStop(0, `rgba(${90 + glow * 160},${50 + glow * 120},12,.92)`); g.addColorStop(1, `rgba(${40 + glow * 80},${24 + glow * 50},8,.92)`);
+      ctx.save(); ctx.shadowColor = '#ffb020'; ctx.shadowBlur = 4 + glow * 18;
+      ctx.fillStyle = g; ctx.strokeStyle = glow ? '#ffe08a' : 'rgba(255,170,60,.55)'; ctx.lineWidth = glow ? 1.6 : 1;
+      const r = 5, x = b.x - BS / 2;
+      ctx.beginPath(); ctx.moveTo(x + r, by); ctx.arcTo(x + BS, by, x + BS, by + BS, r); ctx.arcTo(x + BS, by + BS, x, by + BS, r); ctx.arcTo(x, by + BS, x, by, r); ctx.arcTo(x, by, x + BS, by, r); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      ctx.font = '8.5px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = last && rh ? '#ffe9a8' : 'rgba(255,200,120,.75)';
+      ctx.fillText(last && rh ? '#' + (b.real || rh) : b.id, b.x, by + BS / 2); ctx.textAlign = 'left';
     }
-    requestAnimationFrame(draw);
+    // faíscas
+    for(let i = sparks.length - 1; i >= 0; i--){
+      const p = sparks[i]; p.life += dt; if(p.life > p.max){ sparks.splice(i, 1); continue; }
+      p.vy += 140 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      ctx.globalAlpha = 1 - p.life / p.max; ctx.fillStyle = Math.random() < .5 ? '#ffd45a' : '#ff8a1c'; ctx.fillRect(p.x - 1, p.y - 1, 2.2, 2.2); ctx.globalAlpha = 1;
+    }
   }
-  draw();
+
+  const reduce = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) { return false; } })();
+  if(reduce){ frame(performance.now(), true); window.addEventListener('resize', () => frame(performance.now(), true)); return; }
+  let acc = 0;
+  function loop(ts){
+    ts = ts || performance.now();
+    if(hcPaused() || ts - acc < 33){ requestAnimationFrame(loop); return; }
+    acc = ts;
+    frame(ts, false);
+    requestAnimationFrame(loop);
+  }
+  loop();
 })();
 
 /* ===== Fundo animado de partículas em onda (Máquinas, gráficos e log) ===== */
