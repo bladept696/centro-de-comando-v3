@@ -739,6 +739,7 @@
   <!-- ===== Chat em Tempo Real (Balão Flutuante) ===== -->
   <div class="chat-fab" id="chatFab" title="Chat da Comunidade" style="display:none;">💬<span class="chat-fab-badge" id="chatBadge"></span></div>
   <div class="chat-panel" id="chatPanel">
+    <i class="chat-grip" id="chatGrip" aria-hidden="true"></i>
     <div class="chat-header">
       <div class="chat-header-left">
         <span class="chat-header-icon">💬</span>
@@ -749,9 +750,15 @@
           <span class="chat-online-dot"></span>
           <span id="chatOnlineCount">0</span> <span data-i18n="chat_online">online</span>
         </div>
-        <button class="chat-close-btn" id="chatCloseBtn" title="Fechar">✕</button>
+        <button class="chat-hbtn" id="chatSearchBtn" type="button">🔍</button>
+        <button class="chat-hbtn" id="chatSetBtn" type="button">⚙</button>
+        <button class="chat-hbtn" id="chatSizeBtn" type="button">⤢</button>
+        <button class="chat-close-btn" id="chatCloseBtn" type="button">✕</button>
       </div>
     </div>
+    <div class="chat-tabs" id="chatTabs"></div>
+    <div class="chat-search" id="chatSearch" hidden><input type="search" id="chatSearchInput" autocomplete="off"><span id="chatSearchInfo"></span></div>
+    <div class="chat-settings" id="chatSettings" hidden></div>
     <div class="chat-body">
       <div class="chat-messages" id="chatMessages">
         <div class="chat-empty" id="chatEmpty">
@@ -764,9 +771,14 @@
         <div id="chatOnlineUsers"></div>
       </div>
     </div>
+    <div class="chat-typing" id="chatTyping" aria-live="polite"></div>
+    <div class="chat-replybar" id="chatReplyBar" hidden></div>
+    <div class="chat-mention-list" id="chatMentions" hidden></div>
+    <div class="chat-share" id="chatShare" hidden></div>
     <div class="chat-emoji-picker" id="chatEmojiPicker"></div>
     <div class="chat-input-bar">
-      <button class="chat-emoji-btn" id="chatEmojiBtn" title="Emojis">😊</button>
+      <button class="chat-emoji-btn" id="chatEmojiBtn" type="button">😊</button>
+      <button class="chat-emoji-btn" id="chatShareBtn" type="button">🖧</button>
       <input type="text" class="chat-input" id="chatInput" placeholder="Escreve uma mensagem..." maxlength="500" autocomplete="off">
       <button class="chat-send-btn" id="chatSendBtn" disabled><span data-i18n="chat_enviar">Enviar</span></button>
     </div>
@@ -1508,6 +1520,9 @@
 <script src="dashboard/js/donut3d.js"></script>
 <script src="dashboard/js/cartoes-i18n.js"></script>
 <script src="dashboard/js/cartoes.js"></script>
+<script src="dashboard/js/cartoes-contador.js"></script>
+<script src="dashboard/js/cartoes-arena.js"></script>
+<script src="dashboard/js/cartoes-voz.js"></script>
 <script src="dashboard/js/cartoes-extra.js"></script>
 <script src="dashboard/js/cartoes-ferramentas.js"></script>
 <script src="dashboard/js/cartoes-relatorios.js"></script>
