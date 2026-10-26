@@ -326,3 +326,11 @@
   .chat-sidebar{ width:132px; }
   @media(max-width:500px){ .chat-row{ max-width:98%; } .chat-tools{ display:flex; opacity:.9; } .chat-panel.full{ left:0; right:0; top:0; bottom:0; border-radius:0; } }
   @media (prefers-reduced-motion: reduce){ .chat-event,.chat-row.flash .chat-msg{ animation:none !important; } }
+  /* canais e mensagens privadas */
+  .chat-tabs{ display:flex; gap:4px; padding:5px 10px; overflow-x:auto; border-bottom:1px solid var(--line-strong); background:var(--panel-2); scrollbar-width:thin; flex-shrink:0; }
+  .chat-tab{ position:relative; flex:none; font:inherit; font-size:11px; font-weight:700; color:var(--muted); background:var(--panel); border:1px solid var(--line-strong); border-radius:99px; padding:3px 11px; cursor:pointer; white-space:nowrap; }
+  .chat-tab:hover{ color:var(--text); } .chat-tab.on{ color:var(--cyan); border-color:var(--cyan); background:#4fd6ff1a; }
+  .chat-tab.dm{ color:#d9b3ff; } .chat-tab.dm.on{ color:#e6ccff; border-color:#b07cff; background:#b07cff22; }
+  .chat-tab i{ font-style:normal; margin-left:6px; min-width:15px; height:15px; border-radius:8px; background:var(--red); color:#fff; font-size:9px; display:inline-flex; align-items:center; justify-content:center; padding:0 4px; vertical-align:middle; }
+  .chat-tab i:empty{ width:8px; min-width:8px; height:8px; padding:0; }
+  .chat-sidebar-user.can-dm{ cursor:pointer; } .chat-sidebar-user.can-dm:hover{ background:var(--panel); }

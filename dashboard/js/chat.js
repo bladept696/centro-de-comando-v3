@@ -44,6 +44,11 @@
     cmd_btc: ['₿ {0} € · dificuldade {1}{2}', '₿ {0} € · difficulty {1}{2}', '₿ {0} € · dificultad {1}{2}', '₿ {0} € · difficulté {1}{2}'],
     block_ann: ['🏆 {0} encontrou um BLOCO com {1}!', '🏆 {0} found a BLOCK with {1}!', '🏆 {0} encontró un BLOQUE con {1}!', '🏆 {0} a trouvé un BLOC avec {1} !'],
     record_ann: ['🎯 {0} bateu o seu recorde de dificuldade com {1}!', '🎯 {0} broke their difficulty record with {1}!', '🎯 {0} batió su récord de dificultad con {1}!', '🎯 {0} a battu son record de difficulté avec {1} !'],
+    ch_geral: ['geral', 'general', 'general', 'général'], ch_ajuda: ['ajuda', 'help', 'ayuda', 'aide'], ch_trocas: ['trocas', 'trades', 'trueques', 'échanges'],
+    dm_ph: ['Mensagem privada para {0}…', 'Private message to {0}…', 'Mensaje privado para {0}…', 'Message privé pour {0}…'],
+    dm_open: ['Mensagem privada', 'Private message', 'Mensaje privado', 'Message privé'],
+    dm_note: ['🔒 Conversa privada com {0}: só vocês os dois a veem.', '🔒 Private chat with {0}: only the two of you can see it.', '🔒 Conversación privada con {0}: solo ustedes dos la ven.', '🔒 Conversation privée avec {0} : seuls vous deux la voyez.'],
+    dm_new: ['✉ {0} enviou-lhe uma mensagem privada', '✉ {0} sent you a private message', '✉ {0} le envió un mensaje privado', '✉ {0} vous a envoyé un message privé'],
     me: ['eu', 'me', 'yo', 'moi'], admin: ['admin', 'admin', 'admin', 'admin'],
     t_search: ['Pesquisar', 'Search', 'Buscar', 'Rechercher'], t_settings: ['Definições do chat', 'Chat settings', 'Ajustes del chat', 'Réglages du chat'],
     t_size: ['Mudar o tamanho', 'Change size', 'Cambiar el tamaño', 'Changer la taille'], t_close: ['Fechar', 'Close', 'Cerrar', 'Fermer'],
@@ -70,14 +75,19 @@
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
 
+  function lrLoad(){ const v = lsGet('hc_chat_lastread', {}); return typeof v === 'number' ? { geral: v } : (v && typeof v === 'object' ? v : {}); }
+  const CHANNELS = ['geral', 'ajuda', 'trocas'];
   const S = {
     msgs: new Map(), reacts: {}, typing: {}, typingSeen: {}, online: {}, local: 0,
     live: false, hasMore: true, loadingOlder: false, open: false, unread: 0, mention: false,
-    lastRead: lsGet('hc_chat_lastread', 0), firstUnreadKey: null, replyTo: null, editKey: null, search: '', stick: true, keepScroll: null,
+    lr: lrLoad(), chan: 'geral', dms: {}, chUnread: {}, dmUnread: {}, offs: [], dmLive: false, tok: 0, firstUnreadKey: null, replyTo: null, editKey: null, search: '', stick: true, keepScroll: null,
     admin: false, uid: null, sent: [], lastTypingSet: 0, typingTimer: 0, denied: false,
     prefs: Object.assign({ sound: true, notif: false, announce: true, previews: true, words: '', size: 'normal', w: 0, h: 0 }, lsGet('hc_chat_prefs', {})),
     muted: new Set(lsGet('hc_chat_muted', [])), annAt: {}
   };
+  const lr = k => S.lr[k] || 0;
+  const setLr = (k, ts) => { S.lr[k] = Math.max(lr(k), ts); lsSet('hc_chat_lastread', S.lr); };
+  const isDm = k => String(k).startsWith('dm:');
   const savePrefs = () => lsSet('hc_chat_prefs', S.prefs);
   const saveMuted = () => lsSet('hc_chat_muted', [...S.muted]);
 
@@ -212,8 +222,9 @@
   function updateBadge(){
     const b = _c$('chatBadge');
     if(!b) return;
-    b.textContent = S.unread > 0 ? (S.mention ? '@' + S.unread : S.unread) : '';
-    b.classList.toggle('mention', S.mention);
+    const dm = Object.keys(S.dmUnread).length, n = S.unread + Object.values(S.chUnread).reduce((a, x) => a + x, 0) + dm, men = S.mention || dm > 0;
+    b.textContent = n > 0 ? (men ? '@' + n : n) : '';
+    b.classList.toggle('mention', men);
   }
   function beep(strong){
     if(!S.prefs.sound) return;
@@ -233,7 +244,7 @@
   }
   function onIncoming(m){
     if(isSelfMsg(m) || S.muted.has(String(m.author || '').toLowerCase())) return;
-    const strong = mentionsMe(m.text), away = !S.open || document.hidden;
+    const strong = mentionsMe(m.text) || isDm(S.chan), away = !S.open || document.hidden;
     if(away){
       S.unread++; if(strong) S.mention = true; updateBadge();
       beep(strong); desktopNote(m, strong);
@@ -241,7 +252,7 @@
   }
   function markRead(){
     const last = [...S.msgs.values()].reduce((mx, m) => m.local ? mx : Math.max(mx, m.ts || 0), 0);
-    S.lastRead = Math.max(S.lastRead, last, Date.now() - 1000); lsSet('hc_chat_lastread', S.lastRead);
+    setLr(S.chan, Math.max(last, Date.now() - 1000));
   }
 
   /* ---- ligação à base de dados ---- */
@@ -258,15 +269,19 @@
     const q = _msgRef.orderByChild('ts').limitToLast(PAGE);
     q.on('child_added', addMsg);
     q.on('child_changed', addMsg);
+    S.offs.push(() => q.off());
+    const tok = S.tok;
     q.on('child_removed', snap => {
       // com limitToLast, as mais antigas também "saem" da janela quando chegam novas: só apaga se já não existir
       _msgRef.child(snap.key).once('value').then(s => { if(!s.exists()){ S.msgs.delete(snap.key); queueRender(); } }).catch(() => {});
     });
     q.once('value').then(s => {
+      if(tok !== S.tok) return;
       S.hasMore = s.numChildren() >= PAGE; S.live = true;
-      if(!S.lastRead){ S.lastRead = Date.now(); lsSet('hc_chat_lastread', S.lastRead); }
-      S.unread = [...S.msgs.values()].filter(m => !m.local && m.ts > S.lastRead && !isSelfMsg(m) && !S.muted.has(String(m.author || '').toLowerCase())).length;
-      S.mention = [...S.msgs.values()].some(m => !m.local && m.ts > S.lastRead && !isSelfMsg(m) && mentionsMe(m.text));
+      if(!lr(S.chan)) setLr(S.chan, Date.now());
+      const un = [...S.msgs.values()].filter(m => !m.local && m.ts > lr(S.chan) && !isSelfMsg(m) && !S.muted.has(String(m.author || '').toLowerCase())).sort((a, b) => a.ts - b.ts);
+      if(S.open){ S.firstUnreadKey = un.length ? un[0].key : null; S.unread = 0; S.mention = false; }
+      else { S.unread = un.length; S.mention = un.some(m => mentionsMe(m.text)); }
       updateBadge(); S.stick = true; queueRender();
     }).catch(() => { S.live = true; });
   }
@@ -275,9 +290,11 @@
     const real = [...S.msgs.values()].filter(m => !m.local);
     if(!real.length) return;
     S.loadingOlder = true;
+    const tok = S.tok;
     const oldest = Math.min(...real.map(m => m.ts || Infinity));
     try {
       const s = await _msgRef.orderByChild('ts').endAt(oldest - 1).limitToLast(PAGE).once('value');
+      if(tok !== S.tok){ S.loadingOlder = false; return; }
       const box = _c$('chatMessages'); S.keepScroll = box ? box.scrollHeight : null;
       s.forEach(c => { const d = c.val(); if(d && typeof d === 'object' && !S.msgs.has(c.key)) S.msgs.set(c.key, Object.assign({ author: '???', text: '', ts: 0, type: 'msg' }, d, { key: c.key })); });
       S.hasMore = s.numChildren() >= PAGE;
@@ -288,10 +305,12 @@
   function listenReactions(){
     const q = _reactRef.orderByKey().limitToLast(300);
     const up = snap => { S.reacts[snap.key] = snap.val() || {}; queueRender(); };
+    S.offs.push(() => q.off());
     q.on('child_added', up); q.on('child_changed', up);
     q.on('child_removed', snap => { delete S.reacts[snap.key]; queueRender(); }, () => {});
   }
   function listenTyping(){
+    S.offs.push(() => _typRef.off());
     _typRef.on('value', snap => {
       const v = snap.val() || {}, now = Date.now();
       Object.keys(v).forEach(cid => { if(cid !== CID && (!S.typing[cid] || S.typing[cid].ts !== v[cid].ts)) S.typingSeen[cid] = now; });
@@ -309,7 +328,7 @@
     const myEmail = _ccEmail(); if(!myEmail) return;
     const mine = _presRef.child(CID);
     mine.onDisconnect().remove();
-    const beat = () => mine.set({ nick: emailToNick(myEmail), ts: firebase.database.ServerValue.TIMESTAMP });
+    const beat = () => mine.set({ nick: emailToNick(myEmail), uid: S.uid || null, ts: firebase.database.ServerValue.TIMESTAMP });
     beat(); setInterval(beat, 25000);
     _presRef.on('value', snap => {
       S.online = snap.val() || {};
@@ -319,11 +338,97 @@
         list.replaceChildren();
         users.forEach(u => {
           const el = document.createElement('div'); el.className = 'chat-sidebar-user';
+          if(u.uid && u.uid !== S.uid){ el.dataset.uid = u.uid; el.dataset.nick = u.nick || ''; el.title = T('dm_open'); el.classList.add('can-dm'); }
           el.innerHTML = avatarHtml(u.nick || '?') + '<span>' + escHtml(u.nick || '???') + (String(u.nick) === myNick() ? ' <em>(' + T('me') + ')</em>' : '') + '</span>';
           list.appendChild(el);
         });
       }
     });
+  }
+  /* ---- canais (geral, ajuda, trocas) e mensagens privadas ---- */
+  function chanBase(key){
+    const base = p => ({ msgs: p + '/messages', reacts: p + '/reactions', typing: p + '/typing' });
+    if(key === 'geral') return { msgs: 'chat/messages', reacts: 'chat/reactions', typing: 'chat/typing' };
+    if(isDm(key)) return base('chat/dm/' + [S.uid, key.slice(3)].sort().join('_'));
+    return base('chat/ch/' + key);
+  }
+  function chanLabel(k){ return isDm(k) ? '✉ ' + ((S.dms[k.slice(3)] || {}).nick || '?') : '# ' + T('ch_' + k); }
+  function renderTabs(){
+    const box = _c$('chatTabs');
+    if(!box) return;
+    const dms = Object.keys(S.dms).sort((a, b) => (S.dms[b].ts || 0) - (S.dms[a].ts || 0)).map(p => 'dm:' + p);
+    box.innerHTML = [...CHANNELS, ...dms].map(k => {
+      const n = isDm(k) ? (S.dmUnread[k.slice(3)] ? 1 : 0) : (S.chUnread[k] || 0);
+      return '<button type="button" data-chan="' + escHtml(k) + '" class="chat-tab' + (k === S.chan ? ' on' : '') + (isDm(k) ? ' dm' : '') + '">' + escHtml(chanLabel(k)) + (n ? '<i>' + (isDm(k) ? '' : n) + '</i>' : '') + '</button>';
+    }).join('');
+  }
+  function placeholderText(){ return isDm(S.chan) ? T('dm_ph', (S.dms[S.chan.slice(3)] || {}).nick || '?') : T('chat_placeholder'); }
+  function enterChan(){
+    S.tok++;
+    const p = chanBase(S.chan);
+    _msgRef = _db.ref(p.msgs); _reactRef = _db.ref(p.reacts); _typRef = _db.ref(p.typing);
+    if(isDm(S.chan)) delete S.dmUnread[S.chan.slice(3)]; else S.chUnread[S.chan] = 0;
+    S.stick = true;
+    listenMessages(); listenReactions(); listenTyping();
+    renderTabs(); updateBadge();
+    const inp = _c$('chatInput'); if(inp) inp.placeholder = placeholderText();
+    if(isDm(S.chan)) note(T('dm_note', (S.dms[S.chan.slice(3)] || {}).nick || '?'));
+  }
+  function leaveChan(){
+    if(S.open) markRead();
+    clearTyping();
+    S.offs.forEach(f => { try { f(); } catch(e) {} });
+    S.offs = []; S.msgs.clear(); S.reacts = {}; S.typing = {}; S.typingSeen = {}; S.live = false; S.hasMore = true; S.firstUnreadKey = null;
+    S.unread = 0; S.mention = false; S.search = ''; S.loadingOlder = false;
+    const si = _c$('chatSearchInput'); if(si) si.value = '';
+    const sb = _c$('chatSearch'); if(sb) sb.hidden = true;
+    cancelCompose();
+  }
+  function switchChan(key){
+    if(!_db || key === S.chan) return;
+    if(isDm(key) && !S.uid) return;
+    leaveChan(); S.chan = key; enterChan(); queueRender();
+  }
+  function openDm(uid, nick){
+    if(!uid || uid === S.uid) return;
+    S.dms[uid] = Object.assign({ ts: 0 }, S.dms[uid] || {}, { nick: nick || (S.dms[uid] || {}).nick || '?' });
+    switchChan('dm:' + uid);
+  }
+  function touchDm(){
+    if(!isDm(S.chan) || !_db || !S.uid) return;
+    const peer = S.chan.slice(3), me = S.uid, ts = firebase.database.ServerValue.TIMESTAMP;
+    _db.ref('chat/dmidx/' + peer + '/' + me).set({ nick: myNick(), ts, from: me }).catch(() => {});
+    _db.ref('chat/dmidx/' + me + '/' + peer).set({ nick: (S.dms[peer] || {}).nick || '?', ts, from: me }).catch(() => {});
+  }
+  // mensagens novas nos outros canais e nas conversas privadas (só o último de cada um, para dar o aviso)
+  function watchOthers(){
+    const seen = {};
+    CHANNELS.forEach(k => {
+      _db.ref(chanBase(k).msgs).orderByChild('ts').limitToLast(1).on('child_added', snap => {
+        const m = snap.val();
+        if(!m || typeof m !== 'object') return;
+        const first = !seen[k]; if(!first && m.ts <= seen[k]) return; seen[k] = m.ts || 1;
+        if(k === S.chan || m.ts <= lr(k) || m.type === 'event' || isSelfMsg(m) || S.muted.has(String(m.author || '').toLowerCase())) return;
+        S.chUnread[k] = first ? 1 : (S.chUnread[k] || 0) + 1;
+        if(!first){ const strong = mentionsMe(m.text); if(!S.open || document.hidden){ beep(strong); desktopNote(m, strong); } }
+        renderTabs(); updateBadge();
+      }, () => {});
+    });
+    const idx = _db.ref('chat/dmidx/' + S.uid);
+    const up = snap => {
+      const v = snap.val();
+      if(!v || typeof v !== 'object') return;
+      S.dms[snap.key] = { nick: v.nick || '?', ts: v.ts || 0 };
+      const active = S.chan === 'dm:' + snap.key && S.open;
+      if(v.from && v.from !== S.uid && (v.ts || 0) > lr('dm:' + snap.key) && !active){
+        const fresh = S.dmLive && !S.dmUnread[snap.key];
+        S.dmUnread[snap.key] = true;
+        if(fresh){ beep(true); desktopNote({ author: v.nick, text: T('dm_new', v.nick) }, true); }
+      }
+      renderTabs(); updateBadge();
+    };
+    idx.on('child_added', up, () => {}); idx.on('child_changed', up, () => {});
+    idx.once('value').then(() => { S.dmLive = true; }).catch(() => { S.dmLive = true; });
   }
   async function connectChatDb(){
     if(_inited || _connecting) return;
@@ -341,8 +446,8 @@
       if(!fbUser){ note(T('no_session')); return; }
       S.uid = fbUser.uid;
       _db = firebase.database();
-      _presRef = _db.ref('chat/presence'); _msgRef = _db.ref('chat/messages'); _reactRef = _db.ref('chat/reactions'); _typRef = _db.ref('chat/typing');
-      listenMessages(); listenPresence(); listenReactions(); listenTyping();
+      _presRef = _db.ref('chat/presence');
+      listenPresence(); enterChan(); watchOthers();
       const admins = c && Array.isArray(c.adminEmails) ? c.adminEmails.map(x => String(x).toLowerCase()) : [];
       S.admin = admins.includes(String(_ccEmail()).toLowerCase());
       _db.ref('chat/admins/' + S.uid).once('value').then(s => { if(s.val() === true){ S.admin = true; queueRender(); } }).catch(() => {});
@@ -367,9 +472,9 @@
   }
   async function pushMessage(base, extra){
     const full = Object.assign({}, base, extra || {});
-    try { await _msgRef.push(full); return true; }
+    try { await _msgRef.push(full); touchDm(); return true; }
     catch(e){
-      if(Object.keys(extra || {}).length){ try { await _msgRef.push(base); return true; } catch(e2) { e = e2; } }
+      if(Object.keys(extra || {}).length){ try { await _msgRef.push(base); touchDm(); return true; } catch(e2) { e = e2; } }
       console.warn('[chat] send error', e); note(T('send_fail')); return false;
     }
   }
@@ -557,7 +662,8 @@
     _lastLang = lang();
     const set = (id, k) => { const n = _c$(id); if(n){ n.title = T(k); n.setAttribute('aria-label', T(k)); } };
     set('chatSearchBtn', 't_search'); set('chatSetBtn', 't_settings'); set('chatSizeBtn', 't_size'); set('chatCloseBtn', 't_close'); set('chatShareBtn', 't_share'); set('chatEmojiBtn', 't_emoji');
-    const inp = _c$('chatInput'); if(inp) inp.placeholder = T('chat_placeholder');
+    const inp = _c$('chatInput'); if(inp) inp.placeholder = placeholderText();
+    renderTabs();
     const si = _c$('chatSearchInput'); if(si) si.placeholder = T('search_ph');
     const fab = _c$('chatFab'); if(fab) fab.title = T('chat_titulo');
     const sp = _c$('chatSettings'); if(sp && !sp.hidden) sp.innerHTML = settingsHtml();
@@ -571,7 +677,7 @@
     S.open = !S.open;
     panel.classList.toggle('open', S.open);
     if(S.open){
-      S.firstUnreadKey = ([...S.msgs.values()].filter(m => !m.local && m.ts > S.lastRead && !isSelfMsg(m)).sort((a, b) => a.ts - b.ts)[0] || {}).key || null;
+      S.firstUnreadKey = ([...S.msgs.values()].filter(m => !m.local && m.ts > lr(S.chan) && !isSelfMsg(m)).sort((a, b) => a.ts - b.ts)[0] || {}).key || null;
       S.unread = 0; S.mention = false; updateBadge();
       connectChatDb(); S.stick = true; queueRender();
       setTimeout(() => { const i = _c$('chatInput'); if(i) i.focus(); }, 100);
@@ -583,6 +689,8 @@
     if(p){ CHAT_EMOJIS.forEach(em => { const b = document.createElement('button'); b.className = 'chat-emoji-pick'; b.textContent = em; b.onclick = () => { const i = _c$('chatInput'); if(i){ i.value += em; i.focus(); updateSendBtn(); } p.classList.remove('open'); }; p.appendChild(b); }); }
     applyTexts(); applySize(); wireGrip();
     _c$('chatFab')?.addEventListener('click', togglePanel);
+    _c$('chatTabs')?.addEventListener('click', e => { const b = e.target.closest('[data-chan]'); if(b) switchChan(b.dataset.chan); });
+    _c$('chatOnlineUsers')?.addEventListener('click', e => { const u = e.target.closest('[data-uid]'); if(u) openDm(u.dataset.uid, u.dataset.nick); });
     _c$('chatCloseBtn')?.addEventListener('click', togglePanel);
     _c$('chatEmojiBtn')?.addEventListener('click', () => { closeShare(); _c$('chatEmojiPicker')?.classList.toggle('open'); });
     _c$('chatSendBtn')?.addEventListener('click', sendMessage);
@@ -663,13 +771,14 @@
   /* ---- anúncios automáticos (blocos e recordes), usados pelos cartões ---- */
   window.hcChatAnnounce = function(kind, machine, extra){
     try {
-      if(!S.prefs.announce || !_msgRef || !_ccEmail()) return;
+      if(!S.prefs.announce || !_db || !_ccEmail()) return;
       const now = Date.now();
       if(now - (S.annAt[kind] || 0) < 10 * 60000) return;
       S.annAt[kind] = now;
       const text = T(kind === 'block' ? 'block_ann' : 'record_ann', myNick(), kind === 'block' ? machine : (extra || machine));
       const base = { type: 'event', author: myNick(), text, ts: firebase.database.ServerValue.TIMESTAMP, cid: CID };
-      _msgRef.push(S.uid ? Object.assign(base, { uid: S.uid }) : base).catch(() => _msgRef.push(base).catch(() => {}));
+      const gref = _db.ref('chat/messages');
+      gref.push(S.uid ? Object.assign(base, { uid: S.uid }) : base).catch(() => gref.push(base).catch(() => {}));
     } catch(e) {}
   };
 

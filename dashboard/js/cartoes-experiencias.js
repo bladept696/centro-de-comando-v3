@@ -1,8 +1,8 @@
 // ---------- Cartões: experiências visuais (ligam-se e desligam-se em ⚙ > Experiências) ----------
 // Ventoinha a girar, medidor de temperatura em arco, números que contam, cartões que deslizam, linha de pulso,
 // onda de cor nas mudanças de estado, e duas vistas novas: mapa de calor e planta das máquinas.
-const MC_XP_ALL = ['fan', 'arc', 'count', 'flip', 'ecg', 'wave', 'float', 'breathe', 'sheen', 'embers', 'confetti', 'draw', 'ripple', 'mapflow', 'mapzones', 'bgchart', 'heat3d'];
-mc.prefs.xp = Object.assign({ fan: true, arc: true, count: true, flip: true, ecg: true, wave: true, float: true, breathe: true, sheen: true, embers: true, confetti: true, draw: true, ripple: true, mapflow: true, mapzones: true, bgchart: true, heat3d: true }, mc.prefs.xp || {});
+const MC_XP_ALL = ['fan', 'arc', 'count', 'flip', 'ecg', 'wave', 'float', 'breathe', 'sheen', 'embers', 'confetti', 'draw', 'ripple', 'mapflow', 'mapzones', 'bgchart', 'heat3d', 'rain'];
+mc.prefs.xp = Object.assign({ fan: true, arc: true, count: true, flip: true, ecg: true, wave: true, float: true, breathe: true, sheen: true, embers: true, confetti: true, draw: true, ripple: true, mapflow: true, mapzones: true, bgchart: true, heat3d: true, rain: true }, mc.prefs.xp || {});
 function mcXp(k){
   let reduced = false;
   try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) {}

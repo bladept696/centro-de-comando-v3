@@ -1,38 +1,187 @@
 {
-  "_comment": "Regras sugeridas para o nó 'chat' da Realtime Database. Junte este bloco ao seu (Firebase Console > Realtime Database > Regras) sem apagar as regras que já tem para o resto da base. Para ter administradores, crie chat/admins/<uid> = true no Console.",
+  "_comment": "Regras sugeridas para o nó 'chat' da Realtime Database. Junte este bloco ao seu (Firebase Console > Realtime Database > Regras) sem apagar as regras que já tem para o resto da base. Canais (ch) e mensagens privadas (dm, dmidx) incluídos: só os dois participantes leem uma conversa privada. Para ter administradores, crie chat/admins/<uid> = true no Console.",
   "rules": {
     "chat": {
       "messages": {
         ".read": "auth != null",
-        ".indexOn": ["ts"],
+        ".indexOn": [
+          "ts"
+        ],
         "$id": {
           ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid || root.child('chat/admins/' + auth.uid).val() === true)",
           ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
-          "text": { ".validate": "newData.isString() && newData.val().length <= 500" },
-          "author": { ".validate": "newData.isString() && newData.val().length <= 60" },
-          "reply": { ".validate": "newData.hasChildren(['k', 'a', 't'])" },
-          "card": { ".validate": "newData.hasChildren(['n'])" },
-          "type": { ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'" },
-          "uid": { ".validate": "newData.val() === auth.uid" },
-          "edited": { ".validate": "true" },
-          "$other": { ".validate": "false" }
+          "text": {
+            ".validate": "newData.isString() && newData.val().length <= 500"
+          },
+          "author": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "reply": {
+            ".validate": "newData.hasChildren(['k', 'a', 't'])"
+          },
+          "card": {
+            ".validate": "newData.hasChildren(['n'])"
+          },
+          "type": {
+            ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+          },
+          "uid": {
+            ".validate": "newData.val() === auth.uid"
+          },
+          "edited": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          }
         }
       },
       "reactions": {
         ".read": "auth != null",
-        "$msg": { "$emoji": { "$cid": { ".write": "auth != null", ".validate": "newData.val() === true" } } }
+        "$msg": {
+          "$emoji": {
+            "$cid": {
+              ".write": "auth != null",
+              ".validate": "newData.val() === true"
+            }
+          }
+        }
       },
       "typing": {
         ".read": "auth != null",
-        "$cid": { ".write": "auth != null" }
+        "$cid": {
+          ".write": "auth != null"
+        }
       },
       "presence": {
         ".read": "auth != null",
-        "$cid": { ".write": "auth != null" }
+        "$cid": {
+          ".write": "auth != null"
+        }
       },
       "admins": {
         ".read": "auth != null",
-        "$uid": { ".write": false }
+        "$uid": {
+          ".write": false
+        }
+      },
+      "ch": {
+        "$ch": {
+          "messages": {
+            ".read": "auth != null",
+            ".indexOn": [
+              "ts"
+            ],
+            "$id": {
+              ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid || root.child('chat/admins/' + auth.uid).val() === true)",
+              ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
+              "text": {
+                ".validate": "newData.isString() && newData.val().length <= 500"
+              },
+              "author": {
+                ".validate": "newData.isString() && newData.val().length <= 60"
+              },
+              "reply": {
+                ".validate": "newData.hasChildren(['k', 'a', 't'])"
+              },
+              "card": {
+                ".validate": "newData.hasChildren(['n'])"
+              },
+              "type": {
+                ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+              },
+              "uid": {
+                ".validate": "newData.val() === auth.uid"
+              },
+              "edited": {
+                ".validate": "true"
+              },
+              "$other": {
+                ".validate": "false"
+              }
+            }
+          },
+          "reactions": {
+            ".read": "auth != null",
+            "$msg": {
+              "$emoji": {
+                "$cid": {
+                  ".write": "auth != null",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            }
+          },
+          "typing": {
+            ".read": "auth != null",
+            "$cid": {
+              ".write": "auth != null"
+            }
+          }
+        }
+      },
+      "dm": {
+        "$pair": {
+          "messages": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            ".indexOn": [
+              "ts"
+            ],
+            "$id": {
+              ".write": "auth != null && $pair.contains(auth.uid) && (!data.exists() || data.child('uid').val() === auth.uid)",
+              ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
+              "text": {
+                ".validate": "newData.isString() && newData.val().length <= 500"
+              },
+              "author": {
+                ".validate": "newData.isString() && newData.val().length <= 60"
+              },
+              "reply": {
+                ".validate": "newData.hasChildren(['k', 'a', 't'])"
+              },
+              "card": {
+                ".validate": "newData.hasChildren(['n'])"
+              },
+              "type": {
+                ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+              },
+              "uid": {
+                ".validate": "newData.val() === auth.uid"
+              },
+              "edited": {
+                ".validate": "true"
+              },
+              "$other": {
+                ".validate": "false"
+              }
+            }
+          },
+          "reactions": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            "$msg": {
+              "$emoji": {
+                "$cid": {
+                  ".write": "auth != null && $pair.contains(auth.uid)",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            }
+          },
+          "typing": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            "$cid": {
+              ".write": "auth != null && $pair.contains(auth.uid)"
+            }
+          }
+        }
+      },
+      "dmidx": {
+        "$uid": {
+          "$peer": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && (auth.uid === $uid || auth.uid === $peer)"
+          }
+        }
       }
     }
   }
