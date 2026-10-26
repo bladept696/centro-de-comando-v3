@@ -78,6 +78,7 @@ function mcWatchEvents(list){
     const id = dev.id, best = Number(r.best) || 0, acc = Number(r.accepted) || 0;
     if(mc.lastBest[id] != null && best > mc.lastBest[id] * 1.0001){
       mc.recordUntil[id] = Date.now() + 90000;
+      if(typeof mcArenaShot === 'function') mcArenaShot(id, 0, 0, true);
       mcFlash(id, 'mc-flash', 2600);
       if(typeof mcFloat === 'function') mcFloat(id, 1, true);
       mcLogEvent(mct('mc_l_record', dev.name || dev.ip), 'good', id);
@@ -85,7 +86,11 @@ function mcWatchEvents(list){
     }
     const rej = Number(r.rejected) || 0;
     mc.lastRej = mc.lastRej || {};
-    if(typeof mcRainDrop === 'function' && ((mc.lastAcc[id] != null && acc > mc.lastAcc[id]) || (mc.lastRej[id] != null && rej > mc.lastRej[id]))) mcRainDrop(id, Math.max(0, acc - (mc.lastAcc[id] || acc)), Math.max(0, rej - (mc.lastRej[id] || rej)));
+    if((mc.lastAcc[id] != null && acc > mc.lastAcc[id]) || (mc.lastRej[id] != null && rej > mc.lastRej[id])){
+      const dA = Math.max(0, acc - (mc.lastAcc[id] || acc)), dR = Math.max(0, rej - (mc.lastRej[id] || rej));
+      if(typeof mcRainDrop === 'function') mcRainDrop(id, dA, dR);
+      if(typeof mcArenaShot === 'function') mcArenaShot(id, dA, dR, false);
+    }
     mc.lastRej[id] = rej;
     if(mc.lastAcc[id] != null && acc > mc.lastAcc[id]){ mcFlash(id, 'mc-ping', 900); if(typeof mcFloat === 'function') mcFloat(id, acc - mc.lastAcc[id], false); }
     mc.lastBest[id] = best; mc.lastAcc[id] = acc;
@@ -242,6 +247,7 @@ function mcLuckTrack(list){
   if(now - mc.luckSaved > 30000) mcLuckSave();
 }
 function mcLuckBlock(){
+  if(typeof mcArenaBoom === 'function') mcArenaBoom();
   mc.luck.n++; mc.luck.h = 0; mc.luck.since = Date.now(); mcLuckSave();
   const box = document.querySelector('#mcSummary .mc-luck');
   if(!box) return;

@@ -407,6 +407,19 @@ Object.assign(I18N_DICT, {
   mc_ct_day: { pt: `dia`, en: `day`, es: `día`, fr: `jour` },
   mc_ct_days: { pt: `dias`, en: `days`, es: `días`, fr: `jours` }
 });
+Object.assign(I18N_DICT, {
+  mc_v_arena: { pt: `Arena de hashes`, en: `Hash arena`, es: `Arena de hashes`, fr: `Arène de hashs` },
+  mc_ar_title: { pt: `Arena de hashes`, en: `Hash arena`, es: `Arena de hashes`, fr: `Arène de hashs` },
+  mc_ar_ok: { pt: `share aceite`, en: `accepted share`, es: `share aceptado`, fr: `share accepté` },
+  mc_ar_bad: { pt: `rejeitada`, en: `rejected`, es: `rechazado`, fr: `rejeté` },
+  mc_ar_rec: { pt: `recorde (real)`, en: `record (real)`, es: `récord (real)`, fr: `record (réel)` },
+  mc_ar_note: { pt: `Escala logarítmica: em baixo a dificuldade da pool, em cima a parede do bloco (dificuldade da rede). As linhas douradas são os melhores shares reais de cada máquina; a altura dos disparos normais é uma amostra estatística, só ilustrativa. Passe o rato por uma torre para ver os detalhes.`, en: `Logarithmic scale: pool difficulty at the bottom, the block wall (network difficulty) at the top. The gold lines are each machine’s real best shares; the height of normal shots is a statistical sample, for illustration only. Hover a tower for details.`, es: `Escala logarítmica: abajo la dificultad del pool, arriba el muro del bloque (dificultad de la red). Las líneas doradas son los mejores shares reales de cada máquina; la altura de los disparos normales es una muestra estadística, solo ilustrativa. Pase el ratón por una torre para ver los detalles.`, fr: `Échelle logarithmique : en bas la difficulté du pool, en haut le mur du bloc (difficulté du réseau). Les lignes dorées sont les meilleurs shares réels de chaque machine ; la hauteur des tirs normaux est un échantillon statistique, à titre illustratif. Survolez une tour pour les détails.` },
+  mc_ar_wall: { pt: `BLOCO`, en: `BLOCK`, es: `BLOQUE`, fr: `BLOC` },
+  mc_ar_closest: { pt: `Mais perto: {0} · {1} · {2}% do caminho`, en: `Closest: {0} · {1} · {2}% of the way`, es: `Más cerca: {0} · {1} · {2}% del camino`, fr: `Le plus proche : {0} · {1} · {2}% du chemin` },
+  mc_ar_pool: { pt: `Dificuldade da pool ≈ {0}`, en: `Pool difficulty ≈ {0}`, es: `Dificultad del pool ≈ {0}`, fr: `Difficulté du pool ≈ {0}` },
+  mc_ar_best: { pt: `Melhor share: {0}`, en: `Best share: {0}`, es: `Mejor share: {0}`, fr: `Meilleur share : {0}` },
+  mc_vo_btn: { pt: `Falar com a farm (voz)`, en: `Talk to the farm (voice)`, es: `Hablar con la granja (voz)`, fr: `Parler à la ferme (voix)` }
+});
 // texto traduzido com {0}, {1}... substituídos
 function mct(key, ...args){
   let s = t(key);

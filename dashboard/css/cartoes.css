@@ -497,3 +497,26 @@
   @media (prefers-reduced-motion: reduce){.mc-ring.soon .fg{animation:none;}}
   /* chuva de shares */
   .mc-rain{position:fixed;left:0;top:0;pointer-events:none;z-index:60;}
+  /* arena de hashes */
+  .mc-arenawrap{display:block;}
+  .mc-arena-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-bottom:8px;font-size:11px;color:var(--muted);}
+  .mc-arena-bar b{color:var(--text);font-size:13px;margin-right:6px;}
+  .mc-arena-bar .lg::before{content:'';display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;background:#21ffb0;}
+  .mc-arena-bar .lg.bad::before{background:#ff5d5d;} .mc-arena-bar .lg.gold::before{background:#ffd34a;}
+  .mc-arena-cv{display:block;width:100%;height:440px;border-radius:14px;border:1px solid var(--line-strong);background:#050b10;cursor:crosshair;}
+  .mc-arena-note{margin-top:8px;font-size:10.5px;line-height:1.5;color:var(--muted-2);}
+  /* falar com a farm */
+  .mc-voice{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:10060;width:min(460px,calc(100vw - 24px));padding:12px 14px;border-radius:16px;background:linear-gradient(160deg,var(--panel-2),var(--deep));border:1px solid var(--line-strong);box-shadow:0 18px 50px -10px #000e,0 0 40px -12px var(--cyan);animation:mcIn .25s ease both;}
+  .mc-vo-head{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text);} .mc-vo-head b{flex:1;}
+  .mc-vo-head label{font-size:12px;color:var(--muted);cursor:pointer;display:flex;gap:4px;align-items:center;}
+  .mc-vo-head button{background:none;border:1px solid var(--line-strong);border-radius:8px;color:var(--muted);cursor:pointer;padding:2px 8px;font-size:13px;}
+  .mc-vo-wave{display:flex;align-items:center;justify-content:center;gap:4px;height:34px;margin:8px 0 4px;}
+  .mc-vo-wave i{width:4px;height:6px;border-radius:3px;background:var(--cyan);opacity:.35;transition:opacity .2s;}
+  .mc-voice.live .mc-vo-wave i{opacity:1;animation:mcVoWave 1s ease-in-out infinite;}
+  .mc-voice.live .mc-vo-wave i:nth-child(2n){animation-delay:-.3s;} .mc-voice.live .mc-vo-wave i:nth-child(3n){animation-delay:-.6s;} .mc-voice.live .mc-vo-wave i:nth-child(4){animation-delay:-.15s;}
+  @keyframes mcVoWave{0%,100%{height:6px;}50%{height:28px;}}
+  .mc-vo-in{min-height:18px;font-size:12px;color:var(--muted);} .mc-vo-out{min-height:20px;margin-top:4px;font-size:13px;color:var(--green);line-height:1.5;}
+  .mc-vo-form{display:flex;gap:6px;margin-top:10px;}
+  .mc-vo-form input{flex:1;font:inherit;font-size:12.5px;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:9px;padding:7px 10px;outline:none;} .mc-vo-form input:focus{border-color:var(--cyan);}
+  .mc-vo-form button{font:inherit;font-size:14px;color:var(--text);background:var(--panel-2);border:1px solid var(--line-strong);border-radius:9px;padding:4px 12px;cursor:pointer;}
+  @media (prefers-reduced-motion: reduce){.mc-voice.live .mc-vo-wave i{animation:none;height:16px;}}
