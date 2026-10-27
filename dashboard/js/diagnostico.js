@@ -36,5 +36,20 @@
       }
     }
   }).observe({ type: 'long-animation-frame', buffered: false });
+  // Relógio de controlo: se este temporizador de 0,5 s se atrasa mais de 1,8 s, a página esteve parada (mesmo sem código nosso a correr).
+  // Anota a memória usada (uma queda grande entre dois pontos indica uma limpeza de memória do navegador) e se a janela estava em foco.
+  const heap = () => { try { return performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null; } catch(e) { return null; } };
+  let tick = performance.now(), h0 = heap(), hiddenAt = 0, lastLag = 0;
+  document.addEventListener('visibilitychange', () => { hiddenAt = performance.now(); });
+  setInterval(() => {
+    const now = performance.now(), gap = now - tick, h1 = heap();
+    if(gap > 1800 && !document.hidden && now - hiddenAt > gap + 500 && Date.now() - lastLag > 15000){
+      lastLag = Date.now();
+      const rec = { t: Date.now(), ms: Math.round(gap), tab: tab(), what: 'página parada ' + (gap / 1000).toFixed(1) + ' s' + (h0 != null ? ' · memória ' + h0 + '→' + h1 + ' MB' : '') + ' · janela ' + (document.hasFocus() ? 'em foco' : 'sem foco') };
+      save(rec); console.warn('[parou]', rec);
+      if(typeof logEvent === 'function') try { logEvent('Página parada ' + (gap / 1000).toFixed(1) + ' s (aba ' + rec.tab + ')' + (h0 != null ? ' · memória ' + h0 + '→' + h1 + ' MB' : '') + ' · ' + (document.hasFocus() ? 'janela em foco' : 'janela sem foco'), 'error', 'diagnóstico'); } catch(x) {}
+    }
+    tick = now; h0 = h1;
+  }, 500);
   window.hcFreezes = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e) { return []; } };
 })();
