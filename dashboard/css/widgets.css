@@ -126,14 +126,14 @@
     position:relative;
     overflow:hidden;
     padding:10px 22px; border-top:1px solid var(--line-strong);
-    background:#0a1620; font-size:11px; color:var(--muted);
+    background:radial-gradient(ellipse 70% 160% at 50% 140%, #4a2a07 0%, #1b1008 45%, #080b10 80%); font-size:11px; color:var(--muted);
     display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
   }
   #footerMatrixCanvas{
     position:absolute; inset:0; width:100%; height:100%;
-    pointer-events:none; opacity:0.55; z-index:0;
+    pointer-events:none; opacity:0.8; z-index:0;
   }
-  .footer-bar > span{ position:relative; z-index:1; }
+  .footer-bar > span, .footer-bar > a{ position:relative; z-index:1; text-shadow:0 0 6px #000, 0 1px 2px #000; }
   .footer-copyright{ width:100%; text-align:center; font-size:10px; letter-spacing:.04em; color:var(--muted-2); user-select:none; }
   .footer-copyright a{ color:var(--muted); text-decoration:none; }
   .footer-copyright a:hover{ color:var(--cyan); }

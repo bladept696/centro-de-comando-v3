@@ -288,7 +288,7 @@ function startFooterMatrix(){
   footerMatrixAnimId = requestAnimationFrame(drawFooterMatrixFrame);
 }
 
-window.addEventListener('resize', () => { initFooterMatrix(); });
+// (o rodapé já não usa a chuva Matrix: ver hcMiningScene em 19-final.js)
 
 // --- Fundo animado "low-poly" azul/dourado a cobrir toda a .frame (por
 // trás de todo o conteúdo) — malha triangulada que "respira" lentamente,

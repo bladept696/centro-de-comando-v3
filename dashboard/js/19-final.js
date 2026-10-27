@@ -87,7 +87,7 @@ initLayoutEditor();
 initSeasonalEasterEggs();
 setupHashrateRangeButtons();
 setupPeakDiffRangeButtons();
-startFooterMatrix();
+// o rodapé passou a usar a cena de mineração (hcMiningScene)
 startBodyMatrix();
 initNetworkMap();
 initQuickActions();
@@ -341,9 +341,7 @@ function shutdownServer() {
    Chuva de hashes (alguns começam por zeros, como uma prova de trabalho válida), uma cadeia de blocos em baixo
    e faíscas quando um bloco "é minerado". Se a dashboard já conhece a altura real do último bloco, é essa que
    aparece no bloco mais recente e a cadeia avança quando chega um bloco novo de verdade. */
-(function initHashCommanderBanner(){
-  const wrap = document.getElementById('hcBanner');
-  const canvas = document.getElementById('hcBannerCanvas');
+function hcMiningScene(wrap, canvas){
   if (!wrap || !canvas) return;
   const ctx = canvas.getContext('2d');
   const HEX = '0123456789abcdef', STEP = 58, BS = 30;
@@ -373,7 +371,7 @@ function shutdownServer() {
   function mine(real){
     const last = chain[chain.length - 1], nb = newBlock(last.x + STEP);
     nb.fresh = 1; if(real) nb.real = real;
-    chain.push(nb); shift += STEP; burst(nb.x, H - 36, 18);
+    chain.push(nb); shift += STEP; burst(nb.x, H - BS - 6, 18);
   }
 
   function frame(ts, still){
@@ -391,7 +389,7 @@ function shutdownServer() {
         ctx.fillText(col.win && k < 4 ? '0' : ch, col.x, y);
       }
       if(col.y - col.len * 13 > H){
-        if(col.win) burst(col.x, H - 36, 8);
+        if(col.win) burst(col.x, H - BS - 6, 8);
         col.y = -20 - Math.random() * 60; col.s = rnd(16); col.win = Math.random() < .08; col.v = 16 + Math.random() * 30;
       }
     }
@@ -402,7 +400,7 @@ function shutdownServer() {
     if(!rh && !still && (ts - t0) / 1000 > nextFake){ mine(0); nextFake = (ts - t0) / 1000 + 40 + Math.random() * 40; }
     if(shift > 0){ const d = Math.min(shift, 40 * dt + shift * .08); shift -= d; chain.forEach(b => { b.x -= d; }); }
     while(chain.length > 2 && chain[0].x < -STEP) chain.shift();
-    const by = H - 36;
+    const by = H - BS - 6;
     for(let i = 0; i < chain.length; i++){
       const b = chain[i];
       if(i) { ctx.strokeStyle = 'rgba(255,170,60,.35)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(chain[i - 1].x + BS / 2, by + BS / 2); ctx.lineTo(b.x - BS / 2, by + BS / 2); ctx.stroke(); }
@@ -436,7 +434,11 @@ function shutdownServer() {
     requestAnimationFrame(loop);
   }
   loop();
-})();
+}
+window.hcMiningScene = hcMiningScene;
+hcMiningScene(document.getElementById('hcBanner'), document.getElementById('hcBannerCanvas'));
+// o rodapé usa a mesma cena de mineração (antes tinha a chuva verde do Matrix)
+hcMiningScene(document.getElementById('footerBar'), document.getElementById('footerMatrixCanvas'));
 
 /* ===== Fundo animado de partículas em onda (Máquinas, gráficos e log) ===== */
 (function initWaveBackgrounds(){

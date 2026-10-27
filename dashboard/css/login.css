@@ -14,11 +14,19 @@
 #authGate .ag-msg{min-height:18px;margin-top:12px;font-size:12.5px}
 #authGate .ag-msg.err{color:#ff6b6b}
 #authGate .ag-msg.ok{color:#5fd38d}
-#authUserPill{position:fixed;right:12px;bottom:76px;z-index:10001;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
-#authUserPill button{background:none;border:0;color:#f7931a;cursor:pointer;font-size:12px;padding:0}
-#authUserPill button#authDelete{color:#ff6b6b}
-#authUserPill .ap-sep{color:#2a2f3c}
-#userCountsBar{position:fixed;right:12px;bottom:110px;z-index:10001;display:none;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#14171fcc;border:1px solid #2a2f3c;color:#9aa0ae;font:12px system-ui,sans-serif;backdrop-filter:blur(6px)}
+/* conta: um avatar no cabeçalho com um menu (antes eram dois selos fixos no canto do ecrã) */
+#authUserPill{position:relative;display:none;align-items:center;z-index:10001}
+#authUserPill .acct-av{position:relative;width:38px;height:38px;padding:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;font:700 15px 'Space Grotesk',system-ui,sans-serif;color:#fff;
+  background:linear-gradient(135deg,hsl(var(--ah,200) 62% 46%),hsl(calc(var(--ah,200) + 40) 62% 30%));border:2px solid #ffffff22;box-shadow:0 4px 14px -6px #000;transition:transform .15s,border-color .15s}
+#authUserPill .acct-av:hover,#authUserPill .acct-av[aria-expanded="true"]{transform:scale(1.07);border-color:#ffffff66}
+#authUserPill .acct-av b{position:absolute;right:-6px;bottom:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#0d2b22;color:#5fd38d;border:1px solid #21ffb066;font:700 10px system-ui,sans-serif;display:grid;place-items:center}
+#authUserPill .acct-menu{position:absolute;right:0;top:calc(100% + 10px);width:230px;padding:8px;border-radius:14px;background:#10161ff2;border:1px solid #2a2f3c;box-shadow:0 22px 50px -16px #000;backdrop-filter:blur(8px);z-index:10001}
+#authUserPill .acct-menu[hidden]{display:none}
+#authUserPill .acct-mail{padding:6px 8px 8px;border-bottom:1px solid #2a2f3c;margin-bottom:6px;color:#e8e8ec;font:600 12px system-ui,sans-serif;word-break:break-all}
+#authUserPill .acct-count{align-items:center;gap:7px;padding:4px 8px 8px;color:#9aa0ae;font:11.5px system-ui,sans-serif}
+#authUserPill .acct-menu button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:8px;color:#f7931a;cursor:pointer;font:600 12.5px system-ui,sans-serif;padding:8px 10px}
+#authUserPill .acct-menu button:hover{background:#ffffff0d}
+#authUserPill .acct-menu button.danger{color:#ff6b6b}
 #userCountsBar .uc-dot{width:7px;height:7px;border-radius:50%;background:#5fd38d;box-shadow:0 0 5px #5fd38d;flex-shrink:0}
 #userCountsBar .uc-num{font-weight:700;color:#e8e8ec}
 #authDeleteModal{position:fixed;inset:0;z-index:2147483100;background:rgba(5,7,12,.72);display:none;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec;backdrop-filter:blur(3px)}

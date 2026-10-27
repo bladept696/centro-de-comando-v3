@@ -144,6 +144,7 @@ function aiAgentUpdateUI(){
   }
   if(dot) dot.className = 'ai-agent-status-dot ' + (aiAgentBusy ? 'busy' : (aiAgentConfig.autonomous ? 'online' : ''));
   if(label) label.textContent = aiAgentBusy ? 'A analisar' : (aiAgentConfig.autonomous ? 'Autónomo' : 'Manual');
+  if(typeof aifSync === 'function') aifSync();
 }
 
 function aiAppendMsg(text, who='bot'){
@@ -364,6 +365,20 @@ async function aiExecuteCommand(question, opts={}){
   if(dev && /(reinicia|reiniciar|restart|reboot)/i.test(q)){
     const r = await aiRestartDevice(dev);
     return r.ok ? `🔄 Reinício enviado para ${dev.name}.` : `❌ Não consegui reiniciar ${dev.name}: ${r.error}`;
+  }
+
+  // estudo, sugestões e diário (motor em assistente-estudo.js)
+  if(!auto && typeof asTextSuggestions === 'function'){
+    if(/(sugest|sugere|aconselh|otimiz|optimiz|melhorar as|afina|recomenda)/i.test(q)) { if(typeof afSt !== 'undefined'){ afSt.tab = 'sugg'; afSave(); afApply(); } return asTextSuggestions(); }
+    if(/(di[aá]rio|o que fizeste|o que fez|que fizeste hoje|historico do assistente|histórico do assistente)/i.test(q)){
+      if(typeof afSt !== 'undefined'){ afSt.tab = 'diary'; afSave(); afApply(); }
+      return AS.diary.length ? AS.diary.slice(0, 8).map(e => new Date(e.t).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + '  ' + e.text).join('\n') : 'O diário ainda está vazio.';
+    }
+    if(/(estuda|estudo|analisa|an[aá]lise|diagnost|porque|porqu[eê]|por que).*/i.test(q) && (dev || /(todas|maquinas|máquinas|tudo)/i.test(q))){
+      if(typeof afSt !== 'undefined'){ afSt.tab = 'study'; afSave(); afApply(); }
+      asAnalyze();
+      return (dev ? [dev] : (devices || [])).map(asTextStudy).join('\n\n');
+    }
   }
 
   if(auto) return null;

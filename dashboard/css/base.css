@@ -377,6 +377,8 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px 16px;
     padding:16px 22px;
     border-bottom:1px solid var(--line-strong);
     background:linear-gradient(180deg,var(--header-top),var(--frame-top));
@@ -404,6 +406,10 @@
   .header-actions {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
+    flex: 1 1 auto;
     gap: 12px;
   }
   .sound-toggle-btn {

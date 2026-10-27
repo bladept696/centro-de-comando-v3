@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="dashboard/css/mempool.css">
 <link rel="stylesheet" href="dashboard/css/efeitos.css">
 <link rel="stylesheet" href="dashboard/css/abas.css">
+<link rel="stylesheet" href="dashboard/css/assistente.css">
 <link rel="stylesheet" href="dashboard/css/rede.css">
 <link rel="stylesheet" href="dashboard/css/monitorizacao.css">
 <link rel="stylesheet" href="dashboard/css/graficos.css">
@@ -52,8 +53,6 @@
     </div>
   </div>
 </div>
-<div id="userCountsBar"><span class="uc-dot"></span><span class="uc-num" id="ucOnline">0</span> online · <span class="uc-num" id="ucTotal">0</span> registados</div>
-<div id="authUserPill"><span id="authUserEmail"></span><button type="button" id="authAccount">A minha conta</button><span class="ap-sep">·</span><button type="button" id="authLogout">Terminar sessão</button><span class="ap-sep">·</span><button type="button" id="authDelete">Eliminar conta</button></div>
 <div id="authDeleteModal">
   <div class="adm-card">
     <h2>Eliminar conta</h2>
@@ -275,6 +274,16 @@
         <span data-i18n="ajuda">❓ Ajuda</span>
       </button>
       <button class="config ghost" id="shutdownBtn" onclick="shutdownServer()" title="Desliga o servidor local por completo, de forma garantida (não depende do browser)" aria-label="Fechar tudo: desligar o servidor local por completo" style="padding: 6px 12px; font-size: 10px; border-color:#ff5d5d55; color:var(--red);"><span data-i18n="fechar_tudo">⏻ Fechar Tudo</span></button>
+      <div id="authUserPill" class="acct">
+        <button type="button" id="acctToggle" class="acct-av" aria-haspopup="true" aria-expanded="false" aria-controls="acctMenu"><span id="acctInitial">?</span><b id="acctOnline" title="online">0</b></button>
+        <div class="acct-menu" id="acctMenu" hidden>
+          <div class="acct-mail"><span id="authUserEmail"></span></div>
+          <div id="userCountsBar" class="acct-count"><span class="uc-dot"></span><span class="uc-num" id="ucOnline">0</span> online · <span class="uc-num" id="ucTotal">0</span> registados</div>
+          <button type="button" id="authAccount">👤 A minha conta</button>
+          <button type="button" id="authLogout">⏻ Terminar sessão</button>
+          <button type="button" id="authDelete" class="danger">🗑 Eliminar conta</button>
+        </div>
+      </div>
       <div class="status-pill" role="status" aria-live="polite"><div class="dot" id="statusDot" aria-hidden="true"></div><span id="statusText"><span data-i18n="sistema_pronto">Sistema pronto</span></span></div>
     </div>
   </header>
@@ -1548,6 +1557,9 @@
 <script src="dashboard/js/cartoes-comunidade.js"></script>
 <script src="dashboard/js/gestor-widgets.js"></script>
 <script src="dashboard/js/abas.js"></script>
+<script src="dashboard/js/assistente-estudo.js"></script>
+<script src="dashboard/js/assistente-janela.js"></script>
+<script src="dashboard/js/conta.js"></script>
 <script src="dashboard/js/cartoes-extra.js"></script>
 <script src="dashboard/js/cartoes-ferramentas.js"></script>
 <script src="dashboard/js/cartoes-relatorios.js"></script>

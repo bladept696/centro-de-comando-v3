@@ -55,7 +55,7 @@ const WG_ITEMS = [
   { id: 'gauge-hashrate', k: 'wg_hash', g: 'side', lay: true }, { id: 'gauge-best', k: 'wg_best', g: 'side', lay: true },
   { id: 'gauge-temp', k: 'wg_temp', g: 'side', lay: true }, { id: 'gauge-fan', k: 'wg_fan', g: 'side', lay: true },
   { id: 'gauge-power', k: 'wg_power', g: 'side', lay: true }, { id: 'gauge-count', k: 'wg_count', g: 'side', lay: true },
-  { id: 'gauge-ai', k: 'wg_ai', g: 'side', lay: true },
+  { id: 'gauge-ai', k: 'wg_ai', g: 'side', find: () => document.getElementById('aiRoot') },
   { id: 'main-machines', k: 'wg_quick', g: 'main', lay: true }, { id: 'machine-cards', k: 'wg_cards', g: 'main', lay: true },
   { id: 'network-map', k: 'wg_map', g: 'main', lay: true }, { id: 'main-charts', k: 'wg_charts', g: 'main', lay: true }, { id: 'main-eventlog', k: 'wg_log', g: 'main', lay: true },
   { id: 'chart-hashrate', k: 'wg_c_hash', g: 'charts', lay: true }, { id: 'chart-best', k: 'wg_c_best', g: 'charts', lay: true }, { id: 'chart-donut', k: 'wg_c_donut', g: 'charts', lay: true },
