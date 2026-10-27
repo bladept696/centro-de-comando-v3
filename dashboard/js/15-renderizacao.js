@@ -102,6 +102,7 @@ async function pollOneDevice(dev){
 
     const poolUrlVal = d.stratumURL ?? d.poolUrl ?? '—';
     const currentBest = Number(d.bestSessionDiff ?? d.bestDiff ?? 0);
+    if(typeof bdTrack === 'function') bdTrack(dev, d);
     const blocksFoundVal = Number(d.blockFound ?? d.blocksFound ?? 0);
     const uptimeVal = d.uptimeSeconds ?? d.uptime ?? null;
 

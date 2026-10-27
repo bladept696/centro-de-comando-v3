@@ -117,7 +117,7 @@ function mcComEnsure(){
 function mcComRender(){
   const el = $('mcCom');
   if(!el) return;
-  const on = mc.prefs.xp.community !== false;
+  const on = !(mc.prefs.xp && mc.prefs.xp.community === false);
   el.hidden = !on;
   if(!on) return;
   const hidden = !!mc.prefs.comHidden, sharing = mcComShare(), loc = typeof mcLocale === 'function' ? mcLocale() : undefined;

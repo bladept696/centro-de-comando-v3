@@ -5,6 +5,8 @@
   const g = id => document.getElementById(id);
   const tg = g('acctToggle'), menu = g('acctMenu'), mail = g('authUserEmail');
   if(!tg || !menu || !mail) return;
+  const pill = g('authUserPill'), st = document.querySelector('header .header-actions .status-pill');
+  if(st && pill.parentNode !== st.parentNode) st.parentNode.insertBefore(pill, st);
   const hue = s => { let h = 0; for(const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   function sync(){
     const e = (mail.textContent || '').trim();

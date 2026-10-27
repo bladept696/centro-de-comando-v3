@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="dashboard/css/monitorizacao.css">
 <link rel="stylesheet" href="dashboard/css/graficos.css">
 <link rel="stylesheet" href="dashboard/css/widgets.css">
+<link rel="stylesheet" href="dashboard/css/diff-ao-vivo.css">
 <link rel="stylesheet" href="dashboard/css/visual-extra.css">
 <link rel="stylesheet" href="dashboard/css/cartoes.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap">
@@ -104,6 +105,19 @@
       <div id="apmActivity"><div class="apm-meta">A carregar…</div></div>
     </div>
   </div>
+</div>
+<!-- a conta fica aqui para o login.js a encontrar; o conta.js passa-a para o cabeçalho -->
+<div id="acctHome">
+      <div id="authUserPill" class="acct">
+        <button type="button" id="acctToggle" class="acct-av" aria-haspopup="true" aria-expanded="false" aria-controls="acctMenu"><span id="acctInitial">?</span><b id="acctOnline" title="online">0</b></button>
+        <div class="acct-menu" id="acctMenu" hidden>
+          <div class="acct-mail"><span id="authUserEmail"></span></div>
+          <div id="userCountsBar" class="acct-count"><span class="uc-dot"></span><span class="uc-num" id="ucOnline">0</span> online · <span class="uc-num" id="ucTotal">0</span> registados</div>
+          <button type="button" id="authAccount">👤 A minha conta</button>
+          <button type="button" id="authLogout">⏻ Terminar sessão</button>
+          <button type="button" id="authDelete" class="danger">🗑 Eliminar conta</button>
+        </div>
+      </div>
 </div>
 <script src="dashboard/js/login.js"></script>
 <!-- ===== fim login ===== -->
@@ -274,16 +288,6 @@
         <span data-i18n="ajuda">❓ Ajuda</span>
       </button>
       <button class="config ghost" id="shutdownBtn" onclick="shutdownServer()" title="Desliga o servidor local por completo, de forma garantida (não depende do browser)" aria-label="Fechar tudo: desligar o servidor local por completo" style="padding: 6px 12px; font-size: 10px; border-color:#ff5d5d55; color:var(--red);"><span data-i18n="fechar_tudo">⏻ Fechar Tudo</span></button>
-      <div id="authUserPill" class="acct">
-        <button type="button" id="acctToggle" class="acct-av" aria-haspopup="true" aria-expanded="false" aria-controls="acctMenu"><span id="acctInitial">?</span><b id="acctOnline" title="online">0</b></button>
-        <div class="acct-menu" id="acctMenu" hidden>
-          <div class="acct-mail"><span id="authUserEmail"></span></div>
-          <div id="userCountsBar" class="acct-count"><span class="uc-dot"></span><span class="uc-num" id="ucOnline">0</span> online · <span class="uc-num" id="ucTotal">0</span> registados</div>
-          <button type="button" id="authAccount">👤 A minha conta</button>
-          <button type="button" id="authLogout">⏻ Terminar sessão</button>
-          <button type="button" id="authDelete" class="danger">🗑 Eliminar conta</button>
-        </div>
-      </div>
       <div class="status-pill" role="status" aria-live="polite"><div class="dot" id="statusDot" aria-hidden="true"></div><span id="statusText"><span data-i18n="sistema_pronto">Sistema pronto</span></span></div>
     </div>
   </header>
@@ -1559,6 +1563,7 @@
 <script src="dashboard/js/abas.js"></script>
 <script src="dashboard/js/assistente-estudo.js"></script>
 <script src="dashboard/js/assistente-janela.js"></script>
+<script src="dashboard/js/diff-ao-vivo.js"></script>
 <script src="dashboard/js/conta.js"></script>
 <script src="dashboard/js/cartoes-extra.js"></script>
 <script src="dashboard/js/cartoes-ferramentas.js"></script>
