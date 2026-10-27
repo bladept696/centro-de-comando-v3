@@ -117,7 +117,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.0.2"
+APP_VERSION = "4.0.5"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
@@ -208,6 +208,9 @@ _pending_close_lock = threading.Lock()
 
 
 def _do_close_now():
+    if remote_keepalive():
+        print("[api/close] acesso remoto ativo - o servidor continua a correr (sai pelo ícone da bandeja).", flush=True)
+        return
     print("[api/close] sem heartbeat novo dentro da janela de graça - a desligar.", flush=True)
     os._exit(0)
 
@@ -223,6 +226,8 @@ def cancel_pending_close():
 def watchdog_loop():
     while True:
         time.sleep(30)
+        if remote_keepalive():
+            continue
         ts = LAST_HEARTBEAT["ts"] or SERVER_START_TS
         idle_for = time.time() - ts
         if idle_for > SAFETY_NET_TIMEOUT_SECONDS:
@@ -1633,6 +1638,7 @@ DEFAULT_POWER_CONFIG = {
     "security": {
         "https_enabled": False,
         "restrict_proxy_to_known_ips": True,
+        "remote_keepalive": False,
     },
 }
 
@@ -3360,6 +3366,118 @@ def dashboard_url_scheme():
         return "https" if power_config.get("security", {}).get("https_enabled") else "http"
 
 
+# --- Acesso remoto seguro via Tailscale ------------------------------------
+# O Tailscale cria uma rede privada entre os teus dispositivos: o telemóvel liga-se ao PC sem abrir portas no router.
+# "tailscale serve" publica o painel em HTTPS só dentro dessa rede (nunca o Funnel, que seria a internet pública).
+# O login do Hash Commander continua obrigatório em todas as rotas /api/.
+def remote_keepalive():
+    with POWER_CONFIG_LOCK:
+        return bool(power_config.get("security", {}).get("remote_keepalive"))
+
+
+def find_tailscale():
+    import shutil
+    exe = shutil.which('tailscale')
+    if exe:
+        return exe
+    for var in ('ProgramFiles', 'ProgramFiles(x86)', 'LOCALAPPDATA'):
+        base = os.environ.get(var)
+        if base:
+            p = os.path.join(base, 'Tailscale', 'tailscale.exe')
+            if os.path.isfile(p):
+                return p
+    return None
+
+
+def _run_tailscale(args, timeout=8):
+    exe = find_tailscale()
+    if not exe:
+        return None, 'tailscale não instalado'
+    try:
+        r = subprocess.run([exe] + args, capture_output=True, text=True, timeout=timeout,
+                           creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0), encoding='utf-8', errors='replace')
+        return r, None
+    except subprocess.TimeoutExpired:
+        return None, 'timeout'
+    except Exception as e:
+        return None, str(e)
+
+
+def tailscale_status():
+    out = {"installed": False, "running": False, "state": "", "ips": [], "dns": "", "tailnet": "", "peers_online": 0,
+           "serve": False, "scheme": dashboard_url_scheme(), "port": PORT, "keepalive": remote_keepalive()}
+    if not find_tailscale():
+        return out
+    out["installed"] = True
+    r, err = _run_tailscale(['status', '--json'])
+    if r is None or not (r.stdout or '').strip():
+        out["error"] = err or ((r.stderr or '').strip() if r is not None else 'sem resposta')
+        return out
+    try:
+        st = json.loads(r.stdout)
+    except Exception:
+        out["error"] = 'resposta inesperada do tailscale'
+        return out
+    me = st.get("Self") or {}
+    out["state"] = st.get("BackendState", "")
+    out["running"] = out["state"] == "Running"
+    out["ips"] = list(st.get("TailscaleIPs") or me.get("TailscaleIPs") or [])
+    out["dns"] = (me.get("DNSName") or "").rstrip('.')
+    out["tailnet"] = (st.get("CurrentTailnet") or {}).get("Name", "")
+    out["peers_online"] = sum(1 for p in (st.get("Peer") or {}).values() if p.get("Online"))
+    r2, _ = _run_tailscale(['serve', 'status', '--json'], timeout=5)
+    if r2 is not None and r2.returncode == 0:
+        try:
+            web = (json.loads(r2.stdout or '{}') or {}).get("Web") or {}
+            out["serve"] = any(k.endswith(':443') for k in web)
+        except Exception:
+            pass
+    return out
+
+
+def tailscale_serve(enable):
+    # publica (ou retira) o painel em https://<nome>.ts.net — só dentro da tua rede Tailscale
+    exe = find_tailscale()
+    if not exe:
+        return {"ok": False, "error": "tailscale não instalado"}
+    if not enable:
+        args = ['serve', '--https=443', 'off']
+    else:
+        target = ('https+insecure://127.0.0.1:%d' if dashboard_url_scheme() == 'https' else 'http://127.0.0.1:%d') % PORT
+        args = ['serve', '--bg', '--https=443', target]
+    # lê a saída à medida que chega: se o Serve não estiver ativado na conta, o tailscale imprime o link e fica à espera
+    try:
+        p = subprocess.Popen([exe] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8',
+                             errors='replace', creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+    chunks = []
+
+    def _read():
+        try:
+            for line in p.stdout:
+                chunks.append(line)
+        except Exception:
+            pass
+    threading.Thread(target=_read, daemon=True).start()
+    end = time.time() + 20
+    url = ''
+    while time.time() < end and p.poll() is None:
+        m = re.search(r'https://login\.tailscale\.com/\S+', ''.join(chunks))
+        if m:
+            url = m.group(0)
+            break
+        time.sleep(0.3)
+    text = ''.join(chunks).strip()
+    if p.poll() is None:
+        try:
+            p.kill()
+        except Exception:
+            pass
+        return {"ok": False, "error": "" if url else text[-400:], "enable_url": url, "hint": "" if url else "timeout"}
+    return {"ok": p.returncode == 0, "error": '' if p.returncode == 0 else text[-400:], "enable_url": ""}
+
+
 def probe_ip(ip):
     for path in ('/api/system/info', '/api/system'):
         try:
@@ -3562,7 +3680,18 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             ip = self.client_address[0]
         except Exception:
             return False
+        # o "tailscale serve" liga a partir de 127.0.0.1: os pedidos que ele reencaminha trazem estes cabeçalhos e NÃO são locais
+        if self.headers.get('Tailscale-User-Login') or self.headers.get('Tailscale-Funnel-Request'):
+            return False
         return (ip in ('::1', '::ffff:127.0.0.1') or ip.startswith('127.')) and not self.headers.get('X-Forwarded-For')
+
+    def _send_json(self, obj, code=200):
+        body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _require_auth(self, path):
         if not auth_enabled() or not path.startswith('/api/') or path in AUTH_EXEMPT_PATHS:
@@ -4030,6 +4159,12 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(counts).encode('utf-8'))
+            return
+
+        if path == '/api/remote/status':
+            st = tailscale_status()
+            st["local"] = self._is_local_request()
+            self._send_json(st)
             return
 
         if path == '/api/devices':
@@ -4584,6 +4719,23 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
             return
 
+        if path in ('/api/remote/serve', '/api/remote/keepalive'):
+            # mexer na exposição do servidor só é permitido a partir deste PC (e com login)
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "só é possível a partir do próprio PC"}, 403)
+                return
+            if path == '/api/remote/serve':
+                self._send_json(tailscale_serve(bool(body.get("enable"))))
+                return
+            with POWER_CONFIG_LOCK:
+                new_cfg = copy.deepcopy(power_config)
+                new_cfg.setdefault("security", {})["remote_keepalive"] = bool(body.get("enable"))
+                saved = save_power_config(new_cfg)
+                if saved:
+                    power_config = new_cfg
+            self._send_json({"ok": saved, "keepalive": bool(body.get("enable")) if saved else remote_keepalive()}, 200 if saved else 500)
+            return
+
         if path == '/api/security/config':
             with POWER_CONFIG_LOCK:
                 existing = copy.deepcopy(power_config.get("security", {}) or {})
@@ -4598,6 +4750,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             new_security = {
                 "https_enabled": https_enabled and cert_ok,
                 "restrict_proxy_to_known_ips": restrict,
+                "remote_keepalive": bool(existing.get("remote_keepalive", False)),
             }
 
             with POWER_CONFIG_LOCK:
@@ -4764,8 +4917,28 @@ def _load_tray_image():
     return img
 
 
+def abrir_dashboard():
+    """Abre a dashboard numa janela própria do Chrome (sem extensões, com o Modo Desempenho desligado e um perfil só para ela).
+    Se o Chrome não estiver instalado, usa o navegador predefinido como antes."""
+    url = f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html'
+    try:
+        candidatos = [os.path.join(os.environ.get(v, ''), *rel) for v, rel in (
+            ('ProgramFiles', ('Google', 'Chrome', 'Application', 'chrome.exe')),
+            ('ProgramFiles(x86)', ('Google', 'Chrome', 'Application', 'chrome.exe')),
+            ('LOCALAPPDATA', ('Google', 'Chrome', 'Application', 'chrome.exe')))]
+        chrome = next((c for c in candidatos if c and os.path.isfile(c)), None)
+        if chrome:
+            perfil = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'CentroDeComando', 'perfil-leve')
+            subprocess.Popen([chrome, f'--user-data-dir={perfil}', '--disable-extensions', '--no-first-run',
+                              '--no-default-browser-check', '--allow-insecure-localhost', f'--app={url}?leve=0'])
+            return
+    except Exception as e:
+        print(f"[aviso] não consegui abrir o Chrome ({e}); a usar o navegador predefinido.", flush=True)
+    webbrowser.open(url)
+
+
 def _tray_abrir_painel(icon=None, item=None):
-    webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
+    abrir_dashboard()
 
 
 def _tray_sair(icon=None, item=None):
@@ -4864,14 +5037,14 @@ def main():
 
         start_tray_icon()
 
-        webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
+        abrir_dashboard()
 
         while True:
             time.sleep(3600)
     else:
         print(f"[aviso] a porta {PORT} já está ocupada por OUTRA instância da app (provavelmente a antiga, na bandeja/.exe). "
               "Este app.py NÃO arrancou - o browser vai mostrar a instância antiga. Fecha-a e volta a correr.", flush=True)
-        webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
+        abrir_dashboard()
 
 
 if __name__ == '__main__':
