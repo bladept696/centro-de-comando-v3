@@ -1,15 +1,21 @@
 /* ===== Gráficos 3D (Three.js carregado a pedido; SVG como alternativa) ===== */
 var HC3D = { charts: {}, ready: false, loading: null, failed: false, raf: 0, last: 0, payload: {}, pr: 1.5, gap: 33, q: 2, ema: 40, good: 0 };
+// Quem pede o Three.js (gráficos, rosca, globo do tempo) cada um cria o seu contexto WebGL e a sua cena. Se todos arrancarem no mesmo
+// instante quando o script chega, a dashboard congela alguns segundos (medido: 2,6 s). Por isso cada pedido recebe a sua vez,
+// com 300 ms de intervalo, e o navegador respira entre uma cena e a seguinte.
 function hc3dLoad(){
   if(window.THREE){ HC3D.ready = true; return Promise.resolve(); }
-  if(HC3D.loading) return HC3D.loading;
-  return HC3D.loading = new Promise((res, rej) => {
-    const sc = document.createElement('script');
-    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-    sc.onload = () => { HC3D.ready = true; res(); };
-    sc.onerror = () => { HC3D.failed = true; rej(new Error('three')); };
-    document.head.appendChild(sc);
-  });
+  if(!HC3D.loading){
+    HC3D.loading = new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+      sc.onload = () => { HC3D.ready = true; res(); };
+      sc.onerror = () => { HC3D.failed = true; rej(new Error('three')); };
+      document.head.appendChild(sc);
+    });
+  }
+  const slot = Math.min(HC3D.slot = (HC3D.slot || 0) + 1, 5) - 1;
+  return HC3D.loading.then(() => new Promise(r => setTimeout(r, slot * 300)));
 }
 function hc3dHalo(color){
   const cv = document.createElement('canvas'); cv.width = cv.height = 64;
