@@ -128,7 +128,7 @@
   body.perf-mode .block-card:first-child::after, body.perf-mode .dot{ animation:none; }
   #perfBtn[aria-pressed="true"]{ border-color:var(--green); color:var(--green); }
   /* === Refrigeração líquida + VDroop === */
-  .cool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin:12px 0;}
+  .cool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr));gap:12px;margin:12px 0;}
   .cool-stat{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;}
   .cool-stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
   .cool-stat .val{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--cyan);}
@@ -262,7 +262,7 @@
   .gp-select-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
   .gp-select-row select, .gp-select-row input{background:var(--panel-2);border:1px solid var(--line-strong);color:var(--text);border-radius:8px;padding:7px 10px;font-size:12.5px;}
   .gp-select-row input{width:280px;}
-  .gp-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:10px 0;}
+  .gp-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr));gap:10px;margin:10px 0;}
   .gp-stat{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;}
   .gp-stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
   .gp-stat .val{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;color:var(--cyan);}

@@ -27,7 +27,8 @@ const CRITICAL_ALARM_INTERVAL_MS = 1200; // intervalo entre "bips" do alarme son
 // em HTTP normal como no modo HTTPS opcional (certificado autoassinado) -
 // sem isto, uma página aberta em https:// teria estes pedidos bloqueados
 // pelo browser como "conteúdo misto".
-const API_BASE = `${location.protocol}//${location.hostname}:8765`;
+// atrás do HTTPS do Tailscale (nome.ts.net, porta 443) a API está na mesma origem, sem :8765
+const API_BASE = /\.ts\.net$/.test(location.hostname) ? location.origin : `${location.protocol}//${location.hostname}:8765`;
 
 let devices = [];
 let appVersion = '';

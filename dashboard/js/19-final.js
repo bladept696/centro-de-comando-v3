@@ -114,7 +114,8 @@ initQuickActions();
   // já aqui (antes de sequer abrir) para nunca voltar a insistir sozinho
   // depois desta vez - continua sempre disponível à mão pelo botão normal.
   try {
-    if(devices.length === 0 && !localStorage.getItem('nerdqaxe:onboarding_scan_done')){
+    // só no próprio PC: a pesquisa de rede de quem abre o painel de longe (telemóvel) não faz sentido
+    if(devices.length === 0 && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) && !localStorage.getItem('nerdqaxe:onboarding_scan_done')){
       localStorage.setItem('nerdqaxe:onboarding_scan_done', '1');
       setTimeout(() => openScanModal(true), 900);
     }

@@ -14,7 +14,13 @@ function mcComStart(){
   if(mcCom.started || !fb || !fb.db) return;
   mcCom.started = true; mcCom.db = fb.db; mcCom.uid = fb.uid; mcCom.nick = fb.nick;
   const db = mcCom.db;
-  db.ref('chat/community').on('value', snap => { mcCom.list = snap.val() || {}; if(typeof mcMapUpdate === 'function') mcMapUpdate(mcCom.list); mcComRender(); }, () => {});
+  db.ref('chat/community').on('value', snap => {
+    mcCom.list = snap.val() || {};
+    // outra janela com a mesma conta e sem máquinas pode ter escrito zeros por cima: repõe a medição certa (no máximo de 5 em 5 s)
+    const own = mcCom.list[mcCom.uid];
+    if(own && mcComShare() && Number(own.n) === 0 && mcComMine().n > 0 && Date.now() - (mcCom.healAt || 0) > 5000){ mcCom.healAt = Date.now(); setTimeout(mcComPublish, 500); }
+    if(typeof mcMapUpdate === 'function') mcMapUpdate(mcCom.list); mcComRender();
+  }, () => {});
   const feed = (kind, celebrate) => {
     const q = db.ref('chat/' + kind).orderByChild('ts').limitToLast(12);
     q.on('child_added', snap => {
@@ -48,13 +54,26 @@ function mcComPublish(){
   if(!mcCom.db || !mcCom.uid) return;
   const ref = mcCom.db.ref('chat/community/' + mcCom.uid);
   if(!mcComShare()){ ref.remove().catch(() => {}); return; }
-  const m = mcComMine();
+  let m = mcComMine();
+  // sem máquinas carregadas: não publica (o valor anterior fica e sai sozinho se a página fechar)
+  if(!(devices || []).length) return;
+  // uma falha de leitura passageira não pode pôr o hashrate a zero: durante 3 min mantém a última medição boa
+  if(m.n > 0 && m.ghs > 0) mcCom.lastGood = { m, t: Date.now() };
+  else if(mcCom.lastGood && Date.now() - mcCom.lastGood.t < 180000) m = mcCom.lastGood.m;
   // ainda sem nenhuma leitura das máquinas (a página acabou de abrir): não publica um 0 que depois fica até ao minuto seguinte
   if((devices || []).length && !(devices || []).some(d => readings[d.id])){ clearTimeout(mcCom.retry); mcCom.retry = setTimeout(mcComPublish, 3000); return; }
   ref.onDisconnect().remove();
   const loc = typeof mcMapMyLoc === 'function' ? mcMapMyLoc(mcCom.uid) : null, extra = loc ? { cc: loc.cc, lat: loc.lat, lon: loc.lon } : {};
-  ref.set(Object.assign({ nick: mcCom.nick, ghs: Math.round(m.ghs * 100) / 100, n: m.n, best: m.best, sh: m.sh, ts: firebase.database.ServerValue.TIMESTAMP }, extra)).catch(() => { mcCom.denied = true; mcComRender(); });
+  const payload = Object.assign({ nick: mcCom.nick, ghs: Math.round(m.ghs * 100) / 100, n: m.n, best: m.best, sh: m.sh, ts: firebase.database.ServerValue.TIMESTAMP }, extra);
+  mcCom.lastPub = { t: Date.now(), ghs: payload.ghs, n: payload.n, ok: null };
+  ref.set(payload).then(() => { mcCom.lastPub.ok = true; }).catch(e => {
+    mcCom.denied = true; mcCom.lastPub.ok = false; mcCom.lastPub.err = (e && (e.code || e.message)) || String(e);
+    if(Date.now() - (mcCom.errAt || 0) > 600000){ mcCom.errAt = Date.now(); try { logEvent('Comunidade: a publicação foi recusada (' + mcCom.lastPub.err + ')', 'error', 'diagnóstico'); } catch(x) {} }
+    mcComRender();
+  });
 }
+// no console: hcComDiag() mostra o que esta janela publica, o que o Firebase tem para a tua conta e se a publicação foi aceite
+window.hcComDiag = () => ({ uid: mcCom.uid, partilha: mcComShare(), aPublicar: mcComMine(), ultimaPublicacao: mcCom.lastPub || null, noFirebase: mcCom.list[mcCom.uid] || null, recusada: !!mcCom.denied, maquinas: (devices || []).length });
 function mcComSetShare(on){
   try { localStorage.setItem(MC_COM_KEY, on ? '1' : '0'); } catch(e) {}
   mcCom.denied = false; mcComPublish();

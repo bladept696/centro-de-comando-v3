@@ -94,11 +94,13 @@
 
   .body-grid{
     display:grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 280px minmax(0,1fr);
     gap:16px;
     padding:16px;
   }
-  @media(max-width:900px){ .body-grid{grid-template-columns:1fr;} }
+  .body-grid > *{min-width:0;}
+  /* minmax(0,1fr): um filho largo (faixa de blocos, tabelas) não alarga a coluna para além do ecrã do telemóvel */
+  @media(max-width:900px){ .body-grid{grid-template-columns:minmax(0,1fr);} }
 
   .panel{
     background:var(--panel);

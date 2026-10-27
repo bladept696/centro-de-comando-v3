@@ -2,12 +2,16 @@
 (function(){
   const LS_KEY = 'cc_auth_session';
   const nativeFetch = window.fetch.bind(window);
-  const apiOrigin = `${location.protocol}//${location.hostname}:8765`;
+  const apiOrigin = /\.ts\.net$/.test(location.hostname) ? location.origin : `${location.protocol}//${location.hostname}:8765`;
   const BYPASS = ['/api/auth/config', '/api/heartbeat'];
   let cfg = { enabled: false, apiKey: '' };
   let session = null;               // { refreshToken, idToken, expiresAt, email }
   let mode = 'login';               // login | signup | reset
   let readyResolve; const authReady = new Promise(r => readyResolve = r);
+  // sabe-se se o login está ativo só depois de /api/auth/config responder; os pedidos à API esperam por isso
+  // (ligações lentas, como o telemóvel, mandavam o primeiro pedido sem token e a lista de máquinas ficava vazia)
+  let cfgResolve; const cfgReady = new Promise(r => cfgResolve = r);
+  setTimeout(() => cfgResolve(), 20000);   // servidor sem resposta: não deixa os pedidos à espera para sempre
 
   const $ = id => document.getElementById(id);
   const gate = $('authGate'), msg = $('agMsg');
@@ -306,9 +310,9 @@
   // fetch embrulhado: espera pelo login e junta o token aos pedidos à API local
   window.fetch = async function(input, init){
     const url = typeof input === 'string' ? input : (input && input.url) || '';
-    if (!cfg.enabled || !url.startsWith(apiOrigin + '/api/') || BYPASS.some(p => url.startsWith(apiOrigin + p))) {
-      return nativeFetch(input, init);
-    }
+    if (!url.startsWith(apiOrigin + '/api/') || BYPASS.some(p => url.startsWith(apiOrigin + p))) return nativeFetch(input, init);
+    await cfgReady;
+    if (!cfg.enabled) return nativeFetch(input, init);
     await authReady;
     const send = async () => {
       const token = await getToken();
@@ -348,10 +352,19 @@
   gate.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 
   (async function init(){
-    try {
-      const r = await nativeFetch(apiOrigin + '/api/auth/config');
-      cfg = await r.json();
-    } catch(e){ cfg = { enabled: false }; }
+    // um único pedido falhado (ligação lenta ao abrir de fora do PC) NÃO pode significar "login desligado":
+    // sem token todos os pedidos seguintes davam 401. Repete antes de desistir.
+    let got = null, lastErr = '';
+    for (let i = 0; i < 6 && !got; i++) {
+      try {
+        const r = await nativeFetch(apiOrigin + '/api/auth/config', { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        got = await r.json();
+      } catch(e){ lastErr = String((e && e.message) || e); if (i < 5) await new Promise(r => setTimeout(r, 1200)); }
+    }
+    if (!got && typeof hcRemoteDbg === 'function') hcRemoteDbg('Configuração de login indisponível: ' + lastErr);
+    cfg = got || { enabled: false };
+    cfgResolve();
     if (!cfg.enabled) { readyResolve(); return; }
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){}

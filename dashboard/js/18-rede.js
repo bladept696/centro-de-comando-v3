@@ -49,7 +49,7 @@ async function runNetworkScan(){
     // URL absoluto (API_BASE): só assim o fetch embrulhado junta o token de login
     const url = customSubnet ? `${API_BASE}/api/scan?subnet=${encodeURIComponent(customSubnet)}` : `${API_BASE}/api/scan`;
     const resp = await fetch(url);
-    if(!resp.ok) throw new Error('scan failed');
+    if(!resp.ok) throw new Error('scan failed (HTTP ' + resp.status + ')');
     const data = await resp.json();
     // Preenche o campo com a sub-rede que foi de facto usada (útil na
     // primeira pesquisa, quando o campo ainda estava vazio e o backend
@@ -59,6 +59,7 @@ async function runNetworkScan(){
   } catch(e){
     body.innerHTML = `<div class="scan-error" data-i18n="erro_ao_procurar_maquinas_na_rede">Não foi possível concluir o scan da rede. Confirma que o servidor local está a correr.</div>`;
     if(typeof applyTranslations === 'function') applyTranslations();
+    const det = document.createElement('small'); det.className = 'scan-error'; det.textContent = String((e && e.message) || e); body.appendChild(det);
   } finally {
     scanInFlight = false;
     $('scanBtn').disabled = false;

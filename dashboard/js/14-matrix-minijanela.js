@@ -619,11 +619,19 @@ function loadDevicesFromLocalStorage(){
 // automaticamente o que já estava no localStorage deste browser.
 async function loadDevices(){
   const localDevices = loadDevicesFromLocalStorage();
-  let ok = false;
+  let ok = false, done = false;
+  // se ao fim de 8 s o pedido ainda não terminou, diz em que ponto está (login? configuração?)
+  setTimeout(() => {
+    if(done || typeof hcRemoteDbg !== 'function') return;
+    let s = null, c = null; try { s = window.getCcSession && window.getCcSession(); c = window.getCcCfg && window.getCcCfg(); } catch(e) {}
+    hcRemoteDbg('Lista de máquinas ainda à espera: login ' + (c && c.enabled ? 'ativo' : 'desligado/por saber') + ', sessão ' + (s ? 'sim' : 'não') + ', token ' + (s && s.idToken ? 'sim' : 'não'));
+  }, 8000);
   // uma resposta de erro (login ainda a renovar, servidor a arrancar) não é "sem máquinas": tenta de novo antes de desistir
+  let why = '';
   for(let i = 0; i < 4 && !ok; i++){
     try {
       const res = await fetch(`${API_BASE}/api/devices`);
+      why = 'HTTP ' + res.status;
       const data = await res.json();
       if(res.ok && Array.isArray(data.devices)){
         const serverDevices = data.devices;
@@ -635,9 +643,12 @@ async function loadDevices(){
         }
         ok = true;
       }
-    } catch(e) {}
+    } catch(e) { why = String(e && e.message || e); }
     if(!ok && i < 3) await new Promise(r => setTimeout(r, 1500));
   }
+  done = true;
+  if(!ok && typeof hcRemoteDbg === 'function') hcRemoteDbg('Lista de máquinas: FALHOU ' + why + ' em ' + API_BASE);
+  else { const bar = document.getElementById('hcDbg'); if(bar && /ainda à espera/.test(bar.textContent)) bar.remove(); }
   if(!ok){
     // servidor indisponível - usa o que houver localmente como reserva e continua a tentar em segundo plano
     devices = localDevices;

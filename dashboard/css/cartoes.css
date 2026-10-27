@@ -18,8 +18,8 @@
   .mc-views button+button{border-left:1px solid var(--line-strong);}
   .mc-views button.active{color:var(--cyan);background:color-mix(in srgb,var(--cyan) 14%,var(--deep));}
 
-  .mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;align-items:start;}
-  .mc-grid.compact{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;}
+  .mc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(310px,100%),1fr));gap:14px;align-items:start;}
+  .mc-grid.compact{grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:10px;}
   .mc-hint{padding:26px 14px;text-align:center;font-size:12px;color:var(--muted);border:1px dashed var(--line-strong);border-radius:12px;}
   .mc-card{--mc-c:var(--muted);position:relative;display:flex;flex-direction:column;gap:10px;padding:14px 14px 12px;border-radius:14px;cursor:pointer;
     background:linear-gradient(160deg,var(--panel-2),var(--deep));border:1px solid var(--line);box-shadow:0 10px 26px -16px #000c;overflow:hidden;
@@ -188,7 +188,7 @@
   @media (prefers-reduced-motion: reduce){.mc-fx .mc-card,.mc-fx .mc-spark .live{animation:none !important;transition:none !important;}}
 
   /* ---------- Resumo, grupos, seleção, histórico e reações ---------- */
-  .mc-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+  .mc-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:10px;margin-bottom:14px;}
   .mc-summary[hidden]{display:none;}
   .mc-tile{background:linear-gradient(160deg,var(--panel-2),var(--deep));border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0;box-shadow:inset 0 1px 0 #ffffff0d;}
   .mc-tile span{display:block;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted-2);}
@@ -370,7 +370,7 @@
   .mc-heat-bar,.mc-plan-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;font-size:11px;color:var(--muted);}
   .mc-heat-bar div{display:flex;gap:4px;} .mc-heat-bar button,.mc-plan-bar button{font:inherit;font-size:11px;font-weight:700;color:var(--muted);background:var(--deep);border:1px solid var(--line-strong);border-radius:7px;padding:4px 10px;cursor:pointer;}
   .mc-heat-bar button.on{color:var(--cyan);border-color:var(--cyan);} .mc-plan-bar button:hover{color:var(--cyan);border-color:var(--cyan);}
-  .mc-heat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;}
+  .mc-heat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(112px,100%),1fr));gap:8px;}
   .mc-hcell{display:flex;flex-direction:column;justify-content:space-between;gap:4px;min-height:74px;padding:9px 10px;border-radius:10px;cursor:pointer;color:#fff;
     background:linear-gradient(160deg,var(--hc),color-mix(in srgb,var(--hc) 62%,#000));box-shadow:inset 0 1px 0 #ffffff33,0 6px 14px -8px #000;transition:transform .2s,box-shadow .2s;}
   .mc-hcell:hover{transform:translateY(-2px) scale(1.03);} .mc-hcell.is-sel{outline:2px solid var(--cyan);outline-offset:2px;}

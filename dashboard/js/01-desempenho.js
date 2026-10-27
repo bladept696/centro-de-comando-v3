@@ -32,10 +32,14 @@ function togglePerfMode(){
   try { localStorage.setItem('hc_perf_mode', next ? 'on' : 'off'); } catch(e){}
   hcApplyPerf(next);
 }
+// telemóveis e ecrãs de toque arrancam já em modo leve (sem esperar pelos 3 s de medição, durante os quais o navegador chega a bloquear)
+try {
+  if(hcPerfPref() === 'auto' && ((window.matchMedia && matchMedia('(pointer:coarse)').matches) || Math.min(screen.width, screen.height) <= 820)) hcPerfMode = true;
+} catch(e){}
 (function hcInitPerf(){
   function init(){
     const pref = hcPerfPref();
-    if(pref === 'on') hcApplyPerf(true);
+    if(pref === 'on' || (pref === 'auto' && hcPerfMode)) hcApplyPerf(true);
     if(pref !== 'auto') return;
     setTimeout(() => {
       let frames = 0, start = 0;
