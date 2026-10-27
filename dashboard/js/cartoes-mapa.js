@@ -31,12 +31,21 @@ function mcMapCountry(){
   for(const l of (navigator.languages || [navigator.language || ''])){ const m = String(l).match(/[-_]([A-Za-z]{2})\b/); if(m && MC_COUNTRIES[m[1].toUpperCase()]) return m[1].toUpperCase(); }
   return '';
 }
-// ponto publicado: o centro do país com um desvio fixo de até 2,5 graus, arredondado ao grau
+// ponto publicado: o centro do país com um desvio fixo pequeno, arredondado ao grau. O ponto tem de cair em terra
+// (um país pequeno como Portugal com 2,5 graus de desvio ia parar ao mar): experimenta desvios cada vez maiores e fica com o primeiro em terra.
+function mcMapOnLand(lat, lon){
+  const r = Math.floor((80 - lat) / 2), c = Math.floor((lon + 180) / 2);
+  return r >= 0 && r < MC_WORLD_H && c >= 0 && c < MC_WORLD_W && mcMapLand()[r * MC_WORLD_W + c] === 1;
+}
 function mcMapMyLoc(uid){
   const cc = mcMapCountry();
   if(!cc) return null;
-  const h = mcHash(uid || 'x'), c = MC_COUNTRIES[cc];
-  return { cc, lat: Math.round(c[0] + ((h % 1000) / 1000 - .5) * 5), lon: Math.round(c[1] + (((h >> 10) % 1000) / 1000 - .5) * 5) };
+  const h = mcHash(uid || 'x'), c = MC_COUNTRIES[cc], fx = ((h % 1000) / 1000 - .5), fy = (((h >> 10) % 1000) / 1000 - .5);
+  for(const a of [3, 2, 1, 0]){
+    const lat = Math.round(c[0] + fx * a), lon = Math.round(c[1] + fy * a);
+    if(mcMapOnLand(lat, lon)) return { cc, lat, lon };
+  }
+  return { cc, lat: Math.round(c[0]), lon: Math.round(c[1]) };
 }
 function mcMapCountryName(cc){ try { return new Intl.DisplayNames([currentLang], { type: 'region' }).of(cc) || cc; } catch(e) { return cc; } }
 function mcMapSetCountry(cc){
@@ -108,18 +117,10 @@ function mcMapDraw(dt){
   if(!W || !H) return;
   if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#06141f'); bg.addColorStop(1, '#040c13');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  // continentes em pontos; o lado da noite fica mais escuro (posição do sol pela hora UTC)
-  const land = mcMapLand(), now = new Date(), utcH = now.getUTCHours() + now.getUTCMinutes() / 60;
+  // continentes em vetor com dia/noite (cartoes-mapa-terra.js); a posição do sol vem da hora UTC
+  const now = new Date(), utcH = now.getUTCHours() + now.getUTCMinutes() / 60;
   const doy = Math.floor((now - Date.UTC(now.getUTCFullYear(), 0, 0)) / 864e5), dec = 23.44 * Math.PI / 180 * Math.sin(2 * Math.PI * (doy - 80) / 365), sunLon = -(utcH - 12) * 15;
-  const cw = W / MC_WORLD_W, ch = H / MC_WORLD_H, rad = Math.max(.7, Math.min(cw, ch) * .34);
-  for(let r = 0; r < MC_WORLD_H; r++) for(let c = 0; c < MC_WORLD_W; c++){
-    if(!land[r * MC_WORLD_W + c]) continue;
-    const lat = (80 - (r + .5) * 2) * Math.PI / 180, lon = (c + .5) * 2 - 180, cz = Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos((lon - sunLon) * Math.PI / 180);
-    ctx.fillStyle = cz > 0 ? 'rgba(130,185,205,' + (.32 + cz * .3).toFixed(2) + ')' : 'rgba(70,110,140,.2)';
-    ctx.beginPath(); ctx.arc((c + .5) * cw, (r + .5) * ch, rad, 0, 7); ctx.fill();
-  }
+  ctx.drawImage(mcMapBase(W, H, dpr, sunLon, dec), 0, 0, W, H);
   const ents = mcMapEntries(), pos = {};
   mcMap.pts = ents.map(({ uid, e }) => { const [x, y] = mcMapXY(e.lat, e.lon, W, H); pos[uid] = [x, y]; return { uid, e, x, y }; });
   // ondas das shares

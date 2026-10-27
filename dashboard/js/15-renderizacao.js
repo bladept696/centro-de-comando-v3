@@ -63,7 +63,15 @@ async function pollOneDevice(dev){
     // quando a máquina está mesmo a falhar em todos os métodos.
     const timeoutId = setTimeout(() => controller.abort(), 5500);
 
-    const res = await fetch(`${API_BASE}/api/proxy?ip=${encodeURIComponent(dev.ip)}`, { signal: controller.signal });
+    // Se o pedido falhar por rede/tempo (e não porque a máquina respondeu com erro), tenta uma vez mais logo a seguir:
+    // um soluço de ligação não deve contar como falha da máquina.
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/api/proxy?ip=${encodeURIComponent(dev.ip)}`, { signal: controller.signal });
+    } catch(netErr) {
+      await new Promise(r => setTimeout(r, 400));
+      res = await fetch(`${API_BASE}/api/proxy?ip=${encodeURIComponent(dev.ip)}`, { signal: AbortSignal.timeout ? AbortSignal.timeout(5500) : undefined });
+    }
     clearTimeout(timeoutId);
 
     if(!res.ok) {
@@ -210,13 +218,13 @@ async function pollOneDevice(dev){
     evaluateThermalProtection(dev, reading);
 
   } catch(e) {
-    // Só marca offline ao fim de 2 falhas de poll seguidas (~10s). Um
+    // Só marca offline ao fim de 3 falhas de poll seguidas (~15s). Um
     // único timeout/blip de rede não é motivo suficiente - isso é o que
     // fazia máquinas saudáveis mas um pouco mais lentas a responder
     // aparecerem constantemente como "offline".
     const fails = (consecutiveFails[dev.id] || 0) + 1;
     consecutiveFails[dev.id] = fails;
-    if(fails < 2) return;
+    if(fails < 3) return;
 
     const wasOnline = readings[dev.id]?.online;
     readings[dev.id] = { ...(readings[dev.id] || {}), online: false, portalMode: !!e.portalMode };

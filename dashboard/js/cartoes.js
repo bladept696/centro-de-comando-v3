@@ -417,7 +417,7 @@ function mcTrackStates(list, states){
   list.forEach(dev => {
     const id = dev.id, st = states[id], was = mc.prev[id], r = readings[id];
     if(r && r.online) delete mc.since[id]; else if(r && !mc.since[id]) mc.since[id] = Date.now();
-    if(was && was !== st){
+    if(was && was !== 'idle' && was !== st){   // de 'idle' (ainda sem leitura, ao abrir a página) para 'ok' não é recuperar de nada
       if(typeof mcWave === 'function') mcWave(id, st);
       const name = dev.name || dev.ip;
       if(st === 'hot') mcLogEvent(mct('mc_l_alarm', name, r && r.temp ? ' (' + Number(r.temp).toFixed(0) + ' °C)' : ''), 'bad', id);

@@ -29,7 +29,7 @@ function mcComStart(){
   };
   feed('blocks', true); feed('records', false);
   mcComPublish();
-  clearInterval(mcCom.timer); mcCom.timer = setInterval(mcComPublish, 60000);
+  clearInterval(mcCom.timer); mcCom.timer = setInterval(mcComPublish, 20000);
 }
 document.addEventListener('hc-chat-ready', mcComStart);
 setTimeout(mcComStart, 4000); setInterval(mcComStart, 8000);
@@ -49,6 +49,8 @@ function mcComPublish(){
   const ref = mcCom.db.ref('chat/community/' + mcCom.uid);
   if(!mcComShare()){ ref.remove().catch(() => {}); return; }
   const m = mcComMine();
+  // ainda sem nenhuma leitura das máquinas (a página acabou de abrir): não publica um 0 que depois fica até ao minuto seguinte
+  if((devices || []).length && !(devices || []).some(d => readings[d.id])){ clearTimeout(mcCom.retry); mcCom.retry = setTimeout(mcComPublish, 3000); return; }
   ref.onDisconnect().remove();
   const loc = typeof mcMapMyLoc === 'function' ? mcMapMyLoc(mcCom.uid) : null, extra = loc ? { cc: loc.cc, lat: loc.lat, lon: loc.lon } : {};
   ref.set(Object.assign({ nick: mcCom.nick, ghs: Math.round(m.ghs * 100) / 100, n: m.n, best: m.best, sh: m.sh, ts: firebase.database.ServerValue.TIMESTAMP }, extra)).catch(() => { mcCom.denied = true; mcComRender(); });
