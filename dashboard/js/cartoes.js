@@ -46,9 +46,17 @@ function mcStuckWatch(list){
     const a = mc.acc[dev.id] || (mc.acc[dev.id] = { v: null, t: now, z: null });
     const acc = Number(r.accepted);
     const hash = Number(r.hashrate_raw != null ? r.hashrate_raw : r.hashrate);
-    if(isFinite(acc)){ if(a.v == null || acc !== a.v){ a.v = acc; a.t = now; } }   // contador mudou (ou voltou a zero num reinício)
+    if(isFinite(acc)){
+      if(a.v == null || acc !== a.v){
+        if(a.v != null && acc > a.v){ (a.gaps = a.gaps || []).push((now - a.t) / 60000); if(a.gaps.length > 8) a.gaps.shift(); }   // minutos entre partilhas aceites
+        a.v = acc; a.t = now;
+      }   // contador mudou (ou voltou a zero num reinício)
+    }
     if(isFinite(hash) && hash <= 0){ if(a.z == null) a.z = now; } else a.z = null;
-    const SM = mc.th.stuckMin, boot = Number(r.uptime) > 0 && Number(r.uptime) < SM * 60;       // acabou de arrancar: ainda é cedo
+    // máquinas lentas com dificuldade alta ficam normalmente mais de 10 min sem partilha: o limite sobe para 4x o intervalo esperado
+    // (dificuldade x 2^32 / hashrate) ou 2,5x o maior intervalo visto, para não avisar "atenção" a cada partilha que demora
+    const diff = Number(r.poolDifficulty || r.stratumDifficulty), expMin = diff > 0 && hash > 0 ? diff * 4294967296 / hash / 60 : 0;
+    const SM = Math.max(mc.th.stuckMin, expMin * 4, (a.gaps && a.gaps.length ? Math.max(...a.gaps) : 0) * 2.5), boot = Number(r.uptime) > 0 && Number(r.uptime) < SM * 60;       // acabou de arrancar: ainda é cedo
     const idleMin = (now - a.t) / 60000, zeroMin = a.z ? (now - a.z) / 60000 : 0;
     if(!boot && isFinite(acc) && idleMin >= SM) r.mcStuck = { kind: 'shares', min: Math.round(idleMin) };
     else if(zeroMin >= MC_ZERO_MIN) r.mcStuck = { kind: 'zero', min: Math.round(zeroMin) };

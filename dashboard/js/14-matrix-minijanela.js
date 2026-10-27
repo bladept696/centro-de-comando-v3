@@ -619,20 +619,41 @@ function loadDevicesFromLocalStorage(){
 // automaticamente o que já estava no localStorage deste browser.
 async function loadDevices(){
   const localDevices = loadDevicesFromLocalStorage();
-  try {
-    const res = await fetch(`${API_BASE}/api/devices`);
-    const data = await res.json();
-    const serverDevices = Array.isArray(data.devices) ? data.devices : [];
-
-    if(serverDevices.length === 0 && localDevices.length > 0) {
-      devices = localDevices;
-      await saveDevices(); // migra para o servidor
-    } else {
-      devices = serverDevices;
-    }
-  } catch(e) {
-    // servidor indisponível - usa o que houver localmente como reserva
+  let ok = false;
+  // uma resposta de erro (login ainda a renovar, servidor a arrancar) não é "sem máquinas": tenta de novo antes de desistir
+  for(let i = 0; i < 4 && !ok; i++){
+    try {
+      const res = await fetch(`${API_BASE}/api/devices`);
+      const data = await res.json();
+      if(res.ok && Array.isArray(data.devices)){
+        const serverDevices = data.devices;
+        if(serverDevices.length === 0 && localDevices.length > 0) {
+          devices = localDevices;
+          await saveDevices(); // migra para o servidor
+        } else {
+          devices = serverDevices;
+        }
+        ok = true;
+      }
+    } catch(e) {}
+    if(!ok && i < 3) await new Promise(r => setTimeout(r, 1500));
+  }
+  if(!ok){
+    // servidor indisponível - usa o que houver localmente como reserva e continua a tentar em segundo plano
     devices = localDevices;
+    const bg = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/devices`);
+        const data = await res.json();
+        if(res.ok && Array.isArray(data.devices)){
+          clearInterval(bg);
+          devices = data.devices;
+          devices.forEach(d => { if(!histories[d.id]) histories[d.id] = []; });
+          if(typeof updateLogMachineDropdown === 'function') updateLogMachineDropdown();
+          renderAll(); pollAll();
+        }
+      } catch(e) {}
+    }, 5000);
   }
   devices.forEach(d => { if(!histories[d.id]) histories[d.id] = []; });
 }

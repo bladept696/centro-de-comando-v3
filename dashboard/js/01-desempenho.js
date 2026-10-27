@@ -13,6 +13,12 @@ function hcPaused(){ return hcScrolling || hcPerfMode || document.hidden; }
   window.addEventListener('scroll', onScroll, { passive:true, capture:true });
   window.addEventListener('wheel', onScroll, { passive:true });
 })();
+// ?leve=1 no endereço (usado pelo abrir-leve.bat) liga o Modo Desempenho e guarda-o neste perfil do navegador; ?leve=0 volta ao normal
+try {
+  const q = new URLSearchParams(location.search).get('leve');
+  if(q === '1') localStorage.setItem('hc_perf_mode', 'on');
+  else if(q === '0') localStorage.setItem('hc_perf_mode', 'off');
+} catch(e){}
 function hcPerfPref(){ try { return localStorage.getItem('hc_perf_mode') || 'auto'; } catch(e){ return 'auto'; } }
 function hcApplyPerf(on){
   hcPerfMode = !!on;

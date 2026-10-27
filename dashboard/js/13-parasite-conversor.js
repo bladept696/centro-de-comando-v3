@@ -906,6 +906,9 @@ function appendLineToDOM(item) {
 
   div.innerHTML = `<span class="log-id">[#${item.frame}]</span><span class="log-time">${item.time}</span><span class="log-machine">[${item.machineName}]</span><span class="${tagClass}">${item.tag}:</span> ${item.text}`;
   screen.appendChild(div);
+  // o array consoleLogs já está limitado a 600; o ecrã também (antes crescia sem fim: cada leitura de cada máquina acrescentava
+  // uma linha com o JSON todo, e com o scroll automático a página tinha de recalcular tudo a cada linha)
+  while(screen.childElementCount > 600) screen.removeChild(screen.firstElementChild);
   
   if(autoScroll) {
     screen.scrollTop = screen.scrollHeight;

@@ -425,10 +425,12 @@ function hcMiningScene(wrap, canvas){
 
   const reduce = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e) { return false; } })();
   if(reduce){ frame(performance.now(), true); window.addEventListener('resize', () => frame(performance.now(), true)); return; }
-  let acc = 0;
+  let acc = 0, inView = true;
+  // só anima quando a cena está no ecrã (o rodapé fica fora de vista quase sempre) e a 25 imagens por segundo
+  try { new IntersectionObserver(es => { inView = es[0].isIntersecting; }).observe(wrap); } catch(e) {}
   function loop(ts){
     ts = ts || performance.now();
-    if(hcPaused() || ts - acc < 33){ requestAnimationFrame(loop); return; }
+    if(!inView || hcPaused() || ts - acc < 40){ requestAnimationFrame(loop); return; }
     acc = ts;
     frame(ts, false);
     requestAnimationFrame(loop);

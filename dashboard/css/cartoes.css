@@ -147,7 +147,7 @@
   .mc-fx .mc-card:hover{transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-3px);
     box-shadow:inset 0 1px 0 #ffffff1c,inset 0 -22px 34px -26px #000,0 3px 0 -1px var(--deep),0 4px 0 -1px var(--line-strong),0 34px 44px -22px #000,0 0 28px -10px var(--mc-c);}
   .mc-fx .mc-card[data-state="hot"]{animation:mcIn3d .6s cubic-bezier(.2,.8,.2,1) backwards,mcAlarm 1.6s ease-in-out infinite;}
-  .mc-fx .mc-card::before{left:-1px;top:14px;bottom:14px;width:5px;border-radius:0 4px 4px 0;}
+  .mc-fx .mc-card::before{left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;box-shadow:0 0 6px -1px var(--mc-c);}
   .mc-fx .mc-card::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;
     background:radial-gradient(circle at var(--gx,50%) var(--gy,0%),#ffffff26,transparent 55%);}
   .mc-fx .mc-card.is-tilt::after{opacity:1;}
@@ -389,7 +389,7 @@
   .mc-glowfx,.mc-sheenfx,.mc-embers{display:none;position:absolute;inset:0;border-radius:inherit;pointer-events:none;}
   .mc-tile{position:relative;}
   /* respiração: o cartão a trabalhar brilha devagar */
-  .mc-xp-breathe .mc-card[data-state="ok"]:not(.is-off) .mc-glowfx{display:block;box-shadow:0 0 22px -6px var(--mc-c),inset 0 0 22px -12px var(--mc-c);animation:mcBreathe 4.2s ease-in-out infinite;animation-delay:calc(var(--i,0) * .6s);}
+  .mc-xp-breathe .mc-card[data-state="ok"]:not(.is-off) .mc-glowfx{display:block;box-shadow:0 0 8px -5px var(--mc-c),inset 0 0 22px -12px var(--mc-c);animation:mcBreathe 4.2s ease-in-out infinite;animation-delay:calc(var(--i,0) * .6s);}
   @keyframes mcBreathe{0%,100%{opacity:.15;}50%{opacity:.95;}}
   /* reflexo de luz que passa de vez em quando */
   .mc-xp-sheen .mc-card[data-state="ok"]:not(.is-off) .mc-sheenfx{display:block;overflow:hidden;}
@@ -421,10 +421,10 @@
   .mc-bgchart .bga{fill:color-mix(in srgb,var(--mc-c) 14%,transparent);stroke:none;}
   .mc-bgchart .bgl{fill:none;stroke:color-mix(in srgb,var(--mc-c) 55%,transparent);stroke-width:1.4;vector-effect:non-scaling-stroke;stroke-linejoin:round;}
   .mc-bgchart .bgt{fill:none;stroke:#ffb84a55;stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke;}
-  .mc-xp-bgchart .mc-bgscan{display:block;position:absolute;top:0;bottom:0;width:38%;left:-40%;z-index:-1;pointer-events:none;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--mc-c) 16%,transparent),transparent);animation:mcBgScan 5.5s linear infinite;animation-delay:calc(var(--i,0) * .7s);}
+  .mc-xp-bgchart .mc-bgscan{display:block;position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--mc-c) 16%,transparent),transparent) no-repeat -40% 0/38% 100%;animation:mcBgScan 5.5s linear infinite;animation-delay:calc(var(--i,0) * .7s);}
   .mc-xp-bgchart .mc-bgdot{display:block;position:absolute;right:-3px;width:7px;height:7px;margin-top:-3px;border-radius:50%;z-index:-1;pointer-events:none;background:var(--mc-c);box-shadow:0 0 10px var(--mc-c);animation:mcBgDot 1.8s ease-in-out infinite;}
   .mc-card.is-off .mc-bgchart,.mc-card.is-off .mc-bgscan,.mc-card.is-off .mc-bgdot{display:none !important;}
-  @keyframes mcBgScan{to{left:104%;}}
+  @keyframes mcBgScan{to{background-position:140% 0;}}
   @keyframes mcBgDot{50%{transform:scale(1.7);opacity:.5;}}
   @media (prefers-reduced-motion: reduce){.mc-bgscan,.mc-bgdot{animation:none !important;}}
   /* mapa de calor em 3D: pilares que sobem com a temperatura, ventoinhas a girar e vento a correr */
