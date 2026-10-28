@@ -3,3 +3,16 @@
 .chat-msg-author.has-role,.chat-sidebar-user .has-role{color:var(--rc)!important;font-weight:700}
 .chat-msg-author.self-role{text-align:right}
 .mc-cm-rank li .has-role{color:var(--rc)}
+
+/* lista de online do chat: nome em cima, etiquetas por baixo (a coluna é estreita) */
+.chat-sidebar-user{align-items:flex-start}
+.chat-sidebar-user .chat-av{margin-top:1px}
+.chat-sidebar-user .su-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.chat-sidebar-user .su-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-sidebar-user .su-tags{display:flex;flex-wrap:wrap;align-items:center;gap:3px}
+.chat-sidebar-user .su-tags .hc-role,.chat-sidebar-user .su-tags .hc-lv{margin-left:0}
+
+/* a coluna das mensagens pode encolher (nomes compridos já não empurram a lista de online para fora do painel) */
+.chat-body .chat-messages{min-width:0}
+.chat-body .chat-msg{overflow-wrap:anywhere}
+.chat-body .chat-sidebar{min-width:0;overflow-x:hidden}

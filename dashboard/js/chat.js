@@ -679,7 +679,9 @@
           const el = document.createElement('div'); el.className = 'chat-sidebar-user';
           if(u.uid && u.uid !== S.uid){ el.dataset.uid = u.uid; el.dataset.nick = u.nick || ''; el.title = T('dm_open'); el.classList.add('can-dm'); }
           const rl = typeof hcRole === 'function' ? hcRole(u.uid) : null;
-          el.innerHTML = avatarHtml(u.nick || '?') + '<span' + (rl ? ' class="has-role" style="--rc:' + rl.color + '"' : '') + '>' + escHtml(u.nick || '???') + (typeof hcRoleTag === 'function' ? hcRoleTag(u.uid) : '') + (String(u.nick) === myNick() ? ' <em>(' + T('me') + ')</em>' : '') + '</span>';
+          // nome numa linha (com reticências se for comprido) e as etiquetas (cargo, nível, "eu") na linha de baixo, para não cortarem
+          const tags = (typeof hcRoleTag === 'function' ? hcRoleTag(u.uid) : '') + (String(u.nick) === myNick() ? ' <em>(' + T('me') + ')</em>' : '');
+          el.innerHTML = avatarHtml(u.nick || '?') + '<span class="su-main"><span class="su-name' + (rl ? ' has-role' : '') + '"' + (rl ? ' style="--rc:' + rl.color + '"' : '') + ' title="' + escHtml(u.nick || '???') + '">' + escHtml(u.nick || '???') + '</span>' + (tags.trim() ? '<span class="su-tags">' + tags + '</span>' : '') + '</span>';
           list.appendChild(el);
         });
       }
