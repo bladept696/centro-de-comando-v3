@@ -443,30 +443,29 @@ hcMiningScene(document.getElementById('hcBanner'), document.getElementById('hcBa
 // o rodapé usa a mesma cena de mineração (antes tinha a chuva verde do Matrix)
 hcMiningScene(document.getElementById('footerBar'), document.getElementById('footerMatrixCanvas'));
 
-/* ===== Fundo animado de partículas em onda (Máquinas, gráficos e log) ===== */
+/* ===== Fundo animado de blocos Bitcoin ligados em cadeia (Máquinas, gráficos e log) ===== */
 (function initWaveBackgrounds(){
   const canvases = Array.from(document.querySelectorAll('[data-wave-bg]'));
   if (!canvases.length) return;
 
-  function colorForHeight(h){
-    const stops = [
-      { t: -1.0, c: [50, 110, 255] },
-      { t: -0.3, c: [70, 190, 255] },
-      { t: 0.1,  c: [160, 100, 255] },
-      { t: 0.5,  c: [255, 80, 220] },
-      { t: 1.0,  c: [255, 210, 100] }
-    ];
-    let c0 = stops[0], c1 = stops[stops.length - 1];
-    for (let i = 0; i < stops.length - 1; i++){
-      if (h >= stops[i].t && h <= stops[i + 1].t){ c0 = stops[i]; c1 = stops[i + 1]; break; }
-    }
-    const span = (c1.t - c0.t) || 1;
-    const f = Math.max(0, Math.min(1, (h - c0.t) / span));
-    return [
-      c0.c[0] + (c1.c[0] - c0.c[0]) * f,
-      c0.c[1] + (c1.c[1] - c0.c[1]) * f,
-      c0.c[2] + (c1.c[2] - c0.c[2]) * f
-    ];
+  // Blocos Bitcoin a subir devagar, ligados por uma cadeia ténue (em vez da onda de pontos)
+  const HEX = '0123456789abcdef';
+  const hexLabel = n => { let s = ''; for(let i = 0; i < n; i++) s += HEX[(Math.random() * 16) | 0]; return s; };
+  function newBlock(inst, fresh){
+    const size = 12 + Math.random() * 24;
+    return {
+      x: Math.random() * inst.W, y: fresh ? Math.random() * inst.H : inst.H + size + Math.random() * 40,
+      size, vy: 0.12 + Math.random() * 0.28, sway: Math.random() * Math.PI * 2, swaySp: 0.3 + Math.random() * 0.6,
+      a: 0.16 + Math.random() * 0.34, label: size > 22 ? hexLabel(4) : '', gold: Math.random() < 0.12
+    };
+  }
+  function seedBlocks(inst){
+    const n = Math.max(8, Math.min(18, Math.round(inst.W * inst.H / 14000)));
+    inst.blocks = Array.from({ length: n }, () => newBlock(inst, true));
+  }
+  function rrect(ctx, x, y, w, h, r){
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
 
   const instances = canvases.map(canvas => {
@@ -504,52 +503,36 @@ hcMiningScene(document.getElementById('footerBar'), document.getElementById('foo
   function drawInstance(inst){
     const { ctx, W, H, time } = inst;
     if (W <= 0 || H <= 0) return;
+    if (!inst.blocks || inst.blocksW !== W || inst.blocksH !== H){ seedBlocks(inst); inst.blocksW = W; inst.blocksH = H; }
     ctx.clearRect(0, 0, W, H);
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-
-    const horizonY = H * 0.1;
-    const ROWS = inst.rows, COLS = inst.cols;
-    for (let row = 0; row < ROWS; row++){
-      const depth = row / (ROWS - 1);
-      const easedDepth = Math.pow(depth, 1.7);
-      const y = horizonY + easedDepth * (H - horizonY);
-      const scale = 0.15 + easedDepth * 1.4;
-      const dotBase = 0.7 + easedDepth * 2.6;
-
-      for (let col = 0; col < COLS; col++){
-        const nx = col / COLS;
-        const wx = nx * 10;
-        const wave =
-          Math.sin(wx * 1.3 + time * 1.1 + depth * 3) * 0.5 +
-          Math.sin(wx * 2.7 - time * 0.8 + depth * 5) * 0.3 +
-          Math.sin(wx * 0.6 + time * 0.5 - depth * 2) * 0.4;
-        const heightVal = wave / 1.2;
-
-        const centerPull = (nx - 0.5) * scale;
-        const x = W * 0.5 + centerPull * W * 1.15;
-        const yOffset = heightVal * (8 + easedDepth * 32);
-        const py = y - yOffset;
-
-        if (x > -10 && x < W + 10 && py > -10 && py < H + 10){
-          const [r, g, b] = colorForHeight(heightVal);
-          const alpha = 0.45 + easedDepth * 0.55;
-          const size = Math.max(0.6, dotBase * (0.6 + heightVal * 0.3));
-          ctx.fillStyle = `rgba(${r|0},${g|0},${b|0},${alpha})`;
-          ctx.beginPath();
-          ctx.arc(x, py, size, 0, Math.PI * 2);
-          ctx.fill();
-
-          if (heightVal > 0.5 && easedDepth > 0.4){
-            ctx.fillStyle = `rgba(${r|0},${g|0},${b|0},${alpha * 0.3})`;
-            ctx.beginPath();
-            ctx.arc(x, py, size * 2.2, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
+    const bl = inst.blocks;
+    bl.forEach((b, i) => {
+      b.y -= b.vy;
+      b.px = b.x + Math.sin(time * b.swaySp + b.sway) * 14;
+      if (b.y < -b.size - 10) bl[i] = newBlock(inst, false);
+    });
+    // cadeia: liga cada bloco ao mais próximo que esteja acima dele
+    ctx.lineWidth = 1;
+    bl.forEach(a => {
+      let best = null, bd = 1e9;
+      bl.forEach(b => { if (b === a || b.y >= a.y) return; const d = Math.hypot(b.px - a.px, b.y - a.y); if (d < bd) { bd = d; best = b; } });
+      if (best && bd < 190){
+        ctx.strokeStyle = 'rgba(255,176,32,' + (0.16 * (1 - bd / 190)).toFixed(3) + ')';
+        ctx.beginPath(); ctx.moveTo(a.px, a.y); ctx.lineTo(best.px, best.y); ctx.stroke();
       }
-    }
-    ctx.restore();
+    });
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    bl.forEach(b => {
+      const edge = Math.min(1, Math.max(0, Math.min(b.y, H - b.y) / 40));
+      const al = b.a * edge, c = b.gold ? '255,214,110' : '255,176,32', s = b.size, x = b.px - s / 2, y = b.y - s / 2;
+      ctx.fillStyle = 'rgba(' + c + ',' + (al * 0.16).toFixed(3) + ')';
+      ctx.strokeStyle = 'rgba(' + c + ',' + al.toFixed(3) + ')';
+      ctx.lineWidth = b.gold ? 1.6 : 1.1;
+      rrect(ctx, x, y, s, s, Math.max(2, s * 0.18)); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + 3, y + s * 0.3); ctx.lineTo(x + s - 3, y + s * 0.3);
+      ctx.strokeStyle = 'rgba(' + c + ',' + (al * 0.5).toFixed(3) + ')'; ctx.lineWidth = 0.8; ctx.stroke();
+      if (b.label){ ctx.fillStyle = 'rgba(' + c + ',' + (al * 1.2).toFixed(3) + ')'; ctx.font = '700 ' + Math.round(s * 0.3) + 'px ui-monospace,Consolas,monospace'; ctx.fillText(b.label, b.px, b.y + s * 0.12); }
+    });
   }
 
   instances.forEach(i => { i.visible = true; });
