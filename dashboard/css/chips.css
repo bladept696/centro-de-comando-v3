@@ -1,0 +1,25 @@
+/* Saúde dos chips */
+.hc-ch-ov{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,6,12,.72);backdrop-filter:blur(4px)}
+.hc-ch-box{width:min(520px,100%);max-height:min(90vh,780px);overflow:auto;padding:20px 20px 16px;border-radius:16px;background:#0e1420;border:1px solid rgba(79,214,255,.35);box-shadow:0 20px 60px rgba(0,0,0,.6);color:#d7e0ee;font:14px/1.5 'Space Grotesk',system-ui,sans-serif}
+.hc-ch-box h2{margin:0 0 8px;font-size:18px;color:#fff}
+.hc-ch-intro{margin:0 0 12px;font-size:12px;color:#8fa1bd}
+.hc-ch-none{padding:16px;text-align:center;color:#9fb0c8}
+.hc-ch-card{padding:12px;margin-bottom:10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(159,176,200,.16)}
+.hc-ch-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:8px;flex-wrap:wrap}
+.hc-ch-h b{font-size:15px;color:#fff}.hc-ch-h span{font-size:11.5px;color:#9fb0c8}
+.hc-ch-blocks{display:flex;gap:6px;margin-bottom:8px}
+.hc-ch-blocks i{flex:1;height:22px;border-radius:6px;border:1px solid rgba(79,214,255,.4);background:linear-gradient(90deg,#21ffb0 calc(var(--f)*100%),rgba(159,176,200,.12) calc(var(--f)*100%))}
+.hc-ch-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#9fb0c8;flex-wrap:wrap}
+.hc-ch-row b{color:#fff}
+.hc-ch-spark{width:100%;height:28px;margin:8px 0 2px;display:block}
+.hc-ch-spark path{fill:none;stroke:#4fd6ff;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.hc-ch-temps{display:flex;gap:8px;margin:6px 0;font-size:12px;color:#9fb0c8}
+.hc-ch-temps span.hot b{color:#ff6b6b}.hc-ch-temps b{color:#fff}
+.hc-ch-note,.hc-ch-dup{margin:4px 0;font-size:11.5px;color:#7f91ad}.hc-ch-dup b{color:#fff}
+.hc-ch-v{margin-top:8px;padding:7px 10px;border-radius:9px;font-size:12px}
+.hc-ch-v.good{background:rgba(33,255,176,.08);color:#7bf0c8}
+.hc-ch-v.warn{background:rgba(255,176,32,.12);color:#ffcf7a}
+.hc-ch-v.bad{background:rgba(255,77,109,.14);color:#ff9bae}
+.hc-ch-act{display:flex;justify-content:flex-end;margin-top:12px}
+.hc-ch-btn{padding:8px 16px;border-radius:10px;border:1px solid #4fd6ff;background:#4fd6ff;color:#04141a;font:700 13px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
+@media(max-width:480px){.hc-ch-box{padding:16px 14px 12px}}

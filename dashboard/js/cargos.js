@@ -12,7 +12,7 @@
 
   window.hcRole = uid => (uid && (clean(BASE[uid]) || clean(fb[uid]))) || null;
   window.hcRoleColor = uid => { const r = window.hcRole(uid); return r ? r.color : ''; };
-  window.hcRoleTag = uid => { const r = window.hcRole(uid); return r ? ' <span class="hc-role" style="--rc:' + r.color + '">' + esc(r.name) + '</span>' : ''; };
+  window.hcRoleTag = uid => { const r = window.hcRole(uid); return (r ? ' <span class="hc-role" style="--rc:' + r.color + '">' + esc(r.name) + '</span>' : '') + (window.hcLvlTag ? window.hcLvlTag(uid) : ''); };
 
   function listen(){
     const f = window.hcFb;

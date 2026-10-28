@@ -543,7 +543,9 @@ async function checkForUpdate(){
     if(installBtn) {
       // Só mostra o botão de atualização automática se a release tiver
       // mesmo um instalador (.exe) anexado - senão só resta o link manual.
-      installBtn.style.display = data.installer_url ? '' : 'none';
+      // e só se estiver assinada (ficheiro .sig): sem assinatura a app recusa instalar sozinha
+      installBtn.style.display = (data.installer_url && data.signature_url) ? '' : 'none';
+      if(data.installer_url && !data.signature_url) text.innerHTML += ' <b>(sem assinatura: descarrega o instalador manualmente)</b>';
       installBtn.disabled = false;
       installBtn.textContent = '⬇️ Atualizar agora';
       installBtn.onclick = () => startAutoUpdate(installBtn, text);
@@ -574,7 +576,7 @@ async function startAutoUpdate(installBtn, text){
       text.textContent = 'Falha ao descarregar a atualização: ' + (data.error || 'erro desconhecido') + '. Tenta pelo link manual acima.';
       return;
     }
-    text.textContent = 'A instalar a nova versão… a app vai fechar-se sozinha e a janela do instalador vai abrir a seguir.';
+    text.textContent = 'A descarregar e a verificar a assinatura… depois a app fecha-se sozinha e abre o instalador.';
     pollUpdateStatus(installBtn, text);
   } catch(e) {
     installBtn.disabled = false;

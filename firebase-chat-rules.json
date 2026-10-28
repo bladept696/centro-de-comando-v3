@@ -301,6 +301,19 @@
           }
         }
       },
+      "levels": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['lv'])",
+          "lv": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 200"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
       "roles": {
         ".read": "auth != null",
         "$uid": {

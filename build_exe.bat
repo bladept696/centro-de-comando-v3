@@ -34,6 +34,7 @@ python -m PyInstaller --noconfirm --onefile --windowed ^
     --add-data "app_icon.ico;." ^
     --hidden-import "paho.mqtt.client" ^
     --hidden-import "pystray._win32" ^
+    --hidden-import "cryptography.hazmat.primitives.asymmetric.ed25519" ^
     --hidden-import "PIL._tkinter_finder" ^
     app.py
 
