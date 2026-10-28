@@ -133,6 +133,8 @@ function mpPct(share, netDiff) {
   return p < 0.001 ? p.toExponential(1) + '%' : p.toPrecision(2) + '%';
 }
 
+// faces extra do cubo: só o estilo "Holograma" (mempool-holo.css) as mostra; nos outros estilos ficam escondidas
+const MP_HF = '<i class="mp-hf mp-hf-b"></i><i class="mp-hf mp-hf-l"></i><i class="mp-hf mp-hf-r"></i><i class="mp-hf mp-hf-t"></i><i class="mp-hf mp-hf-u"></i>';
 function mpGaugeHtml(list, netDiff) {
   const logNet = Math.log10(Math.max(10, netDiff));
   const dots = list.map((it, i) => {
@@ -199,7 +201,7 @@ function renderRecentBlocks(blocks) {
     return `
       <div class="mp-block mp-pending${i === 0 ? ' mp-next' : ''}" title="${mpEsc(tip)}">
         <div class="mp-cube" style="${fillStyle};--liq:${mpFeeColor(med)}"${isFirstRender ? ` data-fill="${pct.toFixed(1)}"` : ''}>
-          <div class="mp-fill" style="--fill-bg:${mpFillBg(lo, med, hi)}"></div>
+          <div class="mp-fill" style="--fill-bg:${mpFillBg(lo, med, hi)}"></div>${MP_HF}
           <div class="mp-face${i === 0 ? ' mp-has-gauge' : ''}">
             <span class="mp-fee" style="color:${mpFeeColor(med)}">~${mpNum(med)} sat/vB</span>
             <span class="mp-range">${mpNum(lo)} - ${mpNum(hi)} sat/vB</span>
@@ -238,7 +240,7 @@ function renderRecentBlocks(blocks) {
     return `
       <div class="mp-block mp-confirmed${idx === 0 ? ' mp-tip' : ''}${isNew ? ' mp-new' : ''}" data-height="${b.height}" title="${mpEsc(tip)}">
         <div class="mp-cube" style="${fillStyle};--liq:${mpFeeColor(med)}"${animate ? ` data-fill="${pct.toFixed(1)}"` : ''}>
-          <div class="mp-fill" style="--fill-bg:${mpFillBg(lo, med, hi)}"></div>
+          <div class="mp-fill" style="--fill-bg:${mpFillBg(lo, med, hi)}"></div>${MP_HF}
           <div class="mp-face mp-has-gauge">
             <span class="mp-h">${b.height}</span>
             <span class="mp-fee" style="color:${mpFeeColor(med)}">~${mpNum(med)} sat/vB</span>

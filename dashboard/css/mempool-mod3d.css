@@ -1,0 +1,58 @@
+/* Blocos da mempool, estilo "Módulo 3D" (<body class="mp-holo mp-mod3d">): o módulo técnico do primeiro desenho
+   (cantos de mira, linhas de varrimento, enchimento em LED, #altura em letra monoespaçada) mas em 3D de verdade,
+   com faces sólidas e escuras (sombreadas por lado) e cores baixas em vez do néon vivo. Reutiliza a geometria do Holograma. */
+body.mp-holo.mp-mod3d .mp-block{ --hud:#2f86a8; }
+body.mp-holo.mp-mod3d .mp-block.mp-pending{ --hud:#b8801f; }
+body.mp-holo.mp-mod3d .mp-block.mp-tip{ --hud:#22a77a; }
+body.mp-holo.mp-mod3d .blocks-scroll.mp-chain{ background:linear-gradient(180deg, transparent, rgba(2,8,14,.35)); }
+
+/* faces sólidas e escuras, com sombreado: topo mais claro, lado direito mais escuro */
+body.mp-holo.mp-mod3d .mp-hf{
+  border:1px solid color-mix(in srgb, var(--hud) 70%, transparent);
+  background:linear-gradient(135deg, #0b1c2a, #050d16);
+  box-shadow:inset 0 0 16px -8px color-mix(in srgb, var(--hud) 55%, transparent);
+}
+body.mp-holo.mp-mod3d .mp-hf-b{
+  background-image:radial-gradient(circle, color-mix(in srgb, var(--hud) 40%, transparent) 1px, transparent 1.7px), linear-gradient(135deg, #0a1824, #040a11);
+}
+body.mp-holo.mp-mod3d .mp-hf-l, body.mp-holo.mp-mod3d .mp-hf-r{
+  background:
+    linear-gradient(to top, color-mix(in srgb, var(--liq,#3bb7a8) 38%, #04080d) 0 var(--fill-h,0%), transparent var(--fill-h,0%)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 4px),
+    linear-gradient(135deg, #0a1824, #04090f);
+}
+body.mp-holo.mp-mod3d .mp-hf-r{ filter:brightness(.72); }
+body.mp-holo.mp-mod3d .mp-hf-t{
+  background:
+    linear-gradient(color-mix(in srgb, var(--hud) 28%, transparent) 1px, transparent 1px) 0 0/22px 22px,
+    linear-gradient(90deg, color-mix(in srgb, var(--hud) 28%, transparent) 1px, transparent 1px) 0 0/22px 22px,
+    linear-gradient(135deg, #12303f, #0a1b27);
+}
+body.mp-holo.mp-mod3d .mp-hf-u{ background:#03070b; }
+
+/* frente: painel escuro com varrimento e cantos de mira */
+body.mp-holo.mp-mod3d .mp-fill{ opacity:.42; }
+body.mp-holo.mp-mod3d .mp-fill::before{ box-shadow:0 0 6px var(--liq,transparent); }
+body.mp-holo.mp-mod3d .mp-face{
+  border:1px solid color-mix(in srgb, var(--hud) 75%, transparent);
+  background:
+    linear-gradient(var(--hud),var(--hud)) 6px 6px/10px 1.5px no-repeat,
+    linear-gradient(var(--hud),var(--hud)) 6px 6px/1.5px 10px no-repeat,
+    linear-gradient(var(--hud),var(--hud)) calc(100% - 6px) calc(100% - 6px)/10px 1.5px no-repeat,
+    linear-gradient(var(--hud),var(--hud)) calc(100% - 6px) calc(100% - 6px)/1.5px 10px no-repeat,
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg, rgba(10,26,40,.9), rgba(4,10,17,.92));
+  box-shadow:inset 0 0 18px -8px color-mix(in srgb, var(--hud) 55%, transparent);
+}
+
+/* cores mais baixas no texto */
+body.mp-holo.mp-mod3d .mp-h{ color:color-mix(in srgb, var(--hud) 75%, #fff); text-shadow:0 1px 2px #000; }
+body.mp-holo.mp-mod3d .mp-fee{ filter:saturate(.7) brightness(.82); }
+body.mp-holo.mp-mod3d .mp-range, body.mp-holo.mp-mod3d .mp-time{ color:#7f93a8; }
+body.mp-holo.mp-mod3d .mp-tx{ border-color:color-mix(in srgb, var(--hud) 45%, transparent); background:rgba(255,255,255,.04); color:#b9c8d6; }
+body.mp-holo.mp-mod3d .mp-foot .mp-pool{ color:color-mix(in srgb, var(--hud) 80%, #fff); text-shadow:none; }
+
+/* brilhos discretos: nada de halos fortes */
+body.mp-holo.mp-mod3d .mp-block::before{ opacity:.4; box-shadow:none; }
+body.mp-holo.mp-mod3d .mp-block::after{ opacity:.55; }
+body.mp-holo.mp-mod3d .mp-tip .mp-hf, body.mp-holo.mp-mod3d .mp-tip .mp-face{ box-shadow:inset 0 0 20px -6px color-mix(in srgb, var(--hud) 65%, transparent), 0 0 10px -4px color-mix(in srgb, var(--hud) 70%, transparent); }

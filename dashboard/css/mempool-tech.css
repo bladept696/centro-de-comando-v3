@@ -1,0 +1,67 @@
+/* Blocos da mempool, estilo "HUD" (só quando <body class="mp-hud">). Escolhe-se no botão 🎨 da barra dos blocos. */
+body.mp-hud .blocks-scroll.mp-chain{ gap:22px; padding:10px 14px 18px; }
+body.mp-hud .mp-block{ position:relative; padding-top:0; gap:9px; --hud:#4fd6ff; }
+body.mp-hud .mp-block.mp-pending{ --hud:#ffb020; }
+body.mp-hud .mp-block.mp-tip{ --hud:#21ffb0; }
+body.mp-hud .mp-block + .mp-block::before{
+  content:''; position:absolute; left:-22px; top:66px; width:22px; height:2px; z-index:0;
+  background:linear-gradient(90deg, transparent, var(--hud) 35%, var(--hud)); opacity:.65;
+}
+body.mp-hud .mp-block + .mp-block::after{
+  content:''; position:absolute; left:-24px; top:63px; width:6px; height:6px; border-radius:50%; z-index:0;
+  background:#06121e; border:1.5px solid var(--hud); box-shadow:0 0 8px var(--hud);
+}
+body.mp-hud .mp-sep + .mp-block::before, body.mp-hud .mp-sep + .mp-block::after{ display:none; }
+body.mp-hud .mp-cube{
+  --cut:14px;
+  border:none; border-radius:0; box-shadow:none; transition:transform .25s cubic-bezier(.16,1,.3,1), filter .25s;
+  background:linear-gradient(135deg, var(--hud), color-mix(in srgb, var(--hud) 25%, transparent) 55%, var(--hud));
+  clip-path:polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+  animation:none !important;
+}
+body.mp-hud .mp-cube::before{
+  content:''; position:absolute; inset:1px; top:1px; left:1px; right:1px; height:auto; transform:none; border:none;
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--hud) 14%, transparent), transparent 60%),
+    linear-gradient(180deg, #0a1b2b, #050d16);
+  clip-path:polygon(0 0, calc(100% - var(--cut) + 1px) 0, 100% calc(var(--cut) - 1px), 100% 100%, calc(var(--cut) - 1px) 100%, 0 calc(100% - var(--cut) + 1px));
+  z-index:0;
+}
+body.mp-hud .mp-cube::after{
+  content:''; position:absolute; inset:0; top:0; bottom:0; right:0; width:auto; transform:none; border:none; pointer-events:none; z-index:4;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px),
+    linear-gradient(var(--hud),var(--hud)) 7px 7px/10px 1.5px no-repeat,
+    linear-gradient(var(--hud),var(--hud)) 7px 7px/1.5px 10px no-repeat,
+    linear-gradient(var(--hud),var(--hud)) calc(100% - 7px) calc(100% - 7px)/10px 1.5px no-repeat,
+    linear-gradient(var(--hud),var(--hud)) calc(100% - 7px) calc(100% - 7px)/1.5px 10px no-repeat;
+  opacity:.9;
+}
+body.mp-hud .mp-block:hover .mp-cube{ transform:translateY(-3px); }
+body.mp-hud .mp-block:hover, body.mp-hud .mp-tip, body.mp-hud .mp-pending.mp-next{ filter:drop-shadow(0 0 9px color-mix(in srgb, var(--hud) 55%, transparent)); }
+body.mp-hud .mp-fill{ z-index:1; left:1px; right:1px; bottom:1px; opacity:.55;
+  -webkit-mask-image:repeating-linear-gradient(to top, #000 0 5px, transparent 5px 7px); mask-image:repeating-linear-gradient(to top, #000 0 5px, transparent 5px 7px); }
+body.mp-hud .mp-fill::before{ top:0; height:2px; background:var(--liq,#fff); box-shadow:0 0 10px var(--liq,transparent); -webkit-mask-image:none; mask-image:none; }
+body.mp-hud .mp-face{ z-index:3; text-shadow:0 0 6px #000, 0 1px 2px #000; }
+body.mp-hud .mp-h{ font-family:'JetBrains Mono','Space Grotesk',monospace; font-weight:800; font-size:15px; letter-spacing:.04em; color:var(--hud); text-shadow:0 0 10px color-mix(in srgb, var(--hud) 60%, transparent), 0 1px 2px #000; }
+body.mp-hud .mp-h::before{ content:'#'; opacity:.55; margin-right:1px; }
+body.mp-hud .mp-fee{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:800; letter-spacing:.02em; }
+body.mp-hud .mp-range{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.03em; opacity:.85; }
+body.mp-hud .mp-tx{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; padding:1px 6px; border:1px solid color-mix(in srgb, var(--hud) 45%, transparent); border-radius:3px; background:color-mix(in srgb, var(--hud) 10%, transparent); }
+body.mp-hud .mp-foot{ font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; }
+body.mp-hud .mp-foot .mp-pool{ color:var(--hud); text-shadow:0 0 8px color-mix(in srgb, var(--hud) 50%, transparent); }
+body.mp-hud .mp-time{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.08em; text-transform:uppercase; }
+body.mp-hud .mp-pending .mp-cube{ background:linear-gradient(135deg, color-mix(in srgb, var(--hud) 85%, transparent), color-mix(in srgb, var(--hud) 18%, transparent) 55%, color-mix(in srgb, var(--hud) 85%, transparent)); }
+body.mp-hud .mp-pending .mp-cube::before{ background:radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--hud) 12%, transparent), transparent 60%), linear-gradient(180deg, #14110a, #080806); }
+body.mp-hud .mp-pending.mp-next{ animation:mpHudPulse 2.4s ease-in-out infinite; }
+body.mp-hud .mp-tip{ animation:mpHudPulse 2.8s ease-in-out infinite; }
+@keyframes mpHudPulse{ 0%,100%{ filter:drop-shadow(0 0 4px color-mix(in srgb, var(--hud) 35%, transparent)); } 50%{ filter:drop-shadow(0 0 14px color-mix(in srgb, var(--hud) 70%, transparent)); } }
+body.mp-hud .mp-new .mp-cube{ animation:none !important; }
+body.mp-hud .mp-new{ animation:mpDrop .7s cubic-bezier(.22,1,.36,1) both, mpHudFlash 1.6s ease-out .1s; }
+@keyframes mpHudFlash{ 0%{ filter:drop-shadow(0 0 0 transparent) brightness(1); } 30%{ filter:drop-shadow(0 0 22px var(--hud)) brightness(1.6); } 100%{ filter:drop-shadow(0 0 0 transparent) brightness(1); } }
+body.mp-hud .mp-gauge{ border:none; border-radius:2px; width:12px; right:9px; background:repeating-linear-gradient(to top, #ffffff14 0 3px, transparent 3px 6px); }
+body.mp-hud .mp-gauge::before{ left:-3px; right:-3px; top:-1px; }
+body.mp-hud .mp-face.mp-has-gauge{ padding-right:26px; }
+body.mp-hud .mp-dot{ width:7px; height:7px; border-radius:1px; transform-origin:center; rotate:45deg; }
+@media (prefers-reduced-motion: reduce){body.mp-hud .mp-tip, body.mp-hud .mp-pending.mp-next, body.mp-hud .mp-new{ animation:none !important; }}
+body.mp-hud.perf-mode .mp-block:hover, body.mp-hud.perf-mode .mp-tip, body.mp-hud.perf-mode .mp-pending.mp-next{ filter:none; animation:none; }

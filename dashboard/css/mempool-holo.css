@@ -1,0 +1,100 @@
+/* Blocos da mempool, estilo "Holograma" (só quando <body class="mp-holo">): cada bloco é um cubo 3D de verdade (CSS 3D),
+   em aramado luminoso e faces translúcidas, a flutuar e a rodar devagar sobre um trilho de luz. O "líquido" da taxa enche
+   a frente e as laterais; na face de trás sobe um fluxo de dados. */
+.mp-hf{ display:none; }
+
+body.mp-holo .blocks-scroll.mp-chain{ gap:46px; padding:20px 30px 26px; }
+body.mp-holo .mp-block{ position:relative; width:132px; gap:20px; padding-top:6px; perspective:760px; perspective-origin:50% 30%; --hud:#4fd6ff; }
+body.mp-holo .mp-block.mp-pending{ --hud:#ffb020; }
+body.mp-holo .mp-block.mp-tip{ --hud:#21ffb0; }
+
+/* trilho de luz sob os cubos e projeção no chão */
+body.mp-holo .mp-block::before{
+  content:''; position:absolute; left:-46px; right:-46px; top:152px; height:1px; z-index:0;
+  background:linear-gradient(90deg, transparent, var(--hud) 30%, var(--hud) 70%, transparent); box-shadow:0 0 8px var(--hud); opacity:.75;
+}
+body.mp-holo .mp-block::after{
+  content:''; position:absolute; left:8px; right:8px; top:140px; height:24px; z-index:0; pointer-events:none;
+  background:radial-gradient(ellipse at center, color-mix(in srgb, var(--hud) 50%, transparent), transparent 70%); filter:blur(3px);
+}
+body.mp-holo .mp-sep + .mp-block::before{ left:0; }
+
+/* o cubo */
+body.mp-holo .mp-cube{
+  position:relative; z-index:1; width:132px; height:132px; border:none; border-radius:0; box-shadow:none; background:none; overflow:visible;
+  transform-style:preserve-3d; transform:rotateX(-12deg) rotateY(-24deg); transition:none;
+  animation:mpHoloSpin 9s ease-in-out infinite alternate !important;
+}
+body.mp-holo .mp-cube::before, body.mp-holo .mp-cube::after{ display:none; }
+body.mp-holo .mp-block:hover .mp-cube{ animation-play-state:paused !important; }
+
+body.mp-holo .mp-hf{
+  display:block; position:absolute; left:0; top:0; width:132px; height:132px; box-sizing:border-box; pointer-events:none; backface-visibility:visible;
+  border:1px solid color-mix(in srgb, var(--hud) 90%, transparent);
+  background:linear-gradient(135deg, color-mix(in srgb, var(--hud) 15%, transparent), color-mix(in srgb, var(--hud) 4%, transparent));
+  box-shadow:inset 0 0 20px -4px color-mix(in srgb, var(--hud) 50%, transparent), 0 0 10px -3px color-mix(in srgb, var(--hud) 60%, transparent);
+}
+/* trás: fluxo de dados a subir */
+body.mp-holo .mp-hf-b{
+  transform:rotateY(180deg) translateZ(32px);
+  background-image:radial-gradient(circle, color-mix(in srgb, var(--hud) 55%, transparent) 1px, transparent 1.7px), linear-gradient(135deg, color-mix(in srgb, var(--hud) 12%, transparent), transparent);
+  background-size:15px 21px, auto; animation:mpHoloStream 4.5s linear infinite;
+}
+/* laterais: o líquido da taxa */
+body.mp-holo .mp-hf-l, body.mp-holo .mp-hf-r{
+  background:
+    linear-gradient(to top, color-mix(in srgb, var(--liq,#3bb7a8) 60%, transparent) 0 var(--fill-h,0%), transparent var(--fill-h,0%)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 4px),
+    linear-gradient(135deg, color-mix(in srgb, var(--hud) 14%, transparent), color-mix(in srgb, var(--hud) 4%, transparent));
+}
+body.mp-holo .mp-hf-l, body.mp-holo .mp-hf-r{ left:34px; width:64px; }
+body.mp-holo .mp-hf-l{ transform:rotateY(-90deg) translateZ(66px); }
+body.mp-holo .mp-hf-r{ transform:rotateY(90deg) translateZ(66px); }
+/* topo e base: grelha */
+body.mp-holo .mp-hf-t, body.mp-holo .mp-hf-u{
+  background:
+    linear-gradient(color-mix(in srgb, var(--hud) 35%, transparent) 1px, transparent 1px) 0 0/22px 22px,
+    linear-gradient(90deg, color-mix(in srgb, var(--hud) 35%, transparent) 1px, transparent 1px) 0 0/22px 22px,
+    linear-gradient(135deg, color-mix(in srgb, var(--hud) 20%, transparent), transparent);
+}
+body.mp-holo .mp-hf-t, body.mp-holo .mp-hf-u{ top:34px; height:64px; }
+body.mp-holo .mp-hf-t{ transform:rotateX(90deg) translateZ(66px); }
+body.mp-holo .mp-hf-u{ transform:rotateX(-90deg) translateZ(66px); }
+
+/* frente: o enchimento da taxa em segmentos + o texto */
+body.mp-holo .mp-fill{
+  z-index:1; left:0; right:0; bottom:0; opacity:.5; transform:translateZ(31px);
+  -webkit-mask-image:repeating-linear-gradient(to top, #000 0 5px, transparent 5px 7px); mask-image:repeating-linear-gradient(to top, #000 0 5px, transparent 5px 7px);
+}
+body.mp-holo .mp-fill::before{ top:0; height:2px; background:var(--liq,#fff); box-shadow:0 0 12px var(--liq,transparent); -webkit-mask-image:none; mask-image:none; }
+body.mp-holo .mp-face{
+  inset:0; z-index:3; transform:translateZ(32px); text-shadow:0 0 6px #000, 0 1px 2px #000; box-sizing:border-box;
+  border:1px solid var(--hud); background:linear-gradient(135deg, color-mix(in srgb, var(--hud) 12%, transparent), transparent 60%), rgba(3,10,17,.45);
+  box-shadow:inset 0 0 22px -6px color-mix(in srgb, var(--hud) 55%, transparent);
+}
+body.mp-holo .mp-face.mp-has-gauge{ padding-right:26px; }
+body.mp-holo .mp-h{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:15px; letter-spacing:.04em; color:var(--hud); text-shadow:0 0 10px color-mix(in srgb, var(--hud) 70%, transparent), 0 1px 2px #000; }
+body.mp-holo .mp-h::before{ content:'#'; opacity:.55; }
+body.mp-holo .mp-fee{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:800; }
+body.mp-holo .mp-range{ font-family:'JetBrains Mono',monospace; font-size:9.5px; opacity:.85; }
+body.mp-holo .mp-tx{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; padding:1px 6px; border:1px solid color-mix(in srgb, var(--hud) 55%, transparent); border-radius:3px; background:color-mix(in srgb, var(--hud) 12%, transparent); }
+body.mp-holo .mp-gauge{ transform:translateZ(33px); z-index:4; border:none; width:12px; right:8px; background:repeating-linear-gradient(to top, #ffffff16 0 3px, transparent 3px 6px); }
+body.mp-holo .mp-gauge::before{ left:-3px; right:-3px; top:-1px; }
+body.mp-holo .mp-dot{ width:7px; height:7px; border-radius:1px; rotate:45deg; }
+
+/* legendas por baixo */
+body.mp-holo .mp-foot{ position:relative; z-index:2; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; }
+body.mp-holo .mp-foot .mp-pool{ color:var(--hud); text-shadow:0 0 8px color-mix(in srgb, var(--hud) 50%, transparent); }
+body.mp-holo .mp-time{ position:relative; z-index:2; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.08em; text-transform:uppercase; }
+
+/* estados */
+body.mp-holo .mp-pending .mp-face{ border-style:dashed; }
+body.mp-holo .mp-tip .mp-hf, body.mp-holo .mp-tip .mp-face{ box-shadow:inset 0 0 26px -4px color-mix(in srgb, var(--hud) 70%, transparent), 0 0 18px -2px color-mix(in srgb, var(--hud) 80%, transparent); }
+body.mp-holo .mp-new{ animation:mpDrop .7s cubic-bezier(.22,1,.36,1) both, mpHoloFlash 1.6s ease-out .1s; }
+
+@keyframes mpHoloSpin{ from{ transform:rotateX(-14deg) rotateY(-32deg); } to{ transform:rotateX(-8deg) rotateY(-10deg); } }
+@keyframes mpHoloStream{ from{ background-position:0 0, 0 0; } to{ background-position:0 -21px, 0 0; } }
+@keyframes mpHoloFlash{ 0%{ filter:brightness(1); } 30%{ filter:brightness(1.7) drop-shadow(0 0 22px var(--hud)); } 100%{ filter:brightness(1); } }
+@media (prefers-reduced-motion: reduce){ body.mp-holo .mp-cube{ animation:none !important; } body.mp-holo .mp-hf-b, body.mp-holo .mp-new{ animation:none !important; } }
+body.mp-holo.perf-mode .mp-cube{ animation:none !important; }
+body.mp-holo.perf-mode .mp-hf-b{ animation:none; }
