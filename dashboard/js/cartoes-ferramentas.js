@@ -55,8 +55,8 @@ function mcMenuHtml(){
 function mcCloseMenu(){ const m = $('mcMenu'); if(m) m.remove(); }
 function mcToggleMenu(){
   if($('mcMenu')){ mcCloseMenu(); return; }
-  const btn = $('mcMenuBtn'), panel = btn && btn.closest('.mc-panel');
-  if(!panel) return;
+  const btn = $('mcMenuBtn');
+  if(!btn) return;
   const m = document.createElement('div');
   m.id = 'mcMenu'; m.className = 'mc-menu';
   m.classList.add('mc-menu2');
@@ -66,11 +66,22 @@ function mcToggleMenu(){
     m.querySelectorAll('.mc-menu-row').forEach(r => r.remove());
     m.querySelectorAll('.mc-mg').forEach(g => { if(!g.querySelector('[data-m]')) g.remove(); });
   }
-  const pr = panel.getBoundingClientRect(), br = btn.getBoundingClientRect();
-  m.style.top = (br.bottom - pr.top + 6) + 'px';
-  m.style.right = Math.max(8, pr.right - br.right) + 'px';
-  panel.appendChild(m);
+  const br = btn.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, side = vw >= 900 && br.left < vw / 2;
+  m.style.position = 'fixed'; m.style.zIndex = '10050'; m.style.right = 'auto';
+  if(side){
+    // aba lateral esquerda: o menu abre ao lado do botão
+    m.style.left = Math.min(br.right + 8, vw - 360) + 'px';
+    m.style.maxHeight = Math.max(280, Math.min(640, vh - 16)) + 'px';
+    document.body.appendChild(m);
+    m.style.top = Math.max(8, Math.min(br.top, vh - m.getBoundingClientRect().height - 8)) + 'px';
+  } else {
+    m.style.top = (br.bottom + 6) + 'px';
+    m.style.maxHeight = Math.max(240, Math.min(620, vh - br.bottom - 20)) + 'px';
+    document.body.appendChild(m);
+    m.style.left = Math.max(8, Math.min(br.left, vw - m.getBoundingClientRect().width - 8)) + 'px';
+  }
 }
+window.addEventListener('scroll', () => mcCloseMenu(), { passive: true });
 document.addEventListener('click', e => {
   if(e.target.closest('#mcMenuBtn')){ mcToggleMenu(); return; }
   const it = e.target.closest('#mcMenu [data-m]');

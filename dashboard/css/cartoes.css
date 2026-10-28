@@ -595,3 +595,13 @@
   .mc-menu2 .mc-tile.on{border-color:var(--green)!important;background:color-mix(in srgb,var(--green) 12%,transparent)!important;}
   .mc-menu2 .mc-menu-row{grid-column:1/-1;border:1px solid var(--line);border-radius:10px;padding:6px 8px;}
   @media(max-width:420px){.mc-mgrid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+  /* botão das ferramentas (⚙) no topo da navegação lateral esquerda */
+  .nav-menu-dropdown .nav-tools-btn{display:flex;align-items:center;gap:10px;width:100%;margin:2px 0 8px;padding:9px 10px;border-radius:10px;cursor:pointer;text-align:left;font:inherit;color:var(--text);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--cyan) 18%,var(--panel-2)),var(--deep));border:1px solid color-mix(in srgb,var(--cyan) 55%,transparent);box-shadow:0 0 16px -8px var(--cyan);transition:border-color .15s,box-shadow .15s,transform .15s;}
+  .nav-menu-dropdown .nav-tools-btn:hover,.nav-menu-dropdown .nav-tools-btn[aria-expanded="true"]{border-color:var(--cyan);box-shadow:0 0 20px -5px var(--cyan);transform:translateX(2px);}
+  .nav-tools-btn .ts-ic{flex:0 0 auto;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:17px;color:var(--cyan);background:color-mix(in srgb,var(--cyan) 14%,transparent);border:1px solid color-mix(in srgb,var(--cyan) 40%,transparent);}
+  .nav-tools-btn .ts-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .nav-tools-btn .ts-tx b{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#fff;}
+  .nav-tools-btn .ts-tx small{font-size:10px;color:var(--muted);line-height:1.25;}
+  .nav-tools-btn .ts-car{color:var(--cyan);font-size:15px;}

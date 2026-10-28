@@ -279,6 +279,8 @@ const I18N_DICT = {
   "peak_2": { pt: `peak —`, en: `peak —`, es: `pico —`, fr: `pic —` },
   "primeiro": { pt: `primeiro`, en: `first`, es: `primero`, fr: `premier` },
   "sessao": { pt: `sessão`, en: `session`, es: `sesión`, fr: `session` },
+  "ferramentas_t": { pt: `Ferramentas`, en: `Tools`, es: `Herramientas`, fr: `Outils` },
+  "ferramentas_d": { pt: `Backup, alertas, regras, acesso remoto, nível…`, en: `Backup, alerts, rules, remote access, level…`, es: `Copia, alertas, reglas, acceso remoto, nivel…`, fr: `Sauvegarde, alertes, règles, accès distant, niveau…` },
   "sistema_ativo_com_alertas_sonoros": { pt: `sistema ativo com alertas sonoros`, en: `system active with sound alerts`, es: `sistema activo con alertas sonoras`, fr: `système actif avec alertes sonores` },
   "ultima_leitura": { pt: `Última leitura:`, en: `Last reading:`, es: `Última lectura:`, fr: `Dernière lecture :` },
   "ultimos_blocos_minerados_na_rede_bitcoin": { pt: `Últimos blocos minerados na rede Bitcoin`, en: `Latest blocks mined on the Bitcoin network`, es: `Últimos bloques minados en la red Bitcoin`, fr: `Derniers blocs minés sur le réseau Bitcoin` },
