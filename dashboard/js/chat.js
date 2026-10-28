@@ -508,7 +508,8 @@
     const reply = m.reply ? '<div class="chat-reply" data-act="jump" data-rk="' + escHtml(String(m.reply.k || '')) + '"><b>' + escHtml(String(m.reply.a || '')) + '</b> ' + escHtml(maskWords(String(m.reply.t || ''))) + '</div>' : '';
     row.innerHTML = (self ? '' : (grouped ? '<span class="chat-av ghost"></span>' : avatarHtml(m.author))) +
       '<div class="chat-msg ' + (self ? 'chat-msg-self' : 'chat-msg-other') + '">' +
-      (grouped || self ? '' : '<div class="chat-msg-author" style="--h:' + hue(m.author) + '">' + escHtml(String(m.author || '???')) + '</div>') + reply +
+      (grouped ? '' : self ? (typeof hcRoleTag === 'function' && hcRoleTag(m.uid) ? '<div class="chat-msg-author self-role">' + hcRoleTag(m.uid) + '</div>' : '')
+        : '<div class="chat-msg-author' + (typeof hcRole === 'function' && hcRole(m.uid) ? ' has-role" style="--rc:' + hcRoleColor(m.uid) + ';--h:' : '" style="--h:') + hue(m.author) + '">' + escHtml(String(m.author || '???')) + (typeof hcRoleTag === 'function' ? hcRoleTag(m.uid) : '') + '</div>') + reply +
       '<div class="chat-msg-text">' + richText(m.text) + '</div>' + (m.card ? cardHtml(m.card) : '') +
       '<div class="chat-msg-time">' + (m.edited ? T('edited') + ' ' : '') + fmtTime(m.ts) + '</div>' + reactsHtml(m.key) + '</div>' + tools;
     return row;
@@ -669,9 +670,7 @@
     mine.onDisconnect().remove();
     const beat = () => mine.set({ nick: emailToNick(myEmail), uid: S.uid || null, ts: firebase.database.ServerValue.TIMESTAMP });
     beat(); setInterval(beat, 25000);
-    _presRef.on('value', snap => {
-      S.online = snap.val() || {};
-      pushCounts();
+    const renderOnline = () => {
       const seenU = new Set(), users = Object.values(S.online).filter(u => { const k = (u && (u.uid || u.nick)) || ''; if(!k || seenU.has(k)) return false; seenU.add(k); return true; }), cnt = _c$('chatOnlineCount'), list = _c$('chatOnlineUsers');
       if(cnt) cnt.textContent = users.length;
       if(list){
@@ -679,11 +678,14 @@
         users.forEach(u => {
           const el = document.createElement('div'); el.className = 'chat-sidebar-user';
           if(u.uid && u.uid !== S.uid){ el.dataset.uid = u.uid; el.dataset.nick = u.nick || ''; el.title = T('dm_open'); el.classList.add('can-dm'); }
-          el.innerHTML = avatarHtml(u.nick || '?') + '<span>' + escHtml(u.nick || '???') + (String(u.nick) === myNick() ? ' <em>(' + T('me') + ')</em>' : '') + '</span>';
+          const rl = typeof hcRole === 'function' ? hcRole(u.uid) : null;
+          el.innerHTML = avatarHtml(u.nick || '?') + '<span' + (rl ? ' class="has-role" style="--rc:' + rl.color + '"' : '') + '>' + escHtml(u.nick || '???') + (typeof hcRoleTag === 'function' ? hcRoleTag(u.uid) : '') + (String(u.nick) === myNick() ? ' <em>(' + T('me') + ')</em>' : '') + '</span>';
           list.appendChild(el);
         });
       }
-    });
+    };
+    _presRef.on('value', snap => { S.online = snap.val() || {}; pushCounts(); renderOnline(); });
+    document.addEventListener('hc-roles', () => { renderOnline(); queueRender(); });
   }
   /* ---- canais (geral, ajuda, trocas) e mensagens privadas ---- */
   function chanBase(key){
@@ -833,6 +835,8 @@
   async function runCommand(cmd){
     const c = cmd.toLowerCase().split(/\s+/)[0];
     if(['/ajuda', '/help', '/aide', '/ayuda', '/?'].includes(c)){ note(T('cmd_help')); return true; }
+    if(['/regras', '/rules', '/reglas', '/regles', '/règles'].includes(c) && typeof hcRulesShow === 'function'){ hcRulesShow(); return true; }
+    if(c === '/cargo' && typeof hcRoleCommand === 'function') return hcRoleCommand(cmd, { admin: S.admin, online: S.online, msgs: [...S.msgs.values()], note });
     if(c === '/hash'){
       const t = totals();
       if(!t.on){ note(T('cmd_hash_none')); return true; }
@@ -1019,8 +1023,12 @@
   function togglePanel(){
     const panel = _c$('chatPanel');
     if(!panel) return;
+    // primeira vez (ou regras novas): mostra o código de conduta e só abre depois de "Li e aceito"
+    if(!S.open && typeof hcRulesGate === 'function' && !hcRulesGate(togglePanel)) return;
     S.open = !S.open;
     panel.classList.toggle('open', S.open);
+    // o Best Diff ao vivo abre no mesmo canto: abrir o chat fecha-o, para não ficarem um por cima do outro
+    if(S.open && typeof toggleBestDiffPanel === 'function' && typeof bestDiffLive !== 'undefined' && bestDiffLive.panelOpen) toggleBestDiffPanel(false);
     if(S.open){
       S.firstUnreadKey = ([...S.msgs.values()].filter(m => !m.local && m.ts > lr(S.chan) && !isSelfMsg(m)).sort((a, b) => a.ts - b.ts)[0] || {}).key || null;
       S.unread = 0; S.mention = false; updateBadge();

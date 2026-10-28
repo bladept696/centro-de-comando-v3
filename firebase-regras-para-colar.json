@@ -1,0 +1,321 @@
+{
+  "rules": {
+    "chat": {
+      "messages": {
+        ".read": "auth != null",
+        ".indexOn": [
+          "ts"
+        ],
+        "$id": {
+          ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid || root.child('chat/admins/' + auth.uid).val() === true)",
+          ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
+          "text": {
+            ".validate": "newData.isString() && newData.val().length <= 500"
+          },
+          "author": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "reply": {
+            ".validate": "newData.hasChildren(['k', 'a', 't'])"
+          },
+          "card": {
+            ".validate": "newData.hasChildren(['n'])"
+          },
+          "type": {
+            ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+          },
+          "uid": {
+            ".validate": "newData.val() === auth.uid"
+          },
+          "edited": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          },
+          "ts": {
+            ".validate": "true"
+          },
+          "cid": {
+            ".validate": "newData.isString() && newData.val().length <= 80"
+          }
+        }
+      },
+      "reactions": {
+        ".read": "auth != null",
+        "$msg": {
+          "$emoji": {
+            "$cid": {
+              ".write": "auth != null",
+              ".validate": "newData.val() === true"
+            }
+          }
+        }
+      },
+      "typing": {
+        ".read": "auth != null",
+        "$cid": {
+          ".write": "auth != null"
+        }
+      },
+      "presence": {
+        ".read": "auth != null",
+        "$cid": {
+          ".write": "auth != null"
+        }
+      },
+      "admins": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": false
+        }
+      },
+      "ch": {
+        "$ch": {
+          "messages": {
+            ".read": "auth != null",
+            ".indexOn": [
+              "ts"
+            ],
+            "$id": {
+              ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid || root.child('chat/admins/' + auth.uid).val() === true)",
+              ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
+              "text": {
+                ".validate": "newData.isString() && newData.val().length <= 500"
+              },
+              "author": {
+                ".validate": "newData.isString() && newData.val().length <= 60"
+              },
+              "reply": {
+                ".validate": "newData.hasChildren(['k', 'a', 't'])"
+              },
+              "card": {
+                ".validate": "newData.hasChildren(['n'])"
+              },
+              "type": {
+                ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+              },
+              "uid": {
+                ".validate": "newData.val() === auth.uid"
+              },
+              "edited": {
+                ".validate": "true"
+              },
+              "$other": {
+                ".validate": "false"
+              },
+              "ts": {
+                ".validate": "true"
+              },
+              "cid": {
+                ".validate": "newData.isString() && newData.val().length <= 80"
+              }
+            }
+          },
+          "reactions": {
+            ".read": "auth != null",
+            "$msg": {
+              "$emoji": {
+                "$cid": {
+                  ".write": "auth != null",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            }
+          },
+          "typing": {
+            ".read": "auth != null",
+            "$cid": {
+              ".write": "auth != null"
+            }
+          }
+        }
+      },
+      "dm": {
+        "$pair": {
+          "messages": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            ".indexOn": [
+              "ts"
+            ],
+            "$id": {
+              ".write": "auth != null && $pair.contains(auth.uid) && (!data.exists() || data.child('uid').val() === auth.uid)",
+              ".validate": "newData.hasChildren(['author', 'text', 'ts', 'cid'])",
+              "text": {
+                ".validate": "newData.isString() && newData.val().length <= 500"
+              },
+              "author": {
+                ".validate": "newData.isString() && newData.val().length <= 60"
+              },
+              "reply": {
+                ".validate": "newData.hasChildren(['k', 'a', 't'])"
+              },
+              "card": {
+                ".validate": "newData.hasChildren(['n'])"
+              },
+              "type": {
+                ".validate": "newData.val() === 'msg' || newData.val() === 'event' || newData.val() === 'system'"
+              },
+              "uid": {
+                ".validate": "newData.val() === auth.uid"
+              },
+              "edited": {
+                ".validate": "true"
+              },
+              "$other": {
+                ".validate": "false"
+              },
+              "ts": {
+                ".validate": "true"
+              },
+              "cid": {
+                ".validate": "newData.isString() && newData.val().length <= 80"
+              }
+            }
+          },
+          "reactions": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            "$msg": {
+              "$emoji": {
+                "$cid": {
+                  ".write": "auth != null && $pair.contains(auth.uid)",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            }
+          },
+          "typing": {
+            ".read": "auth != null && $pair.contains(auth.uid)",
+            "$cid": {
+              ".write": "auth != null && $pair.contains(auth.uid)"
+            }
+          }
+        }
+      },
+      "dmidx": {
+        "$uid": {
+          "$peer": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && (auth.uid === $uid || auth.uid === $peer)"
+          }
+        }
+      },
+      "users": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['nick'])"
+        }
+      },
+      "community": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['nick', 'ghs', 'n', 'ts'])",
+          "nick": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "ghs": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 100000000"
+          },
+          "n": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10000"
+          },
+          "best": {
+            ".validate": "newData.isNumber()"
+          },
+          "ts": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          },
+          "cc": {
+            ".validate": "newData.isString() && newData.val().length == 2"
+          },
+          "lat": {
+            ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90"
+          },
+          "lon": {
+            ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180"
+          },
+          "sh": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          }
+        }
+      },
+      "blocks": {
+        ".read": "auth != null",
+        ".indexOn": [
+          "ts"
+        ],
+        "$id": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['nick', 'uid', 'ts']) && newData.child('uid').val() === auth.uid",
+          "nick": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "uid": {
+            ".validate": "true"
+          },
+          "machine": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "best": {
+            ".validate": "newData.isNumber()"
+          },
+          "ts": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "records": {
+        ".read": "auth != null",
+        ".indexOn": [
+          "ts"
+        ],
+        "$id": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['nick', 'uid', 'ts']) && newData.child('uid').val() === auth.uid",
+          "nick": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "uid": {
+            ".validate": "true"
+          },
+          "machine": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "best": {
+            ".validate": "newData.isNumber()"
+          },
+          "ts": {
+            ".validate": "true"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      },
+      "roles": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && root.child('chat/admins/' + auth.uid).val() === true",
+          ".validate": "newData.hasChildren(['name','color'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 10"
+          },
+          "color": {
+            ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
+      }
+    }
+  }
+}

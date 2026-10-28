@@ -300,6 +300,22 @@
             ".validate": "false"
           }
         }
+      },
+      "roles": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && root.child('chat/admins/' + auth.uid).val() === true",
+          ".validate": "newData.hasChildren(['name','color'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 10"
+          },
+          "color": {
+            ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
+          },
+          "$other": {
+            ".validate": "false"
+          }
+        }
       }
     }
   }

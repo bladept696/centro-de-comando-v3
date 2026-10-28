@@ -1,0 +1,16 @@
+/* Regras e código de conduta do chat */
+.hc-rules-ov{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,6,12,.72);backdrop-filter:blur(4px)}
+.hc-rules-box{width:min(520px,100%);max-height:min(88vh,720px);overflow:auto;padding:20px 20px 16px;border-radius:16px;background:#0e1420;border:1px solid rgba(33,255,176,.28);box-shadow:0 20px 60px rgba(0,0,0,.6);color:#d7e0ee;font:14px/1.5 'Space Grotesk',system-ui,sans-serif}
+.hc-rules-box h2{margin:0 0 6px;font-size:18px;color:#21ffb0}
+.hc-rules-intro{margin:0 0 12px;color:#9fb0c8;font-size:13px}
+.hc-rules-list{margin:0 0 14px;padding-left:20px;display:flex;flex-direction:column;gap:10px}
+.hc-rules-list li{padding-left:4px}
+.hc-rules-list b{display:block;color:#fff;font-size:13.5px}
+.hc-rules-list span{display:block;color:#9fb0c8;font-size:12.5px}
+.hc-rules-chk{display:flex;align-items:center;gap:8px;margin:4px 0 12px;cursor:pointer;font-weight:600;color:#fff}
+.hc-rules-chk input{width:18px;height:18px;accent-color:#21ffb0}
+.hc-rules-act{display:flex;justify-content:flex-end;gap:8px}
+.hc-rules-btn{padding:8px 16px;border-radius:10px;border:1px solid #21ffb0;background:#21ffb0;color:#04120d;font:700 13px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
+.hc-rules-btn.ghost{background:transparent;color:#9fb0c8;border-color:rgba(159,176,200,.35)}
+.hc-rules-btn:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:480px){.hc-rules-box{padding:16px 14px 12px}.hc-rules-act{flex-direction:column-reverse}.hc-rules-btn{width:100%}}

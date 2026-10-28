@@ -1,0 +1,5 @@
+/* Cargos com nome colorido */
+.hc-role{display:inline-block;vertical-align:middle;margin-left:6px;padding:1px 6px;border-radius:6px;font:800 9px/1.4 'Space Grotesk',system-ui,sans-serif;letter-spacing:.08em;color:var(--rc);border:1px solid color-mix(in srgb,var(--rc) 65%,transparent);background:color-mix(in srgb,var(--rc) 16%,transparent);text-shadow:0 0 8px color-mix(in srgb,var(--rc) 60%,transparent)}
+.chat-msg-author.has-role,.chat-sidebar-user .has-role{color:var(--rc)!important;font-weight:700}
+.chat-msg-author.self-role{text-align:right}
+.mc-cm-rank li .has-role{color:var(--rc)}

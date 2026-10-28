@@ -19,6 +19,8 @@ function toggleBestDiffPanel(force){
   const shouldOpen = (typeof force === 'boolean') ? force : !bestDiffLive.panelOpen;
   bestDiffLive.panelOpen = shouldOpen;
   panel.classList.toggle('open', shouldOpen);
+  // o chat abre no mesmo canto: abrir este fecha o chat, para não ficarem um por cima do outro
+  if(shouldOpen){ const cp = document.getElementById('chatPanel'), cf = document.getElementById('chatFab'); if(cp && cp.classList.contains('open') && cf) cf.click(); }
   if(shouldOpen){
     bestDiffLive.unseenCount = 0;
     const badge = document.getElementById('bdFabBadge');
