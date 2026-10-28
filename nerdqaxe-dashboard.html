@@ -28,6 +28,11 @@
 <link rel="stylesheet" href="dashboard/css/cartoes.css">
 <link rel="stylesheet" href="dashboard/css/cartoes-virar.css">
 <link rel="stylesheet" href="dashboard/css/acesso-remoto.css">
+<link rel="stylesheet" href="dashboard/css/cargos.css">
+<link rel="stylesheet" href="dashboard/css/regras.css">
+<link rel="stylesheet" href="dashboard/css/voz-alertas.css">
+<link rel="stylesheet" href="dashboard/css/nivel.css">
+<link rel="stylesheet" href="dashboard/css/chips.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap">
 <!-- Firebase Realtime Database SDK (compat v9) -->
 <script src="dashboard/js/diagnostico-temporizadores.js"></script>
@@ -311,6 +316,11 @@
       <span class="nav-menu-caret" aria-hidden="true">▾</span>
     </button>
     <div class="nav-menu-dropdown" id="navMenuDropdown" role="none">
+      <button type="button" class="nav-tools-btn" id="mcMenuBtn" aria-haspopup="menu" title="Backup, alertas, regras, acesso remoto, nível e mais">
+        <span class="ts-ic" aria-hidden="true">⚙</span>
+        <span class="ts-tx"><b data-i18n="ferramentas_t">Ferramentas</b><small data-i18n="ferramentas_d">Backup, alertas, regras, acesso remoto, nível…</small></span>
+        <span class="ts-car" aria-hidden="true">▸</span>
+      </button>
       <div class="nav-menu-group-label"><span class="nav-menu-group-icon" aria-hidden="true">🧭</span><span data-i18n="nav_grupo_painel">Painel</span></div>
       <button class="tab-btn active" role="tab" aria-selected="true" onclick="switchTab('dashboard', this)"><span class="tab-icon" style="--tab-icon-delay:0.0s" aria-hidden="true">📊</span><span data-i18n="dashboard_geral">Dashboard Geral</span></button>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('logs', this)"><span class="tab-icon" style="--tab-icon-delay:0.1s" aria-hidden="true">📜</span><span data-i18n="logs_das_maquinas">Logs das Máquinas</span></button>
@@ -1550,8 +1560,10 @@
 <script src="dashboard/js/16-energia-renting-alertas.js"></script>
 <script src="dashboard/js/17-assistente.js"></script>
 <script src="dashboard/js/18-rede.js"></script>
-<script src="dashboard/js/19-final.js"></script>
+<script src="dashboard/js/19-final.js?v=2"></script>
 
+<script src="dashboard/js/cargos.js"></script>
+<script src="dashboard/js/regras.js"></script>
 <script src="dashboard/js/chat.js"></script>
 <script src="dashboard/js/noticias.js"></script>
 <script src="dashboard/js/donut3d.js"></script>
@@ -1573,6 +1585,9 @@
 <script src="dashboard/js/cartoes-extra.js"></script>
 <script src="dashboard/js/cartoes-ferramentas.js"></script>
 <script src="dashboard/js/acesso-remoto.js"></script>
+<script src="dashboard/js/voz-alertas.js"></script>
+<script src="dashboard/js/nivel.js"></script>
+<script src="dashboard/js/chips.js"></script>
 <script src="dashboard/js/cartoes-relatorios.js"></script>
 <script src="dashboard/js/cartoes-experiencias.js"></script>
 <script src="dashboard/js/cartoes-regras.js"></script>
