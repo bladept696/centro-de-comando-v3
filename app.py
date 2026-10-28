@@ -99,7 +99,7 @@ try:
     import pystray
     from PIL import Image, ImageDraw
     TRAY_AVAILABLE = True
-except ImportError:
+except Exception:   # sem ecrã (ex.: Raspberry sem interface) o pystray pode falhar com outros erros além de ImportError
     pystray = None
     Image = None
     ImageDraw = None
@@ -117,8 +117,13 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.0.5"
+APP_VERSION = "4.0.6"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
+# Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
+# A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
+UPDATE_PUBKEY_HEX = "e6ef1389633f602730107fe5aad5e6e303c6e5c8acf7554883dbebbc71ef9a56"
+UPDATE_SIG_CONTEXT = b"HC-UPDATE-V1:"
+UPDATE_ALLOWED_HOSTS = ("github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com", "github-releases.githubusercontent.com")
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
 _update_cache_lock = threading.Lock()
@@ -1688,6 +1693,7 @@ def check_for_update(force=False):
         "installer_url": None,
         "installer_name": None,
         "installer_size": None,
+        "signature_url": None,
         "error": None,
     }
     try:
@@ -1724,6 +1730,12 @@ def check_for_update(force=False):
             result["installer_url"] = best.get('browser_download_url')
             result["installer_name"] = best.get('name')
             result["installer_size"] = best.get('size')
+            # a assinatura é um ficheiro "<instalador>.sig" na mesma release
+            sig_name = (best.get('name') or '') + '.sig'
+            for a in assets:
+                if (a.get('name') or '') == sig_name:
+                    result["signature_url"] = a.get('browser_download_url')
+                    break
     except Exception as e:
         result["error"] = str(e)
 
@@ -1747,15 +1759,40 @@ def update_download_dir():
     return d
 
 
-def _do_download_and_launch_installer(url, name, silent):
+def _update_url_ok(url):
+    try:
+        u = urllib.parse.urlparse(url)
+    except Exception:
+        return False
+    return u.scheme == 'https' and (u.hostname or '').lower() in UPDATE_ALLOWED_HOSTS
+
+
+def verify_update_signature(digest, sig_hex):
+    """True só se sig_hex for uma assinatura Ed25519 válida (da chave UPDATE_PUBKEY_HEX) sobre o SHA-256 do instalador."""
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        sig = bytes.fromhex((sig_hex or '').strip())
+        pub = Ed25519PublicKey.from_public_bytes(bytes.fromhex(UPDATE_PUBKEY_HEX))
+        pub.verify(sig, UPDATE_SIG_CONTEXT + digest)
+        return True
+    except Exception:
+        return False
+
+
+def _do_download_and_launch_installer(url, name, silent, sig_url=None):
     global _update_install_state
+    dest = None
     try:
         with _update_install_lock:
             _update_install_state = {"status": "downloading", "error": None}
 
-        dest = os.path.join(update_download_dir(), name or "CentroDeComando-Setup.exe")
+        if not _update_url_ok(url) or not _update_url_ok(sig_url or ''):
+            raise RuntimeError("endereço da atualização não é do GitHub (recusado)")
+        name = os.path.basename(name or "CentroDeComando-Setup.exe")
+        dest = os.path.join(update_download_dir(), name)
         req = urllib.request.Request(url, headers={'User-Agent': 'CentroDeComando-UpdateDownload'})
         total = 0
+        h = hashlib.sha256()
         with _urlopen_https(req, timeout=15) as resp, open(dest, 'wb') as f:
             while True:
                 chunk = resp.read(1024 * 256)
@@ -1764,10 +1801,23 @@ def _do_download_and_launch_installer(url, name, silent):
                 total += len(chunk)
                 if total > UPDATE_DOWNLOAD_MAX_BYTES:
                     raise RuntimeError("instalador excede o tamanho máximo esperado")
+                h.update(chunk)
                 f.write(chunk)
 
         with _update_install_lock:
-            _update_install_state = {"status": "launching", "error": None}
+            _update_install_state = {"status": "verifying", "error": None}
+        sreq = urllib.request.Request(sig_url, headers={'User-Agent': 'CentroDeComando-UpdateDownload'})
+        with _urlopen_https(sreq, timeout=15) as sresp:
+            sig_hex = sresp.read(4096).decode('ascii', errors='ignore')
+        if not verify_update_signature(h.digest(), sig_hex):
+            try:
+                os.remove(dest)
+            except Exception:
+                pass
+            raise RuntimeError("assinatura inválida: o instalador foi apagado e NÃO foi executado")
+
+        with _update_install_lock:
+            _update_install_state = {"status": "launching", "error": None, "verified": True}
 
         args = [dest]
         if silent:
@@ -1776,7 +1826,7 @@ def _do_download_and_launch_installer(url, name, silent):
         subprocess.Popen(args, close_fds=True, shell=False)
 
         with _update_install_lock:
-            _update_install_state = {"status": "done", "error": None}
+            _update_install_state = {"status": "done", "error": None, "verified": True}
 
         time.sleep(1.5)
         os._exit(0)
@@ -1798,9 +1848,15 @@ def start_update_install(silent=True):
             _update_install_state = _update_install_state_local
         return False, _update_install_state_local["error"]
 
+    if not info.get("signature_url"):
+        msg = "A release não tem o ficheiro de assinatura (.sig), por isso a atualização automática foi recusada. Descarrega o instalador manualmente."
+        with _update_install_lock:
+            _update_install_state = {"status": "error", "error": msg}
+        return False, msg
+
     t = threading.Thread(
         target=_do_download_and_launch_installer,
-        args=(info["installer_url"], info.get("installer_name"), silent),
+        args=(info["installer_url"], info.get("installer_name"), silent, info["signature_url"]),
         daemon=True,
     )
     t.start()
@@ -3371,6 +3427,9 @@ def dashboard_url_scheme():
 # "tailscale serve" publica o painel em HTTPS só dentro dessa rede (nunca o Funnel, que seria a internet pública).
 # O login do Hash Commander continua obrigatório em todas as rotas /api/.
 def remote_keepalive():
+    # HC_KEEPALIVE=1 (servidor sem ecrã, ex.: Raspberry): nunca se desliga sozinho
+    if os.environ.get('HC_KEEPALIVE') == '1':
+        return True
     with POWER_CONFIG_LOCK:
         return bool(power_config.get("security", {}).get("remote_keepalive"))
 
@@ -4429,6 +4488,10 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/api/update/install':
+            # instalar uma atualização só é permitido a partir deste PC (e com login), nunca pelo acesso remoto
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "só é possível a partir do próprio PC"}, 403)
+                return
             silent = bool(body.get("silent", True))
             with _update_install_lock:
                 already_running = _update_install_state.get("status") in ("downloading", "launching")
@@ -4921,6 +4984,9 @@ def abrir_dashboard():
     """Abre a dashboard numa janela própria do Chrome (sem extensões, com o Modo Desempenho desligado e um perfil só para ela).
     Se o Chrome não estiver instalado, usa o navegador predefinido como antes."""
     url = f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html'
+    if sys.platform.startswith('linux') and not (os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
+        print(f"[info] servidor sem ecrã: abre {url} noutro dispositivo (ou pelo Tailscale).", flush=True)
+        return
     try:
         candidatos = [os.path.join(os.environ.get(v, ''), *rel) for v, rel in (
             ('ProgramFiles', ('Google', 'Chrome', 'Application', 'chrome.exe')),
