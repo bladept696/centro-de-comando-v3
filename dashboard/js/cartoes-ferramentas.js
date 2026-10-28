@@ -8,6 +8,49 @@ mc.sched = (() => { try { const a = JSON.parse(localStorage.getItem(MC_SCHED_KEY
 mc.ignored = (() => { try { return new Set(JSON.parse(localStorage.getItem(MC_IGN_KEY) || '[]')); } catch(e) { return new Set(); } })();
 const mcToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
+// ---------------- menu ⚙: grupos com mosaicos (ícone grande + nome curto) ----------------
+const MC_MENU_GROUPS = [
+  ['data', ['export', 'import']],
+  ['alerts', ['pause', 'sched', 'rules', 'limits', 'valerts', 'tariff']],
+  ['net', ['scan', 'remote', 'lock']],
+  ['panel', ['report', 'xp', 'chips', 'level', 'help']]
+];
+const MC_MENU_GTX = {
+  data: ['Dados e cópias', 'Data & backups', 'Datos y copias', 'Données et sauvegardes'],
+  alerts: ['Alertas e regras', 'Alerts & rules', 'Alertas y reglas', 'Alertes et règles'],
+  net: ['Rede e acesso', 'Network & access', 'Red y acceso', 'Réseau et accès'],
+  panel: ['Painel e extras', 'Panel & extras', 'Panel y extras', 'Tableau et extras']
+};
+function mcMenuLabel(k){
+  switch(k){
+    case 'export': return t('mc_m_export'); case 'import': return t('mc_m_import');
+    case 'scan': return (mc.prefs.autoScan ? '✅ ' : '⬜ ') + t('mc_m_scan').replace(/^[☑☐]\s*/, '');
+    case 'sched': return t('mc_m_sched'); case 'rules': return t('mc_m_rules'); case 'xp': return t('mc_m_xp');
+    case 'tariff': return t('mc_m_tariff'); case 'limits': return t('mc_m_limits');
+    case 'lock': return t(mc.locked ? 'mc_m_unlock' : 'mc_m_lock'); case 'report': return t('mc_m_report');
+    case 'remote': return typeof hcRemoteLabel === 'function' ? hcRemoteLabel() : '🌐 Acesso remoto';
+    case 'chips': return typeof hcChipsLabel === 'function' ? hcChipsLabel() : '🧩 Saúde dos chips';
+    case 'level': return typeof hcLvlLabel === 'function' ? hcLvlLabel() : '🏅 Nível e missões';
+    case 'valerts': return typeof hcVoiceAlertsLabel === 'function' ? hcVoiceAlertsLabel() : '🔊 Alertas por voz';
+    case 'help': return t('mc_m_help');
+  }
+  return k;
+}
+function mcMenuTile(k){
+  const raw = String(mcMenuLabel(k)).trim(), m = raw.match(/^((?:\p{Extended_Pictographic}|[\uFE0F\u200D])+)\s*(.*)$/u);
+  const ic = m ? m[1] : '•', tx = m ? m[2] : raw;
+  return '<button type="button" class="mc-tile' + (k === 'scan' && mc.prefs.autoScan ? ' on' : '') + '" data-m="' + k + '" title="' + String(tx).replace(/"/g, '&quot;') + '"><i>' + ic + '</i><span>' + tx + '</span></button>';
+}
+function mcMenuHtml(){
+  const li = Math.max(0, ['pt', 'en', 'es', 'fr'].indexOf(typeof currentLang !== 'undefined' ? currentLang : 'pt'));
+  return MC_MENU_GROUPS.map(([g, ks]) =>
+    '<div class="mc-mg"><div class="mc-mgt">' + MC_MENU_GTX[g][li] + '</div><div class="mc-mgrid">' +
+    ks.map(k => k === 'pause'
+      ? '<div class="mc-menu-row"><span>' + t('mc_m_pause') + '</span><button type="button" data-m="pause60">1 h</button><button type="button" data-m="pause240">4 h</button><button type="button" data-m="pause720">12 h</button></div>'
+      : mcMenuTile(k)).join('') + '</div></div>').join('');
+}
+
+
 // ---------------- menu ⚙ ----------------
 function mcCloseMenu(){ const m = $('mcMenu'); if(m) m.remove(); }
 function mcToggleMenu(){
@@ -16,10 +59,13 @@ function mcToggleMenu(){
   if(!panel) return;
   const m = document.createElement('div');
   m.id = 'mcMenu'; m.className = 'mc-menu';
-  m.innerHTML = '<button type="button" data-m="export">' + t('mc_m_export') + '</button><button type="button" data-m="import">' + t('mc_m_import') + '</button>' +
-    '<button type="button" data-m="scan">' + (mc.prefs.autoScan ? '☑ ' : '☐ ') + t('mc_m_scan') + '</button><button type="button" data-m="sched">' + t('mc_m_sched') + '</button><div class="mc-menu-row"><span>' + t('mc_m_pause') + '</span><button type="button" data-m="pause60">1 h</button><button type="button" data-m="pause240">4 h</button><button type="button" data-m="pause720">12 h</button></div><button type="button" data-m="rules">' + t('mc_m_rules') + '</button><button type="button" data-m="xp">' + t('mc_m_xp') + '</button><button type="button" data-m="tariff">' + t('mc_m_tariff') + '</button><button type="button" data-m="limits">' + t('mc_m_limits') + '</button><button type="button" data-m="lock">' + t(mc.locked ? 'mc_m_unlock' : 'mc_m_lock') + '</button><button type="button" data-m="report">' + t('mc_m_report') + '</button><button type="button" data-m="remote">' + (typeof hcRemoteLabel === 'function' ? hcRemoteLabel() : '🌐 Acesso remoto') + '</button><button type="button" data-m="chips">' + (typeof hcChipsLabel === 'function' ? hcChipsLabel() : '🧩 Saúde dos chips') + '</button><button type="button" data-m="level">' + (typeof hcLvlLabel === 'function' ? hcLvlLabel() : '🏅 Nível e missões') + '</button><button type="button" data-m="valerts">' + (typeof hcVoiceAlertsLabel === 'function' ? hcVoiceAlertsLabel() : '🔊 Alertas por voz') + '</button><button type="button" data-m="help">' + t('mc_m_help') + '</button>';
-  if(mc.locked) m.querySelectorAll('[data-m]').forEach(b => { if(!['export', 'report', 'help', 'lock'].includes(b.dataset.m)) b.remove(); });
-  m.querySelectorAll('.mc-menu-row').forEach(r => { if(mc.locked) r.remove(); });
+  m.classList.add('mc-menu2');
+  m.innerHTML = mcMenuHtml();
+  if(mc.locked){
+    m.querySelectorAll('[data-m]').forEach(b => { if(!['export', 'report', 'help', 'lock'].includes(b.dataset.m)) b.remove(); });
+    m.querySelectorAll('.mc-menu-row').forEach(r => r.remove());
+    m.querySelectorAll('.mc-mg').forEach(g => { if(!g.querySelector('[data-m]')) g.remove(); });
+  }
   const pr = panel.getBoundingClientRect(), br = btn.getBoundingClientRect();
   m.style.top = (br.bottom - pr.top + 6) + 'px';
   m.style.right = Math.max(8, pr.right - br.right) + 'px';
