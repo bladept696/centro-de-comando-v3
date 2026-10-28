@@ -24,6 +24,7 @@
     pool:{pt:'diff da pool',en:'pool diff',es:'diff del pool',fr:'diff du pool'},
     sh:{pt:'shares aceites',en:'shares accepted',es:'shares aceptadas',fr:'shares acceptées'},
     shr:{pt:'shares rejeitadas',en:'shares rejected',es:'shares rechazadas',fr:'shares rejetées'},
+    from:{pt:'de',en:'from',es:'de',fr:'de'},
     record:{pt:'Novo recorde',en:'New record',es:'Nuevo récord',fr:'Nouveau record'},
     empty:{pt:'A aguardar atividade das máquinas…',en:'Waiting for machine activity…',es:'Esperando actividad de las máquinas…',fr:'En attente d’activité des machines…'},
     work:{pt:'trabalho',en:'work',es:'trabajo',fr:'travail'},
@@ -34,6 +35,24 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const fd = n => { if(!(n > 0)) return '—'; const f = formatDiff(n); return f.value + f.unit; };
   const num = v => { const n = Number(v); return isFinite(n) ? n : 0; };
+
+  // ---------- recordes guardados ----------
+  // Cada best diff novo de cada máquina fica na lista (com o valor anterior) e sobrevive a atualizar a página.
+  const RK = 'hc_bd_records';
+  const saveRecs = () => { try { localStorage.setItem(RK, JSON.stringify(bestDiffLive.feed.slice(-300))); } catch(e) {} };
+  try {
+    const old = JSON.parse(localStorage.getItem(RK) || '[]');
+    if(Array.isArray(old) && !bestDiffLive.feed.length) bestDiffLive.feed.push(...old.filter(i => i && i.machine && i.diffText && i.ts));
+  } catch(e) {}
+  if(typeof window.recordBestDiffEvent === 'function'){
+    const origRec = window.recordBestDiffEvent;
+    window.recordBestDiffEvent = function(dev, cur, ts){
+      const prev = (DX.m[dev.id] || {}).prevBest || (bestDiffLive.perMachine[dev.id] || {}).best || 0;
+      origRec.apply(this, arguments);
+      const last = bestDiffLive.feed[bestDiffLive.feed.length - 1];
+      if(last && last.machineId === dev.id){ last.diff = cur; if(prev > 0 && prev < cur) last.prev = prev; saveRecs(); }
+    };
+  }
 
   // ---------- dados ----------
   window.bdTrack = function(dev, d){
@@ -46,7 +65,9 @@
     if(!s) s = DX.m[dev.id] = { name: dev.name, pd: 0, acc: 0, rej: 0, series: [], base: false };
     s.name = dev.name;
     s.pd = pd || s.pd;
-    s.best = num(d.bestSessionDiff);
+    const nb = num(d.bestSessionDiff);
+    if(s.best && nb > s.best) s.prevBest = s.best;   // para mostrar "▲ de X" no recorde
+    s.best = nb;
     s.bestAll = num(d.bestDiff);
     if(!s.best && !s.bestAll) s.best = num(d.bestSessionDiff ?? d.bestDiff);
     s.seen = now;
@@ -136,7 +157,7 @@
     const ok = id => f === 'all' || String(id) === String(f);
     const out = [];
     if(DX.kind === 'all' || DX.kind === 'rec')
-      bestDiffLive.feed.filter(i => ok(i.machineId)).forEach(i => out.push({ k: 'rec', m: i.machine, text: `${x('record')}: <b>${esc(i.diffText)}</b>`, ts: i.ts }));
+      bestDiffLive.feed.filter(i => ok(i.machineId)).forEach(i => out.push({ k: 'rec', m: i.machine, text: `${x('record')}: <b>${esc(i.diffText)}</b>${i.prev ? ` <i>▲ ${x('from')} ${fd(i.prev)}</i>` : ''}`, ts: i.ts }));
     DX.ev.filter(e => ok(e.id)).forEach(e => {
       if(e.k === 'share' && (DX.kind === 'all' || DX.kind === 'share'))
         out.push({ k: 'share', m: e.m, text: `+${e.n} shares <i>@ ${fd(e.pd)}</i>${e.pd ? ` ≈ <b>${fd(e.n * e.pd)}</b>` : ''}`, ts: e.ts });
@@ -148,6 +169,13 @@
   const ICON = { rec: '🏆', share: '⛏', rej: '✗' };
   const feedHtml = items => !items.length ? `<div class="ls-feed-empty">${x('empty')}</div>` :
     items.map(i => `<div class="bdx-ev ${i.k}"><span class="ic">${ICON[i.k]}</span><span class="mn">${esc(i.m)}</span><span class="tx">${i.text}</span><span class="tm">${new Date(i.ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></div>`).join('');
+
+  // na vista "Tudo" os recordes ficam sempre no topo, para não se perderem no meio das shares
+  const withRecs = (items, n, cap) => {
+    if(DX.kind !== 'all') return items.slice(0, cap);
+    const recs = items.filter(i => i.k === 'rec').slice(0, n);
+    return recs.concat(items.filter(i => !recs.includes(i))).slice(0, cap);
+  };
 
   function bdxRender(){
     if(!document.getElementById('bdPanel')) return;
@@ -166,9 +194,9 @@
     const mh = machinesHtml(items);
     const ms = document.getElementById('bdxMs'); if(ms.innerHTML !== mh) ms.innerHTML = mh;
     const feed = feedItems();
-    document.getElementById('bdFeed').innerHTML = feedHtml(feed.slice(0, 5));
+    document.getElementById('bdFeed').innerHTML = feedHtml(withRecs(feed, 3, 5));
     const full = document.getElementById('bdFullList');
-    if(full && bestDiffLive.fullModalOpen) full.innerHTML = `<div class="bdx-chips">${ch}</div><div class="bdx-ms">${mh}</div><div class="bdx-feed">${feedHtml(feed.slice(0, 300))}</div>`;
+    if(full && bestDiffLive.fullModalOpen) full.innerHTML = `<div class="bdx-chips">${ch}</div><div class="bdx-ms">${mh}</div><div class="bdx-feed">${feedHtml(withRecs(feed, 20, 300))}</div>`;
   }
   // substitui as funções do painel antigo (04-widgets-shares.js)
   window.renderBestDiffPanel = bdxRender;

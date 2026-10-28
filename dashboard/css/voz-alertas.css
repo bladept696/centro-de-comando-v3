@@ -1,0 +1,17 @@
+/* Alertas por voz */
+.hc-va-ov{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,6,12,.72);backdrop-filter:blur(4px)}
+.hc-va-box{width:min(440px,100%);max-height:min(88vh,680px);overflow:auto;padding:20px 20px 16px;border-radius:16px;background:#0e1420;border:1px solid rgba(255,176,32,.3);box-shadow:0 20px 60px rgba(0,0,0,.6);color:#d7e0ee;font:14px/1.5 'Space Grotesk',system-ui,sans-serif}
+.hc-va-box h2{margin:0 0 6px;font-size:18px;color:#ffb020}
+.hc-va-intro{margin:0 0 12px;color:#9fb0c8;font-size:12.5px}
+.hc-va-warn{margin:0 0 12px;padding:8px 10px;border-radius:8px;background:rgba(255,77,109,.12);color:#ff8fa3;font-size:12.5px}
+.hc-va-sec{margin:14px 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7f91ad}
+.hc-va-row{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer}
+.hc-va-row input{width:18px;height:18px;accent-color:#ffb020}
+.hc-va-main{font-weight:700;color:#fff;padding:8px 10px;border-radius:10px;background:rgba(255,176,32,.08)}
+.hc-va-box input[type=range]{width:100%;accent-color:#ffb020}
+.hc-va-time{display:flex;align-items:center;gap:8px;margin:2px 0 0 26px;color:#9fb0c8}
+.hc-va-time input{padding:4px 6px;border-radius:8px;border:1px solid rgba(159,176,200,.3);background:#0a0f18;color:#d7e0ee;font:inherit}
+.hc-va-act{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.hc-va-btn{padding:8px 16px;border-radius:10px;border:1px solid #ffb020;background:#ffb020;color:#1a1000;font:700 13px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
+.hc-va-btn.ghost{background:transparent;color:#ffb020}
+@media(max-width:480px){.hc-va-box{padding:16px 14px 12px}.hc-va-act{flex-direction:column-reverse}.hc-va-btn{width:100%}}
