@@ -33,6 +33,7 @@
 <link rel="stylesheet" href="dashboard/css/voz-alertas.css">
 <link rel="stylesheet" href="dashboard/css/nivel.css">
 <link rel="stylesheet" href="dashboard/css/chips.css">
+<link rel="stylesheet" href="dashboard/css/mapa-fundo.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap">
 <!-- Firebase Realtime Database SDK (compat v9) -->
 <script src="dashboard/js/diagnostico-temporizadores.js"></script>
@@ -535,7 +536,7 @@
             <div class="network-map-legend" id="networkMapLegend"></div>
             <div class="network-map-controls"><select class="network-map-select" id="networkMapMode" aria-label="Colorir por"><option value="status">Cor: estado</option><option value="temp">Cor: temperatura</option><option value="eff">Cor: eficiência (por algoritmo)</option><option value="link">Cor: ligação</option></select><button class="network-map-btn active" id="networkMap3dBtn" title="Mapa em 3D (chão inclinado com os cartões de pé; até 6 máquinas)">⬡ 3D</button><button class="network-map-btn active" id="networkMapAutoBtn">↻ Auto</button><button class="network-map-btn" id="networkMapRefreshBtn">⟳ Atualizar mapa</button><button class="network-map-btn" id="networkMapResetBtn">↺ Reorganizar</button></div>
           </div>
-          <div class="network-map-wrap" id="networkMapWrap"><svg class="network-map-svg" id="networkMapSvg" aria-hidden="true"></svg><div class="network-map-nodes" id="networkMapNodes"></div></div>
+          <div class="network-map-wrap" id="networkMapWrap"><canvas class="nm-bg-canvas" id="nmBgCanvas" aria-hidden="true"></canvas><svg class="network-map-svg" id="networkMapSvg" aria-hidden="true"></svg><div class="network-map-nodes" id="networkMapNodes"></div></div>
           <div class="network-map-foot"><span id="networkMapFootLeft">Clique numa máquina para a selecionar.</span><span id="networkMapFootRight">—</span></div>
         </div>
 
@@ -1588,6 +1589,7 @@
 <script src="dashboard/js/voz-alertas.js"></script>
 <script src="dashboard/js/nivel.js"></script>
 <script src="dashboard/js/chips.js"></script>
+<script src="dashboard/js/mapa-fundo.js"></script>
 <script src="dashboard/js/cartoes-relatorios.js"></script>
 <script src="dashboard/js/cartoes-experiencias.js"></script>
 <script src="dashboard/js/cartoes-regras.js"></script>
