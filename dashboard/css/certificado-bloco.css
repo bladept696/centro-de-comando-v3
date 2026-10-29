@@ -1,0 +1,37 @@
+/* Certificados de bloco */
+.hc-bc-ov{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,6,12,.72);backdrop-filter:blur(4px)}
+.hc-bc-box{width:min(600px,100%);max-height:min(90vh,820px);overflow:auto;padding:20px 20px 14px;border-radius:16px;background:#0e1420;border:1px solid rgba(255,176,32,.4);box-shadow:0 20px 60px rgba(0,0,0,.6);color:#d7e2f2}
+.hc-bc-box h2{margin:0 0 8px;font-size:18px;color:#fff}
+.hc-bc-intro{margin:0 0 8px;font-size:12.5px;color:#9fb0c8}
+.hc-bc-trust{margin:0 0 12px;padding:8px 10px;border-radius:9px;background:rgba(79,214,255,.08);font-size:12px;color:#9fd8ee}
+.hc-bc-top{margin-bottom:12px}
+.hc-bc-top button,.hc-bc-act button{padding:7px 12px;border-radius:9px;border:1px solid rgba(159,176,200,.35);background:rgba(255,255,255,.05);color:#e6eefb;font:600 12px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
+.hc-bc-top button:hover,.hc-bc-act button:hover{border-color:#4fd6ff}
+.hc-bc-act button.del{color:#ff9bae}
+.hc-bc-none{padding:18px;text-align:center;color:#9fb0c8;font-size:13px}
+.hc-bc-card{padding:12px;margin-bottom:10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(159,176,200,.16)}
+.hc-bc-card.confirmed{border-color:rgba(33,255,176,.45);background:rgba(33,255,176,.05)}
+.hc-bc-card.bad{border-color:rgba(255,77,109,.5)}
+.hc-bc-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.hc-bc-h b{font-size:15px;color:#fff}
+.hc-bc-chip{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(255,176,32,.16);color:#ffcf7a}
+.hc-bc-chip.confirmed{background:rgba(33,255,176,.16);color:#7bf0c8}
+.hc-bc-chip.test{background:rgba(159,176,200,.16);color:#c3d0e3}
+.hc-bc-chip.bad,.hc-bc-chip.timeout{background:rgba(255,77,109,.16);color:#ff9bae}
+.hc-bc-r{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:12px;color:#9fb0c8}
+.hc-bc-r b{color:#fff;text-align:right;min-width:0;overflow-wrap:anywhere}
+.hc-bc-r b.m{font-family:'JetBrains Mono',monospace;font-size:11px}
+.hc-bc-r a{color:#4fd6ff;text-decoration:none}
+.hc-bc-warn{margin:6px 0;padding:6px 9px;border-radius:8px;background:rgba(255,176,32,.12);color:#ffcf7a;font-size:11.5px}
+.hc-bc-vr{margin-top:6px;font-size:11.5px;color:#9fb0c8}
+.hc-bc-vr .ok{color:#7bf0c8}.hc-bc-vr .bad{color:#ff9bae}
+.hc-bc-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hc-bc-how{margin:6px 0 4px;font-size:12px;color:#9fb0c8}
+.hc-bc-how summary{cursor:pointer}
+.hc-bc-how code{font-size:10.5px;overflow-wrap:anywhere;color:#d7e2f2}
+.hc-bc-foot{display:flex;justify-content:flex-end;margin-top:10px}
+.hc-bc-close{padding:8px 16px;border-radius:10px;border:1px solid #4fd6ff;background:#4fd6ff;color:#04141a;font:700 13px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
+#hcBcToasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:100001;display:flex;flex-direction:column;gap:8px;align-items:center;width:max-content;max-width:calc(100vw - 32px);pointer-events:none}
+.hc-bc-toast{width:max-content;max-width:min(420px,calc(100vw - 32px));padding:10px 16px;border-radius:12px;background:#121a2a;border:1px solid #ffb020;color:#fff;font:600 13px 'Space Grotesk',system-ui,sans-serif;box-shadow:0 0 24px rgba(255,176,32,.3),0 10px 30px rgba(0,0,0,.5);transition:all .4s}
+.hc-bc-toast.out{opacity:0;transform:translateY(8px)}
+@media(max-width:480px){.hc-bc-box{padding:16px 14px 12px}.hc-bc-r{flex-direction:column;gap:1px}.hc-bc-r b{text-align:left}}
