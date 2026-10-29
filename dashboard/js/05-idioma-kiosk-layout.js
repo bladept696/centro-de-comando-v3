@@ -219,6 +219,7 @@ const TAB_LABEL_KEYS = {
   thermal: 'saude_termica',
   oc: 'overclock',
   converter: 'conversor',
+  mercado: 'mercado_t',
   donate: 'apoiar_doar',
   supporters: 'apoiantes',
   support: 'suporte',
