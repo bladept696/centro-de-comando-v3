@@ -13,7 +13,7 @@ const MC_MENU_GROUPS = [
   ['data', ['export', 'import']],
   ['alerts', ['pause', 'sched', 'rules', 'limits', 'valerts', 'tariff']],
   ['net', ['scan', 'remote', 'lock']],
-  ['panel', ['report', 'xp', 'chips', 'real', 'cert', 'level', 'help']]
+  ['panel', ['report', 'xp', 'chips', 'real', 'cert', 'trophy', 'level', 'help']]
 ];
 const MC_MENU_GTX = {
   data: ['Dados e cópias', 'Data & backups', 'Datos y copias', 'Données et sauvegardes'],
@@ -32,6 +32,7 @@ function mcMenuLabel(k){
     case 'chips': return typeof hcChipsLabel === 'function' ? hcChipsLabel() : '🧩 Saúde dos chips';
     case 'cert': return typeof hcCertLabel === 'function' ? hcCertLabel() : '📜 Certificados de bloco';
     case 'real': return typeof hcRealLabel === 'function' ? hcRealLabel() : '📐 Hashrate real';
+    case 'trophy': return typeof hcCollectionLabel === 'function' ? hcCollectionLabel() : '🏆 Coleção de troféus';
     case 'level': return typeof hcLvlLabel === 'function' ? hcLvlLabel() : '🏅 Nível e missões';
     case 'valerts': return typeof hcVoiceAlertsLabel === 'function' ? hcVoiceAlertsLabel() : '🔊 Alertas por voz';
     case 'help': return t('mc_m_help');
@@ -104,6 +105,7 @@ document.addEventListener('click', e => {
   else if(k === 'chips'){ if(typeof hcChipsOpen === 'function') hcChipsOpen(); }
   else if(k === 'cert'){ if(typeof hcCertOpen === 'function') hcCertOpen(); }
   else if(k === 'real'){ if(typeof hcRealOpen === 'function') hcRealOpen(); }
+  else if(k === 'trophy'){ if(typeof hcCollectionOpen === 'function') hcCollectionOpen(); }
   else if(k === 'level'){ if(typeof hcLvlOpen === 'function') hcLvlOpen(); }
   else if(k === 'valerts'){ if(typeof hcVoiceAlertsOpen === 'function') hcVoiceAlertsOpen(); }
   else if(k === 'help'){ if(typeof mcHelpToggle === 'function') mcHelpToggle(); }

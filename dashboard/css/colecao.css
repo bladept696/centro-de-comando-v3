@@ -1,0 +1,26 @@
+/* Modo coleção: vitrine de troféus do best diff (reaproveita .hc-ch-ov / .hc-ch-box / .hc-ch-btn de chips.css) */
+.hc-co-box{width:min(560px,100%)}
+.hc-co-hall{display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px;margin-bottom:12px;border-radius:14px;text-align:center;background:linear-gradient(135deg,rgba(255,200,87,.16),rgba(79,214,255,.08));border:1px solid rgba(255,200,87,.4)}
+.hc-co-hall span{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#ffc857}
+.hc-co-hall b{font-size:30px;line-height:1.1;color:#fff}
+.hc-co-hall small{font-size:12px;color:#8fa1bd}
+.hc-co-card{display:flex;gap:12px;padding:12px;margin-bottom:10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(159,176,200,.16)}
+.hc-co-card.tier-t_gold{border-color:rgba(255,200,87,.45)}
+.hc-co-card.tier-t_dia{border-color:rgba(79,214,255,.55)}
+.hc-co-card.tier-t_crown{border-color:rgba(255,120,200,.55)}
+.hc-co-card.tier-t_leg{border-color:rgba(160,120,255,.7);box-shadow:0 0 18px rgba(160,120,255,.25)}
+.hc-co-medal{position:relative;flex:0 0 54px;height:54px;display:flex;align-items:center;justify-content:center;font-size:34px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hc-co-medal em{position:absolute;right:-4px;bottom:-4px;min-width:20px;padding:1px 5px;border-radius:10px;background:#0e1420;border:1px solid rgba(159,176,200,.35);font:700 11px 'Space Grotesk',system-ui,sans-serif;font-style:normal;color:#d7e0ee;text-align:center}
+.hc-co-main{flex:1;min-width:0}
+.hc-co-name{font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hc-co-name small{font-weight:400;color:#8fa1bd;font-size:11px;margin-left:4px}
+.hc-co-val{font-size:22px;font-weight:700;color:#4fd6ff;line-height:1.2}
+.hc-co-sub{font-size:11px;color:#8fa1bd;margin-top:2px}
+.hc-co-net{height:4px;margin-top:6px;border-radius:2px;background:rgba(159,176,200,.18);overflow:hidden}
+.hc-co-net span{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#4fd6ff,#ffc857)}
+.hc-co-h{margin-top:8px;font-size:12px;color:#8fa1bd}
+.hc-co-h summary{cursor:pointer}
+.hc-co-h ul{list-style:none;margin:6px 0 0;padding:0}
+.hc-co-h li{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-top:1px solid rgba(159,176,200,.12)}
+.hc-co-h li b{color:#d7e0ee}
+.hc-co-sec{margin-right:8px;padding:8px 14px;border-radius:10px;border:1px solid rgba(159,176,200,.35);background:transparent;color:#d7e0ee;font:600 13px 'Space Grotesk',system-ui,sans-serif;cursor:pointer}
