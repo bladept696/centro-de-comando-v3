@@ -33,6 +33,14 @@
 <link rel="stylesheet" href="dashboard/css/voz-alertas.css">
 <link rel="stylesheet" href="dashboard/css/nivel.css">
 <link rel="stylesheet" href="dashboard/css/chips.css">
+<link rel="stylesheet" href="dashboard/css/hashreal.css">
+<link rel="stylesheet" href="dashboard/css/certificado-bloco.css">
+<link rel="stylesheet" href="dashboard/css/mapa-fundo.css">
+<link rel="stylesheet" href="dashboard/css/mempool-tech.css">
+<link rel="stylesheet" href="dashboard/css/mempool-dial.css">
+<link rel="stylesheet" href="dashboard/css/mempool-holo.css">
+<link rel="stylesheet" href="dashboard/css/mempool-mod3d.css">
+<link rel="stylesheet" href="dashboard/css/mercado.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap">
 <!-- Firebase Realtime Database SDK (compat v9) -->
 <script src="dashboard/js/diagnostico-temporizadores.js"></script>
@@ -349,6 +357,7 @@
       <div class="nav-menu-group-label"><span class="nav-menu-group-icon" aria-hidden="true">🧰</span><span data-i18n="nav_grupo_ferramentas">Ferramentas</span></div>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('simulator', this)"><span class="tab-icon" style="--tab-icon-delay:0.3s" aria-hidden="true">⏱️</span><span data-i18n="simulador">Simulador</span></button>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('converter', this)"><span class="tab-icon" style="--tab-icon-delay:0.7s" aria-hidden="true">💱</span><span data-i18n="conversor">Conversor</span></button>
+      <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('mercado', this)"><span class="tab-icon" style="--tab-icon-delay:0.8s" aria-hidden="true">💹</span><span data-i18n="mercado_t">Mercado</span></button>
       <div class="nav-menu-group-label"><span class="nav-menu-group-icon" aria-hidden="true">💙</span><span data-i18n="nav_grupo_comunidade">Comunidade</span></div>
       <button class="tab-btn amber-tab" role="tab" aria-selected="false" onclick="switchTab('donate', this)"><span class="tab-icon" style="--tab-icon-delay:1.1s" aria-hidden="true">⚡</span><span data-i18n="apoiar_doar">Apoiar / Doar</span></button>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('supporters', this)"><span class="tab-icon" style="--tab-icon-delay:1.2s" aria-hidden="true">🌟</span><span data-i18n="apoiantes">Apoiantes</span></button>
@@ -392,6 +401,7 @@
       <div class="blocks-toolbar">
         <span class="title"><span data-i18n="mp_titulo">Mempool e blocos da rede Bitcoin</span></span>
         <span class="mp-legend" id="mpLegend"></span>
+        <button type="button" class="mp-style-btn" id="mpStyleBtn" aria-label="Estilo dos blocos">🎨</button>
         <span class="blocks-refresh-hint" id="blocksRefreshHint"><span data-i18n="a_atualizar">a atualizar...</span></span>
       </div>
       <div class="blocks-scroll" id="blocksScroll">
@@ -535,7 +545,7 @@
             <div class="network-map-legend" id="networkMapLegend"></div>
             <div class="network-map-controls"><select class="network-map-select" id="networkMapMode" aria-label="Colorir por"><option value="status">Cor: estado</option><option value="temp">Cor: temperatura</option><option value="eff">Cor: eficiência (por algoritmo)</option><option value="link">Cor: ligação</option></select><button class="network-map-btn active" id="networkMap3dBtn" title="Mapa em 3D (chão inclinado com os cartões de pé; até 6 máquinas)">⬡ 3D</button><button class="network-map-btn active" id="networkMapAutoBtn">↻ Auto</button><button class="network-map-btn" id="networkMapRefreshBtn">⟳ Atualizar mapa</button><button class="network-map-btn" id="networkMapResetBtn">↺ Reorganizar</button></div>
           </div>
-          <div class="network-map-wrap" id="networkMapWrap"><svg class="network-map-svg" id="networkMapSvg" aria-hidden="true"></svg><div class="network-map-nodes" id="networkMapNodes"></div></div>
+          <div class="network-map-wrap" id="networkMapWrap"><canvas class="nm-bg-canvas" id="nmBgCanvas" aria-hidden="true"></canvas><svg class="network-map-svg" id="networkMapSvg" aria-hidden="true"></svg><div class="network-map-nodes" id="networkMapNodes"></div></div>
           <div class="network-map-foot"><span id="networkMapFootLeft">Clique numa máquina para a selecionar.</span><span id="networkMapFootRight">—</span></div>
         </div>
 
@@ -1291,6 +1301,8 @@
     </div>
   </div>
 
+  <div id="tab-mercado" class="tab-content"></div>
+
   <div id="tab-renting" class="tab-content">
     <div class="blocks-container">
       <div class="panel" style="margin-bottom:18px;">
@@ -1588,6 +1600,11 @@
 <script src="dashboard/js/voz-alertas.js"></script>
 <script src="dashboard/js/nivel.js"></script>
 <script src="dashboard/js/chips.js"></script>
+<script src="dashboard/js/hashreal.js"></script>
+<script src="dashboard/js/certificado-bloco.js"></script>
+<script src="dashboard/js/mapa-fundo.js"></script>
+<script src="dashboard/js/mempool-estilo.js"></script>
+<script src="dashboard/js/mercado.js"></script>
 <script src="dashboard/js/cartoes-relatorios.js"></script>
 <script src="dashboard/js/cartoes-experiencias.js"></script>
 <script src="dashboard/js/cartoes-regras.js"></script>
