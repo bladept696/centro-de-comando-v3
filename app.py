@@ -117,7 +117,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.0.7"
+APP_VERSION = "4.0.8"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -2363,6 +2363,143 @@ def _generic_pool_mark_mine(data, address):
     return data
 
 
+# Histórico da Parasite Pool para o gráfico "Hashrate e Difficulty": hashrate ao longo do tempo + melhores shares por bloco.
+# A API deles não permite CORS, por isso o browser pede-o aqui.
+PARASITE_HISTORY_CACHE_SECONDS = 60
+_parasite_history_cache = {}
+_parasite_history_cache_lock = threading.Lock()
+_PARASITE_HISTORY_INTERVALS = {'24h': '5m', '3d': '5m', '7d': '1h', '30d': '1h'}
+
+
+def fetch_parasite_history(address, period='3d'):
+    address = (address or '').strip()
+    if not re.fullmatch(r'[A-Za-z0-9]{20,100}', address):
+        return {"error": "Endereço inválido"}
+    if period not in _PARASITE_HISTORY_INTERVALS:
+        period = '3d'
+    key = (address, period)
+    with _parasite_history_cache_lock:
+        entry = _parasite_history_cache.get(key)
+        if entry and (time.time() - entry["ts"]) < PARASITE_HISTORY_CACHE_SECONDS:
+            return entry["data"]
+
+    enc = urllib.parse.quote(address, safe='')
+    interval = _PARASITE_HISTORY_INTERVALS[period]
+    status, hist, raw, net_err = _try_json_get(
+        f"{PARASITE_POOL_BASE_URL}/api/user/{enc}/historical?period={period}&interval={interval}", timeout=12)
+    if not isinstance(hist, list):
+        msg = net_err or (hist.get('error') if isinstance(hist, dict) else None) or f"HTTP {status}"
+        return {"error": f"A Parasite Pool não devolveu o histórico ({msg})"}
+
+    points = []
+    for it in hist:
+        if not isinstance(it, dict):
+            continue
+        ts = it.get('timestamp')
+        try:
+            if isinstance(ts, (int, float)):
+                ms = int(ts * 1000) if ts < 1e12 else int(ts)
+            else:
+                import calendar
+                ms = int(calendar.timegm(time.strptime(str(ts)[:19], '%Y-%m-%dT%H:%M:%S')) * 1000)
+            h = float(it.get('hashrate'))
+        except (TypeError, ValueError):
+            continue
+        points.append([ms, h])
+
+    # melhor share de cada bloco (a API devolve no máximo 500, cerca de 3 dias)
+    diffs = []
+    st2, dl, raw2, err2 = _try_json_get(
+        f"{PARASITE_POOL_BASE_URL}/api/highest-diff?address={enc}&type=user-diffs&limit=500", timeout=12)
+    if isinstance(dl, list):
+        for it in dl:
+            try:
+                diffs.append([int(it['block_timestamp']) * 1000, float(it['difficulty']), int(it.get('block_height') or 0)])
+            except (KeyError, TypeError, ValueError):
+                continue
+
+    result = {"period": period, "interval": interval, "hashrate": points, "diffs": diffs, "error": None}
+    with _parasite_history_cache_lock:
+        _parasite_history_cache[key] = {"ts": time.time(), "data": result}
+    return result
+
+
+# Máquinas (workers) do teu endereço na Parasite Pool: quais estão ligadas, hashrate, melhor diff e última submissão.
+PARASITE_WORKERS_CACHE_SECONDS = 20
+_parasite_workers_cache = {}
+_parasite_workers_cache_lock = threading.Lock()
+
+
+def fetch_parasite_workers(address):
+    address = (address or '').strip()
+    if not re.fullmatch(r'[A-Za-z0-9]{20,100}', address):
+        return {"error": "Endereço inválido", "workers": []}
+    with _parasite_workers_cache_lock:
+        entry = _parasite_workers_cache.get(address)
+        if entry and (time.time() - entry["ts"]) < PARASITE_WORKERS_CACHE_SECONDS:
+            return entry["data"]
+    status, data, raw, net_err = _try_json_get(f"{PARASITE_POOL_BASE_URL}/api/user/{urllib.parse.quote(address, safe='')}", timeout=10)
+    if not isinstance(data, dict) or not isinstance(data.get('workerData'), list):
+        return {"error": net_err or f"A Parasite Pool não devolveu máquinas (HTTP {status})", "workers": []}
+    workers = []
+    for w in data['workerData']:
+        if not isinstance(w, dict):
+            continue
+        try:
+            hr = float(w.get('hashrate') or 0)
+        except (TypeError, ValueError):
+            hr = 0.0
+        try:
+            best = float(w.get('bestDifficulty') or 0)
+        except (TypeError, ValueError):
+            best = 0.0
+        try:
+            last = int(w.get('lastSubmission') or 0)
+        except (TypeError, ValueError):
+            last = 0
+        name = str(w.get('name') or str(w.get('id') or '').split('.', 1)[-1] or '—')
+        workers.append({"name": name, "hashrate_hs": hr, "best_diff": best, "last_submission": last})
+    result = {"workers": workers, "total_hashrate_hs": float(data.get('hashrate') or 0), "now": int(time.time()), "error": None}
+    with _parasite_workers_cache_lock:
+        _parasite_workers_cache[address] = {"ts": time.time(), "data": result}
+    return result
+
+
+# Blocos achados pela Parasite Pool (por qualquer mineiro): o painel avisa quando aparece um novo.
+PARASITE_BLOCKS_CACHE_SECONDS = 30
+_parasite_blocks_cache = {"ts": 0, "data": None}
+_parasite_blocks_cache_lock = threading.Lock()
+
+
+def fetch_parasite_blocks():
+    with _parasite_blocks_cache_lock:
+        if _parasite_blocks_cache["data"] is not None and (time.time() - _parasite_blocks_cache["ts"]) < PARASITE_BLOCKS_CACHE_SECONDS:
+            return _parasite_blocks_cache["data"]
+    status, rounds, raw, net_err = _try_json_get(f"{PARASITE_POOL_BASE_URL}/api/rounds", timeout=10)
+    if not isinstance(rounds, list):
+        return {"blocks": [], "error": net_err or f"HTTP {status}"}
+    blocks = []
+    for it in rounds:
+        if not isinstance(it, dict) or not it.get('block_hash') or not it.get('block_height'):
+            continue
+        try:
+            blocks.append({
+                "height": int(it['block_height']),
+                "hash": str(it['block_hash']),
+                "reward_sats": int(it['coinbase_value']) if it.get('coinbase_value') is not None else None,
+                "diff": float(it['winner_diff']) if it.get('winner_diff') is not None else None,
+                "winner": str(it.get('winner_username') or ''),
+                "net_diff": float(it['network_difficulty']) if it.get('network_difficulty') is not None else None,
+            })
+        except (TypeError, ValueError):
+            continue
+    blocks.sort(key=lambda b: -b["height"])
+    result = {"blocks": blocks, "error": None}
+    with _parasite_blocks_cache_lock:
+        _parasite_blocks_cache.update({"ts": time.time(), "data": result})
+    return result
+
+
 def fetch_parasite_stats(address, force=False, debug=False):
     address = (address or "").strip()
     if not address:
@@ -4334,6 +4471,35 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 return
             result = fetch_parasite_stats(address, force=force, debug=debug)
             self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/parasite-workers':
+            result = fetch_parasite_workers(query_params.get('address', [''])[0])
+            self.send_response(400 if result.get("error") == "Endereço inválido" else 200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/parasite-blocks':
+            result = fetch_parasite_blocks()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/parasite-history':
+            address = query_params.get('address', [''])[0].strip()
+            period = query_params.get('period', ['3d'])[0].strip()
+            result = fetch_parasite_history(address, period)
+            self.send_response(400 if result.get("error") == "Endereço inválido" else 200)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
