@@ -1,0 +1,21 @@
+/* Parasite Pool: tabela das máquinas ligadas à pool */
+.pw-card{margin-top:14px;padding:14px;border-radius:14px;background:var(--panel,#0d1a26);border:1px solid var(--border,rgba(159,176,200,.18))}
+.pw-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
+.pw-head b{font-size:15px;color:var(--text,#eaf6f7)}
+.pw-sum{font-size:12px;color:var(--muted,#6f95a3)}
+.pw-scroll{overflow-x:auto}
+.pw-table{width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:13px;color:var(--text,#eaf6f7)}
+.pw-table th{padding:8px 10px;text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#6f95a3);border-bottom:1px solid var(--border,rgba(159,176,200,.25));white-space:nowrap}
+.pw-th{cursor:pointer;user-select:none}
+.pw-th:hover,.pw-th.on{color:var(--text,#eaf6f7)}
+.pw-th i{font-style:normal;color:var(--cyan,#4fd6ff)}
+.pw-table td{padding:8px 10px;border-bottom:1px solid rgba(159,176,200,.1);white-space:nowrap}
+.pw-table tr.off td{opacity:.55}
+.pw-st{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.pw-st i{width:8px;height:8px;border-radius:50%;background:var(--muted,#6f95a3)}
+.pw-st.on{color:#3ddc97}.pw-st.on i{background:#3ddc97;box-shadow:0 0 6px #3ddc97}
+.pw-st.off{color:var(--muted,#6f95a3)}
+.pw-mine{color:var(--cyan,#4fd6ff);font-size:11px}
+.pw-msg{padding:22px 10px;text-align:center;color:var(--muted,#6f95a3);font-size:13px}
+.pw-hint{margin-top:6px;font-size:11px;color:var(--muted,#6f95a3)}
+@media(max-width:520px){.pw-table{font-size:12px}.pw-table td,.pw-table th{padding:6px 7px}}

@@ -21,6 +21,7 @@
     sConf: ['Confirmado na blockchain', 'Confirmed on the blockchain', 'Confirmado en la blockchain', 'Confirmé sur la blockchain'],
     sPend: ['A aguardar o bloco na blockchain', 'Waiting for the block on the blockchain', 'Esperando el bloque en la blockchain', 'En attente du bloc sur la blockchain'],
     sTest: ['Teste (não é um bloco real)', 'Test (not a real block)', 'Prueba (no es un bloque real)', 'Test (pas un vrai bloc)'],
+    sOther: ['Outra moeda: assinado, sem confirmação automática', 'Other coin: signed, no automatic confirmation', 'Otra moneda: firmado, sin confirmación automática', 'Autre monnaie : signé, sans confirmation automatique'],
     sOut: ['Não encontrado na blockchain em 48 h', 'Not found on the blockchain within 48 h', 'No encontrado en la blockchain en 48 h', 'Introuvable sur la blockchain en 48 h'],
     sBad: ['Cabeçalho não confere, não confiar', 'Header does not match, do not trust', 'La cabecera no coincide, no confiar', 'L’en-tête ne correspond pas, ne pas se fier'],
     unsigned: ['sem assinatura (só o PC onde corre a app assina)', 'unsigned (only the PC running the app can sign)', 'sin firma (solo el PC donde corre la app firma)', 'non signé (seul le PC qui exécute l’app signe)'],
@@ -88,7 +89,9 @@
     const pi = r && r.poolInfo, p = pi ? ((pi.usingFallback && pi.fallback) || pi.primary) : null;
     const user = p && p.user ? String(p.user).split('.')[0].trim() : '';
     const n = v => (Number.isFinite(Number(v)) ? Number(v) : null);
+    let ci = null; try { ci = dev && r && typeof hcCoin !== 'undefined' ? hcCoin.info(dev, r) : null; } catch(e) {}
     return {
+      coin: ci && ci.coin ? ci.coin : 'BTC',
       kind: 'hash-commander-block-certificate', schema: 1, test: !!test, detected_at: new Date(now).toISOString(), detected_ts: now,
       machine: { name: machineName || null, model: r ? (r.model || r.deviceModel || null) : null, firmware: r && r.firmware !== '—' ? r.firmware : null, hashrate_ghs: r ? n(r.hashrate) : null,
         power_w: r ? n(r.power) : null, frequency_mhz: r ? n(r.frequency) : null, temp_c: r ? n(r.temp) : null, uptime_s: r ? n(r.uptime) : null, blocks_found_counter: r ? n(r.blocksFound) : null },
@@ -112,6 +115,8 @@
   async function confirm(rec){
     if(rec.state !== 'pending') return;
     if(Date.now() - rec.ts > 48 * 3600e3){ rec.state = 'timeout'; save(); return; }
+    // só se confirma na blockchain do Bitcoin; outras moedas (ex.: Bitcoin Purity) ficam com o certificado assinado, sem confirmação automática
+    if(rec.payload.coin && rec.payload.coin !== 'BTC'){ rec.state = 'other'; save(); return; }
     const addr = rec.payload.payout && rec.payload.payout.address; if(!addr){ return; }
     rec.last = Date.now();
     try {
@@ -170,7 +175,7 @@
   }
 
   // ---- janela ----
-  const LBL = { confirmed: 'sConf', pending: 'sPend', test: 'sTest', timeout: 'sOut', bad: 'sBad' };
+  const LBL = { confirmed: 'sConf', pending: 'sPend', test: 'sTest', timeout: 'sOut', bad: 'sBad', other: 'sOther' };
   function card(rec){
     const p = pay(rec), ch = p.chain, c = cert(rec), cls = rec.state;
     const row = (k, v, mono) => v == null || v === '' ? '' : '<div class="hc-bc-r"><span>' + esc(k) + '</span><b' + (mono ? ' class="m"' : '') + '>' + v + '</b></div>';

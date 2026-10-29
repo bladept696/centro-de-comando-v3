@@ -21,6 +21,27 @@ Object.assign(I18N_DICT, {
 });
 const AB_COLORS = { logs: '#4fd6ff', notifications: '#ffb020', thermal: '#ff7b5d', power: '#21ffb0', oc: '#b07cff', parasite: '#ff6b9d', latency: '#4fd6ff', cooling: '#4fd6ff', genpools: '#ffb020', boards: '#21ffb0', renting: '#b07cff', alerts: '#ff5d5d', simulator: '#ffd34a', converter: '#21ffb0', donate: '#ffd34a', supporters: '#ff6b9d', support: '#4fd6ff' };
 
+// ícones desenhados dos separadores (viewBox 24×24, só traço): substituem os emojis no quadrado do banner
+const AB_ICONS = {
+  logs: 'M7 3h8l4 4v14H7z M15 3v4h4 M10 12h6 M10 16h6',
+  notifications: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z M10 20a2 2 0 0 0 4 0',
+  donate: 'M13 2 4 14h7l-1 8 9-12h-7z',
+  supporters: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
+  support: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M5.6 5.6l3.5 3.5 M14.9 14.9l3.5 3.5 M18.4 5.6l-3.5 3.5 M9.1 14.9l-3.5 3.5',
+  simulator: 'M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M12 9v4l3 2 M10 2h4',
+  cooling: 'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+  genpools: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M9.5 8v8 M9.5 8h3.2a2 2 0 0 1 0 4H9.5 M9.5 12h3.8a2 2 0 0 1 0 4H9.5',
+  boards: 'M6 6h12v12H6z M10 10h4v4h-4z M9 3v3 M15 3v3 M9 18v3 M15 18v3 M3 9h3 M3 15h3 M18 9h3 M18 15h3',
+  latency: 'M4 9a12 12 0 0 1 16 0 M7 12.5a8 8 0 0 1 10 0 M10 16a4 4 0 0 1 4 0 M12 19.5h.01',
+  oc: 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z',
+  converter: 'M4 8h13l-3-3 M20 16H7l3 3',
+  power: 'M5 4v16 M12 4v16 M19 4v16 M3 9h4 M10 15h4 M17 7h4',
+  mercado: 'M4 4v16h16 M7 15l4-4 3 3 5-6 M15 8h4v4',
+  renting: 'M4 21h16 M6 21V8 M6 8h13 M6 8l6-5 M16 8v5 M14 13h4v3h-4z',
+  alerts: 'M3 11v2a1 1 0 0 0 1 1h2l8 4V6L6 10H4a1 1 0 0 0-1 1z M17 9a4 4 0 0 1 0 6',
+  thermal: 'M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0z M12 9v7'
+};
+
 function abHeroSync(){
   document.querySelectorAll('.tab-content').forEach(tab => {
     const name = tab.id.replace('tab-', '');
@@ -36,8 +57,24 @@ function abHeroSync(){
     }
     const icon = btn && btn.querySelector('.tab-icon'), label = btn ? [...btn.childNodes].filter(n => !(n.classList && n.classList.contains('tab-icon'))).map(n => n.textContent).join('').trim() : name;
     const ico = hero.querySelector('.th-ico'), h2 = hero.querySelector('h2'), p = hero.querySelector('p');
-    const ic = icon ? icon.textContent.trim() : '•';
-    if(ico.textContent !== ic) ico.textContent = ic;
+    // alguns separadores (ex.: Parasite Pool) têm uma imagem como ícone, não texto: copia-se a imagem para o quadrado
+    const iconImg = icon && icon.querySelector('img');
+    if(iconImg){
+      if(!ico.querySelector('img') || ico.querySelector('img').getAttribute('src') !== iconImg.getAttribute('src')){
+        ico.textContent = ''; delete ico.dataset.svg;
+        const c = iconImg.cloneNode(true); c.removeAttribute('style'); c.setAttribute('alt', ''); c.classList.add('th-img'); ico.appendChild(c);
+      }
+    } else if(AB_ICONS[name]){
+      // ícone desenhado (traço fino, na cor da aba) em vez do emoji
+      if(ico.dataset.svg !== name){
+        ico.dataset.svg = name;
+        ico.innerHTML = '<svg class="th-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + AB_ICONS[name] + '"/></svg>';
+      }
+    } else {
+      const ic = icon ? icon.textContent.trim() : '•';
+      if(ico.querySelector('img,svg')){ ico.textContent = ''; delete ico.dataset.svg; }
+      if(ico.textContent !== ic) ico.textContent = ic;
+    }
     const lab = label.replace(/\s*\d+\s*$/, '');
     if(h2.textContent !== lab) h2.textContent = lab;
     const desc = I18N_DICT['ab_' + name] ? t('ab_' + name) : '';

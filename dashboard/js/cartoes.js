@@ -203,7 +203,7 @@ function mcCardEl(dev){
       '<div><span>' + t('mc_k_shares') + '</span><b data-f="shares">—</b></div><div><span>' + t('mc_k_best') + '</span><b data-f="best">—</b></div>' +
       '<div><span>Uptime</span><b data-f="uptime">—</b></div><div><span>' + t('mc_k_ping') + '</span><b data-f="ping">—</b></div>' +
       '<div><span>' + t('mc_k_profit') + '</span><b data-f="profit" title="' + t('mc_prof_tip') + '">—</b></div><div><span>' + t('mc_k_block') + '</span><b data-f="block">—</b></div></div>' +
-    '<div class="mc-pool"><span>Pool</span><b data-f="pool">—</b></div>' +
+    '<div class="mc-pool"><span>Pool</span><b data-f="pool">—</b><button type="button" class="hc-coin unk" data-f="coin" hidden></button></div>' +
     '<div class="mc-more" data-f="more"></div>' +
     '<footer class="mc-actions">' +
       '<button type="button" data-a="web" title="' + t('mc_web_g') + '">↗ AxeOS</button>' +
@@ -318,9 +318,14 @@ function mcUpdateCard(el, dev, r, st, i){
     mcSet(el, 'best', best); mcSet(el, 'uptime', formatUptime(r.uptime).text);
     mcSet(el, 'ping', r.poolPing != null ? Math.round(r.poolPing) + ' ms' : '—');
     mcSet(el, 'pool', r.pool ? String(r.pool).replace(/^[a-z+]+:\/\//, '') : '—');
-    const eco = typeof mcEconomics === 'function' ? mcEconomics(algoGroupOf(r) === 'sha256' ? Number(r.hashrate) || 0 : 0, Number(r.power) || 0) : null;
-    mcSet(el, 'profit', eco ? (eco.profit >= 0 ? '+' : '') + eco.profit.toFixed(2) + ' €' : '—');
-    mcSet(el, 'block', eco ? mcBlockText(eco) : '—');
+    const ci = typeof hcCoin !== 'undefined' ? hcCoin.info(dev, r) : null;
+    const eco = typeof mcEconomics === 'function' ? mcEconomics(algoGroupOf(r) === 'sha256' ? Number(r.hashrate) || 0 : 0, Number(r.power) || 0, ci) : null;
+    mcSet(el, 'profit', eco && (eco.hasEur || !ci || ci.coin === 'BTC') ? (eco.profit >= 0 ? '+' : '') + eco.profit.toFixed(2) + ' €' : '—');
+    // numa pool partilhada não se acha o bloco sozinho: em vez de "1 em N anos" diz-se isso (a chance teórica fica no título)
+    const blk = el.querySelector('[data-f="block"]'), shd = ci && ci.mode === 'pool' && eco && typeof hcCoinShared === 'function' ? hcCoinShared() : null;
+    mcSet(el, 'block', eco ? (shd ? shd.text : mcBlockText(eco)) : '—');
+    if(blk) blk.title = shd ? shd.tip + ' ' + mcBlockText(eco) : (ci && ci.mode === 'hybrid' && typeof hcCoinHybridTip === 'function' ? hcCoinHybridTip() : '');
+    if(typeof hcCoinBadge === 'function') hcCoinBadge(el, dev, r);
   } else {
     ['tempV', 'fanV', 'wifiV', 'power', 'eff', 'shares', 'best', 'uptime', 'ping', 'pool', 'profit', 'block'].forEach(f => mcSet(el, f, '—'));
     ['tempB', 'fanB'].forEach(f => mcBar(el, f, 0, 'ok'));

@@ -11,6 +11,8 @@
   background:radial-gradient(circle,color-mix(in srgb,var(--hero) 22%,transparent),transparent 68%);pointer-events:none;}
 .tab-hero .th-ico{flex:none;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:24px;
   background:color-mix(in srgb,var(--hero) 14%,#05090d);border:1px solid color-mix(in srgb,var(--hero) 50%,transparent);box-shadow:0 0 24px -8px var(--hero);}
+.tab-hero .th-ico svg.th-svg{width:26px;height:26px;color:var(--hero);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--hero) 55%,transparent));}
+.tab-hero .th-ico img.th-img{height:32px;width:auto;max-width:36px;object-fit:contain;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--hero) 55%,transparent));}
 .tab-hero .th-txt{min-width:0;position:relative;z-index:1;}
 .tab-hero h2{margin:0;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);letter-spacing:.01em;}
 .tab-hero p{margin:4px 0 0;font-size:12px;line-height:1.5;color:var(--muted);max-width:760px;}

@@ -66,6 +66,7 @@
   function note(dev, v, first){
     const e = entry(dev);
     e.name = dev.name; e.model = modelOf(dev) || e.model; e.pool = poolOf(dev) || e.pool;
+    try { const ci = typeof hcCoin !== 'undefined' ? hcCoin.info(dev, readings[dev.id]) : null; if(ci && ci.coin) e.coin = ci.coin; } catch(e2) {}
     if(!(v > e.best)) return;
     const prev = e.best; e.best = v; e.t = Date.now(); e.first = !!first;
     e.hist.push({ t: e.t, d: v, p: e.pool, f: first ? 1 : 0 });
@@ -113,14 +114,16 @@
 
   // ---- vitrine ----
   function trophy(e, rank){
-    const T = tier(e.best), pct = netDiff > 0 ? e.best / netDiff * 100 : 0;
+    // percentagem da dificuldade da rede da moeda da máquina (a Bitcoin só se não houver outra)
+    let nd = netDiff; try { if(e.coin && e.coin !== 'BTC' && typeof hcCoin !== 'undefined') nd = hcCoin.netDiff(e.coin) || 0; } catch(e2) {}
+    const T = tier(e.best), pct = nd > 0 ? e.best / nd * 100 : 0;
     const hist = e.hist.slice().reverse().slice(0, 6).map(h => '<li><b>' + fd(h.d) + '</b><span>' + fmtDate(h.t) + (h.p ? ' · ' + esc(h.p) : '') + '</span></li>').join('');
     return '<div class="hc-co-card tier-' + T.k + '">' +
       '<div class="hc-co-medal">' + T.ic + (rank != null ? '<em>' + rank + '</em>' : '') + '</div>' +
       '<div class="hc-co-main"><div class="hc-co-name">' + esc(e.name) + (e.model ? ' <small>' + esc(e.model) + '</small>' : '') + '</div>' +
       '<div class="hc-co-val">' + fd(e.best) + '</div>' +
       '<div class="hc-co-sub">' + t(T.k) + ' · ' + (e.first ? t('seen') : t('on')) + ' ' + fmtDate(e.t) + (e.pool ? ' · ' + t('pool') + ' ' + esc(e.pool) : '') + '</div>' +
-      (pct > 0 ? '<div class="hc-co-net"><span style="width:' + Math.min(100, Math.max(0.6, Math.log10(pct * 1e6) / 8 * 100)).toFixed(1) + '%"></span></div><div class="hc-co-sub">' + (pct >= 0.01 ? pct.toFixed(2) : pct.toFixed(Math.min(8, 1 - Math.floor(Math.log10(pct))))) + '% ' + t('net') + ' · ' + t('far', Math.max(1, Math.round(netDiff / e.best)).toLocaleString()) + '</div>' : '') +
+      (pct > 0 ? '<div class="hc-co-net"><span style="width:' + Math.min(100, Math.max(0.6, Math.log10(pct * 1e6) / 8 * 100)).toFixed(1) + '%"></span></div><div class="hc-co-sub">' + (pct >= 0.01 ? pct.toFixed(2) : pct.toFixed(Math.min(8, 1 - Math.floor(Math.log10(pct))))) + '% ' + t('net') + ' · ' + t('far', Math.max(1, Math.round(nd / e.best)).toLocaleString()) + '</div>' : '') +
       (hist ? '<details class="hc-co-h"><summary>' + t('hist') + ' (' + e.hist.length + ')</summary><ul>' + hist + '</ul></details>' : '') + '</div></div>';
   }
   function body(){

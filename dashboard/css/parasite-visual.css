@@ -1,0 +1,35 @@
+/* Parasite Pool: visual com a imagem da estação (tudo sob #tab-parasite.pv-on; desligado volta ao aspeto normal) */
+/* banner: a imagem é o fundo do próprio cabeçalho (sem elementos posicionados), por isso nunca pode cobrir o resto da aba */
+#tab-parasite.pv-on .tab-hero{min-height:190px;align-items:flex-end;border-color:rgba(61,220,151,.4);position:relative;overflow:hidden;isolation:isolate;
+  background:linear-gradient(180deg,rgba(6,13,20,.1) 0%,rgba(6,13,20,.45) 50%,rgba(6,13,20,.93) 100%),var(--pv-img) 50% 72%/cover no-repeat,#060d14;
+  animation:pvPan 70s ease-in-out infinite alternate}
+#tab-parasite.pv-on .tab-hero::before,#tab-parasite.pv-on .tab-hero::after{content:none;display:none}
+#tab-parasite.pv-on .tab-hero .th-ico,#tab-parasite.pv-on .tab-hero .th-txt{position:relative;z-index:2}
+#tab-parasite.pv-on .tab-hero h2{text-shadow:0 2px 12px #000}
+#tab-parasite.pv-on .tab-hero p{color:#cfe3ea;text-shadow:0 1px 8px #000}
+@keyframes pvPan{from{background-position:0 0,35% 72%,0 0}to{background-position:0 0,65% 72%,0 0}}
+
+/* fundo suave dos cartões */
+#tab-parasite.pv-on .pg-card{background:linear-gradient(color-mix(in srgb,var(--panel,#0d1a26) 93%,transparent),color-mix(in srgb,var(--panel,#0d1a26) 93%,transparent)),var(--pv-img) 88% 50%/cover}
+#tab-parasite.pv-on .pw-card{background:linear-gradient(color-mix(in srgb,var(--panel,#0d1a26) 93%,transparent),color-mix(in srgb,var(--panel,#0d1a26) 93%,transparent)),var(--pv-img) 12% 62%/cover}
+/* Refinery: mesmo cartão com a imagem */
+#tab-parasite.pv-on #refineryBox{padding:14px;border-radius:14px;border:1px solid var(--border,rgba(159,176,200,.18));background:linear-gradient(color-mix(in srgb,var(--panel,#0d1a26) 93%,transparent),color-mix(in srgb,var(--panel,#0d1a26) 93%,transparent)),var(--pv-img) 75% 45%/cover}
+/* estados vazios */
+#tab-parasite.pv-on .pg-msg,#tab-parasite.pv-on .pw-msg{min-height:130px;display:grid;place-items:center;border-radius:10px;color:#dbeaf0;text-shadow:0 1px 6px #000;background:linear-gradient(rgba(6,13,20,.66),rgba(6,13,20,.66)),var(--pv-img) 50% 45%/cover}
+
+/* aviso de bloco em ecrã inteiro */
+.pvx-flash{position:fixed;inset:0;z-index:99990;display:grid;place-items:center;cursor:pointer;background:linear-gradient(rgba(3,8,14,.55),rgba(3,8,14,.8)),var(--pv-img) center/cover;animation:pvIn .5s ease-out both}
+.pvx-flash.out{animation:pvOut .4s ease-in both}
+.pvx-flash-in{text-align:center;padding:24px;max-width:92vw;animation:pvPop .6s cubic-bezier(.2,1.3,.4,1) both}
+.pvx-flash-ic{font-size:64px;filter:drop-shadow(0 0 18px #3ddc97)}
+.pvx-flash h2{margin:6px 0 0;font:700 clamp(22px,4.5vw,44px)/1.1 'Space Grotesk',system-ui,sans-serif;letter-spacing:.04em;color:#7dffc4;text-shadow:0 0 22px #3ddc97,0 2px 10px #000}
+.pvx-flash h3{margin:8px 0 0;font:700 clamp(20px,3.5vw,34px) 'Space Grotesk',system-ui,sans-serif;color:#ffd34a;text-shadow:0 0 18px #ffb020}
+.pvx-flash p{margin:14px 0 0;color:#eaf6f7;font:15px 'Courier New',monospace;text-shadow:0 2px 8px #000}
+.pvx-flash small{display:block;margin-top:22px;color:#9fb6c2;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.pvx-flash.mine h2{color:#ffe38a;text-shadow:0 0 24px #ffb020,0 2px 10px #000}
+@keyframes pvIn{from{opacity:0}to{opacity:1}}
+@keyframes pvOut{from{opacity:1}to{opacity:0}}
+@keyframes pvPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+
+@media(max-width:700px){#tab-parasite.pv-on .tab-hero{min-height:150px}}
+@media(prefers-reduced-motion:reduce){#tab-parasite.pv-on .tab-hero,.pvx-flash,.pvx-flash-in{animation:none}}

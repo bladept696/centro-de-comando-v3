@@ -338,12 +338,14 @@ document.addEventListener('keydown', e => {
 
 // ---- lucro e chance de bloco (valor esperado; usa a dificuldade da rede e o preço do BTC) ----
 const MC_REWARD_BTC = 3.125;
-function mcEconomics(ghs, watts){
-  const diff = typeof difficultyData !== 'undefined' && difficultyData && difficultyData.currentDifficulty;
-  const eur = typeof currentRates !== 'undefined' && currentRates && currentRates.btc_eur;
-  if(!(ghs > 0) || !diff) return null;
+function mcEconomics(ghs, watts, inf){
+  // inf (opcional): moeda da máquina. Sem ela assume Bitcoin, como antes.
+  const coin = inf && inf.coin && typeof hcCoin !== 'undefined' ? inf.coin : 'BTC';
+  const diff = coin === 'BTC' ? (typeof difficultyData !== 'undefined' && difficultyData && difficultyData.currentDifficulty) : hcCoin.netDiff(coin);
+  const eur = coin === 'BTC' ? (typeof currentRates !== 'undefined' && currentRates && currentRates.btc_eur) : hcCoin.priceEur(coin);   // preço de 1 moeda em euros
+  if(!(ghs > 0) || !diff || (coin !== 'BTC' && !hcCoin.algoOk(coin))) return null;
   const perDay = ghs * 1e9 * 86400 / (diff * 4294967296);          // blocos esperados por dia
-  const revenue = eur ? perDay * MC_REWARD_BTC * eur : 0, price = mcEffPrice(), cost = price ? (watts || 0) / 1000 * 24 * price : 0;
+  const revenue = eur ? perDay * (coin === 'BTC' ? MC_REWARD_BTC : hcCoin.reward(coin)) * eur : 0, price = mcEffPrice(), cost = price ? (watts || 0) / 1000 * 24 * price : 0;
   return { perDay, yearsPerBlock: perDay > 0 ? 1 / (perDay * 365) : Infinity, pYear: 1 - Math.exp(-perDay * 365), revenue, cost, profit: revenue - cost, hasEur: !!eur };
 }
 function mcBlockText(eco){
