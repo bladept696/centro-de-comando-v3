@@ -99,7 +99,7 @@ try:
     import pystray
     from PIL import Image, ImageDraw
     TRAY_AVAILABLE = True
-except ImportError:
+except Exception:   # sem ecrã (ex.: Raspberry sem interface) o pystray pode falhar com outros erros além de ImportError
     pystray = None
     Image = None
     ImageDraw = None
@@ -117,8 +117,13 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.0.0"
+APP_VERSION = "4.0.8"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
+# Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
+# A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
+UPDATE_PUBKEY_HEX = "e6ef1389633f602730107fe5aad5e6e303c6e5c8acf7554883dbebbc71ef9a56"
+UPDATE_SIG_CONTEXT = b"HC-UPDATE-V1:"
+UPDATE_ALLOWED_HOSTS = ("github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com", "github-releases.githubusercontent.com")
 UPDATE_CHECK_CACHE_SECONDS = 60 * 30
 _update_cache = {"ts": 0, "data": None}
 _update_cache_lock = threading.Lock()
@@ -208,6 +213,9 @@ _pending_close_lock = threading.Lock()
 
 
 def _do_close_now():
+    if remote_keepalive():
+        print("[api/close] acesso remoto ativo - o servidor continua a correr (sai pelo ícone da bandeja).", flush=True)
+        return
     print("[api/close] sem heartbeat novo dentro da janela de graça - a desligar.", flush=True)
     os._exit(0)
 
@@ -223,6 +231,8 @@ def cancel_pending_close():
 def watchdog_loop():
     while True:
         time.sleep(30)
+        if remote_keepalive():
+            continue
         ts = LAST_HEARTBEAT["ts"] or SERVER_START_TS
         idle_for = time.time() - ts
         if idle_for > SAFETY_NET_TIMEOUT_SECONDS:
@@ -246,29 +256,79 @@ CGMINER_KEY_CACHE = {}
 CGMINER_IDENT_CACHE = {}
 
 
+_cg_local = threading.local()
+CGMINER_EXTRA_BUDGET = 3.0   # segundos para os comandos opcionais (pools, stats, placas...) depois do summary
+
+
+def _cg_json(raw):
+    try:
+        raw = raw.rstrip(b'\x00').strip()
+        return json.loads(raw.decode('utf-8', errors='ignore')) if raw else None
+    except Exception:
+        return None
+
+
 def cgminer_command(ip, command, port=CGMINER_PORT, timeout=CGMINER_TIMEOUT, key=None):
     key = key or CGMINER_KEY_CACHE.get(ip, 'command')
+    # dentro do fetch_cgminer_full há um prazo total: o painel desiste ao fim de 5,5 s e uma Antminer lenta com muitos comandos
+    # a esperar o tempo todo cada um aparecia como "offline" mesmo estando a responder
+    dl = getattr(_cg_local, 'deadline', None)
+    if dl is not None:
+        timeout = min(timeout, dl - time.time())
+        if timeout < 0.15:
+            return None
     try:
+        t_end = time.time() + timeout
         with socket.create_connection((ip, port), timeout=timeout) as sock:
-            sock.settimeout(timeout)
             sock.sendall(json.dumps({key: command}).encode('utf-8'))
             chunks = []
             while True:
+                left = t_end - time.time()
+                if left <= 0:
+                    break
+                # depois de já ter dados só espera um pouco mais: há firmwares (LuxOS) que não acabam a resposta com o byte NUL
+                # nem fecham a ligação, e esperavam o tempo todo em cada comando
+                sock.settimeout(min(left, 0.35) if chunks else left)
                 try:
-                    chunk = sock.recv(4096)
+                    chunk = sock.recv(65536)
                 except socket.timeout:
+                    if chunks and _cg_json(b''.join(chunks)) is None and time.time() < t_end:
+                        continue
                     break
                 if not chunk:
                     break
                 chunks.append(chunk)
                 if chunk.endswith(b'\x00'):
                     break
-            raw = b''.join(chunks).rstrip(b'\x00').strip()
-            if not raw:
-                return None
-            return json.loads(raw.decode('utf-8', errors='ignore'))
+            return _cg_json(b''.join(chunks))
     except Exception:
         return None
+
+
+def cgminer_diagnose(ip, port=None):
+    """Motivo provável de uma máquina cgminer/LuxOS/Antminer não estar a responder (texto curto)."""
+    port = port or CGMINER_PORT
+    try:
+        socket.create_connection((ip, port), timeout=1.5).close()
+    except socket.timeout:
+        return f"sem resposta na porta {port}: máquina desligada, IP mudou ou está noutra rede"
+    except ConnectionRefusedError:
+        return f"porta {port} recusada: a API de mineração está desligada nesta máquina"
+    except OSError as e:
+        return f"não foi possível ligar à porta {port} ({getattr(e, 'strerror', None) or e})"
+    raw = cgminer_command(ip, 'summary', port=port, timeout=2.5)
+    if raw is None:
+        raw = cgminer_command(ip, 'summary', port=port, timeout=2.5, key='cmd')
+    if raw is None:
+        return f"a porta {port} abre mas a máquina não responde ao comando summary a tempo (firmware lento, API bloqueada ou formato desconhecido)"
+    if isinstance(raw, dict) and 'SUMMARY' in raw:
+        return "a API responde bem (summary ok): o problema está na ligação do painel ou na lista de máquinas"
+    try:
+        st = (raw.get('STATUS') or [{}])[0]
+        msg, code, desc = st.get('Msg'), st.get('Code'), st.get('Description')
+    except Exception:
+        msg = code = desc = None
+    return f"a API respondeu com erro: «{msg}» (código {code}, {desc}): acesso restrito a certos IPs (api-allow) ou firmware sem este comando"
 
 
 def _cgminer_scan_numeric_fields(stats_entry, prefix_pattern):
@@ -366,6 +426,17 @@ def probe_cgminer(ip, port=None):
         # da palavra-passe da interface web). Mostra a máquina à mesma, com aviso.
         raw = cgminer_command(ip, 'summary', port=port, timeout=CGMINER_SCAN_TIMEOUT)
         if not (isinstance(raw, dict) and 'STATUS' in raw):
+            return None
+        # Goldshell (gsminer): a porta 4028 responde a tudo com "Invalid command" (código 14); a API útil é a HTTP /mcb, que o
+        # probe_goldshell_http trata a seguir. Sem isto era marcada como "LuxOS (API restrita)" e como SHA-256 em vez de Scrypt.
+        try:
+            _st = (raw.get('STATUS') or [{}])[0]
+        except Exception:
+            _st = {}
+        if not isinstance(_st, dict):
+            _st = {}
+        if 'gsminer' in str(_st.get('Description', '')).lower() or (
+                _st.get('Code') == 14 and 'invalid command' in str(_st.get('Msg', '')).lower()):
             return None
         return {
             "ip": ip,
@@ -485,7 +556,14 @@ def fetch_cgminer_full(ip, port=None):
     summary_data = cgminer_summary(ip, port)
     if not summary_data:
         return None
+    _cg_local.deadline = time.time() + CGMINER_EXTRA_BUDGET   # o summary chega; o resto são extras com prazo
+    try:
+        return _fetch_cgminer_full(ip, port, summary_data)
+    finally:
+        _cg_local.deadline = None
 
+
+def _fetch_cgminer_full(ip, port, summary_data):
     summary = (summary_data.get('SUMMARY') or [{}])[0]
     pools_data = cgminer_command(ip, 'pools', port=port) or {}
     pool_entry = (pools_data.get('POOLS') or [{}])
@@ -781,7 +859,14 @@ def fetch_epic_full(ip):
 
 
 def probe_goldshell_http(ip):
-    data = fetch_goldshell_devs(ip, timeout=GOLDSHELL_HTTP_SCAN_TIMEOUT)
+    # A Goldshell demora ~0,9 s a responder ao /mcb/cgminer, mais do que o tempo de espera da pesquisa (0,6 s): por isso
+    # primeiro vê (rápido) se a porta 80 está aberta e só depois espera o tempo todo. IPs sem máquina continuam a falhar depressa.
+    try:
+        with socket.create_connection((ip, 80), timeout=GOLDSHELL_HTTP_SCAN_TIMEOUT):
+            pass
+    except Exception:
+        return None
+    data = fetch_goldshell_devs(ip, timeout=GOLDSHELL_HTTP_TIMEOUT)
     if not data or 'minfos' not in data:
         return None
     algo_names = [m.get('name') for m in (data.get('minfos') or []) if m.get('name')]
@@ -1633,6 +1718,7 @@ DEFAULT_POWER_CONFIG = {
     "security": {
         "https_enabled": False,
         "restrict_proxy_to_known_ips": True,
+        "remote_keepalive": False,
     },
 }
 
@@ -1682,6 +1768,7 @@ def check_for_update(force=False):
         "installer_url": None,
         "installer_name": None,
         "installer_size": None,
+        "signature_url": None,
         "error": None,
     }
     try:
@@ -1718,6 +1805,12 @@ def check_for_update(force=False):
             result["installer_url"] = best.get('browser_download_url')
             result["installer_name"] = best.get('name')
             result["installer_size"] = best.get('size')
+            # a assinatura é um ficheiro "<instalador>.sig" na mesma release
+            sig_name = (best.get('name') or '') + '.sig'
+            for a in assets:
+                if (a.get('name') or '') == sig_name:
+                    result["signature_url"] = a.get('browser_download_url')
+                    break
     except Exception as e:
         result["error"] = str(e)
 
@@ -1741,15 +1834,133 @@ def update_download_dir():
     return d
 
 
-def _do_download_and_launch_installer(url, name, silent):
+def _update_url_ok(url):
+    try:
+        u = urllib.parse.urlparse(url)
+    except Exception:
+        return False
+    return u.scheme == 'https' and (u.hostname or '').lower() in UPDATE_ALLOWED_HOSTS
+
+
+def verify_update_signature(digest, sig_hex):
+    """True só se sig_hex for uma assinatura Ed25519 válida (da chave UPDATE_PUBKEY_HEX) sobre o SHA-256 do instalador."""
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        sig = bytes.fromhex((sig_hex or '').strip())
+        pub = Ed25519PublicKey.from_public_bytes(bytes.fromhex(UPDATE_PUBKEY_HEX))
+        pub.verify(sig, UPDATE_SIG_CONTEXT + digest)
+        return True
+    except Exception:
+        return False
+
+
+# ---------- Certificados de bloco ----------
+# Cada instalação tem a sua própria chave Ed25519 (criada na primeira vez e guardada ao lado do programa). NÃO é a chave das
+# atualizações: essa fica só no PC do programador e nunca pode vir dentro da app. O certificado assina as provas recolhidas
+# quando um bloco é encontrado (hora, máquina, share, transação de recompensa e cabeçalho do bloco); o cabeçalho confirma-se
+# por si (o seu hash tem de bater com o do bloco) e a transação confirma-se em qualquer explorador de blocos.
+CERT_CONTEXT = b"HC-BLOCK-CERT-V1:"
+CERT_KEY_FILENAME = 'block_cert_key.json'
+CERT_MAX_PAYLOAD = 32768
+_cert_key_lock = threading.Lock()
+_cert_key_cache = None
+
+
+def cert_key_path():
+    return os.path.join(writable_dir(), CERT_KEY_FILENAME)
+
+
+def _cert_private_key():
+    global _cert_key_cache
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    with _cert_key_lock:
+        if _cert_key_cache is not None:
+            return _cert_key_cache
+        path = cert_key_path()
+        if os.path.exists(path):
+            # um ficheiro que existe mas não lê bem NUNCA é substituído (perderia as provas assinadas com ele)
+            with open(path, 'r', encoding='utf-8') as f:
+                key = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(json.load(f)['seed']))
+        else:
+            key = Ed25519PrivateKey.generate()
+            seed = key.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption())
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump({'seed': seed.hex(), 'created': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}, f)
+            try:
+                os.chmod(path, 0o600)
+            except Exception:
+                pass
+        _cert_key_cache = key
+        return key
+
+
+def _cert_public_hex(create=False):
+    from cryptography.hazmat.primitives import serialization
+    if not create and not os.path.exists(cert_key_path()):
+        return None
+    return _cert_private_key().public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
+
+
+def cert_canonical(obj):
+    return json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+
+
+def cert_message(signed):
+    return CERT_CONTEXT + hashlib.sha256(cert_canonical(signed)).digest()
+
+
+def cert_sign(payload):
+    signed = {"v": 1, "signed_at": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), "payload": payload}
+    key = _cert_private_key()
+    return {"v": 1, "signed_at": signed["signed_at"], "payload": payload, "public_key": _cert_public_hex(True),
+            "sha256": hashlib.sha256(cert_canonical(signed)).hexdigest(), "signature": key.sign(cert_message(signed)).hex()}
+
+
+def block_header_hash(h):
+    """Hash do bloco calculado a partir do cabeçalho de 80 bytes (campos como a API da mempool.space os dá)."""
+    try:
+        import struct
+        raw = (struct.pack('<I', int(h['version']) & 0xffffffff) + bytes.fromhex(h['previousblockhash'])[::-1] +
+               bytes.fromhex(h['merkle_root'])[::-1] + struct.pack('<III', int(h['timestamp']), int(h['bits']), int(h['nonce'])))
+        return hashlib.sha256(hashlib.sha256(raw).digest()).digest()[::-1].hex()
+    except Exception:
+        return None
+
+
+def cert_verify(cert):
+    res = {"signature_valid": False, "header_ok": None, "signer_is_this_install": False}
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        signed = {"v": cert["v"], "signed_at": cert["signed_at"], "payload": cert["payload"]}
+        Ed25519PublicKey.from_public_bytes(bytes.fromhex(cert["public_key"])).verify(bytes.fromhex(cert["signature"]), cert_message(signed))
+        res["signature_valid"] = True
+    except Exception:
+        pass
+    try:
+        chain = (cert.get("payload") or {}).get("chain") or {}
+        if isinstance(chain.get("header"), dict):
+            res["header_ok"] = block_header_hash(chain["header"]) == chain.get("block_hash")
+        res["signer_is_this_install"] = bool(cert.get("public_key")) and cert.get("public_key") == _cert_public_hex(False)
+    except Exception:
+        pass
+    return res
+
+
+def _do_download_and_launch_installer(url, name, silent, sig_url=None):
     global _update_install_state
+    dest = None
     try:
         with _update_install_lock:
             _update_install_state = {"status": "downloading", "error": None}
 
-        dest = os.path.join(update_download_dir(), name or "CentroDeComando-Setup.exe")
+        if not _update_url_ok(url) or not _update_url_ok(sig_url or ''):
+            raise RuntimeError("endereço da atualização não é do GitHub (recusado)")
+        name = os.path.basename(name or "CentroDeComando-Setup.exe")
+        dest = os.path.join(update_download_dir(), name)
         req = urllib.request.Request(url, headers={'User-Agent': 'CentroDeComando-UpdateDownload'})
         total = 0
+        h = hashlib.sha256()
         with _urlopen_https(req, timeout=15) as resp, open(dest, 'wb') as f:
             while True:
                 chunk = resp.read(1024 * 256)
@@ -1758,10 +1969,23 @@ def _do_download_and_launch_installer(url, name, silent):
                 total += len(chunk)
                 if total > UPDATE_DOWNLOAD_MAX_BYTES:
                     raise RuntimeError("instalador excede o tamanho máximo esperado")
+                h.update(chunk)
                 f.write(chunk)
 
         with _update_install_lock:
-            _update_install_state = {"status": "launching", "error": None}
+            _update_install_state = {"status": "verifying", "error": None}
+        sreq = urllib.request.Request(sig_url, headers={'User-Agent': 'CentroDeComando-UpdateDownload'})
+        with _urlopen_https(sreq, timeout=15) as sresp:
+            sig_hex = sresp.read(4096).decode('ascii', errors='ignore')
+        if not verify_update_signature(h.digest(), sig_hex):
+            try:
+                os.remove(dest)
+            except Exception:
+                pass
+            raise RuntimeError("assinatura inválida: o instalador foi apagado e NÃO foi executado")
+
+        with _update_install_lock:
+            _update_install_state = {"status": "launching", "error": None, "verified": True}
 
         args = [dest]
         if silent:
@@ -1770,7 +1994,7 @@ def _do_download_and_launch_installer(url, name, silent):
         subprocess.Popen(args, close_fds=True, shell=False)
 
         with _update_install_lock:
-            _update_install_state = {"status": "done", "error": None}
+            _update_install_state = {"status": "done", "error": None, "verified": True}
 
         time.sleep(1.5)
         os._exit(0)
@@ -1792,9 +2016,15 @@ def start_update_install(silent=True):
             _update_install_state = _update_install_state_local
         return False, _update_install_state_local["error"]
 
+    if not info.get("signature_url"):
+        msg = "A release não tem o ficheiro de assinatura (.sig), por isso a atualização automática foi recusada. Descarrega o instalador manualmente."
+        with _update_install_lock:
+            _update_install_state = {"status": "error", "error": msg}
+        return False, msg
+
     t = threading.Thread(
         target=_do_download_and_launch_installer,
-        args=(info["installer_url"], info.get("installer_name"), silent),
+        args=(info["installer_url"], info.get("installer_name"), silent, info["signature_url"]),
         daemon=True,
     )
     t.start()
@@ -2131,6 +2361,143 @@ def _generic_pool_mark_mine(data, address):
     data["candidates"] = [dict(c, mine=(c.get("miner") == address)) for c in data.get("candidates", [])]
     data["account"] = fetch_generic_pool_account(data.get("pool_id", ""), address)
     return data
+
+
+# Histórico da Parasite Pool para o gráfico "Hashrate e Difficulty": hashrate ao longo do tempo + melhores shares por bloco.
+# A API deles não permite CORS, por isso o browser pede-o aqui.
+PARASITE_HISTORY_CACHE_SECONDS = 60
+_parasite_history_cache = {}
+_parasite_history_cache_lock = threading.Lock()
+_PARASITE_HISTORY_INTERVALS = {'24h': '5m', '3d': '5m', '7d': '1h', '30d': '1h'}
+
+
+def fetch_parasite_history(address, period='3d'):
+    address = (address or '').strip()
+    if not re.fullmatch(r'[A-Za-z0-9]{20,100}', address):
+        return {"error": "Endereço inválido"}
+    if period not in _PARASITE_HISTORY_INTERVALS:
+        period = '3d'
+    key = (address, period)
+    with _parasite_history_cache_lock:
+        entry = _parasite_history_cache.get(key)
+        if entry and (time.time() - entry["ts"]) < PARASITE_HISTORY_CACHE_SECONDS:
+            return entry["data"]
+
+    enc = urllib.parse.quote(address, safe='')
+    interval = _PARASITE_HISTORY_INTERVALS[period]
+    status, hist, raw, net_err = _try_json_get(
+        f"{PARASITE_POOL_BASE_URL}/api/user/{enc}/historical?period={period}&interval={interval}", timeout=12)
+    if not isinstance(hist, list):
+        msg = net_err or (hist.get('error') if isinstance(hist, dict) else None) or f"HTTP {status}"
+        return {"error": f"A Parasite Pool não devolveu o histórico ({msg})"}
+
+    points = []
+    for it in hist:
+        if not isinstance(it, dict):
+            continue
+        ts = it.get('timestamp')
+        try:
+            if isinstance(ts, (int, float)):
+                ms = int(ts * 1000) if ts < 1e12 else int(ts)
+            else:
+                import calendar
+                ms = int(calendar.timegm(time.strptime(str(ts)[:19], '%Y-%m-%dT%H:%M:%S')) * 1000)
+            h = float(it.get('hashrate'))
+        except (TypeError, ValueError):
+            continue
+        points.append([ms, h])
+
+    # melhor share de cada bloco (a API devolve no máximo 500, cerca de 3 dias)
+    diffs = []
+    st2, dl, raw2, err2 = _try_json_get(
+        f"{PARASITE_POOL_BASE_URL}/api/highest-diff?address={enc}&type=user-diffs&limit=500", timeout=12)
+    if isinstance(dl, list):
+        for it in dl:
+            try:
+                diffs.append([int(it['block_timestamp']) * 1000, float(it['difficulty']), int(it.get('block_height') or 0)])
+            except (KeyError, TypeError, ValueError):
+                continue
+
+    result = {"period": period, "interval": interval, "hashrate": points, "diffs": diffs, "error": None}
+    with _parasite_history_cache_lock:
+        _parasite_history_cache[key] = {"ts": time.time(), "data": result}
+    return result
+
+
+# Máquinas (workers) do teu endereço na Parasite Pool: quais estão ligadas, hashrate, melhor diff e última submissão.
+PARASITE_WORKERS_CACHE_SECONDS = 20
+_parasite_workers_cache = {}
+_parasite_workers_cache_lock = threading.Lock()
+
+
+def fetch_parasite_workers(address):
+    address = (address or '').strip()
+    if not re.fullmatch(r'[A-Za-z0-9]{20,100}', address):
+        return {"error": "Endereço inválido", "workers": []}
+    with _parasite_workers_cache_lock:
+        entry = _parasite_workers_cache.get(address)
+        if entry and (time.time() - entry["ts"]) < PARASITE_WORKERS_CACHE_SECONDS:
+            return entry["data"]
+    status, data, raw, net_err = _try_json_get(f"{PARASITE_POOL_BASE_URL}/api/user/{urllib.parse.quote(address, safe='')}", timeout=10)
+    if not isinstance(data, dict) or not isinstance(data.get('workerData'), list):
+        return {"error": net_err or f"A Parasite Pool não devolveu máquinas (HTTP {status})", "workers": []}
+    workers = []
+    for w in data['workerData']:
+        if not isinstance(w, dict):
+            continue
+        try:
+            hr = float(w.get('hashrate') or 0)
+        except (TypeError, ValueError):
+            hr = 0.0
+        try:
+            best = float(w.get('bestDifficulty') or 0)
+        except (TypeError, ValueError):
+            best = 0.0
+        try:
+            last = int(w.get('lastSubmission') or 0)
+        except (TypeError, ValueError):
+            last = 0
+        name = str(w.get('name') or str(w.get('id') or '').split('.', 1)[-1] or '—')
+        workers.append({"name": name, "hashrate_hs": hr, "best_diff": best, "last_submission": last})
+    result = {"workers": workers, "total_hashrate_hs": float(data.get('hashrate') or 0), "now": int(time.time()), "error": None}
+    with _parasite_workers_cache_lock:
+        _parasite_workers_cache[address] = {"ts": time.time(), "data": result}
+    return result
+
+
+# Blocos achados pela Parasite Pool (por qualquer mineiro): o painel avisa quando aparece um novo.
+PARASITE_BLOCKS_CACHE_SECONDS = 30
+_parasite_blocks_cache = {"ts": 0, "data": None}
+_parasite_blocks_cache_lock = threading.Lock()
+
+
+def fetch_parasite_blocks():
+    with _parasite_blocks_cache_lock:
+        if _parasite_blocks_cache["data"] is not None and (time.time() - _parasite_blocks_cache["ts"]) < PARASITE_BLOCKS_CACHE_SECONDS:
+            return _parasite_blocks_cache["data"]
+    status, rounds, raw, net_err = _try_json_get(f"{PARASITE_POOL_BASE_URL}/api/rounds", timeout=10)
+    if not isinstance(rounds, list):
+        return {"blocks": [], "error": net_err or f"HTTP {status}"}
+    blocks = []
+    for it in rounds:
+        if not isinstance(it, dict) or not it.get('block_hash') or not it.get('block_height'):
+            continue
+        try:
+            blocks.append({
+                "height": int(it['block_height']),
+                "hash": str(it['block_hash']),
+                "reward_sats": int(it['coinbase_value']) if it.get('coinbase_value') is not None else None,
+                "diff": float(it['winner_diff']) if it.get('winner_diff') is not None else None,
+                "winner": str(it.get('winner_username') or ''),
+                "net_diff": float(it['network_difficulty']) if it.get('network_difficulty') is not None else None,
+            })
+        except (TypeError, ValueError):
+            continue
+    blocks.sort(key=lambda b: -b["height"])
+    result = {"blocks": blocks, "error": None}
+    with _parasite_blocks_cache_lock:
+        _parasite_blocks_cache.update({"ts": time.time(), "data": result})
+    return result
 
 
 def fetch_parasite_stats(address, force=False, debug=False):
@@ -2562,8 +2929,21 @@ def load_power_config():
         path = legacy_power_config_path()
         migrating = True
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception:
+            # ficheiro estragado (ex.: a app foi fechada a meio de gravar): tenta a cópia da última gravação boa e guarda o estragado
+            if not os.path.exists(path):
+                raise
+            try:
+                import shutil
+                shutil.copyfile(path, path + '.corrompido')
+            except Exception:
+                pass
+            with open(path + '.bak', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            print("[config] config.json estava estragado: restaurado da cópia (.bak)", flush=True)
         cfg = copy.deepcopy(DEFAULT_POWER_CONFIG)
         cfg["mqtt"].update(data.get("mqtt", {}) or {})
         cfg["profiles"] = data.get("profiles", []) or []
@@ -2582,11 +2962,28 @@ def load_power_config():
 
 
 def save_power_config(cfg):
+    # grava num ficheiro à parte e só depois troca: se a app for fechada a meio (instalador, falha de luz) o config.json antigo
+    # fica intacto, em vez de ficar cortado e a app voltar às definições de fábrica sem a lista de máquinas
+    path = power_config_path()
+    tmp = path + '.tmp'
     try:
-        with open(power_config_path(), 'w', encoding='utf-8') as f:
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        if os.path.exists(path):
+            try:
+                import shutil
+                shutil.copyfile(path, path + '.bak')
+            except Exception:
+                pass
+        os.replace(tmp, path)
         return True
     except Exception:
+        try:
+            os.remove(tmp)
+        except Exception:
+            pass
         return False
 
 
@@ -3289,6 +3686,29 @@ def is_proxy_target_allowed(ip):
     return ip in _known_device_ips()
 
 
+def diagnose_device(ip):
+    """(tipo, motivo) de uma máquina aparecer offline. O painel mostra o motivo no cartão e no registo de eventos."""
+    if not is_proxy_target_allowed(ip):
+        return 'unknown_ip', "o servidor não tem este IP na lista de máquinas (a lista guardada no servidor ficou vazia ou desatualizada)"
+
+    def is_open(p):
+        try:
+            socket.create_connection((ip, p), timeout=1.2).close()
+            return True
+        except Exception:
+            return False
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        f80, f4028 = ex.submit(is_open, 80), ex.submit(is_open, CGMINER_PORT)
+        open80, open4028 = f80.result(), f4028.result()
+    with endpoint_cache_lock:
+        preferred = endpoint_cache.get(ip)
+    if open4028 and (preferred in (None, 'cgminer') or not open80):
+        return 'cgminer', cgminer_diagnose(ip)
+    if open80:
+        return 'http', "a porta 80 responde mas a API da máquina não (modo de configuração Wi-Fi, firmware sem API ou outro tipo de máquina)"
+    return 'unreachable', "sem resposta nas portas 80 e 4028: máquina desligada, IP mudou ou está noutra rede"
+
+
 TLS_CERT_FILENAME = "server_cert.pem"
 TLS_KEY_FILENAME = "server_key.pem"
 
@@ -3358,6 +3778,121 @@ def ensure_self_signed_cert():
 def dashboard_url_scheme():
     with POWER_CONFIG_LOCK:
         return "https" if power_config.get("security", {}).get("https_enabled") else "http"
+
+
+# --- Acesso remoto seguro via Tailscale ------------------------------------
+# O Tailscale cria uma rede privada entre os teus dispositivos: o telemóvel liga-se ao PC sem abrir portas no router.
+# "tailscale serve" publica o painel em HTTPS só dentro dessa rede (nunca o Funnel, que seria a internet pública).
+# O login do Hash Commander continua obrigatório em todas as rotas /api/.
+def remote_keepalive():
+    # HC_KEEPALIVE=1 (servidor sem ecrã, ex.: Raspberry): nunca se desliga sozinho
+    if os.environ.get('HC_KEEPALIVE') == '1':
+        return True
+    with POWER_CONFIG_LOCK:
+        return bool(power_config.get("security", {}).get("remote_keepalive"))
+
+
+def find_tailscale():
+    import shutil
+    exe = shutil.which('tailscale')
+    if exe:
+        return exe
+    for var in ('ProgramFiles', 'ProgramFiles(x86)', 'LOCALAPPDATA'):
+        base = os.environ.get(var)
+        if base:
+            p = os.path.join(base, 'Tailscale', 'tailscale.exe')
+            if os.path.isfile(p):
+                return p
+    return None
+
+
+def _run_tailscale(args, timeout=8):
+    exe = find_tailscale()
+    if not exe:
+        return None, 'tailscale não instalado'
+    try:
+        r = subprocess.run([exe] + args, capture_output=True, text=True, timeout=timeout,
+                           creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0), encoding='utf-8', errors='replace')
+        return r, None
+    except subprocess.TimeoutExpired:
+        return None, 'timeout'
+    except Exception as e:
+        return None, str(e)
+
+
+def tailscale_status():
+    out = {"installed": False, "running": False, "state": "", "ips": [], "dns": "", "tailnet": "", "peers_online": 0,
+           "serve": False, "scheme": dashboard_url_scheme(), "port": PORT, "keepalive": remote_keepalive()}
+    if not find_tailscale():
+        return out
+    out["installed"] = True
+    r, err = _run_tailscale(['status', '--json'])
+    if r is None or not (r.stdout or '').strip():
+        out["error"] = err or ((r.stderr or '').strip() if r is not None else 'sem resposta')
+        return out
+    try:
+        st = json.loads(r.stdout)
+    except Exception:
+        out["error"] = 'resposta inesperada do tailscale'
+        return out
+    me = st.get("Self") or {}
+    out["state"] = st.get("BackendState", "")
+    out["running"] = out["state"] == "Running"
+    out["ips"] = list(st.get("TailscaleIPs") or me.get("TailscaleIPs") or [])
+    out["dns"] = (me.get("DNSName") or "").rstrip('.')
+    out["tailnet"] = (st.get("CurrentTailnet") or {}).get("Name", "")
+    out["peers_online"] = sum(1 for p in (st.get("Peer") or {}).values() if p.get("Online"))
+    r2, _ = _run_tailscale(['serve', 'status', '--json'], timeout=5)
+    if r2 is not None and r2.returncode == 0:
+        try:
+            web = (json.loads(r2.stdout or '{}') or {}).get("Web") or {}
+            out["serve"] = any(k.endswith(':443') for k in web)
+        except Exception:
+            pass
+    return out
+
+
+def tailscale_serve(enable):
+    # publica (ou retira) o painel em https://<nome>.ts.net — só dentro da tua rede Tailscale
+    exe = find_tailscale()
+    if not exe:
+        return {"ok": False, "error": "tailscale não instalado"}
+    if not enable:
+        args = ['serve', '--https=443', 'off']
+    else:
+        target = ('https+insecure://127.0.0.1:%d' if dashboard_url_scheme() == 'https' else 'http://127.0.0.1:%d') % PORT
+        args = ['serve', '--bg', '--https=443', target]
+    # lê a saída à medida que chega: se o Serve não estiver ativado na conta, o tailscale imprime o link e fica à espera
+    try:
+        p = subprocess.Popen([exe] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8',
+                             errors='replace', creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+    chunks = []
+
+    def _read():
+        try:
+            for line in p.stdout:
+                chunks.append(line)
+        except Exception:
+            pass
+    threading.Thread(target=_read, daemon=True).start()
+    end = time.time() + 20
+    url = ''
+    while time.time() < end and p.poll() is None:
+        m = re.search(r'https://login\.tailscale\.com/\S+', ''.join(chunks))
+        if m:
+            url = m.group(0)
+            break
+        time.sleep(0.3)
+    text = ''.join(chunks).strip()
+    if p.poll() is None:
+        try:
+            p.kill()
+        except Exception:
+            pass
+        return {"ok": False, "error": "" if url else text[-400:], "enable_url": url, "hint": "" if url else "timeout"}
+    return {"ok": p.returncode == 0, "error": '' if p.returncode == 0 else text[-400:], "enable_url": ""}
 
 
 def probe_ip(ip):
@@ -3562,7 +4097,18 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             ip = self.client_address[0]
         except Exception:
             return False
+        # o "tailscale serve" liga a partir de 127.0.0.1: os pedidos que ele reencaminha trazem estes cabeçalhos e NÃO são locais
+        if self.headers.get('Tailscale-User-Login') or self.headers.get('Tailscale-Funnel-Request'):
+            return False
         return (ip in ('::1', '::ffff:127.0.0.1') or ip.startswith('127.')) and not self.headers.get('X-Forwarded-For')
+
+    def _send_json(self, obj, code=200):
+        body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _require_auth(self, path):
         if not auth_enabled() or not path.startswith('/api/') or path in AUTH_EXEMPT_PATHS:
@@ -3931,6 +4477,35 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(result).encode('utf-8'))
             return
 
+        if path == '/api/parasite-workers':
+            result = fetch_parasite_workers(query_params.get('address', [''])[0])
+            self.send_response(400 if result.get("error") == "Endereço inválido" else 200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/parasite-blocks':
+            result = fetch_parasite_blocks()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/parasite-history':
+            address = query_params.get('address', [''])[0].strip()
+            period = query_params.get('period', ['3d'])[0].strip()
+            result = fetch_parasite_history(address, period)
+            self.send_response(400 if result.get("error") == "Endereço inválido" else 200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
         if path == '/api/parasite-refinery':
             address = query_params.get('address', [''])[0].strip()
             force = query_params.get('force', ['0'])[0] == '1'
@@ -4030,6 +4605,21 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(counts).encode('utf-8'))
+            return
+
+        if path == '/api/diag/device':
+            ip_q = (query_params.get('ip') or [''])[0].strip()
+            if not ip_q or len(ip_q) > 64:
+                self._send_json({"ok": False, "error": "IP inválido"}, 400)
+                return
+            kind, reason = diagnose_device(ip_q)
+            self._send_json({"ok": True, "kind": kind, "reason": reason})
+            return
+
+        if path == '/api/remote/status':
+            st = tailscale_status()
+            st["local"] = self._is_local_request()
+            self._send_json(st)
             return
 
         if path == '/api/devices':
@@ -4293,7 +4883,34 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 t.start()
             return
 
+        if path == '/api/cert/sign':
+            # assinar com a chave desta instalação só é permitido a partir deste PC (e com login), nunca pelo acesso remoto
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "só é possível a partir do próprio PC"}, 403)
+                return
+            payload = body.get("payload")
+            if not isinstance(payload, dict) or len(json.dumps(payload)) > CERT_MAX_PAYLOAD:
+                self._send_json({"ok": False, "error": "dados inválidos"}, 400)
+                return
+            try:
+                self._send_json({"ok": True, "certificate": cert_sign(payload)})
+            except Exception as e:
+                self._send_json({"ok": False, "error": "não foi possível assinar: " + str(e)}, 500)
+            return
+
+        if path == '/api/cert/verify':
+            cert = body.get("certificate")
+            if not isinstance(cert, dict):
+                self._send_json({"ok": False, "error": "certificado inválido"}, 400)
+                return
+            self._send_json(dict(cert_verify(cert), ok=True))
+            return
+
         if path == '/api/update/install':
+            # instalar uma atualização só é permitido a partir deste PC (e com login), nunca pelo acesso remoto
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "só é possível a partir do próprio PC"}, 403)
+                return
             silent = bool(body.get("silent", True))
             with _update_install_lock:
                 already_running = _update_install_state.get("status") in ("downloading", "launching")
@@ -4584,6 +5201,23 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
             return
 
+        if path in ('/api/remote/serve', '/api/remote/keepalive'):
+            # mexer na exposição do servidor só é permitido a partir deste PC (e com login)
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "só é possível a partir do próprio PC"}, 403)
+                return
+            if path == '/api/remote/serve':
+                self._send_json(tailscale_serve(bool(body.get("enable"))))
+                return
+            with POWER_CONFIG_LOCK:
+                new_cfg = copy.deepcopy(power_config)
+                new_cfg.setdefault("security", {})["remote_keepalive"] = bool(body.get("enable"))
+                saved = save_power_config(new_cfg)
+                if saved:
+                    power_config = new_cfg
+            self._send_json({"ok": saved, "keepalive": bool(body.get("enable")) if saved else remote_keepalive()}, 200 if saved else 500)
+            return
+
         if path == '/api/security/config':
             with POWER_CONFIG_LOCK:
                 existing = copy.deepcopy(power_config.get("security", {}) or {})
@@ -4598,6 +5232,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             new_security = {
                 "https_enabled": https_enabled and cert_ok,
                 "restrict_proxy_to_known_ips": restrict,
+                "remote_keepalive": bool(existing.get("remote_keepalive", False)),
             }
 
             with POWER_CONFIG_LOCK:
@@ -4764,8 +5399,31 @@ def _load_tray_image():
     return img
 
 
+def abrir_dashboard():
+    """Abre a dashboard numa janela própria do Chrome (sem extensões, com o Modo Desempenho desligado e um perfil só para ela).
+    Se o Chrome não estiver instalado, usa o navegador predefinido como antes."""
+    url = f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html'
+    if sys.platform.startswith('linux') and not (os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
+        print(f"[info] servidor sem ecrã: abre {url} noutro dispositivo (ou pelo Tailscale).", flush=True)
+        return
+    try:
+        candidatos = [os.path.join(os.environ.get(v, ''), *rel) for v, rel in (
+            ('ProgramFiles', ('Google', 'Chrome', 'Application', 'chrome.exe')),
+            ('ProgramFiles(x86)', ('Google', 'Chrome', 'Application', 'chrome.exe')),
+            ('LOCALAPPDATA', ('Google', 'Chrome', 'Application', 'chrome.exe')))]
+        chrome = next((c for c in candidatos if c and os.path.isfile(c)), None)
+        if chrome:
+            perfil = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'CentroDeComando', 'perfil-leve')
+            subprocess.Popen([chrome, f'--user-data-dir={perfil}', '--disable-extensions', '--no-first-run',
+                              '--no-default-browser-check', '--allow-insecure-localhost', f'--app={url}?leve=0'])
+            return
+    except Exception as e:
+        print(f"[aviso] não consegui abrir o Chrome ({e}); a usar o navegador predefinido.", flush=True)
+    webbrowser.open(url)
+
+
 def _tray_abrir_painel(icon=None, item=None):
-    webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
+    abrir_dashboard()
 
 
 def _tray_sair(icon=None, item=None):
@@ -4864,14 +5522,14 @@ def main():
 
         start_tray_icon()
 
-        webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
+        abrir_dashboard()
 
         while True:
             time.sleep(3600)
     else:
         print(f"[aviso] a porta {PORT} já está ocupada por OUTRA instância da app (provavelmente a antiga, na bandeja/.exe). "
               "Este app.py NÃO arrancou - o browser vai mostrar a instância antiga. Fecha-a e volta a correr.", flush=True)
-        webbrowser.open(f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html')
+        abrir_dashboard()
 
 
 if __name__ == '__main__':
