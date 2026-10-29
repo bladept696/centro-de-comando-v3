@@ -117,7 +117,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.0.6"
+APP_VERSION = "4.0.7"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -256,29 +256,79 @@ CGMINER_KEY_CACHE = {}
 CGMINER_IDENT_CACHE = {}
 
 
+_cg_local = threading.local()
+CGMINER_EXTRA_BUDGET = 3.0   # segundos para os comandos opcionais (pools, stats, placas...) depois do summary
+
+
+def _cg_json(raw):
+    try:
+        raw = raw.rstrip(b'\x00').strip()
+        return json.loads(raw.decode('utf-8', errors='ignore')) if raw else None
+    except Exception:
+        return None
+
+
 def cgminer_command(ip, command, port=CGMINER_PORT, timeout=CGMINER_TIMEOUT, key=None):
     key = key or CGMINER_KEY_CACHE.get(ip, 'command')
+    # dentro do fetch_cgminer_full há um prazo total: o painel desiste ao fim de 5,5 s e uma Antminer lenta com muitos comandos
+    # a esperar o tempo todo cada um aparecia como "offline" mesmo estando a responder
+    dl = getattr(_cg_local, 'deadline', None)
+    if dl is not None:
+        timeout = min(timeout, dl - time.time())
+        if timeout < 0.15:
+            return None
     try:
+        t_end = time.time() + timeout
         with socket.create_connection((ip, port), timeout=timeout) as sock:
-            sock.settimeout(timeout)
             sock.sendall(json.dumps({key: command}).encode('utf-8'))
             chunks = []
             while True:
+                left = t_end - time.time()
+                if left <= 0:
+                    break
+                # depois de já ter dados só espera um pouco mais: há firmwares (LuxOS) que não acabam a resposta com o byte NUL
+                # nem fecham a ligação, e esperavam o tempo todo em cada comando
+                sock.settimeout(min(left, 0.35) if chunks else left)
                 try:
-                    chunk = sock.recv(4096)
+                    chunk = sock.recv(65536)
                 except socket.timeout:
+                    if chunks and _cg_json(b''.join(chunks)) is None and time.time() < t_end:
+                        continue
                     break
                 if not chunk:
                     break
                 chunks.append(chunk)
                 if chunk.endswith(b'\x00'):
                     break
-            raw = b''.join(chunks).rstrip(b'\x00').strip()
-            if not raw:
-                return None
-            return json.loads(raw.decode('utf-8', errors='ignore'))
+            return _cg_json(b''.join(chunks))
     except Exception:
         return None
+
+
+def cgminer_diagnose(ip, port=None):
+    """Motivo provável de uma máquina cgminer/LuxOS/Antminer não estar a responder (texto curto)."""
+    port = port or CGMINER_PORT
+    try:
+        socket.create_connection((ip, port), timeout=1.5).close()
+    except socket.timeout:
+        return f"sem resposta na porta {port}: máquina desligada, IP mudou ou está noutra rede"
+    except ConnectionRefusedError:
+        return f"porta {port} recusada: a API de mineração está desligada nesta máquina"
+    except OSError as e:
+        return f"não foi possível ligar à porta {port} ({getattr(e, 'strerror', None) or e})"
+    raw = cgminer_command(ip, 'summary', port=port, timeout=2.5)
+    if raw is None:
+        raw = cgminer_command(ip, 'summary', port=port, timeout=2.5, key='cmd')
+    if raw is None:
+        return f"a porta {port} abre mas a máquina não responde ao comando summary a tempo (firmware lento, API bloqueada ou formato desconhecido)"
+    if isinstance(raw, dict) and 'SUMMARY' in raw:
+        return "a API responde bem (summary ok): o problema está na ligação do painel ou na lista de máquinas"
+    try:
+        st = (raw.get('STATUS') or [{}])[0]
+        msg, code, desc = st.get('Msg'), st.get('Code'), st.get('Description')
+    except Exception:
+        msg = code = desc = None
+    return f"a API respondeu com erro: «{msg}» (código {code}, {desc}): acesso restrito a certos IPs (api-allow) ou firmware sem este comando"
 
 
 def _cgminer_scan_numeric_fields(stats_entry, prefix_pattern):
@@ -376,6 +426,17 @@ def probe_cgminer(ip, port=None):
         # da palavra-passe da interface web). Mostra a máquina à mesma, com aviso.
         raw = cgminer_command(ip, 'summary', port=port, timeout=CGMINER_SCAN_TIMEOUT)
         if not (isinstance(raw, dict) and 'STATUS' in raw):
+            return None
+        # Goldshell (gsminer): a porta 4028 responde a tudo com "Invalid command" (código 14); a API útil é a HTTP /mcb, que o
+        # probe_goldshell_http trata a seguir. Sem isto era marcada como "LuxOS (API restrita)" e como SHA-256 em vez de Scrypt.
+        try:
+            _st = (raw.get('STATUS') or [{}])[0]
+        except Exception:
+            _st = {}
+        if not isinstance(_st, dict):
+            _st = {}
+        if 'gsminer' in str(_st.get('Description', '')).lower() or (
+                _st.get('Code') == 14 and 'invalid command' in str(_st.get('Msg', '')).lower()):
             return None
         return {
             "ip": ip,
@@ -495,7 +556,14 @@ def fetch_cgminer_full(ip, port=None):
     summary_data = cgminer_summary(ip, port)
     if not summary_data:
         return None
+    _cg_local.deadline = time.time() + CGMINER_EXTRA_BUDGET   # o summary chega; o resto são extras com prazo
+    try:
+        return _fetch_cgminer_full(ip, port, summary_data)
+    finally:
+        _cg_local.deadline = None
 
+
+def _fetch_cgminer_full(ip, port, summary_data):
     summary = (summary_data.get('SUMMARY') or [{}])[0]
     pools_data = cgminer_command(ip, 'pools', port=port) or {}
     pool_entry = (pools_data.get('POOLS') or [{}])
@@ -791,7 +859,14 @@ def fetch_epic_full(ip):
 
 
 def probe_goldshell_http(ip):
-    data = fetch_goldshell_devs(ip, timeout=GOLDSHELL_HTTP_SCAN_TIMEOUT)
+    # A Goldshell demora ~0,9 s a responder ao /mcb/cgminer, mais do que o tempo de espera da pesquisa (0,6 s): por isso
+    # primeiro vê (rápido) se a porta 80 está aberta e só depois espera o tempo todo. IPs sem máquina continuam a falhar depressa.
+    try:
+        with socket.create_connection((ip, 80), timeout=GOLDSHELL_HTTP_SCAN_TIMEOUT):
+            pass
+    except Exception:
+        return None
+    data = fetch_goldshell_devs(ip, timeout=GOLDSHELL_HTTP_TIMEOUT)
     if not data or 'minfos' not in data:
         return None
     algo_names = [m.get('name') for m in (data.get('minfos') or []) if m.get('name')]
@@ -1779,6 +1854,99 @@ def verify_update_signature(digest, sig_hex):
         return False
 
 
+# ---------- Certificados de bloco ----------
+# Cada instalação tem a sua própria chave Ed25519 (criada na primeira vez e guardada ao lado do programa). NÃO é a chave das
+# atualizações: essa fica só no PC do programador e nunca pode vir dentro da app. O certificado assina as provas recolhidas
+# quando um bloco é encontrado (hora, máquina, share, transação de recompensa e cabeçalho do bloco); o cabeçalho confirma-se
+# por si (o seu hash tem de bater com o do bloco) e a transação confirma-se em qualquer explorador de blocos.
+CERT_CONTEXT = b"HC-BLOCK-CERT-V1:"
+CERT_KEY_FILENAME = 'block_cert_key.json'
+CERT_MAX_PAYLOAD = 32768
+_cert_key_lock = threading.Lock()
+_cert_key_cache = None
+
+
+def cert_key_path():
+    return os.path.join(writable_dir(), CERT_KEY_FILENAME)
+
+
+def _cert_private_key():
+    global _cert_key_cache
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    with _cert_key_lock:
+        if _cert_key_cache is not None:
+            return _cert_key_cache
+        path = cert_key_path()
+        if os.path.exists(path):
+            # um ficheiro que existe mas não lê bem NUNCA é substituído (perderia as provas assinadas com ele)
+            with open(path, 'r', encoding='utf-8') as f:
+                key = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(json.load(f)['seed']))
+        else:
+            key = Ed25519PrivateKey.generate()
+            seed = key.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption())
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump({'seed': seed.hex(), 'created': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}, f)
+            try:
+                os.chmod(path, 0o600)
+            except Exception:
+                pass
+        _cert_key_cache = key
+        return key
+
+
+def _cert_public_hex(create=False):
+    from cryptography.hazmat.primitives import serialization
+    if not create and not os.path.exists(cert_key_path()):
+        return None
+    return _cert_private_key().public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
+
+
+def cert_canonical(obj):
+    return json.dumps(obj, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+
+
+def cert_message(signed):
+    return CERT_CONTEXT + hashlib.sha256(cert_canonical(signed)).digest()
+
+
+def cert_sign(payload):
+    signed = {"v": 1, "signed_at": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), "payload": payload}
+    key = _cert_private_key()
+    return {"v": 1, "signed_at": signed["signed_at"], "payload": payload, "public_key": _cert_public_hex(True),
+            "sha256": hashlib.sha256(cert_canonical(signed)).hexdigest(), "signature": key.sign(cert_message(signed)).hex()}
+
+
+def block_header_hash(h):
+    """Hash do bloco calculado a partir do cabeçalho de 80 bytes (campos como a API da mempool.space os dá)."""
+    try:
+        import struct
+        raw = (struct.pack('<I', int(h['version']) & 0xffffffff) + bytes.fromhex(h['previousblockhash'])[::-1] +
+               bytes.fromhex(h['merkle_root'])[::-1] + struct.pack('<III', int(h['timestamp']), int(h['bits']), int(h['nonce'])))
+        return hashlib.sha256(hashlib.sha256(raw).digest()).digest()[::-1].hex()
+    except Exception:
+        return None
+
+
+def cert_verify(cert):
+    res = {"signature_valid": False, "header_ok": None, "signer_is_this_install": False}
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        signed = {"v": cert["v"], "signed_at": cert["signed_at"], "payload": cert["payload"]}
+        Ed25519PublicKey.from_public_bytes(bytes.fromhex(cert["public_key"])).verify(bytes.fromhex(cert["signature"]), cert_message(signed))
+        res["signature_valid"] = True
+    except Exception:
+        pass
+    try:
+        chain = (cert.get("payload") or {}).get("chain") or {}
+        if isinstance(chain.get("header"), dict):
+            res["header_ok"] = block_header_hash(chain["header"]) == chain.get("block_hash")
+        res["signer_is_this_install"] = bool(cert.get("public_key")) and cert.get("public_key") == _cert_public_hex(False)
+    except Exception:
+        pass
+    return res
+
+
 def _do_download_and_launch_installer(url, name, silent, sig_url=None):
     global _update_install_state
     dest = None
@@ -2624,8 +2792,21 @@ def load_power_config():
         path = legacy_power_config_path()
         migrating = True
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception:
+            # ficheiro estragado (ex.: a app foi fechada a meio de gravar): tenta a cópia da última gravação boa e guarda o estragado
+            if not os.path.exists(path):
+                raise
+            try:
+                import shutil
+                shutil.copyfile(path, path + '.corrompido')
+            except Exception:
+                pass
+            with open(path + '.bak', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            print("[config] config.json estava estragado: restaurado da cópia (.bak)", flush=True)
         cfg = copy.deepcopy(DEFAULT_POWER_CONFIG)
         cfg["mqtt"].update(data.get("mqtt", {}) or {})
         cfg["profiles"] = data.get("profiles", []) or []
@@ -2644,11 +2825,28 @@ def load_power_config():
 
 
 def save_power_config(cfg):
+    # grava num ficheiro à parte e só depois troca: se a app for fechada a meio (instalador, falha de luz) o config.json antigo
+    # fica intacto, em vez de ficar cortado e a app voltar às definições de fábrica sem a lista de máquinas
+    path = power_config_path()
+    tmp = path + '.tmp'
     try:
-        with open(power_config_path(), 'w', encoding='utf-8') as f:
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        if os.path.exists(path):
+            try:
+                import shutil
+                shutil.copyfile(path, path + '.bak')
+            except Exception:
+                pass
+        os.replace(tmp, path)
         return True
     except Exception:
+        try:
+            os.remove(tmp)
+        except Exception:
+            pass
         return False
 
 
@@ -3349,6 +3547,29 @@ def is_proxy_target_allowed(ip):
     if not restrict:
         return True
     return ip in _known_device_ips()
+
+
+def diagnose_device(ip):
+    """(tipo, motivo) de uma máquina aparecer offline. O painel mostra o motivo no cartão e no registo de eventos."""
+    if not is_proxy_target_allowed(ip):
+        return 'unknown_ip', "o servidor não tem este IP na lista de máquinas (a lista guardada no servidor ficou vazia ou desatualizada)"
+
+    def is_open(p):
+        try:
+            socket.create_connection((ip, p), timeout=1.2).close()
+            return True
+        except Exception:
+            return False
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        f80, f4028 = ex.submit(is_open, 80), ex.submit(is_open, CGMINER_PORT)
+        open80, open4028 = f80.result(), f4028.result()
+    with endpoint_cache_lock:
+        preferred = endpoint_cache.get(ip)
+    if open4028 and (preferred in (None, 'cgminer') or not open80):
+        return 'cgminer', cgminer_diagnose(ip)
+    if open80:
+        return 'http', "a porta 80 responde mas a API da máquina não (modo de configuração Wi-Fi, firmware sem API ou outro tipo de máquina)"
+    return 'unreachable', "sem resposta nas portas 80 e 4028: máquina desligada, IP mudou ou está noutra rede"
 
 
 TLS_CERT_FILENAME = "server_cert.pem"
@@ -4220,6 +4441,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(counts).encode('utf-8'))
             return
 
+        if path == '/api/diag/device':
+            ip_q = (query_params.get('ip') or [''])[0].strip()
+            if not ip_q or len(ip_q) > 64:
+                self._send_json({"ok": False, "error": "IP inválido"}, 400)
+                return
+            kind, reason = diagnose_device(ip_q)
+            self._send_json({"ok": True, "kind": kind, "reason": reason})
+            return
+
         if path == '/api/remote/status':
             st = tailscale_status()
             st["local"] = self._is_local_request()
@@ -4485,6 +4715,29 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 t.daemon = True
                 _pending_close_timer["timer"] = t
                 t.start()
+            return
+
+        if path == '/api/cert/sign':
+            # assinar com a chave desta instalação só é permitido a partir deste PC (e com login), nunca pelo acesso remoto
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "só é possível a partir do próprio PC"}, 403)
+                return
+            payload = body.get("payload")
+            if not isinstance(payload, dict) or len(json.dumps(payload)) > CERT_MAX_PAYLOAD:
+                self._send_json({"ok": False, "error": "dados inválidos"}, 400)
+                return
+            try:
+                self._send_json({"ok": True, "certificate": cert_sign(payload)})
+            except Exception as e:
+                self._send_json({"ok": False, "error": "não foi possível assinar: " + str(e)}, 500)
+            return
+
+        if path == '/api/cert/verify':
+            cert = body.get("certificate")
+            if not isinstance(cert, dict):
+                self._send_json({"ok": False, "error": "certificado inválido"}, 400)
+                return
+            self._send_json(dict(cert_verify(cert), ok=True))
             return
 
         if path == '/api/update/install':
