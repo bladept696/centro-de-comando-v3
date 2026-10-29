@@ -42,6 +42,9 @@ Object.assign(I18N_DICT, {
   mk_note: { pt: `Preços de CoinGecko (com a Binance como reserva), atualizados a cada 90 s enquanto esta aba está aberta. A pesquisa chega a todos os tokens, mesmo fora da lista carregada. Informação, não é aconselhamento financeiro.`, en: `Prices from CoinGecko (with Binance as a fallback), refreshed every 90 s while this tab is open. Search reaches every token, even outside the loaded list. Information only, not financial advice.`, es: `Precios de CoinGecko (con Binance como respaldo), actualizados cada 90 s mientras esta pestaña está abierta. La búsqueda llega a todos los tokens, incluso fuera de la lista cargada. Solo información, no es asesoramiento financiero.`, fr: `Prix de CoinGecko (avec Binance en secours), actualisés toutes les 90 s tant que cet onglet est ouvert. La recherche couvre tous les tokens, même hors de la liste chargée. Information uniquement, pas un conseil financier.` }
 });
 
+// o menu já foi traduzido antes de estas chaves existirem (ficaria "mercado_t"): traduz outra vez
+try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e) {}
+
 (function(){
   const KEY = 'hc_mkt', CKEY = 'hc_mkt_cache', API = 'https://api.coingecko.com/api/v3';
   const CUR = ['eur', 'usd', 'gbp', 'brl'], LOC = { pt: 'pt-PT', en: 'en-GB', es: 'es-ES', fr: 'fr-FR' };
