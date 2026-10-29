@@ -52,6 +52,22 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeHelpPopover(); });
 window.addEventListener('scroll', closeHelpPopover, true);
 
+// Pergunta ao servidor porque é que a máquina não responde (porta fechada, API restrita, IP fora da lista...) e mostra no cartão e no registo.
+// Se o motivo for "IP desconhecido" (a lista do servidor ficou vazia), volta a registar as máquinas no servidor e tenta de novo.
+const hcWhyAt = {};
+async function hcWhyOffline(dev){
+  if(Date.now() - (hcWhyAt[dev.id] || 0) < 120000) return;
+  hcWhyAt[dev.id] = Date.now();
+  try {
+    const r = await fetch(`${API_BASE}/api/diag/device?ip=${encodeURIComponent(dev.ip)}`);
+    const j = await r.json();
+    if(!r.ok || !j.ok) return;
+    if(readings[dev.id] && readings[dev.id].online === false) readings[dev.id] = { ...readings[dev.id], offlineReason: j.reason, offlineKind: j.kind };
+    logEvent(`Offline: ${j.reason}.`, 'error', dev.name, dev.id);
+    if(j.kind === 'unknown_ip' && typeof saveDevices === 'function'){ await saveDevices(); consecutiveFails[dev.id] = 0; pollOneDevice(dev); }
+  } catch(e) {}
+}
+
 async function pollOneDevice(dev){
   const pingStart = performance.now();
   try {
@@ -253,6 +269,7 @@ async function pollOneDevice(dev){
       thermalCriticalState[dev.id] = { since: null, alarmed: false };
       updateCriticalAlarmUI();
     }
+    if(!e.portalMode) hcWhyOffline(dev);
   }
 }
 

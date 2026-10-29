@@ -137,6 +137,7 @@ function mcAlertItems(dev, r, st, trend){
   if(!r.online){
     if(r.portalMode) add('info', t('mc_a_portal'), 'portal');
     else { const s = mc.since[dev.id]; add('bad', s ? mct('mc_a_offsince', mcAgo(Date.now() - s)) : t('mc_a_off'), 'off'); }
+    if(r.offlineReason) add('info', '❓ ' + r.offlineReason, 'offwhy');   // o motivo vem do servidor (/api/diag/device)
     return out;
   }
   if(mc.recordUntil[dev.id] > Date.now()) add('gold', t('mc_a_record'), 'record');
