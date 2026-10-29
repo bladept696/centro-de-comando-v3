@@ -280,6 +280,7 @@ async function asProtect(){
 async function asTick(){
   try {
     AS.tick++;
+    if(!AS.diary.length && (devices || []).length) asDiary(AT('d_start', devices.length), 'info');
     asSample();
     if(AS.tick % 3 === 0){ asAnalyze(); asVerify(); await asProtect(); asFetchForecast(); }
     asSave();
@@ -290,7 +291,6 @@ async function asTick(){
 function asStart(){
   if(AS.started) return; AS.started = true;
   AS.pending = asLs('nerdqaxe:ai_pending', []);
-  if(!AS.diary.length) asDiary(AT('d_start', (devices || []).length), 'info');
   setInterval(asTick, 20000);
   setTimeout(asTick, 4000);
 }
