@@ -93,9 +93,18 @@
     const real = s.work / s.time / 1e9, rep = s.rep / s.time, expN = rep * 1e9 * s.time / (dNow * H32);
     const ratio = rep > 0 ? real / rep : 0, ci = 1.96 / Math.sqrt(Math.max(1, s.N));
     // dispersão do nº de shares por blocos de 5 min (≈1 se o fluxo é regular; muito mais se há quedas ou soluços)
-    const bins = {}; ps.forEach(p => { const b = Math.floor(p.t / 300e3); (bins[b] = bins[b] || { c: 0, n: 0 }); bins[b].c += p.da; bins[b].n++; });
-    const cs = Object.values(bins).filter(b => b.n >= 4).map(b => b.c); let disp = null;
-    if(cs.length >= 6){ const m = cs.reduce((x, y) => x + y, 0) / cs.length; if(m >= 5){ const v = cs.reduce((x, y) => x + (y - m) * (y - m), 0) / (cs.length - 1); disp = v / m; } }
+    // Compara o trabalho de cada bloco de 5 min com o esperado para o TEMPO REALMENTE COBERTO nesse bloco (as leituras não são
+    // perfeitamente regulares) e em unidades de trabalho (share × dificuldade), para uma mudança de dificuldade da pool não parecer
+    // irregularidade. Se o fluxo é regular o índice fica perto de 1; muito mais alto = quedas ou soluços a sério.
+    const bins = {}; ps.forEach(p => { const b = Math.floor(p.t / 300e3); const o = (bins[b] = bins[b] || { c: 0, w: 0, s: 0, n: 0 }); o.c += p.da; o.w += p.da * p.d; o.s += p.dt; o.n++; });
+    const vb = Object.values(bins).filter(b => b.n >= 4 && b.s >= 150 && b.c > 0); let disp = null;
+    if(vb.length >= 6){
+      const W = vb.reduce((x, b) => x + b.w, 0), Ssum = vb.reduce((x, b) => x + b.s, 0), lam = W / Ssum;
+      if(lam > 0 && vb.every(b => b.c > 0) && vb.reduce((x, b) => x + b.c, 0) / vb.length >= 5){
+        let chi = 0; vb.forEach(b => { const e = lam * b.s, dbar = b.w / b.c; chi += (b.w - e) * (b.w - e) / (e * dbar); });
+        disp = chi / (vb.length - 1);
+      }
+    }
     return { real, rep, ratio, ci, N: s.N, expN, time: s.time, win, rejPct: s.N + s.rj > 0 ? s.rj / (s.N + s.rj) * 100 : 0, disp };
   }
   function calc(id){
