@@ -158,6 +158,7 @@ function mcAlertItems(dev, r, st, trend){
   const sh = (r.accepted || 0) + (r.rejected || 0);
   if(sh > 20 && r.rejected / sh > mc.th.rej / 100) add('warn', mct('mc_a_rej', (r.rejected / sh * 100).toFixed(1)), 'rej');
   if(typeof hcChipAlert === 'function'){ const ca = hcChipAlert(dev, r); if(ca) add(ca.lvl, ca.txt, 'chips'); }
+  if(typeof hcRealAlert === 'function'){ const ra = hcRealAlert(dev, r); if(ra) add(ra.lvl, ra.txt, 'hreal'); }
   if(r.rssi != null && r.rssi <= mc.th.wifi) add('warn', mct('mc_a_wifi', r.rssi), 'wifi');
   if(r.poolPing != null && r.poolPing > mc.th.ping) add('warn', mct('mc_a_ping', Math.round(r.poolPing)), 'ping');
   if(r.poolInfo && r.poolInfo.usingFallback) add('info', t('mc_a_fallback'), 'fallback');

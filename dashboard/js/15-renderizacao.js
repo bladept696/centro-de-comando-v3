@@ -132,6 +132,7 @@ async function pollOneDevice(dev){
       accepted: Number(acceptedVal) || 0,
       rejected: Number(rejectedVal) || 0,
       efficiency: Number(efficiencyVal) || 0,
+      poolDifficulty: pickNum(d.poolDifficulty, d.stratumDifficulty),
       asicCount: Number(d.asicCount) || null,
       smallCores: Number(d.smallCoreCount) || null,
       asicTemps: Array.isArray(d.asicTemps) ? d.asicTemps : null,

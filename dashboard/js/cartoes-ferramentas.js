@@ -13,7 +13,7 @@ const MC_MENU_GROUPS = [
   ['data', ['export', 'import']],
   ['alerts', ['pause', 'sched', 'rules', 'limits', 'valerts', 'tariff']],
   ['net', ['scan', 'remote', 'lock']],
-  ['panel', ['report', 'xp', 'chips', 'level', 'help']]
+  ['panel', ['report', 'xp', 'chips', 'real', 'level', 'help']]
 ];
 const MC_MENU_GTX = {
   data: ['Dados e cópias', 'Data & backups', 'Datos y copias', 'Données et sauvegardes'],
@@ -30,6 +30,7 @@ function mcMenuLabel(k){
     case 'lock': return t(mc.locked ? 'mc_m_unlock' : 'mc_m_lock'); case 'report': return t('mc_m_report');
     case 'remote': return typeof hcRemoteLabel === 'function' ? hcRemoteLabel() : '🌐 Acesso remoto';
     case 'chips': return typeof hcChipsLabel === 'function' ? hcChipsLabel() : '🧩 Saúde dos chips';
+    case 'real': return typeof hcRealLabel === 'function' ? hcRealLabel() : '📐 Hashrate real';
     case 'level': return typeof hcLvlLabel === 'function' ? hcLvlLabel() : '🏅 Nível e missões';
     case 'valerts': return typeof hcVoiceAlertsLabel === 'function' ? hcVoiceAlertsLabel() : '🔊 Alertas por voz';
     case 'help': return t('mc_m_help');
@@ -100,6 +101,7 @@ document.addEventListener('click', e => {
   else if(k === 'report'){ if(typeof mcReportOpen === 'function') mcReportOpen(); }
   else if(k === 'remote'){ if(typeof hcRemoteOpen === 'function') hcRemoteOpen(); }
   else if(k === 'chips'){ if(typeof hcChipsOpen === 'function') hcChipsOpen(); }
+  else if(k === 'real'){ if(typeof hcRealOpen === 'function') hcRealOpen(); }
   else if(k === 'level'){ if(typeof hcLvlOpen === 'function') hcLvlOpen(); }
   else if(k === 'valerts'){ if(typeof hcVoiceAlertsOpen === 'function') hcVoiceAlertsOpen(); }
   else if(k === 'help'){ if(typeof mcHelpToggle === 'function') mcHelpToggle(); }

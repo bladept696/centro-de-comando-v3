@@ -1,0 +1,18 @@
+/* Hashrate real medido pelos shares (reutiliza a janela e os cartões da Saúde dos chips) */
+.hc-hr-gauge{margin:2px 0 10px}
+.hc-hr-track{position:relative;height:14px;border-radius:7px;background:rgba(159,176,200,.14);overflow:hidden}
+.hc-hr-track b{position:absolute;left:0;top:0;bottom:0;border-radius:7px 0 0 7px;background:linear-gradient(90deg,#21b98a,#21ffb0)}
+.hc-hr-track em{position:absolute;top:3px;bottom:3px;border-radius:3px;background:rgba(255,255,255,.28)}
+.hc-hr-track u{position:absolute;top:0;bottom:0;left:calc(100% / 1.3);width:2px;background:#fff;opacity:.85}
+.hc-hr-gauge.warn .hc-hr-track b{background:linear-gradient(90deg,#c98a12,#ffb020)}
+.hc-hr-gauge.bad .hc-hr-track b{background:linear-gradient(90deg,#c63a52,#ff4d6d)}
+.hc-hr-pct{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;color:#9fb0c8;font-size:11.5px}
+.hc-hr-pct b{font-size:22px;color:#fff;font-family:'JetBrains Mono',monospace}
+.hc-hr-chart{margin:8px 0 2px}
+.hc-hr-ct{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11px;color:#8fa1bd}
+.hc-hr-ct i{display:inline-block;width:14px;height:3px;border-radius:2px;margin:0 3px 2px 8px;vertical-align:middle}
+.hc-hr-ct i.a{background:#ffb020}.hc-hr-ct i.b{background:#4fd6ff}
+.hc-hr-chart svg{width:100%;height:56px;display:block;margin-top:4px}
+.hc-hr-chart path{fill:none;stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.hc-hr-chart path.a{stroke:#ffb020;stroke-dasharray:4 3}.hc-hr-chart path.b{stroke:#4fd6ff}
+.hc-ch-row b.bad{color:#ff9bae}
