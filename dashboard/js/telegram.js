@@ -23,6 +23,7 @@ Object.assign(I18N_DICT, {
     noFolder: ['A pasta da extensão não foi encontrada ao lado do programa. Instala a versão mais recente do Centro de Comando.', 'The extension folder was not found next to the program. Install the latest version of Centro de Comando.', 'No se encontró la carpeta de la extensión junto al programa. Instala la última versión de Centro de Comando.', 'Le dossier de l’extension est introuvable à côté du programme. Installez la dernière version de Centro de Comando.'],
     opened: ['Aberto: segue os passos na janela do Chrome que apareceu.', 'Opened: follow the steps in the Chrome window that appeared.', 'Abierto: sigue los pasos en la ventana de Chrome que apareció.', 'Ouvert : suivez les étapes dans la fenêtre Chrome qui est apparue.'],
     failed: ['Não consegui abrir o Chrome.', 'Could not open Chrome.', 'No pude abrir Chrome.', 'Impossible d’ouvrir Chrome.'],
+    unread: ['{0} por ler', '{0} unread', '{0} sin leer', '{0} non lus'],
     reload: ['Recarregar', 'Reload', 'Recargar', 'Recharger'], size: ['Tamanho', 'Size', 'Tamaño', 'Taille'], close: ['Fechar', 'Close', 'Cerrar', 'Fermer'],
     remote: ['Só funciona neste PC, com o painel aberto em localhost:8765 (não pelo acesso remoto).', 'Only works on this PC, with the panel open at localhost:8765 (not through remote access).', 'Solo funciona en este PC, con el panel abierto en localhost:8765 (no por acceso remoto).', 'Ne fonctionne que sur ce PC, avec le tableau de bord ouvert sur localhost:8765 (pas via l’accès distant).']
   };
@@ -55,6 +56,20 @@ Object.assign(I18N_DICT, {
     // o botão só aparece depois do login, tal como o do chat
     const sync = () => { const cf = document.getElementById('chatFab'); fab.style.display = cf && cf.style.display === 'flex' ? 'flex' : 'none'; if(fab.style.display === 'none') p.classList.remove('open'); };
     sync(); setInterval(sync, 1500);
+    // número de mensagens por ler: vem da extensão, de dentro da moldura do Telegram (só um número). Quando as leres no Telegram, o aviso desaparece sozinho
+    window.addEventListener('message', e => {
+      if(e.origin !== 'https://web.telegram.org' || !e.data || e.data.hcTelegram !== 'nao-lidas') return;
+      setUnread(parseInt(e.data.n, 10) || 0);
+    });
+    // com a extensão instalada, a moldura carrega logo em segundo plano para o aviso funcionar mesmo com a janela fechada
+    if(hasExt()) setTimeout(fill, 3000); else setTimeout(() => { if(hasExt()) fill(); }, 6000);
+  }
+  function setUnread(n){
+    const fab = document.getElementById('tgFab'); if(!fab) return;
+    let b = fab.querySelector('.chat-fab-badge');
+    if(!b){ b = document.createElement('span'); b.className = 'chat-fab-badge'; fab.appendChild(b); }
+    b.textContent = n > 0 ? (n > 99 ? '99+' : String(n)) : '';
+    fab.title = n > 0 ? 'Telegram: ' + t('unread').replace('{0}', n) : 'Telegram';
   }
   function labels(){
     const p = document.getElementById('tgPanel'); if(!p) return;

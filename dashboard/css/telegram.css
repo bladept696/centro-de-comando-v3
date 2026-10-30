@@ -16,3 +16,5 @@
 .tg-path{display:block;margin:4px 0 6px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.06);font:11.5px/1.4 'Courier New',monospace;word-break:break-all;color:var(--text,#eaf6f7)}
 .tg-setup li .tg-btn{margin-top:6px}
 .tg-setup #tgMsg{display:block;min-height:14px}
+/* fechado: a moldura fica no sítio mas invisível e sem cliques, senão o Telegram não monta a lista de conversas e não dá para contar as não lidas */
+.tg-panel:not(.open){display:flex !important;opacity:0;pointer-events:none}

@@ -1,3 +1,30 @@
+Object.assign(I18N_DICT, {
+  "gp_s_addr_ph": { pt: `O teu endereço nesta pool`, en: `Your address on this pool`, es: `Tu dirección en este pool`, fr: `Votre adresse sur ce pool` },
+  "gp_s_addr": { pt: `endereço`, en: `address`, es: `dirección`, fr: `adresse` },
+  "gp_s_best": { pt: `O teu melhor diff (pool)`, en: `Your best diff (pool)`, es: `Tu mejor diff (pool)`, fr: `Votre meilleur diff (pool)` },
+  "gp_s_net": { pt: `Dif. para o bloco`, en: `Diff to the block`, es: `Dif. para el bloque`, fr: `Diff pour le bloc` },
+  "gp_s_prog": { pt: `Progresso até ao bloco`, en: `Progress to the block`, es: `Progreso hasta el bloque`, fr: `Progression vers le bloc` },
+  "gp_n_conn": { pt: `Sem ligação ao servidor local.`, en: `No connection to the local server.`, es: `Sin conexión con el servidor local.`, fr: `Pas de connexion au serveur local.` },
+  "gp_n_err": { pt: `Erro a obter dados da pool: `, en: `Error getting pool data: `, es: `Error al obtener datos del pool: `, fr: `Erreur de lecture des données du pool : ` },
+  "gp_n_stale": { pt: `Últimos dados conhecidos (a pool não respondeu agora).`, en: `Last known data (the pool did not answer just now).`, es: `Últimos datos conocidos (el pool no respondió ahora).`, fr: `Dernières données connues (le pool n’a pas répondu à l’instant).` },
+  "gp_l_miners": { pt: `Mineradores`, en: `Miners`, es: `Mineros`, fr: `Mineurs` },
+  "gp_l_phash": { pt: `Hashrate da pool`, en: `Pool hashrate`, es: `Hashrate del pool`, fr: `Hashrate du pool` },
+  "gp_l_nhash": { pt: `Hashrate da rede`, en: `Network hashrate`, es: `Hashrate de la red`, fr: `Hashrate du réseau` },
+  "gp_l_height": { pt: `Altura`, en: `Height`, es: `Altura`, fr: `Hauteur` },
+  "gp_l_ndiff": { pt: `Dif. da rede`, en: `Network diff.`, es: `Dif. de la red`, fr: `Diff. du réseau` },
+  "gp_l_last": { pt: `Último bloco`, en: `Last block`, es: `Último bloque`, fr: `Dernier bloc` },
+  "gp_l_fee": { pt: `Comissão`, en: `Fee`, es: `Comisión`, fr: `Frais` },
+  "gp_a_best": { pt: `⭐ O teu melhor diff`, en: `⭐ Your best diff`, es: `⭐ Tu mejor diff`, fr: `⭐ Votre meilleur diff` },
+  "gp_a_hash": { pt: `O teu hashrate`, en: `Your hashrate`, es: `Tu hashrate`, fr: `Votre hashrate` },
+  "gp_a_workers": { pt: `Máquinas`, en: `Workers`, es: `Máquinas`, fr: `Machines` },
+  "gp_offline": { pt: `offline`, en: `offline`, es: `sin conexión`, fr: `hors ligne` },
+  "gp_you": { pt: `⭐ Tu`, en: `⭐ You`, es: `⭐ Tú`, fr: `⭐ Vous` },
+  "gp_noblocks": { pt: `Sem blocos recentes.`, en: `No recent blocks.`, es: `Sin bloques recientes.`, fr: `Aucun bloc récent.` },
+  "gp_nt_found": { pt: `Bloco encontrado! 🎉`, en: `Block found! 🎉`, es: `¡Bloque encontrado! 🎉`, fr: `Bloc trouvé ! 🎉` },
+  "gp_nt_new": { pt: `Novo bloco na pool`, en: `New block on the pool`, es: `Nuevo bloque en el pool`, fr: `Nouveau bloc sur le pool` },
+  "gp_nt_desc": { pt: `{0} — altura {1}, dificuldade {2}`, en: `{0} — height {1}, difficulty {2}`, es: `{0} — altura {1}, dificultad {2}`, fr: `{0} — hauteur {1}, difficulté {2}` }
+});
+
 /* ===== Destaque da pool na página principal ===== */
 function gpSpotSaveAddress(){
   const inp = $('gpSpotAddrInput'); if(!inp) return;
@@ -12,8 +39,8 @@ async function gpSpotRender(){
   if(!addr){
     el.style.display = '';
     el.innerHTML = `<div class="gp-spot-empty gp-spot-setup">🪙 Molepool —
-      <input type="text" id="gpSpotAddrInput" placeholder="O teu endereço nesta pool">
-      <button class="power-save-btn" onclick="gpSpotSaveAddress()">Guardar</button>
+      <input type="text" id="gpSpotAddrInput" placeholder="${t('gp_s_addr_ph')}">
+      <button class="power-save-btn" onclick="gpSpotSaveAddress()">${t('gp_guardar')}</button>
     </div>`;
     const inp = $('gpSpotAddrInput');
     if(inp) inp.addEventListener('keydown', e => { if(e.key === 'Enter') gpSpotSaveAddress(); });
@@ -32,11 +59,11 @@ async function gpSpotRender(){
   const short = addr.length > 14 ? addr.slice(0, 8) + '…' + addr.slice(-6) : addr;
   el.style.display = '';
   el.innerHTML = `
-    <div class="gp-spot-item"><span class="lbl">🪙 Molepool — endereço</span><span class="val addr" title="${mpEsc(addr)}" onclick="navigator.clipboard?.writeText('${mpEsc(addr)}')">${mpEsc(short)}</span></div>
-    <div class="gp-spot-item"><span class="lbl">O teu melhor diff (pool)</span><span class="val">${best > 0 ? formatDiff(best).value + formatDiff(best).unit : '—'}</span></div>
-    <div class="gp-spot-item"><span class="lbl">Dif. para o bloco</span><span class="val">${formatDiff(netDiff).value}${formatDiff(netDiff).unit}</span></div>
+    <div class="gp-spot-item"><span class="lbl">🪙 Molepool — ${t('gp_s_addr')}</span><span class="val addr" title="${mpEsc(addr)}" onclick="navigator.clipboard?.writeText('${mpEsc(addr)}')">${mpEsc(short)}</span></div>
+    <div class="gp-spot-item"><span class="lbl">${t('gp_s_best')}</span><span class="val">${best > 0 ? formatDiff(best).value + formatDiff(best).unit : '—'}</span></div>
+    <div class="gp-spot-item"><span class="lbl">${t('gp_s_net')}</span><span class="val">${formatDiff(netDiff).value}${formatDiff(netDiff).unit}</span></div>
     <div class="gp-spot-bar">
-      <div class="lbl">Progresso até ao bloco</div>
+      <div class="lbl">${t('gp_s_prog')}</div>
       <div class="gp-spot-track"><div class="gp-spot-fill" style="width:${pct.toFixed(4)}%"></div></div>
       <div class="gp-spot-pct">${pct < 0.01 ? pct.toFixed(6) : pct.toFixed(2)}%</div>
     </div>`;
@@ -85,47 +112,47 @@ async function gpFetch(first){
   const addr = $('gpAddress').value.trim();
   let data;
   try { data = await (await fetch(`${API_BASE}/api/generic-pool?pool=${encodeURIComponent(GP_STATE.current)}&address=${encodeURIComponent(addr)}`)).json(); }
-  catch(e){ $('gpNote').textContent = 'Sem ligação ao servidor local.'; return; }
-  if(data.error && !data.total_miners){ $('gpNote').textContent = 'Erro a obter dados da pool: ' + data.error; return; }
-  $('gpNote').textContent = data.stale ? 'Últimos dados conhecidos (a pool não respondeu agora).' : '';
+  catch(e){ $('gpNote').textContent = t('gp_n_conn'); return; }
+  if(data.error && !data.total_miners){ $('gpNote').textContent = t('gp_n_err') + data.error; return; }
+  $('gpNote').textContent = data.stale ? t('gp_n_stale') : '';
   const stats = $('gpStats');
   const fmtDiff = v => { if(v == null || isNaN(v)) return '—'; const f = formatDiff(v); return f.value + f.unit; };
   const fmtHash = v => { if(v == null || isNaN(v)) return '—'; const f = formatDiff(v); return f.value + f.unit + 'H/s'; };
   stats.innerHTML = [
-    ['Mineradores', data.total_miners ?? '—'],
-    ['Hashrate da pool', fmtHash(data.pool_hashrate)],
-    ['Hashrate da rede', fmtHash(data.network_hashrate)],
-    ['Altura', data.height ?? '—'],
-    ['Dif. da rede', fmtDiff(data.network_difficulty)],
-    ['Último bloco', gpTimeAgo(data.last_block_found)],
-    ['Fee', (data.fee_percent != null ? data.fee_percent + '%' : '—')],
+    [t('gp_l_miners'), data.total_miners ?? '—'],
+    [t('gp_l_phash'), fmtHash(data.pool_hashrate)],
+    [t('gp_l_nhash'), fmtHash(data.network_hashrate)],
+    [t('gp_l_height'), data.height ?? '—'],
+    [t('gp_l_ndiff'), fmtDiff(data.network_difficulty)],
+    [t('gp_l_last'), gpTimeAgo(data.last_block_found)],
+    [t('gp_l_fee'), (data.fee_percent != null ? data.fee_percent + '%' : '—')],
   ].map(([l, v]) => `<div class="gp-stat"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
   const accEl = $('gpAccount');
   if(data.account){
     const acc = data.account;
     accEl.style.display = '';
-    const workers = (acc.workers || []).map(w => `${mpEsc(w.name)}: ${fmtHash(w.hashrate)}${w.offline ? ' (offline)' : ''}`).join(' · ') || '—';
+    const workers = (acc.workers || []).map(w => `${mpEsc(w.name)}: ${fmtHash(w.hashrate)}${w.offline ? ' (' + t('gp_offline') + ')' : ''}`).join(' · ') || '—';
     accEl.innerHTML = [
-      ['⭐ O teu melhor diff', fmtDiff(acc.best_share)],
-      ['O teu hashrate', fmtHash(acc.current_hashrate)],
-      ['Workers', workers],
+      [t('gp_a_best'), fmtDiff(acc.best_share)],
+      [t('gp_a_hash'), fmtHash(acc.current_hashrate)],
+      [t('gp_a_workers'), workers],
     ].map(([l, v]) => `<div class="gp-stat"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
   } else { accEl.style.display = 'none'; accEl.innerHTML = ''; }
   const rows = [...(data.candidates || []), ...(data.blocks || [])];
   $('gpBlocksBody').innerHTML = rows.map(b => {
-    const who = b.mine ? '⭐ Tu' : (b.miner ? b.miner.slice(0, 6) + '…' + b.miner.slice(-4) : '—');
+    const who = b.mine ? t('gp_you') : (b.miner ? b.miner.slice(0, 6) + '…' + b.miner.slice(-4) : '—');
     const st = b.status || '—', stClass = (st === 'confirmed') ? 'confirmed' : (st === 'pending' || st === 'immature') ? 'pending' : '';
     return `<tr class="${b.mine ? 'gp-mine' : ''}"><td>${b.height ?? '—'}</td><td>${mpEsc(who)}</td><td>${fmtDiff(b.diff)}</td><td>${b.effort != null ? (b.effort * 100).toFixed(0) + '%' : '—'}</td><td><span class="gp-badge ${stClass}">${mpEsc(st)}</span></td><td>${gpTimeAgo(b.ts)}</td></tr>`;
-  }).join('') || '<tr><td colspan="6" class="hint">Sem blocos recentes.</td></tr>';
+  }).join('') || '<tr><td colspan="6" class="hint">' + t('gp_noblocks') + '</td></tr>';
   if(first) { (data.blocks || []).forEach(b => GP_STATE.seenBlocks.add(b.hash)); return; }
   [...(data.candidates || []), ...(data.blocks || [])].forEach(b => {
     if(!b.hash || GP_STATE.seenBlocks.has(b.hash)) return;
     GP_STATE.seenBlocks.add(b.hash);
     const poolLabel = (GP_STATE.pools[GP_STATE.current] || {}).label || GP_STATE.current;
     if(b.mine){
-      addNotification('block', 'Bloco encontrado! 🎉', `${poolLabel} — altura ${b.height}, dificuldade ${formatDiff(b.diff)}`, poolLabel);
+      addNotification('block', t('gp_nt_found'), t('gp_nt_desc').replace('{0}', poolLabel).replace('{1}', b.height).replace('{2}', (f => f.value + f.unit)(formatDiff(b.diff))), poolLabel);
     } else {
-      addNotification('best', 'Novo bloco na pool', `${poolLabel} — altura ${b.height}, dificuldade ${formatDiff(b.diff)}`, poolLabel);
+      addNotification('best', t('gp_nt_new'), t('gp_nt_desc').replace('{0}', poolLabel).replace('{1}', b.height).replace('{2}', (f => f.value + f.unit)(formatDiff(b.diff))), poolLabel);
     }
   });
 }
