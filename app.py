@@ -117,7 +117,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.0.8"
+APP_VERSION = "4.0.9"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -4185,6 +4185,10 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": True, "entries": entries}, ensure_ascii=False).encode('utf-8'))
             return
 
+        if path == '/api/telegram/info':
+            self._send_json({"ok": True, "path": extensao_telegram_dir(), "chrome": bool(_find_chrome()), "local": self._is_local_request()})
+            return
+
         if path == '/api/proxy':
             ip_list = query_params.get('ip')
             if not ip_list or not ip_list[0].strip():
@@ -4883,6 +4887,22 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
                 t.start()
             return
 
+        if path == '/api/telegram/abrir-extensoes':
+            # abre a página de extensões do Chrome NO PERFIL DO PAINEL, para instalar a extensão do Telegram (só a partir deste PC)
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "só é possível a partir do próprio PC"}, 403)
+                return
+            chrome = _find_chrome()
+            if not chrome:
+                self._send_json({"ok": False, "error": "Chrome não encontrado"}, 404)
+                return
+            try:
+                subprocess.Popen([chrome, f'--user-data-dir={perfil_leve_dir()}', '--no-first-run', '--no-default-browser-check', 'chrome://extensions'])
+                self._send_json({"ok": True})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)}, 500)
+            return
+
         if path == '/api/cert/sign':
             # assinar com a chave desta instalação só é permitido a partir deste PC (e com login), nunca pelo acesso remoto
             if not self._is_local_request():
@@ -5399,22 +5419,38 @@ def _load_tray_image():
     return img
 
 
+def _find_chrome():
+    candidatos = [os.path.join(os.environ.get(v, ''), *rel) for v, rel in (
+        ('ProgramFiles', ('Google', 'Chrome', 'Application', 'chrome.exe')),
+        ('ProgramFiles(x86)', ('Google', 'Chrome', 'Application', 'chrome.exe')),
+        ('LOCALAPPDATA', ('Google', 'Chrome', 'Application', 'chrome.exe')))]
+    return next((c for c in candidatos if c and os.path.isfile(c)), None)
+
+
+def perfil_leve_dir():
+    return os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'CentroDeComando', 'perfil-leve')
+
+
+def extensao_telegram_dir():
+    """Pasta da extensão que deixa o Telegram abrir dentro do painel (vem ao lado do programa), ou None."""
+    d = os.path.join(writable_dir(), 'extensao-telegram')
+    return d if os.path.isfile(os.path.join(d, 'manifest.json')) else None
+
+
 def abrir_dashboard():
-    """Abre a dashboard numa janela própria do Chrome (sem extensões, com o Modo Desempenho desligado e um perfil só para ela).
+    """Abre a dashboard numa janela própria do Chrome (modo aplicação, com o Modo Desempenho desligado e um perfil só para ela).
+    Esse perfil não leva as extensões do Chrome normal; a extensão do Telegram, se a instalares nele, funciona.
     Se o Chrome não estiver instalado, usa o navegador predefinido como antes."""
     url = f'{dashboard_url_scheme()}://localhost:{PORT}/nerdqaxe-dashboard.html'
     if sys.platform.startswith('linux') and not (os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
         print(f"[info] servidor sem ecrã: abre {url} noutro dispositivo (ou pelo Tailscale).", flush=True)
         return
     try:
-        candidatos = [os.path.join(os.environ.get(v, ''), *rel) for v, rel in (
-            ('ProgramFiles', ('Google', 'Chrome', 'Application', 'chrome.exe')),
-            ('ProgramFiles(x86)', ('Google', 'Chrome', 'Application', 'chrome.exe')),
-            ('LOCALAPPDATA', ('Google', 'Chrome', 'Application', 'chrome.exe')))]
-        chrome = next((c for c in candidatos if c and os.path.isfile(c)), None)
+        chrome = _find_chrome()
         if chrome:
-            perfil = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'CentroDeComando', 'perfil-leve')
-            subprocess.Popen([chrome, f'--user-data-dir={perfil}', '--disable-extensions', '--no-first-run',
+            # perfil só para o painel (as definições, a sessão e os dados ficam sempre aqui). Não leva
+            # --disable-extensions para que a extensão do Telegram, se a instalares neste perfil, possa correr.
+            subprocess.Popen([chrome, f'--user-data-dir={perfil_leve_dir()}', '--no-first-run',
                               '--no-default-browser-check', '--allow-insecure-localhost', f'--app={url}?leve=0'])
             return
     except Exception as e:

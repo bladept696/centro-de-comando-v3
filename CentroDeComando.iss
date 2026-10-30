@@ -13,7 +13,7 @@
 ; ============================================================================
 
 #define MyAppName "Centro de Comando"
-#define MyAppVersion "4.0.8"
+#define MyAppVersion "4.0.9"
 #define MyAppPublisher "Centro de Comando"
 #define MyAppExeName "CentroDeComando.exe"
 ; GUID fixo do produto - gera o teu próprio uma vez (Tools > Generate GUID no
@@ -66,6 +66,8 @@ Source: "nerdqaxe-dashboard.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dashboard\*"; DestDir: "{app}\dashboard"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "overlay-obs.html"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "rainmeter-skin\*"; DestDir: "{app}\rainmeter-skin"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+; Extensão do Chrome que deixa o Telegram abrir dentro do painel (a janela do Telegram do painel explica como a instalar).
+Source: "extensao-telegram\*"; DestDir: "{app}\extensao-telegram"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 ; NOTA: config.json (MQTT, IPs das máquinas, perfis) NÃO é copiado aqui de
 ; propósito - é gerado pela própria app na primeira execução, e o
 ; [UninstallDelete] abaixo garante que não é apagado ao desinstalar.

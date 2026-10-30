@@ -13,3 +13,6 @@
 .tg-btn{padding:6px 12px;border-radius:9px;border:1px solid var(--cyan,#4fd6ff);background:rgba(79,214,255,.12);color:var(--text,#eaf6f7);font:600 12px inherit;font-family:inherit;cursor:pointer}
 .tg-btn:hover{background:rgba(79,214,255,.22)}
 @media(max-width:500px){.tg-fab{right:12px;bottom:70px}.tg-panel{width:calc(100vw - 16px);right:8px;bottom:130px;height:60vh}}
+.tg-path{display:block;margin:4px 0 6px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.06);font:11.5px/1.4 'Courier New',monospace;word-break:break-all;color:var(--text,#eaf6f7)}
+.tg-setup li .tg-btn{margin-top:6px}
+.tg-setup #tgMsg{display:block;min-height:14px}
