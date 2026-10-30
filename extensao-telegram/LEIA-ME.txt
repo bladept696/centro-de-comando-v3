@@ -1,0 +1,17 @@
+TELEGRAM DENTRO DO PAINEL (extensão do Chrome / Edge)
+
+O Telegram Web recusa ser aberto dentro de outras páginas (cabeçalho X-Frame-Options). Esta extensão tira esse
+cabeçalho SÓ quando o pedido vem do painel (localhost / 127.0.0.1), para a aba "Telegram" do painel funcionar.
+Em mais nenhum site o Telegram fica desprotegido, e a extensão não lê nem guarda nada: não tem acesso às tuas
+conversas, só mexe nesse cabeçalho e põe uma marca na página do painel.
+
+Instalar (uma vez):
+ 1. No Chrome abre  chrome://extensions   (no Edge: edge://extensions)
+ 2. Liga o "Modo de programador" (canto superior direito).
+ 3. Clica em "Carregar sem pacote" e escolhe ESTA pasta (extensao-telegram).
+ 4. Volta ao painel e carrega em F5.
+ 5. Abre a aba "Telegram" e entra com o código QR: no telemóvel, Telegram > Definições > Dispositivos >
+    Ligar dispositivo.
+
+Funciona só no PC onde a extensão está instalada e com o painel aberto em localhost:8765 (não pelo acesso remoto).
+Para remover: chrome://extensions > Remover.

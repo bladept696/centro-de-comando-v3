@@ -1,0 +1,15 @@
+/* Janela do Telegram: usa o aspeto do chat da comunidade (.chat-fab / .chat-panel) e acrescenta só o que é diferente */
+.tg-fab{right:18px;bottom:76px;align-items:center;justify-content:center;color:var(--cyan,#4fd6ff);border-color:#4fd6ff55;background:linear-gradient(135deg,#0c2233,#0f3044)}
+.tg-fab:hover{border-color:var(--cyan,#4fd6ff)}
+.tg-panel{z-index:10001;bottom:136px;width:420px;height:620px}
+.tg-panel.wide{width:min(680px,calc(100vw - 16px));height:min(760px,calc(100vh - 160px))}
+.tg-panel.full{z-index:10031}
+.tg-body{flex:1;min-height:0;display:flex;flex-direction:column;background:#0e1621}
+.tg-frame{flex:1;width:100%;min-height:0;border:0;background:#0e1621}
+.tg-setup{flex:1;overflow:auto;padding:16px 18px;color:var(--text,#eaf6f7);background:var(--panel,#0d1a26)}
+.tg-setup p{margin:0 0 10px;font-size:12.5px;line-height:1.55;color:var(--muted,#9fb6c2)}
+.tg-setup ol{margin:0 0 14px;padding-left:20px;font-size:12.5px;line-height:1.7}
+.tg-setup small{display:block;margin-top:10px;font-size:11px;color:var(--muted,#6f95a3)}
+.tg-btn{padding:6px 12px;border-radius:9px;border:1px solid var(--cyan,#4fd6ff);background:rgba(79,214,255,.12);color:var(--text,#eaf6f7);font:600 12px inherit;font-family:inherit;cursor:pointer}
+.tg-btn:hover{background:rgba(79,214,255,.22)}
+@media(max-width:500px){.tg-fab{right:12px;bottom:70px}.tg-panel{width:calc(100vw - 16px);right:8px;bottom:130px;height:60vh}}
