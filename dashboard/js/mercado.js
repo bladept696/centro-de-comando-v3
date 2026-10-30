@@ -38,6 +38,7 @@ Object.assign(I18N_DICT, {
   mk_d_range: { pt: `Mín. / máx. 24 h`, en: `24 h low / high`, es: `Mín. / máx. 24 h`, fr: `Min. / max. 24 h` },
   mk_d_ath: { pt: `Máximo histórico`, en: `All-time high`, es: `Máximo histórico`, fr: `Plus haut historique` },
   mk_d_supply: { pt: `Em circulação`, en: `Circulating supply`, es: `En circulación`, fr: `En circulation` },
+  mk_d_open_mole: { pt: `Abrir na NestEx`, en: `Open on NestEx`, es: `Abrir en NestEx`, fr: `Ouvrir sur NestEx` },
   mk_d_open: { pt: `Abrir no CoinGecko`, en: `Open on CoinGecko`, es: `Abrir en CoinGecko`, fr: `Ouvrir sur CoinGecko` },
   mk_note: { pt: `Preços de CoinGecko (com a Binance como reserva), atualizados a cada 90 s enquanto esta aba está aberta. A pesquisa chega a todos os tokens, mesmo fora da lista carregada. Informação, não é aconselhamento financeiro.`, en: `Prices from CoinGecko (with Binance as a fallback), refreshed every 90 s while this tab is open. Search reaches every token, even outside the loaded list. Information only, not financial advice.`, es: `Precios de CoinGecko (con Binance como respaldo), actualizados cada 90 s mientras esta pestaña está abierta. La búsqueda llega a todos los tokens, incluso fuera de la lista cargada. Solo información, no es asesoramiento financiero.`, fr: `Prix de CoinGecko (avec Binance en secours), actualisés toutes les 90 s tant que cet onglet est ouvert. La recherche couvre tous les tokens, même hors de la liste chargée. Information uniquement, pas un conseil financier.` }
 });
@@ -152,6 +153,7 @@ try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e
         else { const b = await fetchBinance(); absorb(b); S.src = 'Binance'; S.stale = false; S.ts = Date.now(); }
       }
       await ensureFavs();
+      await loadBtc1();
     } catch(e) { S.err = !S.rows.length; }
     S.loading = false; draw();
   }
@@ -160,9 +162,29 @@ try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e
     S.extra.forEach(r => { S.prev[r.id] = r.price; });
     S.rows = rows;
   }
+  // Bitcoin Purity (BTC1) não está no CoinGecko: os dados vêm da NestEx (preço em USDT, máx./mín. 24 h, volume, histórico) e, se ela falhar, da Molepool (preço em BTC).
+  // Converte para a moeda escolhida com a taxa tirada do preço do Bitcoin desta lista dividido pelo preço do Bitcoin em dólares da Molepool.
+  const BTC1 = 'bitcoin-purity-btc1';
+  async function loadBtc1(){
+    try {
+      const j = (await jget('https://btc1.molepool.com/api/v1/stats', 12000)).result;
+      const bt = S.rows.concat(S.extra).find(r => r.id === 'bitcoin' || (r.sym === 'BTC' && r.price)), inBtc = Number(j.btc), usdMole = Number(j.usd);
+      if(!bt || !(bt.price > 0) || !(inBtc > 0)) return;
+      const rate = usdMole > 0 ? bt.price / (usdMole / inBtc) : 0;   // moeda escolhida por dólar
+      let nx = null;
+      try { const r = await fetch(API_BASE + '/api/nestex-btc1'); if(/json/i.test(r.headers.get('content-type') || '')){ const d = await r.json(); if(d && d.price > 0) nx = d; } } catch(e) {}   // versão antiga do programa não tem esta rota
+      if(!nx && rate){ try { const tk = (await jget('https://api.nestex.one/cg/tickers', 12000)).find(x => x.ticker_id === 'BTC1_USDT');
+        if(tk) nx = { price: +tk.last_price, high: +tk.high, low: +tk.low, old24: +tk.oldltp24h, volume: +tk.target_volume }; } catch(e) {} }
+      const old = S.btc1, k = nx && rate ? rate : 0, c24 = nx && nx.old24 > 0 ? (nx.price / nx.old24 - 1) * 100 : num(Number(j.usd_24h_change));
+      S.btc1 = { id: BTC1, sym: 'BTC1', name: 'Bitcoin Purity', img: '', price: k ? nx.price * k : inBtc * bt.price, c1: nx && num(nx.c1) != null ? nx.c1 * 100 : null, c24,
+        c7: nx && num(nx.c7) != null ? nx.c7 * 100 : null, vol: k && nx.volume ? nx.volume * k : null, mc: null, rank: 100000, spark: nx && nx.spark ? nx.spark.map(v => v * k) : null,
+        hi: k && nx.high ? nx.high * k : null, lo: k && nx.low ? nx.low * k : null, ath: k && nx.ath ? nx.ath * k : null, athp: k && nx.ath ? (nx.price / nx.ath - 1) * 100 : null, sup: null };
+      if(old) S.prev[BTC1] = old.price;
+    } catch(e) {}
+  }
   async function ensureFavs(){
     if(S.src !== 'CoinGecko') return;
-    const have = new Set(S.rows.map(r => r.id)), miss = S.favs.filter(id => !have.has(id)).slice(0, 50);
+    const have = new Set(S.rows.map(r => r.id)), miss = S.favs.filter(id => id !== BTC1 && !have.has(id)).slice(0, 50);
     if(!miss.length) { S.extra = S.extra.filter(r => !have.has(r.id)); return; }
     try { await sleep(600); const got = await fetchIds(miss); const ids = new Set(got.map(r => r.id)); S.extra = got.concat(S.extra.filter(r => !ids.has(r.id) && !have.has(r.id))); } catch(e) {}
   }
@@ -190,6 +212,7 @@ try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e
   // ---------- desenho ----------
   function visible(){
     let a = S.rows.concat(S.extra.filter(e => !S.rows.some(r => r.id === e.id)));
+    if(S.btc1) a.push(S.btc1);
     if(S.view === 'fav') a = a.filter(r => S.favs.includes(r.id));
     else if(S.view === 'up') a = a.filter(r => num(r.c24) != null && r.c24 > 0);
     else if(S.view === 'down') a = a.filter(r => num(r.c24) != null && r.c24 < 0);
@@ -202,6 +225,7 @@ try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e
       const nx = num(vx) == null, ny = num(vy) == null; if(nx || ny) return nx === ny ? 0 : nx ? 1 : -1;
       return d * (vx - vy);
     });
+    if(S.btc1 && S.view === 'all' && !q && S.k === 'rank' && S.dir === 1){ const i = a.indexOf(S.btc1); if(i > 0){ a.splice(i, 1); a.unshift(S.btc1); } }   // sem posição no CoinGecko: fica fixo no topo
     return a;
   }
   function rowHtml(r){
@@ -216,9 +240,9 @@ try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e
       h += '<tr class="mk-detail"><td colspan="10"><div class="mk-dg">' +
         '<div><small>' + t('mk_d_range') + '</small><b>' + money(r.lo) + ' – ' + money(r.hi) + '</b></div>' +
         '<div><small>' + t('mk_d_ath') + '</small><b>' + money(r.ath) + (r.athp != null ? ' ' + pct(r.athp) : '') + '</b></div>' +
-        '<div><small>' + t('mk_d_supply') + '</small><b>' + bigNum(r.sup) + ' ' + esc(r.sym) + '</b></div>' +
+        '<div><small>' + t('mk_d_supply') + '</small><b>' + (r.sup != null ? bigNum(r.sup) + ' ' + esc(r.sym) : '—') + '</b></div>' +
         '<div class="mk-big">' + spark(r.spark, 320, 70) + '</div>' +
-        (S.src === 'CoinGecko' ? '<a href="https://www.coingecko.com/en/coins/' + encodeURIComponent(r.id) + '" target="_blank" rel="noopener noreferrer">' + t('mk_d_open') + ' ↗</a>' : '') +
+        (r.id === BTC1 ? '<a href="https://trade.nestex.one/spot/BTC1" target="_blank" rel="noopener noreferrer">' + t('mk_d_open_mole') + ' ↗</a>' : S.src === 'CoinGecko' ? '<a href="https://www.coingecko.com/en/coins/' + encodeURIComponent(r.id) + '" target="_blank" rel="noopener noreferrer">' + t('mk_d_open') + ' ↗</a>' : '') +
         '</div></td></tr>';
     }
     return h;
@@ -229,7 +253,7 @@ try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e
     const a = visible(), body = $m('mkBody'); if(!body) return;
     const empty = $m('mkEmpty'), more = $m('mkMore');
     body.innerHTML = a.slice(0, S.shown).map(rowHtml).join('');
-    S.prev = {}; S.rows.concat(S.extra).forEach(r => { S.prev[r.id] = r.price; });
+    S.prev = {}; S.rows.concat(S.extra, S.btc1 ? [S.btc1] : []).forEach(r => { S.prev[r.id] = r.price; });
     empty.hidden = a.length > 0 || S.loading;
     empty.textContent = S.err ? t('mk_err') : S.view === 'fav' && !S.q ? t('mk_empty_fav') : (S.loading && !S.rows.length) ? t('mk_loading') : t('mk_empty');
     if(S.loading && !S.rows.length) empty.hidden = false;

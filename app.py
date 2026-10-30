@@ -2366,6 +2366,42 @@ def _generic_pool_mark_mine(data, address):
 # Histórico da Parasite Pool para o gráfico "Hashrate e Difficulty": hashrate ao longo do tempo + melhores shares por bloco.
 # A API deles não permite CORS, por isso o browser pede-o aqui.
 PARASITE_HISTORY_CACHE_SECONDS = 60
+# --- Bitcoin Purity (BTC1) na NestEx: preço, máximos/mínimos, histórico (o CoinGecko não tem esta moeda) ---
+NESTEX_API = "https://api.nestex.one"
+NESTEX_TV = "https://tvdata.nestex.one"
+NESTEX_CACHE_SECONDS = 60
+_nestex_cache = {"ts": 0, "data": None}
+_nestex_cache_lock = threading.Lock()
+
+
+def fetch_nestex_btc1():
+    with _nestex_cache_lock:
+        if _nestex_cache["data"] and (time.time() - _nestex_cache["ts"]) < NESTEX_CACHE_SECONDS:
+            return _nestex_cache["data"]
+    status, tick, raw, err = _try_json_get(f"{NESTEX_API}/cg/tickers", timeout=10)
+    row = next((x for x in tick if isinstance(x, dict) and x.get("ticker_id") == "BTC1_USDT"), None) if isinstance(tick, list) else None
+    if not row:
+        return {"error": err or "BTC1 não encontrado na NestEx"}
+    try:
+        out = {"price": float(row["last_price"]), "high": float(row["high"]), "low": float(row["low"]), "old24": float(row["oldltp24h"]),
+               "volume": float(row["target_volume"]), "liquidity": float(row.get("liquidity") or 0)}
+    except (KeyError, TypeError, ValueError):
+        return {"error": "dados inválidos da NestEx"}
+    now = int(time.time())
+    st1, h1, _, _ = _try_json_get(f"{NESTEX_TV}/history?symbol=BTC1&resolution=60&from={now - 7 * 86400}&to={now}", timeout=12)
+    if isinstance(h1, dict) and h1.get("s") == "ok" and h1.get("c"):
+        c = [float(v) for v in h1["c"]]
+        out["c7"] = out["price"] / c[0] - 1 if c[0] else None
+        out["c1"] = out["price"] / c[-2] - 1 if len(c) > 1 and c[-2] else None
+        out["spark"] = [round(v, 8) for v in c[::2] + ([c[-1]] if len(c) % 2 == 0 else [])]
+    st2, hd, _, _ = _try_json_get(f"{NESTEX_TV}/history?symbol=BTC1&resolution=D&from=1500000000&to={now}", timeout=12)
+    if isinstance(hd, dict) and hd.get("s") == "ok" and hd.get("h"):
+        out["ath"] = max(float(v) for v in hd["h"])
+    with _nestex_cache_lock:
+        _nestex_cache["ts"], _nestex_cache["data"] = time.time(), out
+    return out
+
+
 _parasite_history_cache = {}
 _parasite_history_cache_lock = threading.Lock()
 _PARASITE_HISTORY_INTERVALS = {'24h': '5m', '3d': '5m', '7d': '1h', '30d': '1h'}
@@ -4492,6 +4528,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/parasite-blocks':
             result = fetch_parasite_blocks()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/nestex-btc1':
+            result = fetch_nestex_btc1()
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Type', 'application/json; charset=utf-8')
