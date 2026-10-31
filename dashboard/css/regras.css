@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Regras e código de conduta do chat */
 .hc-rules-ov{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,6,12,.72);backdrop-filter:blur(4px)}
 .hc-rules-box{width:min(520px,100%);max-height:min(88vh,720px);overflow:auto;padding:20px 20px 16px;border-radius:16px;background:#0e1420;border:1px solid rgba(33,255,176,.28);box-shadow:0 20px 60px rgba(0,0,0,.6);color:#d7e0ee;font:14px/1.5 'Space Grotesk',system-ui,sans-serif}

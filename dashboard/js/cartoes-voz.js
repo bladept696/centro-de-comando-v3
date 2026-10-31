@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões: falar com a farm (voz) ----------
 // Prime 🎤 e pergunte ("como estão as máquinas?", "qual a mais quente?") ou mande ("põe a máquina 2 em eco").
 // Usa o reconhecimento de voz e a voz sintetizada do próprio navegador (nada vai para servidores nossos).

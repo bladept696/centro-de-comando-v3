@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Parasite Pool: visual com a imagem da estação ----------
 // Sempre ativo na aba Parasite: banner com a imagem, fundo suave nos cartões, estados vazios sobre a imagem e o aviso de bloco
 // em ecrã inteiro (chamado por parasite-blocos.js quando a pool acha um bloco).

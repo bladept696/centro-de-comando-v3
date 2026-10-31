@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Blocos da mempool, estilo "Reator" (só quando <body class="mp-dial">): cada bloco é um mostrador circular.
    O arco de 270° enche conforme o bloco está cheio e tem a cor da taxa; no centro estão a altura, a taxa e as transações. */
 .mp-style-btn{ font:700 10px 'JetBrains Mono',monospace; letter-spacing:.06em; text-transform:uppercase; color:var(--cyan); background:color-mix(in srgb, var(--cyan) 10%, transparent); border:1px solid color-mix(in srgb, var(--cyan) 45%, transparent); border-radius:6px; padding:3px 9px; cursor:pointer; }

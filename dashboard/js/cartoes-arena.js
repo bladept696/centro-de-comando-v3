@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões: Arena de hashes ----------
 // Cada máquina é uma torre ao fundo e cada share aceite é um disparo para cima, numa escala logarítmica da
 // dificuldade: do nível da pool (em baixo) até à "parede" do bloco (em cima, a dificuldade da rede).

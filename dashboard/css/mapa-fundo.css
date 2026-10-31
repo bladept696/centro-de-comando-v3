@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Fundo do Mapa da Rede: colmeia de dados (canvas) por cima de um degradé escuro */
 .network-map-wrap{background:radial-gradient(ellipse at 50% 45%,#0b2a3a 0%,#071826 50%,#02070d 100%)!important;}
 .nm-bg-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;border-radius:inherit;}

@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões: contagem da rede (ajuste de dificuldade e halving) e chuva de shares ----------
 // A contagem usa os dados da rede que o resumo já carrega (difficultyData) e atualiza-se a cada segundo.
 // A chuva faz cair uma gota do cartão por cada share aceite (verde) ou rejeitada (vermelho).

@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Mapa da rede: partículas, zonas por grupo, diagnóstico do caminho, radar, exportar e ecrã inteiro ----------
 // Acrescenta-se ao 18-rede.js sem o alterar: embrulha as funções que desenham o mapa.
 const NMX = { diag: null, diagAt: 0, flowSig: '' };

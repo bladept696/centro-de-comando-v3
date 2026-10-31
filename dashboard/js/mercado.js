@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Aba Mercado: preços de todas as criptomoedas ----------
 // Fonte principal: CoinGecko (preço, variações 1h/24h/7d, volume, capitalização, gráfico de 7 dias).
 // Se o CoinGecko falhar (limite de pedidos) usa a Binance, com menos campos. Os favoritos, a moeda e a ordenação ficam guardados neste navegador.

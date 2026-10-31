@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Distintivo de moeda e modo da pool no cartão, e janela para o fixar */
 .hc-coin{flex:0 0 auto;margin-left:auto;padding:2px 8px;border-radius:999px;border:1px solid rgba(159,176,200,.35);background:rgba(255,255,255,.05);color:#d7e0ee;font:600 10px 'Space Grotesk',system-ui,sans-serif;white-space:nowrap;cursor:pointer}
 .hc-coin[hidden]{display:none}

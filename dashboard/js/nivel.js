@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Nível e XP do mineiro + missões diárias ----------
 // Ganhas XP com tempo online, recordes de best diff, blocos e dias seguidos, e sobes de nível (Aprendiz → Mestre → Lenda).
 // Todos os dias há 3 missões novas (ex.: "mantém 12 horas online", "bate o teu best diff de ontem") que dão XP extra.

@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Best Diff ao vivo, versão completa ----------
 // Antes o painel só registava os recordes. Agora acompanha tudo o que cada máquina faz: as shares aceites (com a
 // dificuldade da pool), as rejeitadas, o melhor da sessão e o melhor de sempre, e o ritmo de shares por minuto.

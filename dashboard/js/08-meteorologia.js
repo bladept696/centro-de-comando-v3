@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 /* ===== Relógio 3D + tempo (Open-Meteo, sem chave) ===== */
 const WX = { loc: null, data: null, tz: null, results: [], fmt: {}, lang: '' };
 const WX_TXT = {

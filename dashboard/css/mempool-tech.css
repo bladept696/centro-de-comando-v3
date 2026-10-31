@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Blocos da mempool, estilo "HUD" (só quando <body class="mp-hud">). Escolhe-se no botão 🎨 da barra dos blocos. */
 body.mp-hud .blocks-scroll.mp-chain{ gap:22px; padding:10px 14px 18px; }
 body.mp-hud .mp-block{ position:relative; padding-top:0; gap:9px; --hud:#4fd6ff; }

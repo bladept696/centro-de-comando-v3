@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // --- Assistente (agente IA local, sem chave/API) -------------------------
 // Responde a perguntas frequentes sobre as funcionalidades do painel a
 // partir de uma base de conhecimento local, com correspondência simples

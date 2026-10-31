@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Hashrate real medido pelos shares (reutiliza a janela e os cartões da Saúde dos chips) */
 .hc-hr-gauge{margin:2px 0 10px}
 .hc-hr-track{position:relative;height:14px;border-radius:7px;background:rgba(159,176,200,.14);overflow:hidden}

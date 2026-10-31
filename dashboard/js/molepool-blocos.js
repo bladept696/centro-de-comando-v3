@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Aviso quando encontras um bloco na Molepool BTC1 ----------
 // Corre em segundo plano enquanto o painel estiver aberto (não precisa de estar na aba Pools). Lê os blocos da API pública da Molepool
 // e avisa quando o vencedor é o endereço guardado na aba Pools. Os blocos já vistos ficam guardados: na primeira vez só se regista o estado atual, sem avisar de blocos antigos.

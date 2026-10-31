@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Regras e código de conduta do chat ----------
 // A primeira vez que se abre o chat (e sempre que RULES_VERSION sobe) aparece esta janela; só se entra depois de "Li e aceito".
 // A aceitação fica guardada neste navegador. O comando /regras volta a mostrá-las.

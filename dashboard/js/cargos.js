@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cargos com nome colorido (DEV, ADMIN, MOD…) ----------
 // Cada cargo é uma etiqueta colorida ao lado do nome, no chat, na lista de online e no ranking da comunidade.
 // Os cargos vêm de dois sítios: a lista fixa BASE aqui em baixo (o dono do projeto) e o nó chat/roles/<uid> do Firebase,

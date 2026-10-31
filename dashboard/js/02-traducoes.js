@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 const I18N_DICT = {
   "gp_titulo_tab": { pt: `Pools`, en: `Pools`, es: `Pools`, fr: `Pools` },
   "gp_titulo": { pt: `🪙 Pools`, en: `🪙 Pools`, es: `🪙 Pools`, fr: `🪙 Pools` },

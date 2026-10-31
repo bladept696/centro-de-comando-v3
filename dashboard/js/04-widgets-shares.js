@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // --- Best Diff ao vivo (widget flutuante) -----------------------------------
 const BD_FEED_MAX = 150;
 const BD_FEED_RENDER_MAX = 5;

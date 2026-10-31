@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões: alertas de saúde, resumo do dia, reações a eventos e estado geral ----------
 // Complementa o cartoes.js. O renderMachineCards chama o mcExtraRender a cada atualização.
 const MC_STATS_KEY = 'nerdqaxe:daily_stats';

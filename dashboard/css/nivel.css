@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Nível e XP do mineiro */
 .hc-lv{display:inline-block;vertical-align:middle;margin-left:5px;padding:1px 5px;border-radius:6px;font:800 9px/1.4 'Space Grotesk',system-ui,sans-serif;letter-spacing:.04em;color:#9fb0c8;border:1px solid rgba(159,176,200,.35);background:rgba(159,176,200,.1)}
 .hc-lv.t1{color:#21ffb0;border-color:rgba(33,255,176,.45);background:rgba(33,255,176,.1)}

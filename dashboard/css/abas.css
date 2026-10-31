@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* ---------- Visual comum das abas (tudo menos o Dashboard Geral) ----------
    Todos os seletores usam :where(), por isso têm especificidade mínima: o que cada aba já define à parte
    (carregado depois deste ficheiro) continua a ganhar. */

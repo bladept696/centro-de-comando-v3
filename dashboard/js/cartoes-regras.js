@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões: regras "se… então…" ----------
 // Cada regra liga uma condição (ex.: temperatura acima de 72 °C durante 3 min) a uma ação (avisar, perfil Eco/Turbo,
 // reiniciar ou ciclo da tomada). Corre enquanto a dashboard está aberta; cada regra só volta a agir na mesma

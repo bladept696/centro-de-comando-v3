@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Modo coleção: vitrine de troféus do best diff (reaproveita .hc-ch-ov / .hc-ch-box / .hc-ch-btn de chips.css) */
 .hc-co-box{width:min(560px,100%)}
 .hc-co-hall{display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px;margin-bottom:12px;border-radius:14px;text-align:center;background:linear-gradient(135deg,rgba(255,200,87,.16),rgba(79,214,255,.08));border:1px solid rgba(255,200,87,.4)}

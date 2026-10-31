@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 
 #authGate{position:fixed;inset:0;z-index:2147483000;background:radial-gradient(circle at 30% 20%,#1b1f2a,#0b0d12 70%);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8e8ec}
 #authGate.hidden{display:none}

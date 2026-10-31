@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Diagnóstico de congelamentos ----------
 // Quando um quadro demora mais de 0,8 s (a dashboard "congela"), regista no Log de eventos quanto tempo foi, em que
 // aba estavas e que ficheiro e função gastaram o tempo (o Chrome diz-o através dos "long animation frames").

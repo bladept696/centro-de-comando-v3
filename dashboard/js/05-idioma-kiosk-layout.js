@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // --- Idioma / i18n ------------------------------------------------------
 // Dicionário completo em /home/claude/i18n/i18n_dict.js (INSERIDO ABAIXO).
 // t(key) devolve o texto no idioma atual - usar sempre que uma string for

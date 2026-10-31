@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Best Diff ao vivo: painel com resumo, uma linha por máquina e um feed de tudo o que elas fazem */
 .bd-panel.bdx{width:min(400px,calc(100vw - 32px));max-height:min(620px,calc(100vh - 150px));border-radius:16px;background:linear-gradient(180deg,#141b27f5,#0d121bf5);backdrop-filter:blur(10px)}
 .bdx-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px}

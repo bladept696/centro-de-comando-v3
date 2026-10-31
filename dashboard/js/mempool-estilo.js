@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Estilo visual dos blocos da mempool ----------
 // Cinco estilos, escolhidos no botão 🎨 da barra dos blocos: Módulo 3D (módulo técnico escuro em 3D), Holograma (vidro luminoso 3D), Reator (mostradores circulares), Módulo (HUD plano) e Clássico (o original).
 // A escolha fica guardada neste navegador.

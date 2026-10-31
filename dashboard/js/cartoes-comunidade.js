@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões: comunidade como um só mineiro ----------
 // Quem quiser (opcional) partilha o hashrate total, o número de máquinas e o melhor share. O painel junta toda a
 // comunidade Hash Commander ao vivo: hashrate combinado, a chance de bloco como se fosse um só mineiro, um ranking

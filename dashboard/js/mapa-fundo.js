@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Fundo do Mapa da Rede: "colmeia de dados" ----------
 // Uma grelha hexagonal onde um radar roda a partir do centro (o hub da rede): cada hexágono acende quando o feixe passa
 // e pacotes de dados correm pelas arestas da grelha. Tudo em canvas 2D, a ~30 imagens/s, e só enquanto está visível.

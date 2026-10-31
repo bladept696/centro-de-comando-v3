@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 /* ===== Gráficos 3D (Three.js carregado a pedido; SVG como alternativa) ===== */
 var HC3D = { charts: {}, ready: false, loading: null, failed: false, raf: 0, last: 0, payload: {}, pr: 1.5, gap: 33, q: 2, ema: 40, good: 0 };
 // Quem pede o Three.js (gráficos, rosca, globo do tempo) cada um cria o seu contexto WebGL e a sua cena. Se todos arrancarem no mesmo

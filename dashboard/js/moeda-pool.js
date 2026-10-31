@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Moeda e modo da pool (solo / partilhada), detetados sozinhos ----------
 // O painel assumia sempre Bitcoin e uma pool qualquer. Aqui deduz-se, para cada máquina, a moeda (pelo endereço da carteira e
 // pelo nome da pool) e se a pool é solo ou partilhada (lista de pools conhecidas + palavras como "solo" no endereço). Muda sozinho
@@ -22,6 +25,7 @@
     [/f2pool/i, 'F2Pool', 'pool'], [/foundry/i, 'Foundry', 'pool'], [/luxor/i, 'Luxor', 'pool'], [/emcd/i, 'EMCD', 'pool'], [/poolin/i, 'Poolin', 'pool'],
     [/binance/i, 'Binance Pool', 'pool'], [/btc\.com/i, 'BTC.com', 'pool'], [/1thash|spiderpool|secpool|mara|ultimus/i, 'Pool', 'pool'],
     [/parasite\.(wtf|space)/i, 'Parasite Pool', 'hybrid'],   // híbrida: quem acha o bloco leva uma parte fixa e o resto reparte-se pelos mineiros
+    [/defisurfers/i, 'DeFi Surfers', 'pool'],   // pool PPLNS comunitária (o site diz: cada bloco reparte-se por todos conforme os shares)
     [/molepool/i, 'Molepool', 'solo']   // a Molepool é uma pool solo (a MiningBoard lista-a como SOLO); se usares outro modo, fixa-o no distintivo
   ];
   const TX = {

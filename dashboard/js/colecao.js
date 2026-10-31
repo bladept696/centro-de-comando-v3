@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Modo coleção: a vitrine de troféus do best diff ----------
 // Guarda, para cada máquina, o melhor diff de sempre com a data, a pool e o modelo, mais o historial de recordes.
 // Cada recorde ganha uma medalha pela dificuldade (bronze → lendário) e mostra que fração da dificuldade da rede representa.

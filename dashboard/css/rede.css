@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
   /* --- Scanner de rede 2.0 ---------------------------------------------- */
   .scan-summary-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;}
   .scan-summary-main{font-size:10px;color:var(--muted);}

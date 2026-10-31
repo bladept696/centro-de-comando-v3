@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Hashrate real medido pelos shares ----------
 // O hashrate que a máquina mostra é um número calculado por ela própria. A pool, por outro lado, só conta o trabalho que aceitou:
 // cada share aceite vale (dificuldade × 2^32) hashes. Somando os shares aceites e dividindo pelo tempo, o painel obtém o hashrate

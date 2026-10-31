@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões das máquinas ----------
 // Um cartão por máquina, com o que interessa à primeira vista: estado, hashrate com mini-gráfico e
 // tendência, avisos (temperatura, Wi-Fi, rejeições, pool...), medidores e ações. Há filtros por estado,

@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Parasite Pool: visual com a imagem da estação (tudo sob #tab-parasite.pv-on; desligado volta ao aspeto normal) */
 /* banner: a imagem é o fundo do próprio cabeçalho (sem elementos posicionados), por isso nunca pode cobrir o resto da aba */
 #tab-parasite.pv-on .tab-hero{min-height:190px;align-items:flex-end;border-color:rgba(61,220,151,.4);position:relative;overflow:hidden;isolation:isolate;

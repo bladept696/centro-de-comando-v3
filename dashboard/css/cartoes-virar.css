@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Cartões que viram: botão ⟳ no cabeçalho e o verso com detalhes e histórico */
 .mc-flipbtn{background:none;border:1px solid transparent;border-radius:7px;color:var(--muted-2);cursor:pointer;font-size:15px;line-height:1;padding:2px 6px;transition:color .15s,border-color .15s,transform .35s}
 .mc-flipbtn:hover{color:var(--cyan);border-color:var(--line-strong);transform:rotate(180deg)}

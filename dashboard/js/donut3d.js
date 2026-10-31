@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Rosca do hashrate em 3D ----------
 // Cada máquina é uma fatia em relevo: a altura vai com o peso dela no total. A rosca roda devagar,
 // a fatia sobre a qual está o rato salta para fora e mostra o valor. Se o 3D não estiver disponível

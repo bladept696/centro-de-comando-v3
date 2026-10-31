@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Janela do Telegram: usa o aspeto do chat da comunidade (.chat-fab / .chat-panel) e acrescenta só o que é diferente */
 .tg-fab{right:18px;bottom:76px;align-items:center;justify-content:center;color:var(--cyan,#4fd6ff);border-color:#4fd6ff55;background:linear-gradient(135deg,#0c2233,#0f3044)}
 .tg-fab:hover{border-color:var(--cyan,#4fd6ff)}

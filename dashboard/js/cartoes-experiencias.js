@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões: experiências visuais (ligam-se e desligam-se em ⚙ > Experiências) ----------
 // Ventoinha a girar, medidor de temperatura em arco, números que contam, cartões que deslizam, linha de pulso,
 // onda de cor nas mudanças de estado, e duas vistas novas: mapa de calor e planta das máquinas.

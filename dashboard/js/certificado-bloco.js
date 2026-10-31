@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Certificado de bloco ----------
 // Quando uma máquina (ou a pool) acusa um bloco encontrado, o painel guarda logo as provas locais (hora, máquina, share, endereço de
 // recompensa) e pede ao servidor para as assinar com a chave Ed25519 DESTA instalação. Depois vai à blockchain (mempool.space) buscar

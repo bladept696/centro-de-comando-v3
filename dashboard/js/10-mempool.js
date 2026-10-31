@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // --- Cadeia ao estilo mempool.space ------------------------------------
 // À esquerda: blocos PENDENTES (projeção da mempool, tracejados); ao centro:
 // a linha do "agora"; à direita: blocos CONFIRMADOS (o mais recente junto

@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Conta no cabeçalho ----------
 // O email, "A minha conta", "Terminar sessão", "Eliminar conta" e o selo "online · registados" estavam como dois
 // selos fixos no canto do ecrã, por cima do conteúdo. Agora é um avatar no cabeçalho que abre um menu.

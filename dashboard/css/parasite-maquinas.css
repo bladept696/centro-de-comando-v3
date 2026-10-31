@@ -1,3 +1,6 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
 /* Parasite Pool: tabela das máquinas ligadas à pool */
 .pw-card{margin-top:14px;padding:14px;border-radius:14px;background:var(--panel,#0d1a26);border:1px solid var(--border,rgba(159,176,200,.18))}
 .pw-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}

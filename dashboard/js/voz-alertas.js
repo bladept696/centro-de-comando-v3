@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Alertas por voz ----------
 // O painel diz em voz alta o que acontece nas máquinas ("bitaxe ficou offline"), para quem não está a olhar para o ecrã.
 // Usa a voz do próprio navegador (speechSynthesis), por isso não envia nada para fora. Vem desligado; liga-se no menu ⚙ › Alertas por voz.

@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Parasite Pool: gráfico "Hashrate e Difficulty" ----------
 // Linha do hashrate (eixo da esquerda) e, a vermelho, os melhores shares por bloco (eixo da direita, escala logarítmica).
 // Os dados vêm de /api/parasite-history (app.py), que pede o histórico à Parasite Pool para o endereço guardado na aba.

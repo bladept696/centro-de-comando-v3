@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Aviso quando a Parasite Pool acha um bloco ----------
 // Avisa de qualquer bloco achado na pool, não só dos teus. Corre em segundo plano enquanto o painel estiver aberto
 // (não precisa de estar na aba Parasite). Se o vencedor for o endereço guardado na aba Parasite, o aviso é de "bloco teu".

@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Janela do Telegram, como a do chat da comunidade ----------
 // Botão redondo ✈️ no canto (por cima do do chat) que abre uma janela flutuante com o Telegram Web lá dentro.
 // O Telegram Web recusa ser aberto dentro de outras páginas; a extensão "extensao-telegram" (Chrome/Edge) tira essa recusa só quando o

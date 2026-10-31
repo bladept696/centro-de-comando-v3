@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões: mapa-múndi vivo da comunidade ----------
 // Cada mineiro que partilha aparece como um ponto de luz no mapa, só ao nível do país (nunca a morada), com um
 // pequeno desvio aleatório. O ponto pisca a cada share, o lado da noite escurece conforme a hora real e, quando

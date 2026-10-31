@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Mapa realista: continentes em vetor (Natural Earth 1:50m, simplificado) ----------
 // Cada anel é [lon0, lat0, dlon, dlat, ...] em décimos de grau (o primeiro ponto é absoluto, os outros são deltas).
 // A camada de base (oceano, grelha, continentes com dia/noite, costa a brilhar, luzes das cidades) desenha-se uma vez

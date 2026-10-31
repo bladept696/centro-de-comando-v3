@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Saúde dos chips (máquinas com vários chips, como a NerdQAxe) ----------
 // A firmware (testada: NerdQAxe++ v1.1.0) NÃO envia o hashrate nem os erros de cada chip: só o total, o número de chips,
 // o nº de núcleos por chip, a frequência e, em algumas versões, a temperatura de cada chip (aqui vem a zero).

@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Gestor de widgets: escolher o que aparece no Dashboard Geral e por que ordem ----------
 // Uma janela com um interruptor por bloco (relógio, mempool, indicadores, assistente, cartões, mapa, gráficos,
 // registo, e as partes dos cartões como a comunidade e o resumo), setas para subir e descer onde o bloco se pode

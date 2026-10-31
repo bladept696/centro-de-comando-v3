@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Parasite Pool: que máquinas estão ligadas à pool ----------
 // Tabela das máquinas (workers) do endereço guardado na aba: estado (ligada ou offline), hashrate, melhor diff e última submissão.
 // Uma máquina conta como ligada se a pool recebeu um share nos últimos 10 minutos e o hashrate não é zero.

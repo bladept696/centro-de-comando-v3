@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Cartões que viram ----------
 // Cada cartão de máquina tem um botão ⟳ no cabeçalho: o cartão roda em 3D e mostra no verso os dados técnicos e o
 // histórico, sem abrir um painel por cima nem mexer no tamanho da grelha. Clicar em "Frente" (ou no ⟳) volta a rodar.

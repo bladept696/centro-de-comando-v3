@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 // ---------- Molepool: gráfico "Hashrate e Difficulty" (igual ao da Parasite Pool) ----------
 // Linha do hashrate (eixo da esquerda) e, a vermelho, o teu melhor share e os blocos que encontraste (eixo da direita, escala logarítmica).
 // Os dados vêm direto da API pública da Molepool (/account e /blocks) para o endereço guardado na aba Pools; a pool guarda cerca de 12 horas.

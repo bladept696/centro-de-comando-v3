@@ -1,3 +1,6 @@
+// © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+// é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+// https://github.com/bladept696/centro-de-comando-v3
 Object.assign(I18N_DICT, {
   "gp_s_addr_ph": { pt: `O teu endereço nesta pool`, en: `Your address on this pool`, es: `Tu dirección en este pool`, fr: `Votre adresse sur ce pool` },
   "gp_s_addr": { pt: `endereço`, en: `address`, es: `dirección`, fr: `adresse` },
