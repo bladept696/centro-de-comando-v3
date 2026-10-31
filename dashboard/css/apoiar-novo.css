@@ -1,0 +1,74 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ---------- Aba "Apoiar / Doar": visual novo (a estrutura é montada por apoiar-novo.js) ---------- */
+#tab-donate .donate-container.dn{position:relative;overflow:hidden;isolation:isolate;max-width:1000px;padding:34px 30px 30px;border-radius:18px;
+  background:radial-gradient(90% 70% at 50% -10%,#3a2606 0%,transparent 60%),radial-gradient(60% 50% at 100% 100%,#2a1a05 0%,transparent 70%),linear-gradient(180deg,#0e1520,#070b11);
+  border:1px solid #f7931a33;box-shadow:0 30px 70px -30px #000,inset 0 1px 0 #ffffff0d}
+#tab-donate .dn::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(#f7931a22 1px,transparent 1.5px);background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000,transparent 75%);mask-image:radial-gradient(ellipse at 50% 0%,#000,transparent 75%)}
+
+/* moeda 3D a rodar */
+.dn-hero{position:relative;height:120px;display:flex;align-items:center;justify-content:center;perspective:700px;margin-bottom:8px}
+.dn-coin{position:relative;width:92px;height:92px;transform-style:preserve-3d;animation:dn-spin 6s linear infinite}
+.dn-face{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 48px/1 'Space Grotesk',sans-serif;color:#fff7e6;
+  background:radial-gradient(circle at 35% 30%,#ffd28a,#f7931a 45%,#b35f00 100%);box-shadow:inset 0 0 0 5px #ffbe5c,inset 0 0 18px #7a3c00;text-shadow:0 2px 0 #9a4f00;backface-visibility:hidden}
+.dn-face.b{transform:rotateY(180deg);font-size:42px}
+.dn-edge{position:absolute;inset:0;border-radius:50%;transform:translateZ(-4px);background:#8a4700;filter:blur(.3px)}
+.dn-hero::after{content:"";position:absolute;bottom:4px;width:110px;height:16px;border-radius:50%;background:radial-gradient(closest-side,#f7931a88,transparent);animation:dn-shadow 6s linear infinite}
+@keyframes dn-spin{to{transform:rotateY(360deg)}}
+@keyframes dn-shadow{0%,50%,100%{transform:scaleX(1)}25%,75%{transform:scaleX(.35)}}
+.dn-bolt{position:absolute;top:24px;width:26px;height:52px;fill:#ffd23f;filter:drop-shadow(0 0 8px #ffb300);opacity:0;animation:dn-zap 2.8s ease-in-out infinite}
+.dn-bolt.l{left:calc(50% - 110px);transform:rotate(-14deg)}
+.dn-bolt.r{right:calc(50% - 110px);transform:rotate(14deg) scaleX(-1);animation-delay:1.4s}
+@keyframes dn-zap{0%,70%,100%{opacity:0}74%{opacity:1}78%{opacity:.2}82%{opacity:1}90%{opacity:0}}
+
+#tab-donate .dn .donate-title{font-size:24px;letter-spacing:.16em;margin:6px 0 10px;
+  background:linear-gradient(100deg,#ffb547,#fff1cc 40%,#f7931a 60%,#ffb547);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:dn-title 6s linear infinite;filter:drop-shadow(0 6px 18px #f7931a44)}
+@keyframes dn-title{to{background-position:-220% 0}}
+#tab-donate .dn .donate-desc{max-width:620px;margin:0 auto 14px}
+
+.dn-perks{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:0 0 26px}
+.dn-perk{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;font-size:12px;color:#ffe3b3;background:#f7931a14;border:1px solid #f7931a40}
+
+/* cartões */
+.dn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;perspective:1100px;text-align:left}
+.dn-card{--rx:0deg;--ry:0deg;--mx:50%;--my:50%;--c:#ffb300;position:relative;overflow:hidden;border-radius:18px;padding:20px 20px 22px;display:flex;flex-direction:column;gap:12px;
+  background:linear-gradient(165deg,#141d2a,#0a0f17);border:1px solid #ffffff12;box-shadow:0 26px 50px -26px #000;
+  transform:rotateX(var(--rx)) rotateY(var(--ry));transform-style:preserve-3d;transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .35s,border-color .35s}
+.dn-card.oc{--c:#f7931a}
+.dn-card.dn-on{transition:transform .08s linear,box-shadow .3s;border-color:color-mix(in srgb,var(--c) 55%,transparent);box-shadow:0 34px 60px -24px #000,0 0 40px -12px var(--c)}
+.dn-card::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,transparent,var(--c),transparent)}
+.dn-glare{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(380px circle at var(--mx) var(--my),#ffffff1f,transparent 45%)}
+.dn-card.dn-on .dn-glare{opacity:1}
+.dn-card-head{display:flex;align-items:center;gap:12px}
+.dn-card-head b{display:block;font-size:16px;color:#fff}
+.dn-card-head small{display:block;font-size:11.5px;color:var(--muted,#9fb6c2);margin-top:2px}
+.dn-ic{width:42px;height:42px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1a0f00;
+  background:linear-gradient(135deg,var(--c),#fff2cc 140%);box-shadow:0 8px 20px -8px var(--c)}
+/* QR (Lightning) e emblema (On-Chain) com a mesma altura */
+.dn-card .donate-qr-wrap{margin:4px 0 0;display:flex;justify-content:center}
+.dn-card .donate-qr-box{width:178px;height:178px;padding:10px;border-radius:16px;background:#fff;box-shadow:0 0 0 4px #ffb30033,0 18px 34px -16px #ffb300;transform:translateZ(30px)}
+.dn-card .donate-qr-box img{width:100%;height:100%;object-fit:contain}
+.dn-emblem{position:relative;height:198px;display:flex;align-items:center;justify-content:center;transform:translateZ(30px)}
+.dn-big{width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 72px/1 'Space Grotesk',sans-serif;color:#fff4dc;
+  background:radial-gradient(circle at 35% 30%,#ffc46b,#f7931a 50%,#a85300);box-shadow:inset 0 0 0 6px #ffbe5c,0 0 50px -6px #f7931a;text-shadow:0 3px 0 #8a4400;animation:dn-pulse 3.2s ease-in-out infinite}
+.dn-ring{position:absolute;width:176px;height:176px;border-radius:50%;border:2px dashed #f7931a66;animation:dn-ring 18s linear infinite}
+@keyframes dn-pulse{50%{transform:scale(1.05);box-shadow:inset 0 0 0 6px #ffbe5c,0 0 70px -4px #f7931a}}
+@keyframes dn-ring{to{transform:rotate(360deg)}}
+.dn-card .donate-label{margin:2px 0 0;text-align:left}
+.dn-card .donate-input-box{margin:0;font-size:12px;word-break:break-all;border-color:color-mix(in srgb,var(--c) 30%,transparent);transition:box-shadow .3s,border-color .3s}
+.dn-card .donate-input-box.dn-flash{animation:dn-flash .9s ease-out}
+@keyframes dn-flash{0%{box-shadow:0 0 0 0 var(--c);border-color:var(--c)}100%{box-shadow:0 0 0 12px transparent}}
+.dn-btns{display:flex;gap:10px;flex-wrap:wrap}
+.dn-card .donate-btn{flex:1;margin:0;background:linear-gradient(135deg,var(--c),#ffe0a3 160%);box-shadow:0 10px 22px -10px var(--c);transition:transform .2s,box-shadow .2s,background .2s}
+.dn-card .donate-btn:hover{transform:translateY(-2px);box-shadow:0 14px 28px -10px var(--c)}
+.dn-card .donate-btn.dn-ok{background:linear-gradient(135deg,#21d98a,#bfffe6)}
+.dn-open{flex:1;display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;
+  color:var(--c);border:1px solid color-mix(in srgb,var(--c) 60%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent);transition:background .2s}
+.dn-open:hover{background:color-mix(in srgb,var(--c) 18%,transparent)}
+.dn-thanks{margin-top:24px;font-size:13px;color:#ffd9a0;letter-spacing:.02em}
+
+@media (prefers-reduced-motion:reduce){.dn-coin,.dn-hero::after,.dn-bolt,#tab-donate .dn .donate-title,.dn-big,.dn-ring{animation:none}.dn-bolt{opacity:.8}}
