@@ -1,0 +1,83 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ---------- Apoiantes em 3D: palco com profundidade, cartões que inclinam com o rato, reflexo, contorno animado e partículas ---------- */
+#tab-supporters .supporters-container{position:relative;overflow:hidden;max-width:960px;padding:46px 28px 52px;isolation:isolate;
+  background:radial-gradient(120% 90% at 50% 0%,#12324a 0%,transparent 60%),linear-gradient(180deg,var(--panel,#0d1a26),var(--deep,#07111a))}
+/* chão em perspetiva (grelha que foge para o horizonte) */
+#tab-supporters .supporters-container::before{content:"";position:absolute;left:-30%;right:-30%;bottom:-40%;height:85%;z-index:-2;pointer-events:none;
+  background-image:linear-gradient(#4fd6ff22 1px,transparent 1px),linear-gradient(90deg,#4fd6ff22 1px,transparent 1px);background-size:46px 46px;
+  transform:perspective(520px) rotateX(64deg);transform-origin:50% 0;animation:ap3-floor 9s linear infinite;
+  -webkit-mask-image:linear-gradient(to top,#000 10%,transparent 85%);mask-image:linear-gradient(to top,#000 10%,transparent 85%)}
+@keyframes ap3-floor{to{background-position:0 46px,0 0}}
+/* halo central */
+#tab-supporters .supporters-container::after{content:"";position:absolute;left:50%;top:-120px;width:520px;height:320px;transform:translateX(-50%);z-index:-1;pointer-events:none;
+  background:radial-gradient(closest-side,#21ffb033,transparent);filter:blur(10px);animation:ap3-halo 6s ease-in-out infinite}
+@keyframes ap3-halo{50%{opacity:.55;transform:translateX(-50%) scale(1.12)}}
+
+/* título com volume e brilho a passar */
+#tab-supporters .supporters-title{font-size:26px;letter-spacing:.18em;margin-bottom:34px;
+  background:linear-gradient(100deg,#21ffb0 0%,#4fd6ff 30%,#fff 45%,#4fd6ff 60%,#21ffb0 100%);background-size:250% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:ap3-title 5s linear infinite;
+  filter:drop-shadow(0 2px 0 #0b5c48) drop-shadow(0 4px 0 #083d31) drop-shadow(0 10px 18px #21ffb055)}
+#tab-supporters .supporters-title span{-webkit-text-fill-color:transparent}
+@keyframes ap3-title{to{background-position:-250% 0}}
+
+/* partículas (criadas pelo JS) */
+.ap3-sparks{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.ap3-sparks i{position:absolute;bottom:-12px;width:var(--s,4px);height:var(--s,4px);border-radius:50%;background:var(--c,#21ffb0);box-shadow:0 0 10px var(--c,#21ffb0);
+  opacity:0;animation:ap3-rise var(--d,9s) linear var(--w,0s) infinite}
+@keyframes ap3-rise{0%{transform:translate(0,0);opacity:0}10%{opacity:.9}100%{transform:translate(var(--x,20px),-640px);opacity:0}}
+
+/* palco dos cartões */
+#tab-supporters .channels-grid{perspective:1100px;gap:34px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+#tab-supporters .channel-card{--rx:0deg;--ry:0deg;--mx:50%;--my:50%;--glow:#21ffb0;position:relative;transform-style:preserve-3d;border:none;border-radius:18px;overflow:visible;
+  background:linear-gradient(160deg,#0f2233,#070f17);box-shadow:0 30px 60px -28px #000,0 0 0 1px #ffffff10;
+  transform:rotateX(var(--rx)) rotateY(var(--ry)) translateZ(0);transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s;
+  animation:ap3-float 6s ease-in-out infinite}
+#tab-supporters .channel-card:nth-child(2){--glow:#b06bff;animation-delay:-3s}
+#tab-supporters .channel-card:nth-child(3){--glow:#ffb547;animation-delay:-1.5s}
+@keyframes ap3-float{50%{translate:0 -8px}}
+#tab-supporters .channel-card.ap3-on{animation-play-state:paused;transition:transform .08s linear,box-shadow .3s;
+  box-shadow:0 40px 70px -26px #000,0 0 46px -10px var(--glow),0 0 0 1px #ffffff18}
+/* contorno de luz a rodar */
+#tab-supporters .channel-card::before{content:"";position:absolute;inset:-2px;border-radius:20px;z-index:-1;padding:2px;
+  background:conic-gradient(from var(--a,0deg),transparent 0 55%,var(--glow) 70%,#fff 75%,var(--glow) 80%,transparent 95%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:ap3-spin 4s linear infinite;opacity:.85}
+@property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes ap3-spin{to{--a:360deg}}
+/* reflexo que segue o rato */
+#tab-supporters .channel-card::after{content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;z-index:3;opacity:0;transition:opacity .3s;
+  background:radial-gradient(420px circle at var(--mx) var(--my),#ffffff2e,transparent 45%);mix-blend-mode:overlay}
+#tab-supporters .channel-card.ap3-on::after{opacity:1}
+/* camadas com profundidade */
+#tab-supporters .channel-banner{transform:translateZ(46px);border-radius:16px 16px 10px 10px;overflow:hidden;position:relative;margin:-14px 14px 0;
+  box-shadow:0 18px 30px -14px #000,0 0 0 1px #ffffff14}
+/* banners mais altos e cortados nas pontas decorativas: o texto do meio fica quase com o dobro do tamanho */
+#tab-supporters .channel-banner{aspect-ratio:3.6/1}
+#tab-supporters .channel-banner img{transition:transform .6s;transform:scale(1.02);object-fit:cover;object-position:50% 50%}
+#tab-supporters .channel-card:nth-child(1) .channel-banner img{object-position:55% 50%}
+#tab-supporters .channel-card.ap3-on .channel-banner img{transform:scale(1.08)}
+/* brilho que atravessa o banner */
+#tab-supporters .channel-banner::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;transform:skewX(-20deg);
+  background:linear-gradient(90deg,transparent,#ffffff55,transparent);animation:ap3-shine 5s ease-in-out infinite}
+#tab-supporters .channel-card:nth-child(2) .channel-banner::after{animation-delay:2.5s}
+@keyframes ap3-shine{0%,60%{left:-60%}100%{left:130%}}
+#tab-supporters .channel-body{transform:translateZ(26px);padding:18px 20px 20px}
+#tab-supporters .channel-name{font-size:17px;transform:translateZ(14px);text-shadow:0 0 18px var(--glow)}
+#tab-supporters .channel-name::before{content:"✦ ";color:var(--glow)}
+#tab-supporters .channel-btn{transform:translateZ(36px);position:relative;overflow:hidden;box-shadow:0 10px 22px -8px var(--glow);
+  background:linear-gradient(135deg,var(--glow),#fff 160%);color:#04110c;transition:transform .2s,box-shadow .2s}
+#tab-supporters .channel-btn:hover{transform:translateZ(46px) scale(1.06);box-shadow:0 14px 30px -6px var(--glow)}
+/* sombra no chão */
+#tab-supporters .channel-card .ap3-shadow{position:absolute;left:10%;right:10%;bottom:-34px;height:22px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,var(--glow),transparent);opacity:.35;filter:blur(8px);transform:translateZ(-40px) rotateX(80deg)}
+
+/* sem animações para quem prefere menos movimento, e sem inclinação em ecrãs táteis */
+@media (prefers-reduced-motion:reduce){
+  #tab-supporters .supporters-container::before,#tab-supporters .supporters-container::after,#tab-supporters .supporters-title,
+  #tab-supporters .channel-card,#tab-supporters .channel-card::before,#tab-supporters .channel-banner::after,.ap3-sparks i{animation:none}
+  .ap3-sparks{display:none}
+}
+@media (max-width:640px){#tab-supporters .supporters-title{font-size:20px}#tab-supporters .channels-grid{gap:40px}}
