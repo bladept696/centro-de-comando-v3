@@ -20,6 +20,9 @@ Object.assign(I18N_DICT, {
   "gp_a_best": { pt: `⭐ O teu melhor diff`, en: `⭐ Your best diff`, es: `⭐ Tu mejor diff`, fr: `⭐ Votre meilleur diff` },
   "gp_a_hash": { pt: `O teu hashrate`, en: `Your hashrate`, es: `Tu hashrate`, fr: `Votre hashrate` },
   "gp_a_workers": { pt: `Máquinas`, en: `Workers`, es: `Máquinas`, fr: `Machines` },
+  "gp_a_pplns": { pt: `A tua parte no PPLNS`, en: `Your PPLNS share`, es: `Tu parte en el PPLNS`, fr: `Votre part PPLNS` },
+  "gp_a_prize": { pt: `Se este bloco for nosso, levas`, en: `If this block is ours, you get`, es: `Si este bloque es nuestro, te llevas`, fr: `Si ce bloc est à nous, vous recevez` },
+  "gp_a_prize_min": { pt: `abaixo do mínimo de {0} sats — acumula até lá chegar`, en: `below the {0} sats minimum — it accrues until it gets there`, es: `por debajo del mínimo de {0} sats — se acumula hasta llegar`, fr: `sous le minimum de {0} sats — s’accumule jusqu’à l’atteindre` },
   "gp_offline": { pt: `offline`, en: `offline`, es: `sin conexión`, fr: `hors ligne` },
   "gp_you": { pt: `⭐ Tu`, en: `⭐ You`, es: `⭐ Tú`, fr: `⭐ Vous` },
   "gp_noblocks": { pt: `Sem blocos recentes.`, en: `No recent blocks.`, es: `Sin bloques recientes.`, fr: `Aucun bloc récent.` },
@@ -120,7 +123,7 @@ async function gpFetch(first){
   $('gpNote').textContent = data.stale ? t('gp_n_stale') : '';
   const stats = $('gpStats');
   const fmtDiff = v => { if(v == null || isNaN(v)) return '—'; const f = formatDiff(v); return f.value + f.unit; };
-  const fmtHash = v => { if(v == null || isNaN(v)) return '—'; const f = formatDiff(v); return f.value + f.unit + 'H/s'; };
+  const fmtHash = v => { if(v == null || isNaN(v)) return '—'; const f = formatNumber(v, ['','K','M','G','T','P','E','Z'], 1000); return f.value + f.unit + 'H/s'; };
   stats.innerHTML = [
     [t('gp_l_miners'), data.total_miners ?? '—'],
     [t('gp_l_phash'), fmtHash(data.pool_hashrate)],
@@ -139,6 +142,9 @@ async function gpFetch(first){
       [t('gp_a_best'), fmtDiff(acc.best_share)],
       [t('gp_a_hash'), fmtHash(acc.current_hashrate)],
       [t('gp_a_workers'), workers],
+      ...(acc.pplns_percent != null ? [[t('gp_a_pplns'), (v => v > 0 && v < 0.01 ? v.toPrecision(2) : v.toFixed(2))(Number(acc.pplns_percent)) + '%']] : []),
+      ...(acc.prize_sats ? [[t('gp_a_prize'), Number(acc.prize_sats).toLocaleString() + ' sats' + (acc.prize_eur ? ' ≈ ' + acc.prize_eur.toFixed(2) + ' €' : '') + (acc.prize_usd ? ' · ' + acc.prize_usd.toFixed(2) + ' US$' : '') +
+        (acc.min_payout_sats && acc.prize_sats < acc.min_payout_sats ? '<br><span style="font-size:10px;font-weight:400;opacity:.75;line-height:1.3">' + t('gp_a_prize_min').replace('{0}', Number(acc.min_payout_sats).toLocaleString()) + '</span>' : '')]] : []),
     ].map(([l, v]) => `<div class="gp-stat"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
   } else { accEl.style.display = 'none'; accEl.innerHTML = ''; }
   const rows = [...(data.candidates || []), ...(data.blocks || [])];

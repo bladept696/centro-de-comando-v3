@@ -2232,6 +2232,13 @@ GENERIC_POOLS = {
         "blocks_url": "https://btc1.molepool.com/api/v1/blocks",
         "account_url": "https://btc1.molepool.com/api/v1/account/{address}",
     },
+    # pool PPLNS comunitária com a API do public-pool (/api/pool, /api/info, /api/client/<endereço>) e extras PPLNS
+    "defisurfers": {
+        "label": "DeFi Surfers (PPLNS)",
+        "coin": "BTC",
+        "kind": "publicpool",
+        "base_url": "https://pool.defisurfers.xyz",
+    },
 }
 GENERIC_POOL_CACHE_SECONDS = 20
 _generic_pool_cache = {}
@@ -2252,6 +2259,8 @@ def fetch_generic_pool_account(pool_id, address):
     """Dados pessoais do minador numa pool (quando a pool tem account_url), ex.:
     melhor share (bestShare.share), hashrate e lista de workers deste endereço."""
     cfg = GENERIC_POOLS.get(pool_id)
+    if cfg and cfg.get("kind") == "publicpool" and address:
+        return _publicpool_account(pool_id, cfg, address)
     if not cfg or not address or not cfg.get("account_url"):
         return None
     cache_key = (pool_id, address)
@@ -2290,6 +2299,121 @@ def fetch_generic_pool_account(pool_id, address):
     return account
 
 
+def _iso_to_ts(v):
+    """'2026-10-31T20:13:50.149Z' (ou número) -> segundos desde 1970; None se não der."""
+    if isinstance(v, (int, float)):
+        return int(v / 1000) if v > 1e12 else int(v)
+    try:
+        import calendar
+        return int(calendar.timegm(time.strptime(str(v)[:19], '%Y-%m-%dT%H:%M:%S')))
+    except Exception:
+        return None
+
+
+def _publicpool_stats(pool_id, cfg):
+    """Pools com a API do public-pool: totais da pool, blocos achados e (via mempool.space) a dificuldade/hashrate da rede."""
+    base = cfg["base_url"].rstrip("/")
+    pool = _generic_pool_http_json(f"{base}/api/pool")
+    try:
+        info = _generic_pool_http_json(f"{base}/api/info")
+    except Exception:
+        info = {}
+    net = {}
+    try:
+        net = _generic_pool_http_json("https://mempool.space/api/v1/mining/hashrate/3d")
+    except Exception:
+        pass
+    raw_blocks = (info.get("blockData") if isinstance(info, dict) else None) or pool.get("blocksFound") or []
+    blocks = []
+    for b in raw_blocks if isinstance(raw_blocks, list) else []:
+        if not isinstance(b, dict):
+            continue
+        blocks.append({"height": b.get("height"), "hash": b.get("hash") or b.get("blockHash"),
+                       "miner": b.get("minerAddress") or b.get("address") or b.get("miner"),
+                       "diff": b.get("difficulty") or b.get("shareDiff"), "effort": None, "status": "confirmed",
+                       "reward": None, "ts": _iso_to_ts(b.get("timestamp") or b.get("time") or b.get("created") or b.get("createdAt"))})
+    blocks.sort(key=lambda x: x.get("height") or 0, reverse=True)
+    pplns = {}
+    try:
+        pplns = _generic_pool_http_json(f"{base}/api/pplns/status")
+    except Exception:
+        pass
+    return {
+        "pool_id": pool_id, "label": cfg["label"], "coin": cfg["coin"],
+        "total_miners": pool.get("totalMiners"),
+        "pool_hashrate": pool.get("totalHashRate"),
+        "network_hashrate": net.get("currentHashrate"),
+        "network_difficulty": net.get("currentDifficulty"),
+        "height": pool.get("blockHeight"),
+        "last_block_found": blocks[0]["ts"] if blocks else None,
+        "total_blocks": len(blocks),
+        "fee_percent": pool.get("fee"),
+        "reward": None,
+        "pplns_miners": pplns.get("minerCount"),
+        "candidates": [],
+        "blocks": blocks[:100],
+        "stale": False,
+    }
+
+
+def _publicpool_account(pool_id, cfg, address):
+    cache_key = (pool_id, address)
+    with _generic_pool_account_cache_lock:
+        entry = _generic_pool_account_cache.get(cache_key)
+        if entry and (time.time() - entry["ts"]) < GENERIC_POOL_CACHE_SECONDS:
+            return entry["data"]
+    base = cfg["base_url"].rstrip("/")
+    try:
+        r = _generic_pool_http_json(f"{base}/api/client/{urllib.parse.quote(address)}")
+        if not isinstance(r, dict):
+            raise ValueError("resposta inválida")
+        now = time.time()
+        workers = []
+        for w in r.get("workers") or []:
+            seen = _iso_to_ts(w.get("lastSeen"))
+            try:
+                best = float(w.get("bestDifficulty") or 0)
+            except (TypeError, ValueError):
+                best = 0
+            workers.append({"name": w.get("name"), "hashrate": w.get("hashRate"), "best_share": best,
+                            "offline": bool(seen and now - seen > 600)})
+        share = None
+        try:
+            dist = _generic_pool_http_json(f"{base}/api/pplns/distribution")
+            mine = next((x for x in dist if isinstance(x, dict) and x.get("address") == address), None) if isinstance(dist, list) else None
+            share = mine.get("percent") if mine else 0
+        except Exception:
+            pass
+        # o que levas se a pool achar o bloco agora: a tua % do PPLNS x 3,125 BTC x 98% (a parte dos mineiros), como no site da pool
+        prize_sats = round(share / 100 * 3.125 * 0.98 * 1e8) if share else None
+        prize_usd = prize_eur = None
+        if prize_sats:
+            try:
+                px = _generic_pool_http_json("https://mempool.space/api/v1/prices")
+                prize_usd = prize_sats / 1e8 * float(px.get("USD") or 0) or None
+                prize_eur = prize_sats / 1e8 * float(px.get("EUR") or 0) or None
+            except Exception:
+                pass
+        account = {
+            "address": address,
+            "current_hashrate": r.get("totalHashrate"),
+            "average_hashrate": None,
+            "balance": None, "pending": None, "immature": None, "blocks_found": None,
+            "best_share": r.get("bestDifficulty"),
+            "best_share_ts": None, "best_share_net_diff": None,
+            "pplns_percent": share,
+            "prize_sats": prize_sats, "prize_usd": prize_usd, "prize_eur": prize_eur, "min_payout_sats": 5000,
+            "workers": workers,
+        }
+    except Exception:
+        with _generic_pool_account_cache_lock:
+            entry = _generic_pool_account_cache.get(cache_key)
+        return entry["data"] if entry else None
+    with _generic_pool_account_cache_lock:
+        _generic_pool_account_cache[cache_key] = {"ts": time.time(), "data": account}
+    return account
+
+
 def fetch_generic_pool(pool_id, address="", force=False):
     """Estado de uma pool Miningcore-like (configurada em GENERIC_POOLS): stats gerais
     da pool + lista de blocos recentes encontrados por qualquer pessoa, mais os dados
@@ -2304,6 +2428,11 @@ def fetch_generic_pool(pool_id, address="", force=False):
             data = entry["data"]
             return _generic_pool_mark_mine(data, address)
     try:
+        if cfg.get("kind") == "publicpool":
+            data = _publicpool_stats(pool_id, cfg)
+            with _generic_pool_cache_lock:
+                _generic_pool_cache[cache_key] = {"ts": time.time(), "data": data}
+            return _generic_pool_mark_mine(data, address)
         stats = _generic_pool_http_json(cfg["stats_url"])
         blocks = _generic_pool_http_json(cfg["blocks_url"])
     except Exception as e:
