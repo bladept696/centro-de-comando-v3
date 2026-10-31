@@ -66,7 +66,7 @@ Object.assign(I18N_DICT, {
 
     // topo: moeda 3D a rodar com raios à volta
     const icons = box.querySelector('.donate-icons');
-    const hero = el('div', 'dn-hero', '<div class="dn-coin" aria-hidden="true"><div class="dn-face f">₿</div><div class="dn-face b">⚡</div><div class="dn-edge"></div></div>' +
+    const hero = el('div', 'dn-hero', '<div class="dn-coin" aria-hidden="true"><div class="dn-face f">₿</div><div class="dn-face b">⚡</div>' + [-3.5, -2.1, -0.7, 0.7, 2.1, 3.5].map(z => '<div class="dn-edge" style="--z:' + z + 'px"></div>').join('') + '</div>' +
       '<svg class="dn-bolt l" viewBox="0 0 24 48" aria-hidden="true"><path d="M14 0 2 27h8l-4 21L22 18h-9z"/></svg><svg class="dn-bolt r" viewBox="0 0 24 48" aria-hidden="true"><path d="M14 0 2 27h8l-4 21L22 18h-9z"/></svg>');
     if(icons) icons.replaceWith(hero); else box.prepend(hero);
     const desc = box.querySelector('.donate-desc'); if(desc) desc.innerHTML = i18n('dn_desc', desc.textContent);

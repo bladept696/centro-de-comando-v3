@@ -1,0 +1,215 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ---------- Topo do Dashboard Geral em 3D (topo-3d.js): relógio/tempo e destaque da Molepool ---------- */
+
+/* ===== Relógio e tempo ===== */
+#wxPanel.t3d{--rx:0deg;--ry:0deg;--px:0;--py:0;--mx:50%;--my:50%;--sky1:#0b1f3f;--sky2:#050b1a;--sky3:#1a1446;
+  overflow:hidden;isolation:isolate;padding:14px 24px;border-radius:22px;border:1px solid #8fd8ff33;
+  background:radial-gradient(120% 140% at 15% 0%,var(--sky3) 0%,transparent 55%),linear-gradient(135deg,var(--sky1),var(--sky2));
+  box-shadow:inset 0 1px 0 #ffffff1c,inset 0 -30px 60px -40px #000,0 30px 60px -30px #000,0 0 0 1px #00000040;
+  transform:perspective(1200px) rotateX(var(--rx)) rotateY(var(--ry));transform-style:flat;transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .4s}
+#wxPanel.t3d[data-sky="day"]{--sky1:#0d3a5c;--sky2:#071a2c;--sky3:#1d6f9a}
+#wxPanel.t3d[data-sky="dusk"]{--sky1:#3a1d47;--sky2:#0c0b1f;--sky3:#a2453d}
+#wxPanel.t3d[data-sky="dawn"]{--sky1:#2a2550;--sky2:#0a0f22;--sky3:#c27a4a}
+#wxPanel.t3d.t3d-on{transition:transform .08s linear;box-shadow:inset 0 1px 0 #ffffff26,0 40px 70px -30px #000,0 0 50px -18px #4fd6ff88}
+/* estrelas em paralaxe e luz que passa */
+.t3d-stars{position:absolute;inset:-20px;z-index:-1;pointer-events:none;transform:translate(calc(var(--px) * -24px),calc(var(--py) * -16px));transition:transform .4s}
+.t3d-stars i{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:#fff;box-shadow:0 0 6px #bfe8ff;animation:t3d-twinkle var(--d) ease-in-out infinite}
+#wxPanel[data-sky="day"] .t3d-stars i{opacity:.25}
+@keyframes t3d-twinkle{50%{opacity:.25;transform:scale(.6)}}
+.t3d-sweep{position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(500px circle at var(--mx) var(--my),#ffffff14,transparent 50%);opacity:0;transition:opacity .4s}
+#wxPanel.t3d-on .t3d-sweep{opacity:1}
+/* camadas a alturas diferentes */
+#wxPanel.t3d .wx-globe{transform:translateZ(60px);filter:drop-shadow(0 18px 18px #000a)}
+#wxPanel.t3d .wx-clock{transform:translateZ(46px)}
+#wxPanel.t3d .wx-weather{transform:translateZ(34px)}
+#wxPanel.t3d .wx-gear{transform:translateZ(20px)}
+/* globo: halo da atmosfera, anel em órbita com satélite e anel dos segundos */
+#wxPanel.t3d .wx-globe::after{content:"";position:absolute;inset:-6px;border-radius:50%;pointer-events:none;box-shadow:0 0 24px 4px #4fd6ff55,inset 0 0 18px #4fd6ff44}
+.t3d-orbit{position:absolute;inset:-14px;border-radius:50%;border:1px solid #9fdcff55;transform:rotateX(72deg) rotateZ(0);animation:t3d-orbit 9s linear infinite;pointer-events:none}
+.t3d-orbit i{position:absolute;top:-4px;left:50%;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:#ffd27a;box-shadow:0 0 10px 2px #ffb020}
+@keyframes t3d-orbit{to{transform:rotateX(72deg) rotateZ(360deg)}}
+.t3d-secring{position:absolute;inset:-12px;pointer-events:none}
+.t3d-secring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.t3d-secring circle{fill:none;stroke-width:2.5}
+.t3d-secring .bg{stroke:#ffffff10}
+.t3d-secring .fg{stroke:#4fd6ff;stroke-linecap:round;filter:drop-shadow(0 0 4px #4fd6ff);transition:stroke-dasharray .95s linear}
+/* relógio com mais volume (sem o balanço, que lutava com a inclinação) */
+#wxPanel.t3d .wx-time{animation:none;transform:none;font-size:48px;
+  text-shadow:1px 1px 0 #2b8ab4,2px 2px 0 #23759a,3px 3px 0 #1c6080,4px 4px 0 #154b66,5px 5px 0 #0f3a50,8px 12px 20px #000c,0 0 30px #4fd6ff66}
+#wxPanel.t3d .wx-sec{font-size:22px;text-shadow:0 0 14px #4fd6ff}
+#wxPanel.t3d .wx-temp{font-size:34px;text-shadow:1px 1px 0 #8aa6c4,2px 2px 0 #6b87a6,3px 3px 0 #4d6988,6px 9px 16px #000b}
+#wxPanel.t3d #wxIcon{display:inline-block;animation:t3d-bob 4s ease-in-out infinite;filter:drop-shadow(0 6px 6px #0008)}
+@keyframes t3d-bob{50%{transform:translateY(-4px) rotate(-4deg)}}
+#wxPanel.t3d .wx-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+#wxPanel.t3d .wx-meta > span{padding:5px 10px;border-radius:999px;background:#ffffff0d;border:1px solid #ffffff1a;box-shadow:inset 0 1px 0 #ffffff14,0 6px 14px -8px #000;backdrop-filter:blur(6px)}
+
+/* ===== Destaque da Molepool ===== */
+#gpSpotlight.t3d{--rx:0deg;--ry:0deg;--mx:50%;--my:50%;isolation:isolate;padding:16px 24px 16px 108px;border-radius:22px;border:1px solid transparent;
+  background:radial-gradient(120% 160% at 0% 0%,#5a3b0a 0%,transparent 55%),linear-gradient(135deg,#21180a,#0d1018 60%,#141018);
+  box-shadow:inset 0 1px 0 #ffe2a330,inset 0 -24px 50px -36px #000,0 30px 60px -30px #000;
+  transform:perspective(1200px) rotateX(var(--rx)) rotateY(var(--ry));transform-style:flat;transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .4s;overflow:visible}
+#gpSpotlight.t3d:has(.gp-spot-setup){padding-left:24px}
+#gpSpotlight.t3d.t3d-on{transition:transform .08s linear;box-shadow:inset 0 1px 0 #ffe2a340,0 40px 70px -30px #000,0 0 50px -16px #ffb02099}
+#gpSpotlight.t3d::before{background:radial-gradient(420px circle at var(--mx) var(--my),#ffcf7a26,transparent 55%);border-radius:22px}
+/* contorno dourado a rodar */
+.t3d-edge{position:absolute;inset:-1px;border-radius:22px;padding:1.5px;pointer-events:none;z-index:-1;
+  background:conic-gradient(from var(--t3da,0deg),#ffb02033,#ffd27a 20%,#ffb02033 40%,#7a4a0055 60%,#ffd27a 80%,#ffb02033);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:t3d-edge 6s linear infinite}
+@property --t3da{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes t3d-edge{to{--t3da:360deg}}
+/* moeda 3D a rodar */
+.t3d-coin{position:absolute;left:24px;top:50%;width:62px;height:62px;margin-top:-31px;transform-style:preserve-3d;animation:t3d-spin 5s linear infinite;z-index:2}
+.t3d-coin > div{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 28px/1 'Space Grotesk',sans-serif;color:#fff4d6;backface-visibility:hidden;
+  background:radial-gradient(circle at 35% 30%,#ffe08a,#f7a21a 50%,#9a5600);box-shadow:inset 0 0 0 4px #ffcf6a,inset 0 0 14px #6a3500;text-shadow:0 2px 0 #7a4200}
+.t3d-coin .f{transform:translateZ(3px)}
+.t3d-coin .b{transform:rotateY(180deg) translateZ(3px)}
+.t3d-coin .e{transform:translateZ(var(--z));background:linear-gradient(90deg,#8a4b00,#ffcf6a 50%,#8a4b00);box-shadow:none;backface-visibility:visible}
+/* os dois painéis ficam planos (o Chrome deixava de os desenhar por instantes com profundidade em camadas); a moeda tem a sua própria perspetiva */
+@keyframes t3d-spin{from{transform:perspective(320px) rotateY(0)}to{transform:perspective(320px) rotateY(360deg)}}
+#gpSpotlight.t3d::after{content:"";position:absolute;left:28px;top:calc(50% + 38px);width:54px;height:10px;border-radius:50%;background:radial-gradient(closest-side,#ffb02088,transparent);pointer-events:none}
+/* blocos de valores em relevo */
+#gpSpotlight.t3d .gp-spot-item{transform:translateZ(36px);border-right-color:#ffcf7a26}
+#gpSpotlight.t3d .gp-spot-item .lbl{color:#c9a96a;letter-spacing:.12em}
+#gpSpotlight.t3d .gp-spot-item .val{font-size:24px;background:linear-gradient(180deg,#fff2c8,#ffc04d 60%,#d98a10);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 0 #6a3d00) drop-shadow(0 6px 10px #000a)}
+#gpSpotlight.t3d .gp-spot-item .val.addr{font-size:13px;background:none;color:#f3e6c8;filter:none}
+/* barra de progresso em tubo */
+#gpSpotlight.t3d .gp-spot-bar{transform:translateZ(46px)}
+#gpSpotlight.t3d .gp-spot-track{height:16px;border-radius:10px;overflow:visible;position:relative;
+  background:linear-gradient(180deg,#05070c,#1a1f2b 60%,#0b0e15);box-shadow:inset 0 2px 4px #000c,inset 0 -1px 0 #ffffff12,0 1px 0 #ffffff10}
+#gpSpotlight.t3d .gp-spot-fill{position:relative;border-radius:10px;
+  background:linear-gradient(180deg,#ffffff55 0%,transparent 40%,#0003 100%),repeating-linear-gradient(115deg,#ffffff1c 0 10px,transparent 10px 20px),linear-gradient(90deg,#3fc9ff,#7fe0c0 45%,#ffc04d 80%,#ff9a1a);
+  background-size:auto,40px 100%,auto;animation:t3d-stripes 1.6s linear infinite;box-shadow:0 0 18px #ffb02077}
+@keyframes t3d-stripes{to{background-position:0 0,40px 0,0 0}}
+.t3d-head{position:absolute;right:-7px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#fff6d8;box-shadow:0 0 14px 5px #ffb020,0 0 30px 8px #ffb02066;animation:t3d-pulse 1.4s ease-in-out infinite}
+@keyframes t3d-pulse{50%{transform:scale(1.3)}}
+#gpSpotlight.t3d .gp-spot-pct{font:700 15px 'Space Grotesk',sans-serif;color:#ffd27a;margin-top:7px;text-shadow:0 0 12px #ffb02088}
+
+@media (max-width:700px){#gpSpotlight.t3d{padding-left:24px}.t3d-coin,#gpSpotlight.t3d::after{display:none}}
+@media (prefers-reduced-motion:reduce){.t3d-stars i,.t3d-orbit,.t3d-coin,.t3d-edge,#gpSpotlight.t3d .gp-spot-fill,.t3d-head,#wxPanel.t3d #wxIcon{animation:none}}
+body.perf-mode .t3d-stars,body.perf-mode .t3d-orbit{display:none}
+
+/* ===== Indicadores do lado em 3D ===== */
+.gauge.g3d{--gc:#21ffb0;--rx:0deg;--ry:0deg;position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;
+  padding:12px 14px 14px;border-radius:16px;overflow:hidden;isolation:isolate;
+  border:1px solid color-mix(in srgb,var(--gc) 28%,transparent);
+  background:radial-gradient(130% 120% at 0% 0%,color-mix(in srgb,var(--gc) 16%,transparent),transparent 55%),linear-gradient(160deg,#0f1c2b,#080f18);
+  box-shadow:inset 0 1px 0 #ffffff14,0 16px 30px -18px #000;
+  transform:perspective(700px) rotateX(var(--rx)) rotateY(var(--ry));transform-style:preserve-3d;transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s}
+.gauge.g3d[data-hot="1"]{--gc:#ff5d6c}
+.gauge.g3d::before{display:none}
+.gauge.g3d.g3d-on{transition:transform .08s linear,box-shadow .3s;border-color:color-mix(in srgb,var(--gc) 60%,transparent);
+  box-shadow:inset 0 1px 0 #ffffff1f,0 22px 40px -20px #000,0 0 28px -10px var(--gc)}
+.gauge.g3d:hover{transform:perspective(700px) rotateX(var(--rx)) rotateY(var(--ry))}
+/* ícone em relevo */
+.g3d-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;transform:translateZ(26px);
+  background:linear-gradient(145deg,color-mix(in srgb,var(--gc) 45%,#0b1220),color-mix(in srgb,var(--gc) 12%,#05080e));
+  box-shadow:inset 0 1px 0 #ffffff33,inset 0 -3px 6px #0006,0 8px 16px -6px color-mix(in srgb,var(--gc) 70%,transparent)}
+.gauge.g3d .gauge-left{transform:translateZ(14px)}
+.gauge.g3d .label{color:color-mix(in srgb,var(--gc) 55%,#cfe3ee);letter-spacing:.14em}
+/* número com volume */
+.gauge.g3d .gauge-right{transform:translateZ(30px)}
+.gauge.g3d .value{font-size:28px;letter-spacing:-.01em;
+  text-shadow:1px 1px 0 color-mix(in srgb,currentColor 55%,#000),2px 2px 0 color-mix(in srgb,currentColor 40%,#000),3px 3px 0 color-mix(in srgb,currentColor 28%,#000),5px 7px 12px #000c,0 0 18px color-mix(in srgb,currentColor 45%,transparent)}
+/* barra com o valor em relação ao máximo */
+.g3d-meter{position:absolute;left:14px;right:14px;bottom:6px;height:3px;border-radius:2px;background:#ffffff10;overflow:hidden}
+.g3d-meter i{display:block;height:100%;width:2%;border-radius:2px;background:linear-gradient(90deg,color-mix(in srgb,var(--gc) 40%,transparent),var(--gc));box-shadow:0 0 8px var(--gc);transition:width 1s ease}
+/* brilho que passa de vez em quando */
+.gauge.g3d::after{content:"";position:absolute;top:0;bottom:0;width:30%;left:-40%;z-index:-1;transform:skewX(-20deg);pointer-events:none;
+  background:linear-gradient(90deg,transparent,#ffffff0f,transparent);animation:g3d-shine 7s ease-in-out infinite}
+.gauge.g3d:nth-child(2)::after{animation-delay:1s}.gauge.g3d:nth-child(3)::after{animation-delay:2s}.gauge.g3d:nth-child(4)::after{animation-delay:3s}
+.gauge.g3d:nth-child(5)::after{animation-delay:4s}.gauge.g3d:nth-child(6)::after{animation-delay:5s}
+@keyframes g3d-shine{0%,75%{left:-40%}100%{left:130%}}
+@media (prefers-reduced-motion:reduce){.gauge.g3d::after{animation:none;display:none}}
+
+/* ===== Painel "Máquinas": campos em baixo-relevo, teclas 3D e consola de ações rápidas ===== */
+.panel[data-layout-id="main-machines"]{border-radius:20px;border:1px solid #4fd6ff2e;overflow:hidden;
+  background:radial-gradient(120% 140% at 0% 0%,#123a4a55,transparent 55%),linear-gradient(160deg,#0d1a28,#070e17);
+  box-shadow:inset 0 1px 0 #ffffff17,0 26px 50px -30px #000}
+.panel[data-layout-id="main-machines"] .panel-title{display:flex;align-items:center;justify-content:flex-start !important;gap:10px;font-size:12px;letter-spacing:.18em;color:#bfe9ff}
+.panel[data-layout-id="main-machines"] .panel-title::before{content:"🖥️";display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;font-size:15px;letter-spacing:0;
+  background:linear-gradient(145deg,#1f5a72,#0b2230);box-shadow:inset 0 1px 0 #ffffff30,0 6px 12px -6px #4fd6ff}
+/* campos */
+.panel[data-layout-id="main-machines"] .config{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.panel[data-layout-id="main-machines"] .config input{height:40px !important;padding:0 14px !important;border-radius:12px !important;font-size:13px;color:#e6f6ff;
+  background:linear-gradient(180deg,#050a12,#0c1622) !important;border:1px solid #4fd6ff26 !important;
+  box-shadow:inset 0 2px 6px #000c,inset 0 -1px 0 #ffffff0d !important;transition:border-color .2s,box-shadow .2s}
+.panel[data-layout-id="main-machines"] .config input:focus{outline:none;border-color:#4fd6ff !important;box-shadow:inset 0 2px 6px #000c,0 0 0 3px #4fd6ff2e,0 0 18px -4px #4fd6ff !important}
+/* teclas 3D (adicionar e localizar) */
+.panel[data-layout-id="main-machines"] #addBtn,.panel[data-layout-id="main-machines"] #scanBtn{position:relative;height:40px;padding:0 18px !important;border-radius:12px !important;font-weight:700 !important;font-size:13px;
+  transform:translateY(0);transition:transform .12s,box-shadow .12s,filter .2s;cursor:pointer}
+.panel[data-layout-id="main-machines"] #addBtn{color:#022014 !important;border:1px solid #6dffcf !important;
+  background:linear-gradient(180deg,#5dffc6,#18c98a) !important;box-shadow:0 5px 0 #0b7a52,0 10px 20px -6px #21ffb0aa,inset 0 1px 0 #ffffffaa !important}
+.panel[data-layout-id="main-machines"] #scanBtn{color:#dff6ff !important;border:1px solid #4fd6ff99 !important;
+  background:linear-gradient(180deg,#1c4a63,#0f2c3d) !important;box-shadow:0 5px 0 #08202d,0 10px 20px -8px #4fd6ff88,inset 0 1px 0 #ffffff33 !important}
+.panel[data-layout-id="main-machines"] #addBtn:hover,.panel[data-layout-id="main-machines"] #scanBtn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.panel[data-layout-id="main-machines"] #addBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #0b7a52,0 4px 10px -6px #21ffb0aa,inset 0 1px 0 #ffffffaa !important}
+.panel[data-layout-id="main-machines"] #scanBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #08202d,inset 0 1px 0 #ffffff33 !important}
+/* consola de ações rápidas */
+.panel[data-layout-id="main-machines"] .quick-actions-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:4px;padding:14px 16px 16px;border-radius:16px;
+  background:linear-gradient(180deg,#04080e,#0a121c);border:1px solid #ffffff12;box-shadow:inset 0 3px 10px #000d,inset 0 -1px 0 #ffffff0f}
+.panel[data-layout-id="main-machines"] .quick-actions-label{font-size:10.5px;letter-spacing:.16em;color:#ffcf7a;text-shadow:0 0 10px #ffb02066;margin-right:4px}
+.panel[data-layout-id="main-machines"] .quick-actions-bar button.quick-action-btn{--k:#9fb6c8;--kd:#2a3846;position:relative;height:34px;padding:0 14px;border-radius:10px !important;font-size:12px;font-weight:700;cursor:pointer;
+  color:#eaf6ff !important;border:1px solid color-mix(in srgb,var(--k) 55%,transparent) !important;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--k) 30%,#1a2533),color-mix(in srgb,var(--k) 10%,#0b121b)) !important;
+  box-shadow:0 4px 0 var(--kd),0 8px 14px -8px var(--k),inset 0 1px 0 #ffffff2a !important;transform:translateY(0);transition:transform .1s,box-shadow .1s,filter .2s}
+.panel[data-layout-id="main-machines"] .quick-actions-bar button.quick-action-btn.green{--k:#21ffb0;--kd:#0a5a3e}
+.panel[data-layout-id="main-machines"] .quick-actions-bar button.quick-action-btn.amber{--k:#ffb020;--kd:#6a4400}
+.panel[data-layout-id="main-machines"] .quick-actions-bar button.quick-action-btn.red{--k:#ff5d6c;--kd:#6a1520}
+.panel[data-layout-id="main-machines"] .quick-actions-bar button.quick-action-btn:hover{filter:brightness(1.18);transform:translateY(-1px);box-shadow:0 5px 0 var(--kd),0 10px 22px -8px var(--k),inset 0 1px 0 #ffffff33 !important}
+.panel[data-layout-id="main-machines"] .quick-actions-bar button.quick-action-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--kd),inset 0 1px 0 #ffffff22 !important}
+.panel[data-layout-id="main-machines"] .quick-actions-bar button.quick-edit{width:34px;padding:0;margin-left:-4px;font-size:0 !important;display:inline-flex;align-items:center;justify-content:center}
+.panel[data-layout-id="main-machines"] .quick-actions-bar button.quick-edit::before{content:"✏️";font-size:14px;line-height:1;filter:drop-shadow(0 1px 1px #000a)}
+/* luz de estado */
+.panel[data-layout-id="main-machines"] .quick-action-status{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-size:11.5px;color:#bff5dd;
+  background:#21ffb012;border:1px solid #21ffb033}
+.panel[data-layout-id="main-machines"] .quick-action-status::before{content:"";width:8px;height:8px;border-radius:50%;background:#21ffb0;box-shadow:0 0 10px #21ffb0;animation:m3d-led 2s ease-in-out infinite}
+@keyframes m3d-led{50%{opacity:.35}}
+.panel[data-layout-id="main-machines"] > .hint{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:#7f98ab}
+.panel[data-layout-id="main-machines"] > .hint::before{content:"i";display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font:700 10px 'Space Grotesk',sans-serif;color:#0a1622;background:#7f98ab}
+@media (prefers-reduced-motion:reduce){.panel[data-layout-id="main-machines"] .quick-action-status::before{animation:none}}
+
+/* ===== Cartões de resumo em 3D ===== */
+#mcSummary{grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:12px;perspective:1000px}
+#mcSummary .mc-tile.s3d{--sc:#4fd6ff;--rx:0deg;--ry:0deg;position:relative;overflow:hidden;isolation:isolate;padding:12px 14px 12px;border-radius:16px;
+  border:1px solid color-mix(in srgb,var(--sc) 26%,transparent);
+  background:radial-gradient(120% 110% at 100% 0%,color-mix(in srgb,var(--sc) 15%,transparent),transparent 55%),linear-gradient(165deg,#0f1c2b,#070e17);
+  box-shadow:inset 0 1px 0 #ffffff14,0 16px 30px -18px #000;transform:rotateX(var(--rx)) rotateY(var(--ry));transform-style:preserve-3d;
+  transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s}
+#mcSummary .mc-tile.s3d.s3d-on{transition:transform .08s linear,box-shadow .3s;border-color:color-mix(in srgb,var(--sc) 60%,transparent);box-shadow:inset 0 1px 0 #ffffff1f,0 22px 40px -20px #000,0 0 26px -10px var(--sc)}
+#mcSummary .mc-tile.s3d::before{content:"";position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--sc),transparent);opacity:.8}
+.s3d-ic{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;font-style:normal;transform:translateZ(24px);
+  background:linear-gradient(145deg,color-mix(in srgb,var(--sc) 40%,#0b1220),color-mix(in srgb,var(--sc) 10%,#05080e));box-shadow:inset 0 1px 0 #ffffff30,0 6px 12px -6px var(--sc)}
+#mcSummary .mc-tile.s3d > span{padding-right:36px;color:color-mix(in srgb,var(--sc) 55%,#cfe3ee);letter-spacing:.12em;font-size:9.5px}
+/* números com volume e sem cortar o texto */
+#mcSummary .mc-tile.s3d > b{white-space:normal;overflow:visible;text-overflow:clip;font-size:21px;line-height:1.15;margin:6px 0 3px;transform:translateZ(18px);color:#f1f8ff;
+  text-shadow:1px 1px 0 color-mix(in srgb,var(--sc) 35%,#000),2px 2px 0 color-mix(in srgb,var(--sc) 22%,#000),4px 6px 10px #000b,0 0 16px color-mix(in srgb,var(--sc) 35%,transparent)}
+#mcSummary .mc-tile.s3d[data-s3d="profit"] > b{color:var(--sc)}
+#mcSummary .mc-tile.s3d small{transform:translateZ(10px)}
+#mcSummary .mc-tile.s3d input{background:#050a12;border:1px solid color-mix(in srgb,var(--sc) 35%,transparent);border-radius:7px;box-shadow:inset 0 2px 4px #000a;padding:2px 6px}
+#mcSummary .mc-tile.s3d .mc-goalbar,#mcSummary .mc-tile.s3d .mc-luckbar{height:8px;border-radius:5px;background:linear-gradient(180deg,#04070c,#141b26);box-shadow:inset 0 2px 3px #000c;overflow:hidden}
+#mcSummary .mc-tile.s3d .mc-luckbar i{background:linear-gradient(180deg,#ffffff44,transparent 50%),linear-gradient(90deg,#3fc9ff,#21ffb0);box-shadow:0 0 12px #21ffb088}
+/* cartões grandes (contagem e sorte) ocupam mais espaço */
+#mcSummary .mc-tile.s3d.mc-count,#mcSummary .mc-tile.s3d.mc-luck{grid-column:span 2}
+@media (max-width:640px){#mcSummary .mc-tile.s3d.mc-count,#mcSummary .mc-tile.s3d.mc-luck{grid-column:span 2}}
+#mcSummary .mc-tile.s3d.mc-count .mc-ct-row{margin-top:12px}
+
+/* ===== Distribuição de hashrate: legenda junto ao donut, com barras ===== */
+.chart-box[data-layout-id="chart-donut"]{border-radius:20px;border:1px solid #4fd6ff26;
+  background:radial-gradient(90% 140% at 0% 50%,#0f3a4a55,transparent 60%),linear-gradient(160deg,#0d1a28,#070e17);box-shadow:inset 0 1px 0 #ffffff14,0 26px 50px -30px #000}
+#hashrateDonutRow.d3d{justify-content:flex-start;gap:40px}
+#hashrateDonutRow.d3d .donut-legend{flex:0 1 560px;gap:12px}
+#hashrateDonutRow.d3d .donut-legend-item{--p:0%;--c:#4fd6ff;position:relative;overflow:hidden;padding:12px 16px 16px;border-radius:14px;font-size:13px;
+  border:1px solid color-mix(in srgb,var(--c) 35%,transparent);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--c) 14%,transparent),transparent 70%),linear-gradient(160deg,#101c2b,#080f18);
+  box-shadow:inset 0 1px 0 #ffffff14,0 12px 22px -16px #000;transition:transform .25s,box-shadow .25s}
+#hashrateDonutRow.d3d .donut-legend-item:hover{transform:translateX(4px);box-shadow:inset 0 1px 0 #ffffff1f,0 16px 26px -16px #000,0 0 22px -10px var(--c)}
+/* barra da percentagem, em tubo */
+#hashrateDonutRow.d3d .donut-legend-item::after{content:"";position:absolute;left:16px;right:16px;bottom:7px;height:5px;border-radius:3px;
+  background:linear-gradient(90deg,var(--c) 0 var(--p),#ffffff10 var(--p) 100%);box-shadow:inset 0 1px 2px #0008}
+#hashrateDonutRow.d3d .donut-legend-swatch{width:12px;height:12px;border-radius:50%;box-shadow:0 0 10px var(--c)}
+#hashrateDonutRow.d3d .donut-legend-name{font-size:14px}
+#hashrateDonutRow.d3d .donut-legend-sub{font-size:11.5px;color:#9fb6c8}
+#hashrateDonutRow.d3d .donut-legend-pct{font:700 16px 'Space Grotesk',sans-serif;color:var(--c);text-shadow:0 0 12px color-mix(in srgb,var(--c) 55%,transparent);min-width:58px;text-align:right}

@@ -1,0 +1,60 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ---------- Tema "Holograma": vidro escuro com profundidade, contornos de luz ciano/violeta e aurora no fundo ----------
+   Só muda o aspeto (body[data-theme="holo"]); o conteúdo e a disposição ficam iguais. Escolhe-se no seletor de temas. */
+body[data-theme="holo"]{
+  --bg:#050914; --panel:#0b1426; --panel-2:#101b33; --line:#7c9cff1f; --line-strong:#33457a;
+  --green:#3dffc2; --green-dim:#3dffc255; --amber:#ffc857; --amber-dim:#ffc85744; --red:#ff5f7e; --cyan:#5ad7ff;
+  --text:#eef3ff; --muted:#8b9cc4; --muted-2:#5b6a93; --glow-1:#101d3d; --glow-2:#1a1240; --deep:#070d1c;
+  --frame-top:#0a1222; --header-top:#0d1830; --violet:#9b7bff;
+  --holo-glass:rgba(13,22,46,.62); --holo-edge:#8fb2ff2e; --holo-hi:#ffffff14;
+  background:radial-gradient(1200px 700px at 12% -10%,#1b2b6b55,transparent 60%),radial-gradient(900px 600px at 95% 10%,#4a1f8a44,transparent 60%),
+    radial-gradient(900px 700px at 50% 120%,#0b5a6a33,transparent 60%),var(--bg) !important;
+  background-attachment:fixed !important;
+}
+/* aurora a mexer e grelha de pontos por trás de tudo */
+body[data-theme="holo"]::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+  background:conic-gradient(from 0deg at 30% 40%,#5ad7ff14,#9b7bff1c,#3dffc214,#5ad7ff14);filter:blur(60px);animation:holo-aurora 28s linear infinite}
+body[data-theme="holo"]::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.35;
+  background-image:radial-gradient(#8fb2ff26 1px,transparent 1.4px);background-size:26px 26px}
+@keyframes holo-aurora{to{transform:rotate(360deg)}}
+
+/* superfícies: vidro com aresta de luz, brilho no topo e sombra profunda */
+body[data-theme="holo"] .panel,body[data-theme="holo"] header,
+body[data-theme="holo"] .mc-card,body[data-theme="holo"] .metric-row,
+body[data-theme="holo"] .blocks-container > .panel,body[data-theme="holo"] .sim-card,body[data-theme="holo"] .support-card{
+  background:linear-gradient(160deg,rgba(26,40,82,.55),var(--holo-glass) 45%,rgba(8,13,30,.75)) !important;
+  -webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);
+  border:1px solid var(--holo-edge) !important;border-radius:18px !important;
+  box-shadow:inset 0 1px 0 var(--holo-hi),inset 0 0 0 1px #00000030,0 24px 48px -28px #000,0 0 0 1px #00000020 !important;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s}
+body[data-theme="holo"] .panel:hover,body[data-theme="holo"] .mc-card:hover{
+  border-color:#8fb2ff55 !important;box-shadow:inset 0 1px 0 #ffffff1f,0 30px 60px -30px #000,0 0 34px -12px #5ad7ff66 !important}
+body[data-theme="holo"] .mc-card:hover{transform:translateY(-3px)}
+/* faixa de luz no topo dos painéis grandes */
+body[data-theme="holo"] .panel{position:relative}
+body[data-theme="holo"] .panel::after{content:"";position:absolute;left:18px;right:18px;top:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,#5ad7ff,#9b7bff,transparent);opacity:.7}
+
+/* títulos: espaçados, com gradiente ciano → violeta */
+body[data-theme="holo"] .panel-title,body[data-theme="holo"] .blocks-toolbar .title{
+  letter-spacing:.14em !important;background:linear-gradient(90deg,#9fdcff,#c4b2ff);-webkit-background-clip:text;background-clip:text;color:transparent !important}
+/* números grandes com volume */
+body[data-theme="holo"] .t3d-none{
+  text-shadow:0 0 22px currentColor,0 2px 0 #00000080}
+
+
+/* botões e seletores em forma de pílula */
+body[data-theme="holo"] button:not(.chat-close-btn):not(.tab-btn),body[data-theme="holo"] .theme-select,body[data-theme="holo"] select{border-radius:999px !important}
+body[data-theme="holo"] .config button,body[data-theme="holo"] .mc-card button{
+  background:linear-gradient(135deg,#16244a,#0e1730) !important;border:1px solid #8fb2ff40 !important;color:var(--text) !important;transition:border-color .2s,box-shadow .2s,transform .2s}
+body[data-theme="holo"] .config button:hover,body[data-theme="holo"] .mc-card button:hover{border-color:#5ad7ff !important;box-shadow:0 0 18px -4px #5ad7ff;transform:translateY(-1px)}
+body[data-theme="holo"] input[type="text"],body[data-theme="holo"] input[type="number"]{border-radius:12px !important;background:#0a1226cc !important;border:1px solid #8fb2ff30 !important}
+
+/* menu lateral */
+body[data-theme="holo"] .tab-btn{border-radius:12px !important}
+body[data-theme="holo"] .tab-btn.active,body[data-theme="holo"] .tab-btn[aria-selected="true"]{
+  background:linear-gradient(90deg,#5ad7ff26,#9b7bff1a) !important;box-shadow:inset 3px 0 0 #5ad7ff,0 0 20px -8px #5ad7ff !important}
+
+@media (prefers-reduced-motion:reduce){body[data-theme="holo"]::before{animation:none}}
