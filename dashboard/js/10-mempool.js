@@ -412,7 +412,8 @@ function renderSimulator() {
   const diff = difficultyData.currentDifficulty;
   const change = difficultyData.difficultyChange;
 
-  $('simDifficulty').textContent = diff ? Math.round(diff).toLocaleString('pt-PT') : '—';
+  $('simDifficulty').textContent = diff ? (f => f.value + ' ' + f.unit)(formatDiff(diff)) : '—';
+  $('simDifficulty').title = diff ? Math.round(diff).toLocaleString('pt-PT') : '';   // o número completo continua no tooltip
 
   const changeEl = $('simDifficultyChange');
   changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';

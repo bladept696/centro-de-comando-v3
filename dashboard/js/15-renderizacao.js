@@ -159,6 +159,7 @@ async function pollOneDevice(dev){
       model: d.deviceModel || d.ASICModel || null,
       pool: poolUrlVal,
       firmware: firmwareVal,
+      protocol: d.protocol || null,   // cgminer, epic, goldshell-http… (as AxeOS não mandam este campo)
       poolInfo: extractPoolInfo(d),
       blocksFound: blocksFoundVal,
       poolPing: poolPingVal,

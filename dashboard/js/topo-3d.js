@@ -168,3 +168,33 @@
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   setTimeout(init, 2000);
 })();
+
+// ---------- Simulador em 3D: cada secção com a sua cor e cada cartão com ícone ----------
+(function(){
+  const SECT = [
+    { c: '#4fd6ff', ic: ['🧱', '📉', '⏳', '📅'] },   // rede Bitcoin
+    { c: '#ffb020', ic: ['🔢', '🪙', '⏳', '📅'] },   // halving
+    { c: '#21ffb0', ic: ['⚡', '⏱️', '⏱️', '🎯'] },   // a tua rig
+    { c: '#b48cff', ic: ['🎲', '🎲', '🎲', '🎲'] },   // probabilidade de bloco
+  ];
+  function deco(){
+    const tab = document.getElementById('tab-simulator'); if(!tab) return;
+    tab.querySelectorAll('.sim-grid').forEach((g, gi) => {
+      const s = SECT[gi] || SECT[0];
+      g.classList.add('s3dg'); g.style.setProperty('--sc', s.c);
+      g.querySelectorAll('.sim-card').forEach((c, ci) => {
+        if(c.querySelector('.s3d-ic')) return;
+        const i = document.createElement('i'); i.className = 's3d-ic'; i.textContent = s.ic[ci] || s.ic[0]; i.setAttribute('aria-hidden', 'true');
+        c.prepend(i);
+      });
+    });
+    // a cor da secção passa para o rótulo e para a barra que vêm antes de cada grelha
+    let gi = -1;
+    tab.querySelectorAll('.sim-section-label, .sim-grid, .sim-progress-wrap').forEach(el => {
+      if(el.classList.contains('sim-section-label')) gi++;
+      if(gi >= 0) el.style.setProperty('--sc', (SECT[gi] || SECT[0]).c);
+      if(el.classList.contains('sim-section-label') || el.classList.contains('sim-progress-wrap')) el.classList.add('s3dl');
+    });
+  }
+  setTimeout(deco, 1500); setInterval(deco, 4000);
+})();

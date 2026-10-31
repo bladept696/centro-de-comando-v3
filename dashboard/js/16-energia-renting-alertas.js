@@ -186,6 +186,21 @@ function rentingStatusClass(statusText){
   return 'other';
 }
 
+function rentingMs(val){
+  if(val === null || val === undefined || val === '') return null;
+  if(typeof val === 'number') return val < 2e10 ? val * 1000 : val;
+  const s = String(val).trim(), ms = Date.parse(/UTC$/.test(s) ? s.replace(' UTC', 'Z').replace(' ', 'T') : s);
+  return isNaN(ms) ? null : ms;
+}
+// barra com o tempo que já passou e quanto falta
+function rentingProgress(a, b){
+  const now = Date.now(), pct = Math.max(0, Math.min(100, (now - a) / (b - a) * 100)), left = Math.max(0, b - now);
+  const h = Math.floor(left / 3600e3), m = Math.floor(left % 3600e3 / 60000);
+  const txt = left <= 0 ? 'terminou' : (h >= 24 ? Math.floor(h / 24) + ' d ' + (h % 24) + ' h' : h + ' h ' + m + ' min') + ' restantes';
+  return `<div class="renting-progress"><div class="renting-progress-head"><span>Tempo de aluguer</span><b>${txt}</b></div>` +
+    `<div class="renting-progress-bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="renting-progress-pct">${pct.toFixed(0)}% decorrido</div></div>`;
+}
+
 function rentingFormatTime(val){
   if(val === null || val === undefined || val === '') return '—';
   if(typeof val === 'number'){
@@ -250,8 +265,17 @@ async function fetchRentingList(){
         </div>`;
       }
 
-      const statusText = statusRaw || '—';
-      const cls = rentingStatusClass(statusText);
+      // a MRR não manda um campo de estado nas rentals: deduz-se de "ended" e das horas de início/fim
+      const tStart = rentingMs(pickField(r, ['start', 'starts', 'time.start', 'created'])), tEnd = rentingMs(pickField(r, ['end', 'expires', 'time.end']));
+      let statusText = statusRaw;
+      if(!statusText){
+        const now = Date.now();
+        if(r.ended === true || r.ended === 1 || r.ended === '1' || (tEnd && tEnd <= now)) statusText = 'Terminada';
+        else if(tStart && tStart > now) statusText = 'Agendada';
+        else if(tStart || tEnd) statusText = 'Ativa';
+        else statusText = '—';
+      }
+      const cls = /^Ativa$/.test(statusText) ? 'active' : /^Terminada$/.test(statusText) ? 'expired' : rentingStatusClass(statusText);
       // Só esconde quando o estado claramente indica que já acabou -
       // se o texto do estado não bater com nenhuma palavra-chave conhecida,
       // mostra na mesma (mais seguro do que arriscar esconder uma rental
@@ -298,6 +322,7 @@ async function fetchRentingList(){
             </div>
           `).join('')}
         </div>
+        ${tStart && tEnd && tEnd > tStart ? rentingProgress(tStart, tEnd) : ''}
       </div>`;
     }).filter(html => html !== '').join('');
 

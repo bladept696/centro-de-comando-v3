@@ -23,7 +23,7 @@ body[data-theme="holo"]::after{content:"";position:fixed;inset:0;z-index:-1;poin
 /* superfícies: vidro com aresta de luz, brilho no topo e sombra profunda */
 body[data-theme="holo"] .panel,body[data-theme="holo"] header,
 body[data-theme="holo"] .mc-card,body[data-theme="holo"] .metric-row,
-body[data-theme="holo"] .blocks-container > .panel,body[data-theme="holo"] .sim-card,body[data-theme="holo"] .support-card{
+body[data-theme="holo"] .blocks-container > .panel,body[data-theme="holo"] .support-card{
   background:linear-gradient(160deg,rgba(26,40,82,.55),var(--holo-glass) 45%,rgba(8,13,30,.75)) !important;
   -webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);
   border:1px solid var(--holo-edge) !important;border-radius:18px !important;

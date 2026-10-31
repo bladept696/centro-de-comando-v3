@@ -1,0 +1,51 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ---------- Placas de Hash para máquinas AxeOS em 3D (placas-axeos.js) ---------- */
+#tab-boards.pa-no-cg .blocks-container > .panel{display:none}
+.pa-wrap{margin-bottom:18px}
+.pa-title{font:700 12px 'Space Grotesk',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#bff5dd;margin:0 0 12px 2px}
+.pa-empty{padding:30px;text-align:center;color:var(--muted);border-radius:18px;border:1px dashed #ffffff1f}
+.pa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(460px,100%),1fr));gap:18px}
+.pa-board{--lc:#21ffb0;position:relative;padding:16px 18px 18px;border-radius:20px;border:1px solid color-mix(in srgb,var(--lc) 30%,transparent);
+  background:radial-gradient(90% 70% at 0% 0%,color-mix(in srgb,var(--lc) 12%,transparent),transparent 60%),linear-gradient(165deg,#0f1b29,#060c14);
+  box-shadow:inset 0 1px 0 #ffffff15,0 26px 50px -30px #000}
+.pa-board[data-lvl="warm"]{--lc:#ffd23f}.pa-board[data-lvl="hot"]{--lc:#ff4d5d}.pa-board[data-lvl="off"]{--lc:#6b7c8f;opacity:.75}
+.pa-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pa-name{display:block;font:700 17px 'Space Grotesk',sans-serif;color:#fff}
+.pa-head small{display:block;font-size:11px;color:#8aa0b4;margin-top:2px}
+.pa-state{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:700;color:var(--lc);
+  background:color-mix(in srgb,var(--lc) 12%,transparent);border:1px solid color-mix(in srgb,var(--lc) 35%,transparent)}
+.pa-state::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--lc);box-shadow:0 0 8px var(--lc);animation:m3d-led 1.8s ease-in-out infinite}
+/* a placa: PCB verde em perspetiva com pistas e os chips em relevo */
+.pa-pcb{position:relative;margin:16px 0 14px;padding:22px 18px;border-radius:14px;perspective:900px;overflow:hidden;
+  background:radial-gradient(120% 120% at 20% 0%,#1c5a3c,#0b2a1c 60%,#071a12);border:1px solid #3b8a5f66;
+  box-shadow:inset 0 2px 0 #ffffff14,inset 0 -8px 20px #0008,0 14px 26px -16px #000}
+.pa-traces{position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background-image:linear-gradient(90deg,transparent 0 47%,#c8a04a55 47% 48%,transparent 48% 100%),linear-gradient(0deg,transparent 0 47%,#c8a04a40 47% 48%,transparent 48% 100%),
+    radial-gradient(#d9b25a 1.4px,transparent 1.6px);background-size:46px 46px,46px 46px,23px 23px}
+.pa-chips{position:relative;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:16px;transform:rotateX(22deg);transform-origin:50% 60%}
+.pa-chip{--hc:#21ffb0;position:relative;aspect-ratio:1;max-width:120px;justify-self:center;width:100%;border-radius:10px;padding:6px;
+  background:linear-gradient(145deg,#c9ced6,#7d8590);box-shadow:0 10px 0 #2b3138,0 18px 24px -8px #000,0 0 26px -6px var(--hc);
+  animation:pa-glow 3s ease-in-out var(--d) infinite}
+.pa-chip::before{content:"";position:absolute;inset:-5px;border-radius:12px;z-index:-1;pointer-events:none;
+  background:repeating-linear-gradient(90deg,#c8a04a 0 3px,transparent 3px 8px) top/100% 4px no-repeat,repeating-linear-gradient(90deg,#c8a04a 0 3px,transparent 3px 8px) bottom/100% 4px no-repeat,
+    repeating-linear-gradient(0deg,#c8a04a 0 3px,transparent 3px 8px) left/4px 100% no-repeat,repeating-linear-gradient(0deg,#c8a04a 0 3px,transparent 3px 8px) right/4px 100% no-repeat}
+.pa-chip-die{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;height:100%;border-radius:6px;overflow:hidden;
+  background:linear-gradient(145deg,#2a2f36,#14181d);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--hc) 70%,transparent),inset 0 0 18px color-mix(in srgb,var(--hc) 35%,transparent)}
+.pa-chip-die::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 35%,#ffffff1f 50%,transparent 65%);background-size:250% 100%;animation:pa-shine 5s ease-in-out var(--d) infinite}
+.pa-chip-die b{font:700 11px 'Space Grotesk',sans-serif;color:#dbe4ee;letter-spacing:.04em}
+.pa-chip-die i{font:600 10px monospace;font-style:normal;color:#8a96a4}
+.pa-chip-die em{font:700 12px 'Space Grotesk',sans-serif;font-style:normal;color:var(--hc);text-shadow:0 0 8px var(--hc)}
+@keyframes pa-glow{50%{box-shadow:0 10px 0 #2b3138,0 18px 24px -8px #000,0 0 36px -4px var(--hc)}}
+@keyframes pa-shine{0%,60%{background-position:150% 0}100%{background-position:-60% 0}}
+/* resumo e dados */
+.pa-sum > div{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.pa-sum span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8fd8c0}
+.pa-sum b{font:700 24px 'Space Grotesk',sans-serif;color:#21ffb0;text-shadow:1px 1px 0 #0b6a48,2px 2px 0 #08503a,4px 6px 10px #000b,0 0 16px #21ffb055}
+.pa-sum small{font-size:11.5px;color:#8aa0b4}
+.pa-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-top:12px}
+.pa-stat{--sc:#8aa0b4;padding:9px 11px;border-radius:12px;background:linear-gradient(180deg,#05090f,#0b121c);border:1px solid color-mix(in srgb,var(--sc) 22%,transparent);box-shadow:inset 0 2px 4px #000a}
+.pa-stat span{display:block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--sc) 50%,#b8c7d4)}
+.pa-stat b{display:block;margin-top:3px;font:700 14px 'Space Grotesk',sans-serif;color:var(--sc)}
+@media (prefers-reduced-motion:reduce){.pa-chip,.pa-chip-die::after,.pa-state::before{animation:none}}
