@@ -1,0 +1,23 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+.sw-panel{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border,rgba(159,176,200,.18))}
+.sw-panel.open{display:block}
+.oc-card.sw-running{outline:1px solid var(--cyan,#4fd6ff);outline-offset:2px}
+.sw-head{font-weight:700;font-size:12.5px;margin-bottom:4px;color:var(--text,#eaf6f7)}
+.sw-hint{font-size:11px;line-height:1.5;color:var(--muted,#9fb6c2);margin-bottom:10px}
+.sw-field-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px}
+.sw-field{display:flex;flex-direction:column;gap:4px;font-size:11px}
+.sw-field label{color:var(--muted,#9fb6c2)}
+.sw-field input{background:rgba(255,255,255,.05);border:1px solid var(--border,rgba(159,176,200,.25));border-radius:8px;color:var(--text,#eaf6f7);padding:5px 8px;font:inherit;min-width:160px}
+.sw-actions{display:flex;gap:8px}
+.sw-err{font-size:12px;color:var(--red,#ff5d6c)}
+.sw-progress{font-size:12px;margin-bottom:10px;color:var(--cyan,#4fd6ff)}
+.sw-msg{font-size:12px;margin-bottom:8px}
+.sw-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:10px}
+.sw-table th{text-align:left;color:var(--muted,#9fb6c2);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--border,rgba(159,176,200,.18))}
+.sw-table td{padding:5px 6px;border-bottom:1px solid rgba(159,176,200,.08)}
+.sw-table tr.sw-best{background:rgba(33,217,138,.08)}
+.sw-table tr.sw-bad{color:var(--red,#ff5d6c)}
+.sw-best-tag{color:#21d98a}
+.sw-apply-btn{padding:3px 8px;font-size:10.5px}
