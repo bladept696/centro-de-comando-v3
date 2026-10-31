@@ -21,3 +21,8 @@ diff_buckets.json
 diff_history.json
 diff_records.json
 .install_id
+
+# Chaves e cópias locais que nunca podem ir para o GitHub (ver verificar_release.py)
+block_cert_key.json
+*.bak
+updates/
