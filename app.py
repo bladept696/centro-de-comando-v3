@@ -2402,6 +2402,42 @@ def fetch_nestex_btc1():
     return out
 
 
+# --- Firmware das máquinas (AxeOS): última versão conhecida, por família (Bitaxe / NerdQAxe) ---
+FIRMWARE_REPOS = {
+    "bitaxe": "bitaxeorg/ESP-Miner",
+    "nerdqaxe": "shufps/ESP-Miner-NerdQAxePlus",
+}
+FIRMWARE_CACHE_SECONDS = 3600
+_firmware_cache = {}
+_firmware_cache_lock = threading.Lock()
+
+
+def fetch_firmware_latest(family):
+    repo = FIRMWARE_REPOS.get(family)
+    if not repo:
+        return {"error": f"família desconhecida: {family}"}
+    with _firmware_cache_lock:
+        entry = _firmware_cache.get(family)
+        if entry and (time.time() - entry["ts"]) < FIRMWARE_CACHE_SECONDS:
+            return entry["data"]
+    try:
+        api_url = f"https://api.github.com/repos/{repo}/releases/latest"
+        req = urllib.request.Request(api_url, headers={'User-Agent': 'CentroDeComando-FirmwareCheck', 'Accept': 'application/vnd.github+json'})
+        with _urlopen_https(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8', errors='ignore'))
+        tag = data.get('tag_name', '') or ''
+        result = {"version": tag.lstrip('vV') or None, "url": data.get('html_url'), "error": None}
+    except Exception as e:
+        with _firmware_cache_lock:
+            entry = _firmware_cache.get(family)
+        if entry:
+            return entry["data"]
+        return {"error": str(e)}
+    with _firmware_cache_lock:
+        _firmware_cache[family] = {"ts": time.time(), "data": result}
+    return result
+
+
 _parasite_history_cache = {}
 _parasite_history_cache_lock = threading.Lock()
 _PARASITE_HISTORY_INTERVALS = {'24h': '5m', '3d': '5m', '7d': '1h', '30d': '1h'}
@@ -4537,6 +4573,15 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/nestex-btc1':
             result = fetch_nestex_btc1()
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode('utf-8'))
+            return
+
+        if path == '/api/firmware-latest':
+            result = {fam: fetch_firmware_latest(fam) for fam in FIRMWARE_REPOS}
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Type', 'application/json; charset=utf-8')
