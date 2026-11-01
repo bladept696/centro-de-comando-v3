@@ -442,8 +442,7 @@ function hcMiningScene(wrap, canvas){
   loop();
 }
 window.hcMiningScene = hcMiningScene;
-hcMiningScene(document.getElementById('hcBanner'), document.getElementById('hcBannerCanvas'));
-// o rodapé usa a mesma cena de mineração (antes tinha a chuva verde do Matrix)
+// o banner do topo tem agora a cena cyberpunk própria (banner-cyber.js); o rodapé continua com esta cena de mineração
 hcMiningScene(document.getElementById('footerBar'), document.getElementById('footerMatrixCanvas'));
 
 /* ===== Fundo animado de blocos Bitcoin ligados em cadeia (Máquinas, gráficos e log) ===== */

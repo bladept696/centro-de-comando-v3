@@ -1,9 +1,8 @@
 // © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
 // é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
 // https://github.com/bladept696/centro-de-comando-v3
-// ---------- Cenários dos blocos da mempool (estilos Isométrico, Sci-Fi e Cósmico) ----------
+// ---------- Cenários dos blocos da mempool (estilos Sci-Fi e Cósmico) ----------
 // Duas camadas em canvas dentro do painel dos blocos, por trás dos cubos (mempool-cenas.css):
-//  · Isométrico: chão em grelha azul ondulada com faixas laranja, e circuitos entre os blocos com impulsos de luz;
 //  · Sci-Fi: grelha hexagonal com varrimento, nuvem de partículas a rodar à volta do bloco a decorrer, faíscas na linha AGORA,
 //    e dois gráficos por baixo (taxa dos próximos blocos e transações dos últimos blocos);
 //  · Cósmico: estrelas, nebulosas e filamentos de luz entre os cubos, com clarões nos cantos.
@@ -19,13 +18,13 @@ Object.assign(I18N_DICT, {
   let box = null, bg = null, fx = null, bgx = null, fxx = null, charts = null, W = 0, H = 0, dpr = 1, raf = 0, last = 0, lastCharts = 0;
   let stars = [], dust = [], nebula = [], sparks = [], shoot = null;
 
-  const modeNow = () => { const c = document.body.classList; return c.contains('mp-iso') ? 'iso' : c.contains('mp-scifi') ? 'scifi' : c.contains('mp-cosmo') ? 'cosmo' : ''; };
+  const modeNow = () => { const c = document.body.classList; return c.contains('mp-scifi') ? 'scifi' : c.contains('mp-cosmo') ? 'cosmo' : ''; };
 
   function setup(){
     box = document.querySelector('.blocks-container'); if(!box) return false;
     if(!bg){
-      bg = document.createElement('canvas'); bg.className = 'mc-bg';
-      fx = document.createElement('canvas'); fx.className = 'mc-fx';
+      bg = document.createElement('canvas'); bg.className = 'mpc-bg';
+      fx = document.createElement('canvas'); fx.className = 'mpc-fx';
       box.prepend(bg); box.appendChild(fx);
       bgx = bg.getContext('2d'); fxx = fx.getContext('2d');
       charts = document.createElement('div'); charts.className = 'sf-charts';
@@ -66,68 +65,7 @@ Object.assign(I18N_DICT, {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
   }
 
-  /* ---------- 01 · Isométrico ---------- */
-  function isoBg(s){
-    const f = H * 1.1, horizon = H * .08, cam = 1.25, ph = reduce ? 0 : s * .6;
-    const proj = (x, z) => { const hgt = Math.sin(x * .55 + z * .9 - ph) * .16 + Math.sin(x * .21 - z * .4 + ph * .5) * .1; return { x: W * .5 + x * f / z, y: horizon + (cam - hgt) * f / z * .55 + H * .05 }; };
-    const xs = [], zs = [];
-    for(let x = -14; x <= 14; x += .7) xs.push(x);
-    for(let z = 1.1; z <= 9; z += .32) zs.push(z);
-    bgx.lineWidth = 1;
-    for(const z of zs){   // linhas ao longo do x
-      const a = Math.max(0, .5 - z * .045);
-      bgx.strokeStyle = `rgba(60,140,255,${a})`; bgx.beginPath();
-      xs.forEach((x, i) => { const p = proj(x, z); i ? bgx.lineTo(p.x, p.y) : bgx.moveTo(p.x, p.y); }); bgx.stroke();
-    }
-    for(const x of xs){   // linhas em profundidade
-      bgx.strokeStyle = 'rgba(60,140,255,.16)'; bgx.beginPath();
-      zs.forEach((z, i) => { const p = proj(x, z); i ? bgx.lineTo(p.x, p.y) : bgx.moveTo(p.x, p.y); }); bgx.stroke();
-    }
-    // faixas laranja a correr no chão
-    bgx.shadowColor = '#ff8a1a'; bgx.shadowBlur = 10; bgx.lineWidth = 1.6;
-    for(let k = 0; k < 3; k++){
-      const z = 1.6 + ((k * 2.3 + (reduce ? 0 : s * .25)) % 6.5);
-      bgx.strokeStyle = `rgba(255,140,40,${Math.max(0, .75 - z * .08)})`; bgx.beginPath();
-      xs.forEach((x, i) => { const p = proj(x, z + Math.sin(x * .4 + k) * .25); i ? bgx.lineTo(p.x, p.y) : bgx.moveTo(p.x, p.y); }); bgx.stroke();
-    }
-    bgx.shadowBlur = 0;
-  }
-  function isoFx(s, cs){
-    const list = cs.all;
-    for(let i = 0; i < list.length - 1; i++){
-      const a = list[i].c, b = list[i + 1].c, y = Math.max(a.y, b.y) + a.h * .3, yd = y + 22 + (i % 2) * 8;
-      const path = [[a.x, y], [a.x + (b.x - a.x) * .25, y], [a.x + (b.x - a.x) * .32, yd], [a.x + (b.x - a.x) * .68, yd], [a.x + (b.x - a.x) * .75, y], [b.x, y]];
-      // tubo escuro com aresta azul
-      fxx.lineJoin = 'round'; fxx.lineCap = 'round';
-      fxx.strokeStyle = '#0a1a2c'; fxx.lineWidth = 7; line(path);
-      fxx.strokeStyle = 'rgba(90,180,255,.55)'; fxx.lineWidth = 1.2; line(path);
-      // impulso laranja a percorrer o circuito
-      const k = ((s * .5 + i * .31) % 1), p = along(path, k);
-      fxx.shadowColor = '#ff9a2e'; fxx.shadowBlur = 14; fxx.strokeStyle = 'rgba(255,170,70,.95)'; fxx.lineWidth = 2.4;
-      line(slice(path, Math.max(0, k - .12), k)); fxx.shadowBlur = 0;
-      glow(fxx, p[0], p[1], 9, '255,150,40', .95);
-      glow(fxx, path[2][0], path[2][1], 4, '90,180,255', .8); glow(fxx, path[3][0], path[3][1], 4, '90,180,255', .8);
-    }
-    // anel de luz no chão por baixo do bloco a decorrer e do último bloco
-    for(const o of list.filter(o => o.next || o.tip)){
-      const rgb = o.next ? '255,150,40' : '90,210,255', pul = .6 + .4 * Math.sin(s * 2.4);
-      fxx.save(); fxx.translate(o.c.x, o.c.b + 6); fxx.scale(1, .32);
-      fxx.strokeStyle = `rgba(${rgb},${.55 * pul + .2})`; fxx.lineWidth = 3; fxx.shadowColor = `rgb(${rgb})`; fxx.shadowBlur = 18;
-      fxx.beginPath(); fxx.arc(0, 0, o.c.w * .62, 0, 7); fxx.stroke(); fxx.restore(); fxx.shadowBlur = 0;
-    }
-  }
-  function line(path){ fxx.beginPath(); path.forEach((p, i) => i ? fxx.lineTo(p[0], p[1]) : fxx.moveTo(p[0], p[1])); fxx.stroke(); }
-  function lens(path){ let L = 0; for(let i = 1; i < path.length; i++) L += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]); return L; }
-  function along(path, k){
-    let d = lens(path) * k;
-    for(let i = 1; i < path.length; i++){ const sg = Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]); if(d <= sg){ const u = sg ? d / sg : 0; return [path[i - 1][0] + (path[i][0] - path[i - 1][0]) * u, path[i - 1][1] + (path[i][1] - path[i - 1][1]) * u]; } d -= sg; }
-    return path[path.length - 1];
-  }
-  function slice(path, k0, k1){ const out = [along(path, k0)], L = lens(path); let acc = 0;
-    for(let i = 1; i < path.length; i++){ acc += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]); const k = acc / L; if(k > k0 && k < k1) out.push(path[i]); }
-    out.push(along(path, k1)); return out; }
-
-  /* ---------- 02 · Sci-Fi ---------- */
+  /* ---------- 01 · Sci-Fi ---------- */
   function sfBg(s){
     // grelha hexagonal ténue
     const R = 22, hh = R * Math.sqrt(3);
@@ -208,7 +146,7 @@ Object.assign(I18N_DICT, {
     cv.title = d ? d.tip : '';
   }
 
-  /* ---------- 03 · Cósmico ---------- */
+  /* ---------- 02 · Cósmico ---------- */
   function csBg(s){
     for(const nb of nebula){
       const x = nb.x + Math.sin(s * .05 + nb.p) * 30, y = nb.y + Math.cos(s * .04 + nb.p) * 20, g = bgx.createRadialGradient(x, y, 0, x, y, nb.r);
@@ -275,8 +213,7 @@ Object.assign(I18N_DICT, {
       bgx.setTransform(dpr, 0, 0, dpr, 0, 0); bgx.clearRect(0, 0, W, H);
       fxx.setTransform(dpr, 0, 0, dpr, 0, 0); fxx.clearRect(0, 0, W, H);
       if(cs.clip){ fxx.save(); fxx.beginPath(); fxx.rect(cs.clip.l, cs.clip.t - 30, cs.clip.w, cs.clip.h + 40); fxx.clip(); }
-      if(mode === 'iso'){ isoBg(s); isoFx(s, cs); }
-      else if(mode === 'scifi'){ sfBg(s); sfFx(s, cs); }
+      if(mode === 'scifi'){ sfBg(s); sfFx(s, cs); }
       else { csBg(s); csFx(s, cs); }
       if(cs.clip) fxx.restore();
       if(mode === 'scifi' && time - lastCharts > 1000){ lastCharts = time; sfCharts(); }

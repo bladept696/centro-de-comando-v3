@@ -1,0 +1,71 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ===== Painel "Comunidade Hash Commander" em estilo cyberpunk / cinemático (comunidade-cyber.js desenha o mapa) =====
+   Moldura néon azul com faíscas laranja nos cantos, mapa inclinado em 3D com grelha, cartões em baixo com contorno
+   néon e um mini-gráfico do hashrate da comunidade no Top mineiros. */
+#mcCom.mc-com{
+  position:relative; overflow:visible; border:1.5px solid #3fd8ffa6; border-radius:14px;   /* visível: as faíscas dos cantos saem um pouco para fora */
+  background:linear-gradient(172deg, #071826, #030a12 60%, #040d16);
+  box-shadow:0 0 0 1px #0b2a3a, 0 0 24px -4px #29c8ffb3, inset 0 0 44px -20px #29c8ff88, 0 20px 44px -22px #000;
+}
+/* cantos em L acesos, com uma faísca laranja a pulsar em cada um */
+.cmc-corner{ position:absolute; width:26px; height:26px; z-index:5; pointer-events:none; border:2px solid #7fe9ff; filter:drop-shadow(0 0 5px #3fd8ff); }
+.cmc-corner.tl{ top:-1px; left:-1px; border-right:none; border-bottom:none; border-top-left-radius:14px; }
+.cmc-corner.tr{ top:-1px; right:-1px; border-left:none; border-bottom:none; border-top-right-radius:14px; }
+.cmc-corner.bl{ bottom:-1px; left:-1px; border-right:none; border-top:none; border-bottom-left-radius:14px; }
+.cmc-corner.br{ bottom:-1px; right:-1px; border-left:none; border-top:none; border-bottom-right-radius:14px; }
+.cmc-corner::after{ content:''; position:absolute; width:7px; height:7px; border-radius:50%; background:#ffd08a; box-shadow:0 0 8px 2px #ff9a2e, 0 0 22px 6px #ff7a1a88; animation:cmcSpark 2.6s ease-in-out infinite; }
+.cmc-corner.tl::after{ top:-4px; left:-4px; } .cmc-corner.tr::after{ top:-4px; right:-4px; animation-delay:-.7s; }
+.cmc-corner.bl::after{ bottom:-4px; left:-4px; animation-delay:-1.4s; } .cmc-corner.br::after{ bottom:-4px; right:-4px; animation-delay:-2s; }
+@keyframes cmcSpark{ 0%,100%{ opacity:.35; transform:scale(.7); } 45%{ opacity:1; transform:scale(1.25); } 55%{ opacity:.6; } }
+
+/* cabeçalho */
+#mcCom .mc-cm-head{ padding:10px 16px; background:linear-gradient(90deg, #0b2b3c, #071a26 60%, #06141e); border-bottom:1px solid #3fd8ff59; border-radius:13px 13px 0 0; }
+#mcCom .mc-cm-head b{ font:700 15px 'Space Grotesk',sans-serif; color:#f2fbff; letter-spacing:.01em; text-shadow:0 0 12px #3fd8ff66; }
+#mcCom .mc-cm-live{ color:#4dff9a; font-weight:600; font-size:11.5px; text-shadow:0 0 8px #21ff8a66; }
+#mcCom .mc-cm-live i{ background:#3dff8a; box-shadow:0 0 10px #3dff8a; }
+#mcCom .mc-cm-head button{ border-color:#3fd8ff55; color:#8fe9ff; }
+
+/* mapa em 3D */
+#mcCom .mc-cm-mapwrap{ height:270px; background:#02070d; overflow:hidden; perspective:900px; border-bottom:1px solid #3fd8ff4d; }
+#mcCom #mcCmMap{ transform:perspective(900px) rotateX(12deg) scale(1.2); transform-origin:50% 100%; }
+#mcCom .mc-cm-mapwrap::after{   /* brilho no horizonte e vinheta */
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, #3fd8ff22 0, transparent 14%), radial-gradient(120% 90% at 50% 55%, transparent 60%, #02070dcc 100%);
+}
+#mcCom .mc-cm-mapwrap:fullscreen #mcCmMap{ transform:none; }
+#mcCom .mc-cm-maplbl{ z-index:2; color:#9fefff; font-size:11px; text-shadow:0 0 6px #000, 0 0 10px #3fd8ff66; }
+#mcCom .mc-cm-full{ z-index:2; border-color:#3fd8ff66; color:#9fefff; background:#02101acc; }
+
+/* cartões de baixo com contorno néon */
+#mcCom .mc-cm-body{ gap:12px; padding:14px; }
+#mcCom .mc-cm-big, #mcCom .mc-cm-col{
+  position:relative; padding:12px 14px; border-radius:10px; border:1px solid #3fd8ff73;
+  background:linear-gradient(180deg, #082030d9, #04101acc);
+  box-shadow:inset 0 0 24px -12px #3fd8ffb3, 0 0 16px -8px #29c8ffaa;
+}
+#mcCom .mc-cm-big::before, #mcCom .mc-cm-col::before{   /* cantos de mira */
+  content:''; position:absolute; inset:5px; pointer-events:none; border-radius:6px;
+  background:linear-gradient(#7fe9ff,#7fe9ff) 0 0/12px 1.5px no-repeat, linear-gradient(#7fe9ff,#7fe9ff) 0 0/1.5px 12px no-repeat,
+             linear-gradient(#ff9a2e,#ff9a2e) 100% 100%/12px 1.5px no-repeat, linear-gradient(#ff9a2e,#ff9a2e) 100% 100%/1.5px 12px no-repeat;
+  opacity:.85;
+}
+#mcCom .mc-cm-big span, #mcCom .mc-cm-odds span, #mcCom .mc-cm-col h4{ color:#7fdcf0; letter-spacing:.1em; }
+#mcCom .mc-cm-big b{ font:800 32px 'Space Grotesk',sans-serif; color:#5fe8ff; text-shadow:0 0 14px #29c8ffcc, 0 0 34px #29c8ff66; }
+#mcCom .mc-cm-big small{ color:#9fc6d4; }
+#mcCom .mc-cm-odds b{ color:#ffb347; text-shadow:0 0 12px #ff9a2e88; }
+#mcCom .mc-cm-rank li{ background:#ffffff05; }
+#mcCom .mc-cm-rank li.me{ background:linear-gradient(90deg, #ff2d7a1f, #3fd8ff12); outline:1px solid #ff4d8a66; }
+#mcCom .mc-cm-rank li.me > span{ color:#ff5a96; text-shadow:0 0 8px #ff2d7a66; }
+#mcCom .mc-cm-rank b{ color:#f2fbff; }
+#mcCom .mc-cm-mural li{ background:#ffffff06; }
+#mcCom .mc-cm-mural li.r{ border-left:2px solid #ff4d8a; }
+#mcCom .cmc-spark{ display:block; width:100%; height:52px; margin:2px 0 8px; }
+#mcCom .mc-cm-share{ padding:0 14px 14px; }
+#mcCom .mc-cm-share button{ border-color:#3fd8ff66; background:#06202c; color:#dffaff; box-shadow:0 0 10px -4px #3fd8ff; }
+#mcCom .mc-cm-share button.join{ color:#03141a; background:linear-gradient(135deg, #5fe8ff, #21ffb0); box-shadow:0 0 18px -4px #3fd8ff; }
+#mcCom .mc-cm-loc select{ border-color:#3fd8ff55; background:#04121c; }
+
+@media (prefers-reduced-motion: reduce){ .cmc-corner::after{ animation:none; } }
+body.perf-mode .cmc-corner::after{ animation:none; }
