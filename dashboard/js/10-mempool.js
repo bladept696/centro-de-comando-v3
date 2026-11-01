@@ -136,7 +136,7 @@ function mpPct(share, netDiff) {
   return p < 0.001 ? p.toExponential(1) + '%' : p.toPrecision(2) + '%';
 }
 
-// faces extra do cubo: só o estilo "Holograma" (mempool-holo.css) as mostra; nos outros estilos ficam escondidas
+// faces extra do cubo: só os estilos 3D (mempool-holo.css: Isométrico e Cósmico) as mostram; nos outros estilos ficam escondidas
 const MP_HF = '<i class="mp-hf mp-hf-b"></i><i class="mp-hf mp-hf-l"></i><i class="mp-hf mp-hf-r"></i><i class="mp-hf mp-hf-t"></i><i class="mp-hf mp-hf-u"></i>';
 function mpGaugeHtml(list, netDiff) {
   const logNet = Math.log10(Math.max(10, netDiff));

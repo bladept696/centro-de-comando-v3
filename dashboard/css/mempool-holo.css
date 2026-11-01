@@ -1,9 +1,9 @@
 /* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
    é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
    https://github.com/bladept696/centro-de-comando-v3 */
-/* Blocos da mempool, estilo "Holograma" (só quando <body class="mp-holo">): cada bloco é um cubo 3D de verdade (CSS 3D),
-   em aramado luminoso e faces translúcidas, a flutuar e a rodar devagar sobre um trilho de luz. O "líquido" da taxa enche
-   a frente e as laterais; na face de trás sobe um fluxo de dados. */
+/* Geometria 3D dos cubos da mempool (só quando <body class="mp-holo">), usada pelos estilos Isométrico e Cósmico (mempool-cenas.css),
+   que mudam as cores e o ângulo por cima: cada bloco é um cubo 3D de verdade (CSS 3D), com faces translúcidas. O "líquido" da taxa
+   enche a frente e as laterais; na face de trás sobe um fluxo de dados. */
 .mp-hf{ display:none; }
 
 body.mp-holo .blocks-scroll.mp-chain{ gap:46px; padding:20px 30px 26px; }

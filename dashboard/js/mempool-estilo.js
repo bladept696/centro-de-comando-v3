@@ -2,22 +2,26 @@
 // é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
 // https://github.com/bladept696/centro-de-comando-v3
 // ---------- Estilo visual dos blocos da mempool ----------
-// Cinco estilos, escolhidos no botão 🎨 da barra dos blocos: Módulo 3D (módulo técnico escuro em 3D), Holograma (vidro luminoso 3D), Reator (mostradores circulares), Módulo (HUD plano) e Clássico (o original).
-// A escolha fica guardada neste navegador.
+// Estilos escolhidos no botão 🎨 da barra dos blocos: Isométrico (cubos escuros vistos de cima com circuitos laranja), Sci-Fi (ecrã holográfico
+// curvo com gráficos), Cósmico (cubos de vidro no espaço com filamentos de luz) — os três com cenário em mempool-cenas.js — e Clássico (o original).
+// A escolha fica guardada neste navegador; quem tinha um estilo que já não existe passa para o Isométrico.
 (function(){
-  const KEY = 'hc_mp_style', ST = ['mod3d', 'holo', 'dial', 'hud', 'classic'], LANGS = ['pt', 'en', 'es', 'fr'];
-  const NAMES = { mod3d: ['Módulo 3D', 'Module 3D', 'Módulo 3D', 'Module 3D'], holo: ['Holograma', 'Hologram', 'Holograma', 'Hologramme'], dial: ['Reator', 'Reactor', 'Reactor', 'Réacteur'], hud: ['Módulo', 'Module', 'Módulo', 'Module'], classic: ['Clássico', 'Classic', 'Clásico', 'Classique'] };
+  const KEY = 'hc_mp_style', ST = ['iso', 'scifi', 'cosmo', 'classic'], LANGS = ['pt', 'en', 'es', 'fr'];
+  const NAMES = { iso: ['Isométrico', 'Isometric', 'Isométrico', 'Isométrique'], scifi: ['Sci-Fi', 'Sci-Fi', 'Sci-Fi', 'Sci-Fi'], cosmo: ['Cósmico', 'Cosmic', 'Cósmico', 'Cosmique'], classic: ['Clássico', 'Classic', 'Clásico', 'Classique'] };
   const TIP = ['Mudar o estilo dos blocos', 'Change block style', 'Cambiar el estilo de los bloques', 'Changer le style des blocs'];
   const lang = () => { try { const l = typeof currentLang !== 'undefined' ? currentLang : 'pt'; return LANGS.includes(l) ? l : 'pt'; } catch(e) { return 'pt'; } };
-  let cur = 'mod3d';
-  try { const v = localStorage.getItem(KEY); if(ST.includes(v)) cur = v; } catch(e) {}
+  let cur = 'iso';
+  try {
+    // o Isométrico passa a ser o estilo de origem uma vez, mesmo para quem já tinha escolhido outro; depois fica a escolha da pessoa
+    if(!localStorage.getItem('hc_mp_style_iso')){ localStorage.setItem('hc_mp_style_iso', '1'); localStorage.setItem(KEY, 'iso'); }
+    const v = localStorage.getItem(KEY); if(ST.includes(v)) cur = v;
+  } catch(e) {}
 
   function apply(){
-    document.body.classList.remove('mp-holo', 'mp-mod3d', 'mp-dial', 'mp-hud');
-    if(cur === 'mod3d') document.body.classList.add('mp-holo', 'mp-mod3d');   // usa a geometria do Holograma com as cores escuras por cima
-    else if(cur === 'holo') document.body.classList.add('mp-holo');
-    else if(cur === 'dial') document.body.classList.add('mp-dial');
-    else if(cur === 'hud') document.body.classList.add('mp-hud');
+    document.body.classList.remove('mp-holo', 'mp-iso', 'mp-scifi', 'mp-cosmo');
+    if(cur === 'iso') document.body.classList.add('mp-holo', 'mp-iso');        // geometria 3D dos cubos (mempool-holo.css), vista de cima
+    else if(cur === 'cosmo') document.body.classList.add('mp-holo', 'mp-cosmo');
+    else if(cur === 'scifi') document.body.classList.add('mp-scifi');           // cartões planos num ecrã holográfico
     const b = document.getElementById('mpStyleBtn');
     if(b){ b.textContent = '🎨 ' + NAMES[cur][LANGS.indexOf(lang())]; b.title = TIP[LANGS.indexOf(lang())]; }
   }

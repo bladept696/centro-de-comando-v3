@@ -1,0 +1,176 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* Blocos da mempool com cenário (mempool-cenas.js desenha o fundo e os efeitos em canvas):
+   · Isométrico (body.mp-holo.mp-iso): cubos escuros vistos de cima, arestas em néon, chão em grelha azul ondulada e circuitos laranja;
+   · Sci-Fi (body.mp-scifi): ecrã holográfico curvo com cartões de vidro, barra de enchimento, linha AGORA e gráficos por baixo;
+   · Cósmico (body.mp-holo.mp-cosmo): cubos de vidro a flutuar no espaço, com filamentos de luz e etiquetas das pools em vidro. */
+.mc-bg, .mc-fx, .sf-charts{ display:none; }
+body.mp-iso .blocks-container, body.mp-scifi .blocks-container, body.mp-cosmo .blocks-container{ position:relative; overflow:hidden; isolation:isolate; }
+body.mp-iso .mc-bg, body.mp-scifi .mc-bg, body.mp-cosmo .mc-bg,
+body.mp-iso .mc-fx, body.mp-scifi .mc-fx, body.mp-cosmo .mc-fx{ display:block; position:absolute; left:0; top:0; pointer-events:none; }
+body.mp-iso .mc-bg, body.mp-scifi .mc-bg, body.mp-cosmo .mc-bg{ z-index:0; }
+body.mp-iso .mc-fx, body.mp-scifi .mc-fx, body.mp-cosmo .mc-fx{ z-index:1; mix-blend-mode:screen; }
+body.mp-iso .blocks-toolbar, body.mp-scifi .blocks-toolbar, body.mp-cosmo .blocks-toolbar,
+body.mp-iso .blocks-scroll, body.mp-scifi .blocks-scroll, body.mp-cosmo .blocks-scroll{ position:relative; z-index:2; }
+body.mp-iso .mp-foot img, body.mp-cosmo .mp-foot img, body.mp-scifi .mp-foot img{ display:block; }
+
+/* ================= 01 · ISOMÉTRICO CYBERNETIC ================= */
+body.mp-iso .blocks-container{
+  background:radial-gradient(70% 60% at 75% 20%, #12306055, transparent 70%), radial-gradient(60% 50% at 10% 100%, #ff7a1a14, transparent 70%), linear-gradient(180deg, #030914, #061328) !important;
+  border:1px solid #3a7bd540 !important; border-radius:16px; box-shadow:inset 0 1px 0 #ffffff0d, 0 30px 60px -36px #000 !important;
+}
+body.mp-iso .blocks-toolbar .title{ font:700 13px 'JetBrains Mono',monospace; letter-spacing:.14em; color:#9fd8ff; text-shadow:0 0 10px #3fa8ff66; }
+body.mp-iso .blocks-scroll.mp-chain{ gap:38px; padding:54px 44px 30px; scrollbar-color:#2f6fb055 transparent; }
+body.mp-iso .mp-block{ --hud:#4fc8ff; perspective:1300px; perspective-origin:50% -60%; }
+body.mp-iso .mp-block.mp-pending{ --hud:#ff9a2e; }
+body.mp-iso .mp-block.mp-tip{ --hud:#6fe8ff; }
+body.mp-iso .mp-cube{ animation:none !important; transform:rotateX(-24deg) rotateY(-32deg); transition:transform .35s cubic-bezier(.16,1,.3,1) !important; }
+body.mp-iso .mp-block:hover .mp-cube{ transform:rotateX(-24deg) rotateY(-32deg) translateY(-10px); }
+/* faces escuras com arestas em néon */
+body.mp-iso .mp-hf{
+  border:1px solid color-mix(in srgb, var(--hud) 80%, transparent);
+  background:linear-gradient(135deg, #0d2134f2, #050d18f5);
+  box-shadow:inset 0 0 18px -6px color-mix(in srgb, var(--hud) 60%, transparent), 0 0 12px -5px var(--hud);
+}
+body.mp-iso .mp-hf-b{ animation:none; background:#040a12; }
+body.mp-iso .mp-hf-l, body.mp-iso .mp-hf-r{
+  background:linear-gradient(to top, color-mix(in srgb, var(--hud) 30%, #050d18) 0 var(--fill-h,0%), transparent var(--fill-h,0%)),
+    repeating-linear-gradient(0deg, #ffffff08 0 1px, transparent 1px 5px), linear-gradient(180deg, #0b1c2d, #050c16);
+}
+body.mp-iso .mp-hf-r{ filter:brightness(.7); }
+body.mp-iso .mp-hf-t{
+  background:linear-gradient(color-mix(in srgb, var(--hud) 22%, transparent) 1px, transparent 1px) 0 0/16px 16px,
+    linear-gradient(90deg, color-mix(in srgb, var(--hud) 22%, transparent) 1px, transparent 1px) 0 0/16px 16px, linear-gradient(135deg, #16314c, #0b1b2c);
+  border-color:color-mix(in srgb, var(--hud) 95%, #fff);
+}
+body.mp-iso .mp-face{
+  border:1.5px solid var(--hud); text-shadow:0 1px 2px #000;
+  background:linear-gradient(160deg, #0f2740f0, #06111ef5); box-shadow:inset 0 0 22px -8px var(--hud), 0 0 14px -6px var(--hud);
+}
+body.mp-iso .mp-fill{ opacity:.32; }
+body.mp-iso .mp-h{ font:800 16px 'JetBrains Mono',monospace; color:#7fd9ff; text-shadow:0 0 10px #3fb8ff88, 0 1px 2px #000; }
+body.mp-iso .mp-h::before{ content:none; }
+body.mp-iso .mp-fee{ font:800 12px 'JetBrains Mono',monospace; color:#4dff9a !important; text-shadow:0 0 8px #2fff8a66; }
+body.mp-iso .mp-range{ font:600 9.5px 'JetBrains Mono',monospace; color:#b8cad8; }
+body.mp-iso .mp-tx{ font:700 10.5px 'JetBrains Mono',monospace; color:#e6f3ff; border-color:color-mix(in srgb, var(--hud) 50%, transparent); background:#ffffff08; }
+/* o bloco a decorrer e o último bloco acendem */
+body.mp-iso .mp-next .mp-hf, body.mp-iso .mp-next .mp-face{ box-shadow:inset 0 0 26px -4px #ff9a2e, 0 0 26px -2px #ff9a2ecc; }
+body.mp-iso .mp-next .mp-face{ background:linear-gradient(160deg, #3a1d08f0, #120903f5); }
+body.mp-iso .mp-tip .mp-hf, body.mp-iso .mp-tip .mp-face{ box-shadow:inset 0 0 24px -4px #6fe8ff, 0 0 22px -4px #6fe8ffcc; }
+/* sem trilho: os circuitos vêm do canvas; brilho no chão por baixo */
+body.mp-iso .mp-block::before{ display:none; }
+body.mp-iso .mp-block::after{ top:150px; left:-10px; right:-10px; height:34px; opacity:.9; background:radial-gradient(ellipse at center, color-mix(in srgb, var(--hud) 45%, transparent), transparent 70%); filter:blur(5px); }
+body.mp-iso .mp-foot{ margin-top:10px; padding:3px 9px; border-radius:6px; background:#06111dd9; border:1px solid color-mix(in srgb, var(--hud) 40%, transparent); font:700 10.5px 'JetBrains Mono',monospace; text-transform:none; }
+body.mp-iso .mp-foot .mp-pool{ color:#cfe6ff; text-shadow:none; }
+body.mp-iso .mp-pending .mp-foot{ color:#ffb35c; }
+body.mp-iso .mp-time{ font:600 9.5px 'JetBrains Mono',monospace; color:#7f9ab4; }
+body.mp-iso .mp-sep-line{ border-left:2px dashed #ff9a2e; filter:drop-shadow(0 0 6px #ff9a2e); }
+body.mp-iso .mp-sep-lbl{ font:700 11px 'JetBrains Mono',monospace; color:#ffb35c; }
+
+/* ================= 02 · HOLOGRÁFICO SCI-FI ================= */
+body.mp-scifi .blocks-container{
+  background:radial-gradient(70% 90% at 50% 40%, #0a3a4a40, transparent 70%), linear-gradient(180deg, #020b12, #04141c) !important;
+  border:1.5px solid #3fe0ff70 !important; border-radius:40px / 110px !important;
+  box-shadow:inset 0 0 70px -14px #29d0ff55, inset 0 0 0 6px #04141c, inset 0 0 0 7px #3fe0ff26, 0 0 34px -10px #29d0ff88 !important;
+  padding:20px 34px 18px !important;
+}
+body.mp-scifi .blocks-toolbar .title{ font:700 12px 'JetBrains Mono',monospace; letter-spacing:.18em; color:#8ff6ff; text-shadow:0 0 12px #3fe8ff88; }
+body.mp-scifi .mp-style-btn{ background:#06222acc; border:1px solid #3fe0ff66; color:#bff8ff; border-radius:20px; }
+body.mp-scifi .blocks-scroll.mp-chain{ gap:16px; padding:26px 16px 14px; align-items:center; scrollbar-color:#3fe0ff44 transparent; }
+body.mp-scifi .mp-block{ padding-top:0; }
+/* cartões de vidro planos */
+body.mp-scifi .mp-cube{
+  width:128px; height:118px; border-radius:6px; animation:none !important;
+  background:linear-gradient(160deg, #0d3a44d9, #051a20e6); border:1px solid #6ff4ffb3;
+  box-shadow:inset 0 0 24px -6px #3fe8ff99, 0 0 18px -6px #3fe8ffaa, 0 10px 24px -14px #000;
+}
+body.mp-scifi .mp-cube::before{ content:''; position:absolute; inset:0; height:auto; transform:none; border:none; border-radius:6px; pointer-events:none;
+  background:linear-gradient(115deg, transparent 30%, #ffffff14 45%, transparent 60%), repeating-linear-gradient(0deg, #ffffff06 0 1px, transparent 1px 3px); }
+body.mp-scifi .mp-hf{ display:none; }
+body.mp-scifi .mp-block:hover .mp-cube{ transform:translateY(-4px); }
+/* o bloco a decorrer maior e em destaque */
+body.mp-scifi .mp-next .mp-cube{ width:146px; height:134px; border-color:#9ffaff; box-shadow:inset 0 0 30px -4px #3fe8ffcc, 0 0 30px -4px #3fe8ffcc; animation:sfPulse 3s ease-in-out infinite !important; }
+body.mp-scifi .mp-pending:not(.mp-next) .mp-cube{ opacity:.85; }
+@keyframes sfPulse{ 50%{ box-shadow:inset 0 0 34px -2px #3fe8ffee, 0 0 40px -2px #3fe8ffee; } }
+/* barra de enchimento vertical à direita */
+body.mp-scifi .mp-fill{ left:auto; right:8px; width:9px; bottom:10px; height:calc(var(--fill-h,0%) * .8); border-radius:3px; opacity:1;
+  background:linear-gradient(to top, #0fb894, #5dffd2) !important; box-shadow:0 0 12px #3dffc8aa; }
+body.mp-scifi .mp-fill::before{ display:none; }
+body.mp-scifi .mp-cube::after{ display:block; content:''; position:absolute; right:8px; top:10px; bottom:10px; width:9px; height:auto; transform:none; border:1px solid #6ff4ff40; border-radius:3px; background:none; }
+body.mp-scifi .mp-gauge{ display:none; }
+body.mp-scifi .mp-face, body.mp-scifi .mp-face.mp-has-gauge{ padding:8px 24px 8px 10px; align-items:flex-start; text-align:left; text-shadow:0 0 8px #000; }
+body.mp-scifi .mp-h{ font:800 16px 'JetBrains Mono',monospace; color:#9ff8ff; text-shadow:0 0 10px #3fe8ffaa; }
+body.mp-scifi .mp-fee{ font:700 12.5px 'JetBrains Mono',monospace; color:#e6fdff !important; }
+body.mp-scifi .mp-range{ font:600 9.5px 'JetBrains Mono',monospace; color:#9fc6cc; white-space:nowrap; }
+body.mp-scifi .mp-tx{ font:600 10.5px 'JetBrains Mono',monospace; color:#d6f6ff; }
+body.mp-scifi .mp-foot{ font:600 11px 'JetBrains Mono',monospace; color:#bff3ff; }
+body.mp-scifi .mp-foot .mp-pool{ color:#cfffff; }
+body.mp-scifi .mp-time{ font:500 9.5px 'JetBrains Mono',monospace; color:#6f9aa4; }
+body.mp-scifi .mp-mybest{ color:#ffc14d; }
+/* linha AGORA laranja, com a etiqueta em cima e em baixo */
+body.mp-scifi .mp-sep{ min-width:60px; }
+body.mp-scifi .mp-sep-line{ border-left:none; width:3px; border-radius:2px; background:linear-gradient(180deg, transparent, #ffb547 15%, #ffb547 85%, transparent); box-shadow:0 0 14px #ffb547, 0 0 30px #ff9a2e88; opacity:1; min-height:150px; }
+body.mp-scifi .mp-sep-lbl{ font:800 11px 'JetBrains Mono',monospace; color:#ffc76b; letter-spacing:.16em; text-shadow:0 0 10px #ffb547; }
+body.mp-scifi .mp-sep-time{ font-size:9.5px; letter-spacing:.04em; color:#ffc76bb3; }
+/* gráficos por baixo */
+body.mp-scifi .sf-charts{ display:grid; grid-template-columns:1fr 1fr; gap:28px; position:relative; z-index:2; margin:4px 10px 0; }
+body.mp-scifi .sf-chart{ position:relative; height:118px; padding:8px 10px 4px; border-radius:10px; border:1px solid #3fe0ff2e; background:linear-gradient(180deg, #06222a80, #03111680); }
+body.mp-scifi .sf-chart b{ display:block; font:700 9.5px 'JetBrains Mono',monospace; letter-spacing:.12em; text-transform:uppercase; color:#7fe9f4; }
+body.mp-scifi .sf-chart canvas{ display:block; width:100%; height:90px; }
+@media (max-width:700px){ body.mp-scifi .sf-charts{ grid-template-columns:1fr; gap:10px; } body.mp-scifi .blocks-container{ border-radius:22px / 50px !important; padding:14px 14px !important; } }
+
+/* ================= 03 · REDE CÓSMICA ================= */
+body.mp-cosmo .blocks-container{
+  background:radial-gradient(50% 80% at 15% 50%, #12306a55, transparent 70%), radial-gradient(45% 70% at 85% 35%, #2a1a6a3d, transparent 70%), #01030a !important;
+  border:1px solid #7fb0ff26 !important; border-radius:16px; box-shadow:0 30px 60px -36px #000 !important;
+}
+body.mp-cosmo .blocks-toolbar .title{ font:700 13px 'Space Grotesk',sans-serif; letter-spacing:.12em; color:#e6f2ff; text-shadow:0 0 14px #8fc4ff88; }
+body.mp-cosmo .blocks-scroll.mp-chain{ gap:62px; padding:44px 50px 30px; scrollbar-color:#7fb0ff44 transparent; }
+body.mp-cosmo .mp-block{ --hud:#cfe8ff; perspective:820px; perspective-origin:40% 30%; }
+body.mp-cosmo .mp-block.mp-pending{ --hud:#ffd9a0; }
+body.mp-cosmo .mp-cube{ animation:csFloat 7s ease-in-out infinite !important; transform:rotateX(-12deg) rotateY(-24deg); }
+body.mp-cosmo .mp-block:nth-child(3n+1) .mp-cube{ animation-delay:-2.3s !important; }
+body.mp-cosmo .mp-block:nth-child(3n+2) .mp-cube{ animation-delay:-4.6s !important; }
+@keyframes csFloat{ 0%,100%{ transform:rotateX(-12deg) rotateY(-24deg) translateY(0); } 50%{ transform:rotateX(-10deg) rotateY(-19deg) translateY(-9px); } }
+body.mp-cosmo .mp-hf{
+  border:1px solid #eef7ffcc;
+  background:linear-gradient(135deg, #d6ecff40, #5f8fd622 60%, #b0d6ff36);
+  box-shadow:inset 0 0 30px -4px #c6e4ff70, 0 0 20px -4px #9fd0ffaa;
+}
+body.mp-cosmo .mp-hf-b{ animation:none; background:linear-gradient(135deg, #a8d0ff26, #3a64b014); }
+body.mp-cosmo .mp-hf-l, body.mp-cosmo .mp-hf-r{ background:linear-gradient(180deg, #cfe6ff40, #4d78c022 70%, #b6d8ff36); }
+body.mp-cosmo .mp-hf-r{ filter:brightness(.8); }
+body.mp-cosmo .mp-hf-t{ background:linear-gradient(135deg, #f2f9ff70, #a6ccff40); border-color:#ffffffe6; }
+body.mp-cosmo .mp-hf-u{ background:#1a2c5040; }
+body.mp-cosmo .mp-face{
+  border:1px solid #f4faffe6; overflow:hidden;
+  background:linear-gradient(160deg, #d8edff47, #4e7cc81f 55%, #a8d0ff38);
+  box-shadow:inset 0 0 34px -4px #cfe8ff80, 0 0 26px -6px #a8d4ffcc; text-shadow:0 0 12px #0a1a3a, 0 1px 3px #0a1a3a;
+}
+body.mp-cosmo .mp-face::after{ content:''; position:absolute; inset:-40% -60%; pointer-events:none; background:linear-gradient(115deg, transparent 42%, #ffffff2e 50%, transparent 58%); animation:csShine 8s ease-in-out infinite; }
+@keyframes csShine{ 0%,55%{ transform:translateX(-45%); } 100%{ transform:translateX(45%); } }
+body.mp-cosmo .mp-fill{ opacity:.22; }
+body.mp-cosmo .mp-gauge{ opacity:.7; }
+body.mp-cosmo .mp-h{ font:800 18px 'Space Grotesk',sans-serif; color:#fff; letter-spacing:.01em; text-shadow:0 0 14px #9fd0ff, 0 1px 3px #0a1a3a; }
+body.mp-cosmo .mp-h::before{ content:none; }
+body.mp-cosmo .mp-fee{ font:700 12px 'Space Grotesk',sans-serif; color:#eaf4ff !important; }
+body.mp-cosmo .mp-range{ font:500 9.5px 'Space Grotesk',sans-serif; color:#d4e4f7; }
+body.mp-cosmo .mp-tx{ font:700 12px 'Space Grotesk',sans-serif; color:#fff; border:none; background:none; padding:0; text-transform:none; letter-spacing:0; }
+body.mp-cosmo .mp-tip .mp-hf, body.mp-cosmo .mp-tip .mp-face{ box-shadow:inset 0 0 36px -2px #dff0ffaa, 0 0 34px -4px #bfe0ff; }
+body.mp-cosmo .mp-block::before{ display:none; }
+body.mp-cosmo .mp-block::after{ top:150px; height:26px; opacity:.6; background:radial-gradient(ellipse at center, #8fc4ff55, transparent 70%); filter:blur(6px); }
+/* etiqueta da pool em cartão de vidro */
+body.mp-cosmo .mp-foot{
+  margin-top:12px; padding:6px 12px; border-radius:9px; font:700 12.5px 'Space Grotesk',sans-serif; text-transform:none; letter-spacing:0; color:#fff;
+  background:linear-gradient(180deg, #ffffff24, #ffffff0a); border:1px solid #d6eaff66; box-shadow:inset 0 1px 0 #ffffff40, 0 8px 20px -10px #000, 0 0 18px -8px #9fd0ff;
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+}
+body.mp-cosmo .mp-foot .mp-pool{ color:#fff; text-shadow:0 0 10px #9fd0ff88; }
+body.mp-cosmo .mp-foot img{ width:18px; height:18px; }
+body.mp-cosmo .mp-time{ font:500 10px 'Space Grotesk',sans-serif; color:#9fb4d4; }
+body.mp-cosmo .mp-sep-line{ border-left:2px dashed #ffd9a0aa; filter:drop-shadow(0 0 6px #ffd9a0); }
+body.mp-cosmo .mp-sep-lbl{ font:700 11px 'Space Grotesk',sans-serif; color:#ffe2b0; }
+
+@media (prefers-reduced-motion: reduce){ body.mp-cosmo .mp-cube, body.mp-cosmo .mp-face::after, body.mp-scifi .mp-next .mp-cube{ animation:none !important; } }
+body.perf-mode.mp-cosmo .mp-cube, body.perf-mode.mp-cosmo .mp-face::after, body.perf-mode.mp-scifi .mp-next .mp-cube{ animation:none !important; }
