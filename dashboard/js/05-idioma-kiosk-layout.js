@@ -233,7 +233,8 @@ const TAB_LABEL_KEYS = {
   genpools: 'gp_titulo_tab'
 };
 
-const GP_SPOTLIGHT_POOL = 'molepool-btc1';
+// pool mostrada no destaque da página principal; escolhe-se na lista do próprio destaque (09-pools.js)
+let GP_SPOTLIGHT_POOL = (() => { try { return localStorage.getItem('hc_gp_spot_pool') || 'molepool-btc1'; } catch(e){ return 'molepool-btc1'; } })();
 function getTabLabel(tabName) {
   const key = TAB_LABEL_KEYS[tabName];
   return key ? t(key) : tabName;

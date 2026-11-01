@@ -39,12 +39,52 @@ function gpSpotSaveAddress(){
   if(GP_STATE.current === GP_SPOTLIGHT_POOL && $('gpAddress')) $('gpAddress').value = addr;
   gpSpotRender();
 }
-async function gpSpotRender(){
+// lista das pools para escolher a do destaque (a mesma da aba Pools), pedida uma vez ao servidor
+let gpSpotPools = null;
+async function gpSpotLoadPools(){
+  if(!gpSpotPools){ try { gpSpotPools = (await (await fetch(`${API_BASE}/api/generic-pools`)).json()) || null; } catch(e){} }
+  return gpSpotPools || {};
+}
+function gpSpotPicker(){
+  const pools = gpSpotPools || {}, name = p => String(p.label || '').replace(/\s*\(.*?\)\s*$/, '');
+  if(Object.keys(pools).length < 2) return mpEsc(pools[GP_SPOTLIGHT_POOL] ? name(pools[GP_SPOTLIGHT_POOL]) : 'Molepool');
+  return `<select id="gpSpotPool" class="gp-spot-pool" onchange="gpSpotSwitch(this.value)">` +
+    Object.entries(pools).map(([id, p]) => `<option value="${mpEsc(id)}"${id === GP_SPOTLIGHT_POOL ? ' selected' : ''}>${mpEsc(name(p))}</option>`).join('') + `</select>`;
+}
+// o que levas se a pool encontrar o bloco: nas PPLNS vem da pool (prize_sats); nas solo é a recompensa toda menos a comissão
+function gpSpotPrize(pool, data){
+  const acc = data.account || {};
+  let val = '', fiat = [];
+  if(acc.prize_sats){
+    val = Number(acc.prize_sats).toLocaleString() + ' sats';
+    if(acc.prize_eur) fiat.push('≈ ' + Number(acc.prize_eur).toFixed(2) + ' €');
+    if(acc.prize_usd) fiat.push(Number(acc.prize_usd).toFixed(2) + ' US$');
+  } else if(Number(data.reward) > 0 && !/pplns/i.test(((gpSpotPools || {})[pool] || {}).label || '')){
+    const coin = /btc1/i.test(pool) ? 'BTC1' : String(data.coin || 'BTC');
+    const amount = Number(data.reward) * (1 - (Number(data.fee_percent) || 0) / 100);
+    val = amount.toFixed(4) + ' ' + coin;
+    let eur = 0; try { eur = window.hcCoin ? hcCoin.priceEur(coin) : 0; } catch(e){}
+    if(eur > 0) fiat.push('≈ ' + (amount * eur).toFixed(2) + ' €');
+  }
+  if(!val) return '';
+  return `<div class="gp-spot-item gp-spot-prize"><span class="lbl">🏆 ${t('gp_a_prize')}</span><span class="val">${mpEsc(val)}</span>` +
+    (fiat.length ? `<span class="gp-spot-fiat">${fiat.join(' · ')}</span>` : '') + `</div>`;
+}
+function gpSpotSwitch(id){
+  GP_SPOTLIGHT_POOL = id;
+  try { localStorage.setItem('hc_gp_spot_pool', id); } catch(e){}
+  gpSpotRender(true);
+}
+async function gpSpotRender(force){
   const el = $('gpSpotlight'); if(!el) return;
-  const addr = gpLoadAddr(GP_SPOTLIGHT_POOL);
+  // não redesenha enquanto estás a escrever o endereço ou com a lista aberta
+  if(!force && el.contains(document.activeElement) && /^(INPUT|SELECT)$/.test(document.activeElement.tagName)) return;
+  await gpSpotLoadPools();
+  const pool = GP_SPOTLIGHT_POOL;
+  const addr = gpLoadAddr(pool);
   if(!addr){
     el.style.display = '';
-    el.innerHTML = `<div class="gp-spot-empty gp-spot-setup">🪙 Molepool —
+    el.innerHTML = `<div class="gp-spot-empty gp-spot-setup">🪙 ${gpSpotPicker()} —
       <input type="text" id="gpSpotAddrInput" placeholder="${t('gp_s_addr_ph')}">
       <button class="power-save-btn" onclick="gpSpotSaveAddress()">${t('gp_guardar')}</button>
     </div>`;
@@ -53,8 +93,9 @@ async function gpSpotRender(){
     return;
   }
   let data;
-  try { data = await (await fetch(`${API_BASE}/api/generic-pool?pool=${GP_SPOTLIGHT_POOL}&address=${encodeURIComponent(addr)}`)).json(); }
+  try { data = await (await fetch(`${API_BASE}/api/generic-pool?pool=${encodeURIComponent(pool)}&address=${encodeURIComponent(addr)}`)).json(); }
   catch(e){ return; }
+  if(pool !== GP_SPOTLIGHT_POOL) return;   // trocaste de pool enquanto esperava pela resposta
   if(!data || data.network_difficulty == null){ return; }
   // O melhor diff vem da própria pool (bestShare.share da conta), não das máquinas --
   // é o valor que a pool reconhece oficialmente, pode diferir do que o firmware mostra.
@@ -65,9 +106,10 @@ async function gpSpotRender(){
   const short = addr.length > 14 ? addr.slice(0, 8) + '…' + addr.slice(-6) : addr;
   el.style.display = '';
   el.innerHTML = `
-    <div class="gp-spot-item"><span class="lbl">🪙 Molepool — ${t('gp_s_addr')}</span><span class="val addr" title="${mpEsc(addr)}" onclick="navigator.clipboard?.writeText('${mpEsc(addr)}')">${mpEsc(short)}</span></div>
+    <div class="gp-spot-item"><span class="lbl">🪙 ${gpSpotPicker()} — ${t('gp_s_addr')}</span><span class="val addr" title="${mpEsc(addr)}" onclick="navigator.clipboard?.writeText('${mpEsc(addr)}')">${mpEsc(short)}</span></div>
     <div class="gp-spot-item"><span class="lbl">${t('gp_s_best')}</span><span class="val">${best > 0 ? formatDiff(best).value + formatDiff(best).unit : '—'}</span></div>
     <div class="gp-spot-item"><span class="lbl">${t('gp_s_net')}</span><span class="val">${formatDiff(netDiff).value}${formatDiff(netDiff).unit}</span></div>
+    ${gpSpotPrize(pool, data)}
     <div class="gp-spot-bar">
       <div class="lbl">${t('gp_s_prog')}</div>
       <div class="gp-spot-track"><div class="gp-spot-fill" style="width:${pct.toFixed(4)}%"></div></div>
