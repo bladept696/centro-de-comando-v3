@@ -1,0 +1,103 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ===== Aba Pools com visual novo (pools-visual.js põe os ícones, o cabeçalho da pool, o prémio e as máquinas) ===== */
+#tab-genpools .panel{ position:relative; border-radius:16px; border:1px solid #3fd8ff40; overflow:hidden;
+  background:radial-gradient(80% 60% at 100% 0%, #ffb34714, transparent 60%), radial-gradient(70% 60% at 0% 100%, #3fd8ff12, transparent 60%), linear-gradient(170deg, #0a1826, #060e17);
+  box-shadow:inset 0 1px 0 #ffffff0d, 0 24px 50px -30px #000; }
+
+/* escolher pool e endereço */
+#tab-genpools .gp-select-row{ display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 14px; }
+#tab-genpools #gpSelect, #tab-genpools #gpAddress{
+  height:40px; padding:0 14px; border-radius:11px; border:1px solid #3fd8ff4d; color:#e8f7ff; font:600 13px 'Space Grotesk',sans-serif;
+  background:linear-gradient(180deg, #0c2232, #071621); box-shadow:inset 0 2px 6px #0008, 0 0 0 0 #3fd8ff; transition:box-shadow .2s, border-color .2s;
+}
+#tab-genpools #gpSelect{ min-width:230px; cursor:pointer; color-scheme:dark; }
+/* a lista aberta: fundo escuro e letra clara (sem isto o Windows abre-a em branco e o texto claro não se lê) */
+#tab-genpools #gpSelect option{ background:#0c2232; color:#e8f7ff; }
+#tab-genpools #gpSelect option:checked{ background:#1f5f86; color:#fff; }
+#tab-genpools #gpAddress{ flex:1; min-width:220px; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.02em; }
+#tab-genpools #gpSelect:focus, #tab-genpools #gpAddress:focus{ outline:none; border-color:#5fe8ff; box-shadow:inset 0 2px 6px #0008, 0 0 0 3px #3fd8ff33; }
+#tab-genpools .gp-select-row .power-save-btn{ height:40px; padding:0 20px; border-radius:11px; font-weight:800; letter-spacing:.04em; }
+
+/* cabeçalho da pool */
+.gpv-hero{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:14px 16px; margin:0 0 12px; border-radius:14px;
+  background:linear-gradient(110deg, #0f2a3c, #0a1b29 55%, #10233a); border:1px solid #3fd8ff3d; box-shadow:inset 0 1px 0 #ffffff12, 0 14px 30px -22px #000; }
+.gpv-logo{ width:46px; height:46px; flex:0 0 auto; border-radius:13px; display:grid; place-items:center; font-size:24px;
+  background:radial-gradient(circle at 35% 30%, #ffe2a0, #ffa53a 55%, #b8560c); box-shadow:0 0 20px -2px #ff9a2e99, inset 0 -3px 6px #0004; animation:gpvFloat 5s ease-in-out infinite; }
+@keyframes gpvFloat{ 50%{ transform:translateY(-3px) rotate(-4deg); } }
+.gpv-name{ flex:1; min-width:180px; }
+.gpv-name b{ display:block; font:800 19px 'Space Grotesk',sans-serif; color:#fff; letter-spacing:.01em; }
+.gpv-name small{ display:block; margin-top:2px; font-size:11.5px; color:#8fb3c6; }
+.gpv-tags{ display:flex; flex-wrap:wrap; gap:6px; }
+.gpv-tag{ padding:4px 10px; border-radius:999px; font:700 10.5px 'JetBrains Mono',monospace; letter-spacing:.05em; color:#bfefff; background:#3fd8ff14; border:1px solid #3fd8ff4d; }
+.gpv-tag.gold{ color:#ffd38a; background:#ffb34714; border-color:#ffb34766; }
+.gpv-tag.live{ color:#7dffb8; background:#21ff8a12; border-color:#21ff8a55; display:inline-flex; align-items:center; gap:6px; }
+.gpv-tag.live::before{ content:''; width:7px; height:7px; border-radius:50%; background:#3dff8a; box-shadow:0 0 8px #3dff8a; animation:mcLive 1.6s ease-in-out infinite; }
+.gpv-tag.warn{ color:#ffcf7a; border-color:#ffb34766; background:#ffb34712; }
+
+/* títulos das secções */
+.gpv-sec{ display:flex; align-items:center; gap:8px; margin:14px 2px 8px; font:800 10.5px 'JetBrains Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#7fdcf0; }
+.gpv-sec::after{ content:''; flex:1; height:1px; background:linear-gradient(90deg, #3fd8ff55, transparent); }
+
+/* cartões de estatística */
+#tab-genpools .gp-stats{ grid-template-columns:repeat(auto-fill, minmax(min(168px,100%), 1fr)); gap:10px; margin:0; }
+#tab-genpools .gp-stat{
+  --ac:#4fd6ff; position:relative; display:grid; grid-template-columns:34px 1fr; grid-template-rows:auto auto; column-gap:10px; align-items:center;
+  padding:12px 14px 13px; border-radius:13px; overflow:hidden; border:1px solid color-mix(in srgb, var(--ac) 30%, transparent);
+  background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--ac) 13%, transparent), transparent 60%), linear-gradient(170deg, #0d1f2e, #08131d);
+  box-shadow:inset 0 1px 0 #ffffff10, 0 12px 24px -18px #000; transition:transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s, border-color .25s;
+}
+#tab-genpools .gp-stat:hover{ transform:translateY(-3px); border-color:color-mix(in srgb, var(--ac) 60%, transparent); box-shadow:inset 0 1px 0 #ffffff14, 0 16px 28px -16px #000, 0 0 22px -10px var(--ac); }
+#tab-genpools .gp-stat::after{ content:''; position:absolute; left:14px; right:14px; bottom:0; height:2px; border-radius:2px; background:linear-gradient(90deg, transparent, var(--ac), transparent); opacity:.65; }
+#tab-genpools .gp-stat .gpv-ico{ grid-row:1 / 3; align-self:start; width:34px; height:34px; border-radius:10px; display:grid; place-items:center; font-size:17px;
+  background:color-mix(in srgb, var(--ac) 16%, #0a1520); border:1px solid color-mix(in srgb, var(--ac) 40%, transparent); box-shadow:0 0 14px -6px var(--ac); }
+#tab-genpools .gp-stat .lbl{ font:700 9.5px 'JetBrains Mono',monospace; letter-spacing:.1em; color:color-mix(in srgb, var(--ac) 45%, #9fb6c4); }
+#tab-genpools .gp-stat .val{ font:800 19px 'Space Grotesk',sans-serif; color:#f4fbff; text-shadow:0 0 14px color-mix(in srgb, var(--ac) 45%, transparent); line-height:1.25; word-break:break-word; }
+#tab-genpools .gp-stat[data-k="miners"]{ --ac:#7aa8ff; } #tab-genpools .gp-stat[data-k="phash"]{ --ac:#4fd6ff; } #tab-genpools .gp-stat[data-k="nhash"]{ --ac:#b48cff; }
+#tab-genpools .gp-stat[data-k="height"]{ --ac:#5fe8c8; } #tab-genpools .gp-stat[data-k="ndiff"]{ --ac:#ff7ab0; } #tab-genpools .gp-stat[data-k="last"]{ --ac:#ffd23f; }
+#tab-genpools .gp-stat[data-k="fee"]{ --ac:#3dff9a; } #tab-genpools .gp-stat[data-k="best"]{ --ac:#ffd23f; } #tab-genpools .gp-stat[data-k="hash"]{ --ac:#4fd6ff; }
+#tab-genpools .gp-stat[data-k="workers"]{ --ac:#7aa8ff; grid-column:span 2; } #tab-genpools .gp-stat[data-k="pplns"]{ --ac:#b48cff; }
+
+/* as tuas máquinas em etiquetas */
+.gpv-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.gpv-chip{ display:inline-flex; align-items:center; gap:7px; padding:5px 10px; border-radius:9px; font:600 12px 'Space Grotesk',sans-serif; color:#e6f3ff;
+  background:#7aa8ff14; border:1px solid #7aa8ff44; text-shadow:none; }
+.gpv-chip i{ width:7px; height:7px; border-radius:50%; background:#3dff8a; box-shadow:0 0 7px #3dff8a; }
+.gpv-chip.off i{ background:#ff5a6a; box-shadow:0 0 7px #ff5a6a; } .gpv-chip.off{ opacity:.7; }
+.gpv-chip b{ font:800 12px 'JetBrains Mono',monospace; color:#9fd8ff; }
+
+/* a tua parte no PPLNS: barra em escala logarítmica (0,001% → 100%) */
+.gpv-bar{ grid-column:1 / 3; height:7px; margin-top:8px; border-radius:6px; background:#ffffff0d; overflow:hidden; box-shadow:inset 0 1px 2px #000a; }
+.gpv-bar i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg, #7a5cff, #b48cff, #ffb3ff); box-shadow:0 0 10px #b48cff; transition:width 1s cubic-bezier(.22,1,.36,1); }
+
+/* o prémio, em destaque dourado */
+#tab-genpools .gp-stat[data-k="prize"]{ --ac:#ffb347; grid-column:span 2; border-color:#ffb34780;
+  background:radial-gradient(90% 120% at 100% 0%, #ffd27a2e, transparent 60%), linear-gradient(150deg, #2a1a08, #150d05 60%, #1f1408);
+  box-shadow:inset 0 1px 0 #ffe6b026, 0 0 26px -10px #ff9a2e, 0 16px 30px -20px #000; }
+#tab-genpools .gp-stat[data-k="prize"] .gpv-ico{ background:radial-gradient(circle at 35% 30%, #ffe8b0, #ffae42 55%, #b8560c); border-color:#ffd27a; font-size:18px; animation:gpvFloat 4s ease-in-out infinite; }
+#tab-genpools .gp-stat[data-k="prize"] .lbl{ color:#ffcf8a; }
+#tab-genpools .gp-stat[data-k="prize"] .val{ color:#ffe2a8; font-size:24px; text-shadow:0 0 16px #ff9a2e99; }
+.gpv-fiat{ grid-column:2; display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+#tab-genpools .gp-stat[data-k="prize"] > span:not(.gpv-ico):not(.gpv-shine){ grid-column:2; }
+#tab-genpools .gp-stat{ align-content:center; }
+.gpv-fiat span{ padding:3px 9px; border-radius:8px; font:700 12px 'JetBrains Mono',monospace; color:#ffd9a0; background:#ffb3471a; border:1px solid #ffb34755; }
+.gpv-shine{ position:absolute; inset:0; pointer-events:none; background:linear-gradient(115deg, transparent 40%, #ffffff1a 50%, transparent 60%); background-size:250% 100%; animation:gpvShine 6s ease-in-out infinite; }
+@keyframes gpvShine{ 0%,55%{ background-position:150% 0; } 100%{ background-position:-50% 0; } }
+
+/* tabela dos blocos */
+#tab-genpools .gp-table{ border-collapse:separate; border-spacing:0 6px; margin-top:4px; font-size:12.5px; }
+#tab-genpools .gp-table thead th{ border:none; padding:4px 12px; font:700 9.5px 'JetBrains Mono',monospace; letter-spacing:.12em; color:#6f97ab; }
+#tab-genpools .gp-table tbody td{ border:none; padding:10px 12px; background:#0c1b28; color:#dcecf6; }
+#tab-genpools .gp-table tbody tr td:first-child{ border-radius:10px 0 0 10px; font:800 13px 'JetBrains Mono',monospace; color:#7fe9ff; }
+#tab-genpools .gp-table tbody tr td:last-child{ border-radius:0 10px 10px 0; color:#8fb3c6; }
+#tab-genpools .gp-table tbody tr:hover td{ background:#10243a; }
+#tab-genpools .gp-table tr.gp-mine td{ background:linear-gradient(90deg, #0f3324, #0c1f1a); }
+#tab-genpools .gp-table tr.gp-mine td:first-child{ border-left:3px solid #3dff8a; }
+#tab-genpools .gp-badge{ padding:3px 10px; border-radius:999px; font:700 10px 'JetBrains Mono',monospace; letter-spacing:.06em; text-transform:uppercase; }
+#tab-genpools .gp-table td.hint{ text-align:center; padding:26px 12px; color:#7f9db0; background:repeating-linear-gradient(135deg, #0b1825 0 10px, #0a1621 10px 20px); border-radius:10px !important; }
+#tab-genpools .gp-table td.hint::before{ content:'⛏️'; display:block; font-size:24px; margin-bottom:6px; opacity:.8; }
+
+@media (max-width:640px){ #tab-genpools .gp-stat[data-k="workers"], #tab-genpools .gp-stat[data-k="prize"]{ grid-column:span 1; } }
+@media (prefers-reduced-motion: reduce){ .gpv-logo, .gpv-shine, #tab-genpools .gp-stat[data-k="prize"] .gpv-ico{ animation:none; } }
+body.perf-mode .gpv-logo, body.perf-mode .gpv-shine, body.perf-mode #tab-genpools .gp-stat[data-k="prize"] .gpv-ico{ animation:none; }
