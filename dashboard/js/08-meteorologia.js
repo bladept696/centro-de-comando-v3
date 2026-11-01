@@ -21,7 +21,23 @@ const wxLoad = () => { try { return JSON.parse(localStorage.getItem('hc_wx_loc')
 const wxSave = () => { try { localStorage.setItem('hc_wx_loc', JSON.stringify(WX.loc)); } catch(e){} };
 const wxStatus = m => { const e = $('wxCond'); if(e) e.textContent = m; };
 function wxRadios(){ document.querySelectorAll('input[name="wxMode"]').forEach(r => { r.checked = !!WX.loc && r.value === WX.loc.mode; }); }
-function wxToggleSettings(){ const e = $('wxSettings'); e.style.display = e.style.display === 'none' ? 'block' : 'none'; wxRadios(); }
+// a janela abre no <body>, por baixo da roda dentada: dentro do painel ficava cortada (o painel 3D esconde o que sai da borda)
+function wxPlaceSettings(){
+  const e = $('wxSettings'), g = document.querySelector('#wxPanel .wx-gear'); if(!e || !g) return;
+  const r = g.getBoundingClientRect(), w = e.offsetWidth || 300;
+  Object.assign(e.style, { position: 'absolute', top: (r.bottom + scrollY + 6) + 'px', left: Math.max(8, r.right + scrollX - w) + 'px', right: 'auto', zIndex: 60 });
+}
+function wxToggleSettings(){
+  const e = $('wxSettings'); if(e.parentNode !== document.body) document.body.appendChild(e);
+  e.style.display = e.style.display === 'none' ? 'block' : 'none';
+  if(e.style.display === 'block') wxPlaceSettings();
+  wxRadios();
+}
+document.addEventListener('pointerdown', ev => {
+  const e = $('wxSettings');
+  if(e && e.style.display === 'block' && !e.contains(ev.target) && !ev.target.closest('.wx-gear')) e.style.display = 'none';
+});
+window.addEventListener('resize', () => { const e = $('wxSettings'); if(e && e.style.display === 'block') wxPlaceSettings(); });
 function wxManual(){ if(WX.loc) { WX.loc.mode = 'manual'; wxSave(); } $('wxQuery').focus(); }
 async function wxDetect(){
   const loc = WX.loc = Object.assign(WX.loc || {}, { mode: 'auto' }); wxSave(); wxRadios();
