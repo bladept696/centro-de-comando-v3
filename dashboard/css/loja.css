@@ -84,6 +84,23 @@
 .lj-more:hover{border-color:var(--acc);color:#fff}
 .lj-note{margin-top:16px;font-size:11.5px;color:var(--muted);line-height:1.5}
 
+/* ---------- 5% de desconto ao comprar pela dashboard ---------- */
+.lj-hero{flex-wrap:wrap}
+.lj-coupon{position:relative;display:flex;align-items:center;gap:14px;flex:1 1 100%;padding:12px 16px;border-radius:16px;
+  background:linear-gradient(90deg,#3a0f22cc,#1a0d1acc);border:1.5px dashed #ff6b9d99;box-shadow:inset 0 0 30px -12px #ff6b9d}
+.lj-c-pct{flex:none;display:flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:50%;
+  font:900 18px/1 Orbitron,'Space Grotesk',sans-serif;color:#fff;background:radial-gradient(circle at 35% 30%,#ff9ec0,#d6336c);box-shadow:0 0 22px -4px #ff6b9d;transform:rotate(-12deg)}
+.lj-c-txt{flex:1;min-width:180px}
+.lj-c-txt b{display:block;font-size:15px;color:#fff}
+.lj-c-txt small{display:block;margin-top:3px;font-size:11.5px;color:#f1c6d6}
+.lj-price s{font-size:13px;color:#8fa3b5;text-decoration-color:#ff6b9d}
+.lj-off{padding:2px 7px;border-radius:999px;font-size:11px;font-weight:900;color:#fff;background:linear-gradient(180deg,#ff6b9d,#d6336c)}
+.lj-price .lj-sats{flex-basis:100%}
+.ljp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ljp-chips .ljp-btc{margin-top:0}
+.ljp-disc{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;color:#fff;background:linear-gradient(180deg,#ff6b9d,#d6336c);box-shadow:0 0 12px -2px #ff6b9d}
+.ljp-item i s{color:#8fa3b5;font-weight:600;margin-right:3px}
+
 /* ---------- destaque da loja na página principal (#ljPromo) ---------- */
 .ljp{position:relative;display:flex;align-items:stretch;gap:0;margin:14px 0;border-radius:20px;overflow:hidden;cursor:pointer;isolation:isolate;
   background:linear-gradient(110deg,#221403 0%,#0d0f16 42%,#0a1520 100%);border:1px solid transparent;

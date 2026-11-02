@@ -33,14 +33,18 @@ Object.assign(I18N_DICT, {
   lj_eff: { pt: `eficiência`, en: `efficiency`, es: `eficiencia`, fr: `efficacité` },
   lj_power: { pt: `consumo`, en: `power`, es: `consumo`, fr: `consommation` },
   lj_count: { pt: `{0} produtos`, en: `{0} products`, es: `{0} productos`, fr: `{0} produits` },
-  lj_msg: { pt: `Olá Bitminer33! Tenho interesse em: {0} ({1}). Vi na Hash Commander.`, en: `Hi Bitminer33! I'm interested in: {0} ({1}). Saw it on Hash Commander.`, es: `¡Hola Bitminer33! Me interesa: {0} ({1}). Lo vi en Hash Commander.`, fr: `Bonjour Bitminer33 ! Je suis intéressé par : {0} ({1}). Vu sur Hash Commander.` },
-  lj_msg0: { pt: `Olá Bitminer33! Vi a vossa loja na Hash Commander e tenho uma dúvida.`, en: `Hi Bitminer33! I saw your shop on Hash Commander and have a question.`, es: `¡Hola Bitminer33! Vi vuestra tienda en Hash Commander y tengo una duda.`, fr: `Bonjour Bitminer33 ! J'ai vu votre boutique sur Hash Commander et j'ai une question.` },
+  lj_msg: { pt: `[Hash Commander] Olá Bitminer33! Venho da Hash Commander e quero comprar: {0}. Preço: {1} → {2} com os 5% de desconto da Hash Commander.`, en: `[Hash Commander] Hi Bitminer33! I came from Hash Commander and want to buy: {0}. Price: {1} → {2} with the Hash Commander 5% discount.`, es: `[Hash Commander] ¡Hola Bitminer33! Vengo de Hash Commander y quiero comprar: {0}. Precio: {1} → {2} con el 5% de descuento de Hash Commander.`, fr: `[Hash Commander] Bonjour Bitminer33 ! Je viens de Hash Commander et je veux acheter : {0}. Prix : {1} → {2} avec la réduction de 5 % Hash Commander.` },
+  lj_msg0: { pt: `[Hash Commander] Olá Bitminer33! Venho da Hash Commander (5% de desconto) e tenho uma dúvida.`, en: `[Hash Commander] Hi Bitminer33! I came from Hash Commander (5% discount) and have a question.`, es: `[Hash Commander] ¡Hola Bitminer33! Vengo de Hash Commander (5% de descuento) y tengo una duda.`, fr: `[Hash Commander] Bonjour Bitminer33 ! Je viens de Hash Commander (5 % de réduction) et j'ai une question.` },
+  lj_c_title: { pt: `5% de desconto ao comprar pela Hash Commander`, en: `5% off when you buy through Hash Commander`, es: `5% de descuento al comprar desde Hash Commander`, fr: `5 % de réduction en achetant via Hash Commander` },
+  lj_c_sub: { pt: `Carrega em Comprar: a mensagem do WhatsApp já diz à Bitminer33 que vens da dashboard, e a loja aplica o desconto.`, en: `Press Buy: the WhatsApp message already tells Bitminer33 you came from the dashboard, and the shop applies the discount.`, es: `Pulsa Comprar: el mensaje de WhatsApp ya le dice a Bitminer33 que vienes del panel, y la tienda aplica el descuento.`, fr: `Appuyez sur Acheter : le message WhatsApp indique déjà à Bitminer33 que vous venez du tableau de bord, et la boutique applique la réduction.` },
+  lj_c_save: { pt: `poupas {0}`, en: `you save {0}`, es: `ahorras {0}`, fr: `vous économisez {0}` },
+  lj_p_disc: { pt: `−5% ao comprar pela dashboard`, en: `−5% when buying through the dashboard`, es: `−5% al comprar desde el panel`, fr: `−5 % en achetant via le tableau de bord` },
   lj_p_new: { pt: `Novo`, en: `New`, es: `Nuevo`, fr: `Nouveau` },
   lj_p_title: { pt: `Loja Bitminer33`, en: `Bitminer33 Shop`, es: `Tienda Bitminer33`, fr: `Boutique Bitminer33` },
   lj_p_sub: { pt: `Bitaxe, NerdQAxe e mais, prontas a minerar · desde {0}`, en: `Bitaxe, NerdQAxe and more, ready to mine · from {0}`, es: `Bitaxe, NerdQAxe y más, listas para minar · desde {0}`, fr: `Bitaxe, NerdQAxe et plus, prêts à miner · dès {0}` },
   lj_p_btc: { pt: `Paga em ₿ Bitcoin`, en: `Pay in ₿ Bitcoin`, es: `Paga en ₿ Bitcoin`, fr: `Payez en ₿ Bitcoin` },
   lj_p_go: { pt: `Ver a loja`, en: `Visit the shop`, es: `Ver la tienda`, fr: `Voir la boutique` },
-  lj_note: { pt: `A venda, o pagamento e o envio são tratados diretamente com a Bitminer33. Preços tirados do site da loja a 1 de novembro de 2026; podem mudar, confirma sempre com a loja. O preço em sats usa o câmbio do momento.`, en: `Sale, payment and shipping are handled directly with Bitminer33. Prices taken from the shop's site on 1 November 2026; they may change, always confirm with the shop. The sats price uses the current rate.`, es: `La venta, el pago y el envío se tratan directamente con Bitminer33. Precios tomados del sitio de la tienda el 1 de noviembre de 2026; pueden cambiar, confirma siempre con la tienda. El precio en sats usa el cambio actual.`, fr: `La vente, le paiement et l'envoi se font directement avec Bitminer33. Prix relevés sur le site de la boutique le 1er novembre 2026 ; ils peuvent changer, confirmez toujours avec la boutique. Le prix en sats utilise le taux du moment.` }
+  lj_note: { pt: `A venda, o pagamento e o envio são tratados diretamente com a Bitminer33; a mensagem do WhatsApp diz que vens da Hash Commander e é a loja que aplica os 5% de desconto. Preços tirados do site da loja a 1 de novembro de 2026; podem mudar, confirma sempre com a loja. O preço em sats usa o câmbio do momento.`, en: `Sale, payment and shipping are handled directly with Bitminer33; the WhatsApp message says you came from Hash Commander and the shop applies the 5% discount. Prices taken from the shop's site on 1 November 2026; they may change, always confirm with the shop. The sats price uses the current rate.`, es: `La venta, el pago y el envío se tratan directamente con Bitminer33; el mensaje de WhatsApp dice que vienes de Hash Commander y la tienda aplica el 5% de descuento. Precios tomados del sitio de la tienda el 1 de noviembre de 2026; pueden cambiar, confirma siempre con la tienda. El precio en sats usa el cambio actual.`, fr: `La vente, le paiement et l'envoi se font directement avec Bitminer33 ; le message WhatsApp indique que vous venez de Hash Commander et c'est la boutique qui applique les 5 % de réduction. Prix relevés sur le site de la boutique le 1er novembre 2026 ; ils peuvent changer, confirmez toujours avec la boutique. Le prix en sats utilise le taux du moment.` }
 });
 try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e) {}
 
@@ -79,12 +83,19 @@ const LJ_DATA = [
   const btcEur = () => { try { return Number(currentRates && currentRates.btc_eur) || 0; } catch(e) { return 0; } };
   const wa = txt => 'https://wa.me/' + LJ_WA + '?text=' + encodeURIComponent(txt);
   const perTh = p => p.ths ? p.eur / p.ths : Infinity;
+
+  // ---------- 5% de desconto para quem compra pela dashboard ----------
+  // O "Comprar" abre o WhatsApp da loja (número do site) com a mensagem já escrita a começar por [Hash Commander]:
+  // é assim que a Bitminer33 sabe que o cliente veio da dashboard e aplica o desconto (combinado com a loja).
+  const DISC = 0.05;
+  const final = eur => Math.round(eur * (1 - DISC) * 100) / 100;
+  const eur2 = v => v.toLocaleString(loc(), { style: 'currency', currency: 'EUR', minimumFractionDigits: Number.isInteger(v) ? 0 : 2, maximumFractionDigits: 2 });
   // a máquina com o melhor €/TH leva o selo "Melhor €/TH"
   const bestIdx = LJ_DATA.reduce((b, p, i) => perTh(p) < perTh(LJ_DATA[b]) ? i : b, 0);
 
   function card(p, i){
     const [kk, ki] = KIND[p.k], rate = btcEur();
-    const sats = rate ? Math.round(p.eur / rate * 1e8) : 0;
+    const fin = final(p.eur), sats = rate ? Math.round(fin / rate * 1e8) : 0;
     const specs = [];
     if(p.ths) specs.push('<span class="lj-spec hs"><b>' + p.ths.toLocaleString(loc()) + '</b> TH/s</span>');
     if(p.w) specs.push('<span class="lj-spec"><b>' + p.w + '</b> W <i>' + t('lj_power') + '</i></span>');
@@ -100,9 +111,10 @@ const LJ_DATA = [
       '<div class="lj-body">' +
         '<h3>' + esc(p.n) + '</h3><div class="lj-sub">' + esc(p.d || '') + '</div>' +
         (specs.length ? '<div class="lj-specs">' + specs.join('') + '</div>' : '') +
-        '<div class="lj-price"><b>' + eurFmt(p.eur) + '</b>' + (sats ? '<span class="lj-sats">≈ ' + sats.toLocaleString(loc()) + ' sats</span>' : '') + '</div>' +
+        '<div class="lj-price"><s>' + eurFmt(p.eur) + '</s><b>' + eur2(fin) + '</b><span class="lj-off">−5%</span>' +
+          '<span class="lj-sats">' + t('lj_c_save').replace('{0}', eur2(Math.round((p.eur - fin) * 100) / 100)) + (sats ? ' · ≈ ' + sats.toLocaleString(loc()) + ' sats' : '') + '</span></div>' +
         '<div class="lj-acts">' +
-          '<a class="lj-buy" target="_blank" rel="noopener" href="' + esc(wa(t('lj_msg').replace('{0}', name).replace('{1}', eurFmt(p.eur)))) + '">🛒 ' + t('lj_buy') + '</a>' +
+          '<a class="lj-buy" target="_blank" rel="noopener" href="' + esc(wa(t('lj_msg').replace('{0}', name).replace('{1}', eurFmt(p.eur)).replace('{2}', eur2(fin)))) + '">🛒 ' + t('lj_buy') + '</a>' +
           '<a class="lj-more" target="_blank" rel="noopener" href="' + LJ_SITE + '">' + t('lj_more') + ' ↗</a>' +
         '</div>' +
       '</div></article>';
@@ -145,6 +157,9 @@ const LJ_DATA = [
             '<a class="lj-ghost" target="_blank" rel="noopener" href="' + LJ_SITE + '"><span data-i18n="lj_site">' + t('lj_site') + '</span> ↗</a>' +
             '<a class="lj-ghost" target="_blank" rel="noopener" href="' + LJ_YT + '">▶ <span data-i18n="lj_yt">' + t('lj_yt') + '</span></a>' +
           '</div></div>' +
+        '<div class="lj-coupon"><span class="lj-c-pct">5%</span>' +
+          '<div class="lj-c-txt"><b data-i18n="lj_c_title">' + t('lj_c_title') + '</b><small data-i18n="lj_c_sub">' + t('lj_c_sub') + '</small></div>' +
+          '</div>' +
       '</section>' +
       '<div class="panel lj-panel">' +
         '<div class="lj-tools">' +
@@ -176,7 +191,7 @@ const LJ_DATA = [
   function promoItems(){
     const one = LJ_DATA.map((p, i) => '<button type="button" class="ljp-item" data-i="' + i + '" tabindex="-1">' +
       '<img loading="lazy" referrerpolicy="no-referrer" alt="" src="' + LJ_IMG + p.img + '" onerror="this.style.visibility=\'hidden\'">' +
-      '<span><b>' + esc(p.n) + '</b><i>' + eurFmt(p.eur) + (p.ths ? ' · ' + p.ths.toLocaleString(loc()) + ' TH/s' : '') + '</i></span></button>').join('');
+      '<span><b>' + esc(p.n) + '</b><i><s>' + eurFmt(p.eur) + '</s> ' + eur2(final(p.eur)) + (p.ths ? ' · ' + p.ths.toLocaleString(loc()) + ' TH/s' : '') + '</i></span></button>').join('');
     return one + one;   // duas vezes seguidas para a faixa dar a volta sem salto
   }
   function promo(){
@@ -193,7 +208,7 @@ const LJ_DATA = [
         '<img class="ljp-logo" src="bitminer33-banner.png" alt="Bitminer33">' +
         '<div class="ljp-txt"><div class="ljp-title"><span class="ljp-new">' + t('lj_p_new') + '</span>🛒 ' + t('lj_p_title') + '</div>' +
           '<div class="ljp-sub">' + t('lj_p_sub').replace('{0}', eurFmt(min)) + '</div>' +
-          '<div class="ljp-btc">' + t('lj_p_btc') + '</div></div>' +
+          '<div class="ljp-chips"><span class="ljp-btc">' + t('lj_p_btc') + '</span><span class="ljp-disc">🎟️ ' + t('lj_p_disc') + '</span></div></div>' +
         '<button type="button" class="ljp-go">' + t('lj_p_go') + ' →</button>' +
       '</div>' +
       '<div class="ljp-rail" aria-hidden="true"><div class="ljp-track">' + promoItems() + '</div></div>';
