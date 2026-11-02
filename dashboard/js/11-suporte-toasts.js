@@ -331,6 +331,7 @@ const TOAST_STYLES = {
   critical:          { itemClass: 'type-critical',           icon: '🛡️' },
   offline:           { itemClass: 'type-offline',             icon: '⚠️' },
   anomaly:           { itemClass: 'type-offline',             icon: '🔧' },
+  shop:              { itemClass: 'type-best',                icon: '🛒' },
 };
 
 function toastsEnabled() {
@@ -431,7 +432,7 @@ function clearNotifications() {
 }
 
 let notifFilter = 'all';
-const NOTIF_GROUP = { block: 'block', best: 'best', thermal: 'thermal', 'thermal-warning': 'thermal', critical: 'thermal', anomaly: 'machine', offline: 'machine' };
+const NOTIF_GROUP = { block: 'block', best: 'best', thermal: 'thermal', 'thermal-warning': 'thermal', critical: 'thermal', anomaly: 'machine', offline: 'machine', shop: 'shop' };
 function renderNotifications() {
   const list = $('notifList');
   if(!list) return;
@@ -442,9 +443,9 @@ function renderNotifications() {
     list.parentNode.insertBefore(chips, list);
     chips.addEventListener('click', e => { const b = e.target.closest('[data-nf]'); if(b){ notifFilter = b.dataset.nf; renderNotifications(); } });
   }
-  const counts = { all: notifications.length, block: 0, best: 0, thermal: 0, machine: 0 };
+  const counts = { all: notifications.length, block: 0, best: 0, thermal: 0, machine: 0, shop: 0 };
   notifications.forEach(n => { counts[NOTIF_GROUP[n.type] || 'best']++; });
-  chips.innerHTML = [['all', 'nf_all'], ['block', 'nf_block'], ['best', 'nf_best'], ['thermal', 'nf_thermal'], ['machine', 'nf_machine']]
+  chips.innerHTML = [['all', 'nf_all'], ['block', 'nf_block'], ['best', 'nf_best'], ['thermal', 'nf_thermal'], ['machine', 'nf_machine'], ['shop', 'nf_shop']]
     .map(([k, key]) => `<button type="button" data-nf="${k}" class="nf-chip ${k}${notifFilter === k ? ' on' : ''}${counts[k] ? '' : ' zero'}">${t(key)} <b>${counts[k]}</b></button>`).join('');
   const items = notifications.filter(n => notifFilter === 'all' || (NOTIF_GROUP[n.type] || 'best') === notifFilter);
   if(!items.length) {
@@ -460,6 +461,7 @@ function renderNotifications() {
     critical:         { itemClass: 'type-thermal',            tagClass: 'thermal-critical',  label: '🛡️ Overheating Crítico' },
     anomaly:          { itemClass: 'type-offline',              tagClass: 'offline',           label: '🔧 Anomalia Detetada' },
     offline:          { itemClass: 'type-offline',              tagClass: 'offline',           label: '⚠️ Máquina Offline' },
+    shop:             { itemClass: 'type-best',                 tagClass: 'best',              label: '🛒 Loja Bitminer33' },
   };
 
   list.innerHTML = '';

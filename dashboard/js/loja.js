@@ -4,7 +4,7 @@
 // ---------- Aba Loja Bitminer33 ----------
 // Montra das máquinas da Bitminer33 (https://www.bitminer33.xyz/comprar): imagem, preço, preço em sats ao câmbio do momento,
 // €/TH e eficiência. "Comprar" abre o WhatsApp da loja com a mensagem já escrita; a venda é feita direto com a Bitminer33.
-// As imagens vêm do próprio site da loja; os preços foram copiados do site e podem mudar (ver LJ_DATA).
+// Os produtos, preços e imagens vêm do site da loja pelo servidor (/api/shop/products); LJ_DATA é a lista de reserva e os nomes arrumados.
 Object.assign(I18N_DICT, {
   loja_t: { pt: `Loja Bitminer33`, en: `Bitminer33 Shop`, es: `Tienda Bitminer33`, fr: `Boutique Bitminer33` },
   ab_loja: { pt: `Máquinas modificadas e originais da Bitminer33, com pagamento em Bitcoin.`, en: `Modified and original miners from Bitminer33, paid in Bitcoin.`, es: `Máquinas modificadas y originales de Bitminer33, con pago en Bitcoin.`, fr: `Machines modifiées et d'origine de Bitminer33, payables en Bitcoin.` },
@@ -40,11 +40,13 @@ Object.assign(I18N_DICT, {
   lj_c_save: { pt: `poupas {0}`, en: `you save {0}`, es: `ahorras {0}`, fr: `vous économisez {0}` },
   lj_p_disc: { pt: `−5% ao comprar pela dashboard`, en: `−5% when buying through the dashboard`, es: `−5% al comprar desde el panel`, fr: `−5 % en achetant via le tableau de bord` },
   lj_p_new: { pt: `Novo`, en: `New`, es: `Nuevo`, fr: `Nouveau` },
+  lj_new: { pt: `Novidade`, en: `Just in`, es: `Novedad`, fr: `Nouveauté` },
+  lj_n_title: { pt: `Produto novo na loja`, en: `New product in the shop`, es: `Producto nuevo en la tienda`, fr: `Nouveau produit dans la boutique` },
   lj_p_title: { pt: `Loja Bitminer33`, en: `Bitminer33 Shop`, es: `Tienda Bitminer33`, fr: `Boutique Bitminer33` },
   lj_p_sub: { pt: `Bitaxe, NerdQAxe e mais, prontas a minerar · desde {0}`, en: `Bitaxe, NerdQAxe and more, ready to mine · from {0}`, es: `Bitaxe, NerdQAxe y más, listas para minar · desde {0}`, fr: `Bitaxe, NerdQAxe et plus, prêts à miner · dès {0}` },
   lj_p_btc: { pt: `Paga em ₿ Bitcoin`, en: `Pay in ₿ Bitcoin`, es: `Paga en ₿ Bitcoin`, fr: `Payez en ₿ Bitcoin` },
   lj_p_go: { pt: `Ver a loja`, en: `Visit the shop`, es: `Ver la tienda`, fr: `Voir la boutique` },
-  lj_note: { pt: `A venda, o pagamento e o envio são tratados diretamente com a Bitminer33; a mensagem do WhatsApp diz que vens da Hash Commander e é a loja que aplica os 5% de desconto. Preços tirados do site da loja a 1 de novembro de 2026; podem mudar, confirma sempre com a loja. O preço em sats usa o câmbio do momento.`, en: `Sale, payment and shipping are handled directly with Bitminer33; the WhatsApp message says you came from Hash Commander and the shop applies the 5% discount. Prices taken from the shop's site on 1 November 2026; they may change, always confirm with the shop. The sats price uses the current rate.`, es: `La venta, el pago y el envío se tratan directamente con Bitminer33; el mensaje de WhatsApp dice que vienes de Hash Commander y la tienda aplica el 5% de descuento. Precios tomados del sitio de la tienda el 1 de noviembre de 2026; pueden cambiar, confirma siempre con la tienda. El precio en sats usa el cambio actual.`, fr: `La vente, le paiement et l'envoi se font directement avec Bitminer33 ; le message WhatsApp indique que vous venez de Hash Commander et c'est la boutique qui applique les 5 % de réduction. Prix relevés sur le site de la boutique le 1er novembre 2026 ; ils peuvent changer, confirmez toujours avec la boutique. Le prix en sats utilise le taux du moment.` }
+  lj_note: { pt: `A venda, o pagamento e o envio são tratados diretamente com a Bitminer33; a mensagem do WhatsApp diz que vens da Hash Commander e é a loja que aplica os 5% de desconto. Produtos e preços lidos do site da loja de 6 em 6 horas; confirma sempre com a loja. O preço em sats usa o câmbio do momento.`, en: `Sale, payment and shipping are handled directly with Bitminer33; the WhatsApp message says you came from Hash Commander and the shop applies the 5% discount. Products and prices are read from the shop's site every 6 hours; always confirm with the shop. The sats price uses the current rate.`, es: `La venta, el pago y el envío se tratan directamente con Bitminer33; el mensaje de WhatsApp dice que vienes de Hash Commander y la tienda aplica el 5% de descuento. Productos y precios leídos del sitio de la tienda cada 6 horas; confirma siempre con la tienda. El precio en sats usa el cambio actual.`, fr: `La vente, le paiement et l'envoi se font directement avec Bitminer33 ; le message WhatsApp indique que vous venez de Hash Commander et c'est la boutique qui applique les 5 % de réduction. Produits et prix lus sur le site de la boutique toutes les 6 heures ; confirmez toujours avec la boutique. Le prix en sats utilise le taux du moment.` }
 });
 try { if(typeof applyTranslations === 'function') applyTranslations(); } catch(e) {}
 
@@ -52,25 +54,25 @@ const LJ_WA = '351910339375', LJ_SITE = 'https://www.bitminer33.xyz/comprar', LJ
 const LJ_IMG = 'https://lh7-us.googleusercontent.com/sitesv-images-rt/';
 // k: miner | wallet | part · ths: hashrate em TH/s · w: consumo em watts (só quando a loja o indica)
 const LJ_DATA = [
-  { n: 'NerdQAxe++ Parasite Pool', d: 'rev 5.1', k: 'miner', eur: 240, ths: 4.9, hot: true,
+  { site: 'Nerdqaxe++ Parasite pool 4.9th/s rev5.1', n: 'NerdQAxe++ Parasite Pool', d: 'rev 5.1', k: 'miner', eur: 240, ths: 4.9, hot: true,
     img: 'AMxu72v9U3SLfqJRUQNS5JywcG7Yg1nwoKVg2hwTJVmgABaAOQAjNpV03wNOmF3_aYxkHG1WEznUt5tGm_t7tXOEHoGHTzSsT7Kw-SfH0uyvK75I7_slGzCJAYbGKbSdAwdkzM2Cu8YSIZn-f6GW6d58HIcA_syUUSh3giuirZJg1Vxb2CsVLroHTLUVm8w_FnXOdExCvDv_-_ArObe3uVKr6CfXN62hJUsm5HGwbV_vIuU=w1280' },
-  { n: 'NerdOctaxe', d: 'Rev 3.3', k: 'miner', eur: 399, ths: 11,
+  { site: 'NerdOctaxe 11th/s Rev 3.3', n: 'NerdOctaxe', d: 'Rev 3.3', k: 'miner', eur: 399, ths: 11,
     img: 'AMxu72vmGq5ig9QJAs5J8NZ3toHYu8wJXgLCr2rM408KnavbfhGu_uz5q8IddFdCqb-UiEPf4V4kLKoHpsZky20A31ag6c6dtLiaJ5sqP7at458hhKJSfA2nAUy9phf5Dc_eS-kH7lP7EQGGtzITt1CI5WovkqHlxPSbx0bTAapaisyvY87ZSnicu9poCmURKQX8QKeObUyhom2CNpFLNYy65E751tl2ChhwfPu-tzqs=w1280' },
-  { n: 'Bitaxe Gamma', d: '2 TH/s · 36 W', k: 'miner', eur: 120, ths: 2, w: 36,
+  { site: 'BITAXE GAMMA 2Th/s 36w', n: 'Bitaxe Gamma', d: '2 TH/s · 36 W', k: 'miner', eur: 120, ths: 2, w: 36,
     img: 'AMxu72vGf9nNC-o42mgc_OctchAOa9coc4OiQmDThp8Czckad6EsXmfY5vscZ1Hr6zkhaVVXIgGAVqObdSdOxtQ0sdqmyiKvjCywSx_aKCpJxQgND5lJwQFnqU_htOMUjyKa3XPmdpvUzy1wNBRXxTgnhqlZdlriURj9zl0c-jZU5YZfPdTgyhX1K32VVlPNzid75u68FyUWF01tyx_1mg3nVWzjqMhKT2Tu7Xx-RBjz580=w1280' },
-  { n: 'NerdQAxe++', d: 'rev 6.1 · dual fan', k: 'miner', eur: 249, ths: 6,
+  { site: 'NerdqAxe++ 6th/s rev 6.1 dual fan', n: 'NerdQAxe++', d: 'rev 6.1 · dual fan', k: 'miner', eur: 249, ths: 6,
     img: 'AMxu72sWL_ulB4zRs0fOtGpr-ABbGH9ezC5DDN7l3QsimWhCQ2120L9PZ6XbAgXTek6qJaTc4B9lyfGPc5M5Z_dep9wUbwio21oMniQyzi5jN5fwJQoA1Q9lKS7vVFRalWpLt_bk9vo8Dd0m6OApQkoXWmmifDNuyUidUBuoUnaq5a_t-KCarFZwl4K1gKpqIs_eBrV0Ybkmwp1xMsVLGzTdzpyzauIgBjfxfis97ymUtTw=w1280' },
-  { n: 'DIY Nakamoto S19j+', d: '27 TH/s · 650 W (depende da hash)', k: 'miner', eur: 399, ths: 27, w: 650,
+  { site: 'MINERADORA DIY NAKAMOTO S19J+ 27TH 650W (depende da hash)', n: 'DIY Nakamoto S19j+', d: '27 TH/s · 650 W (depende da hash)', k: 'miner', eur: 399, ths: 27, w: 650,
     img: 'AMxu72soJ-GefNdQ330oYuupXWCODMKVDhq4_kr3gfTbYGYw2ThZdmk2ANvum2jEnokDnaNxQg1olQ_Yf5XVSdsvB_BZSs5ayAn4fMKA-9FbHpYEjdXCawZONDhxTVZekk3J_8i6PUzLvvQbyotHVskzrz-FHjB6wj6d1pMuWvnqnWJmH_72a-EAXdpGl1UievJOhUQfJK-LrOZ9UgPnBfrYyERZarJaqExyW80rnvuM=w1280' },
-  { n: 'LuckyAxe B401', d: '8 TH/s · 150 W', k: 'miner', eur: 270, ths: 8, w: 150,
+  { site: 'luckyaxe B401 8Th/s 150w', n: 'LuckyAxe B401', d: '8 TH/s · 150 W', k: 'miner', eur: 270, ths: 8, w: 150,
     img: 'AMxu72uIIW5PZN-EhMRtG6t1Kcf47ONlxOlxfVtIftch2GuDi3S53weZkwMgixJG1xSjb3ZbexoIEpFPRXgO7Ehj03-CvFRWzikhiIY7EZL0bu-7GAP6IVKRArYpdA7Ng73T0CE2hjaUbSNEnH4zPRZos7uD3g_OlPdWnjOYysjquo_PYQxNEEL7shACSsz38tJwVlcaQ0e8y2-K2XScUUdw-tAZwW9bzcj85zMhqhPXXD0=w1280' },
-  { n: 'Bitaxe Gamma 601', d: '1.5 TH/s · 30 W', k: 'miner', eur: 90, ths: 1.5, w: 30,
+  { site: 'bitaxe gama 601 1.5th 30w', n: 'Bitaxe Gamma 601', d: '1.5 TH/s · 30 W', k: 'miner', eur: 90, ths: 1.5, w: 30,
     img: 'AMxu72vh6cznss6V01IZqdBVy_mvAYAnxHQwbOlwYV8qXE0pTSV3S25s6p-IEsrtmxva-n8zH3oEQS_dAl4LFnfm8_Tx6yxNGfhu_YWYVgyBbckrdVPjMVtMrzywjtyeziQ-OHHKSS45cNYYELS6WeGL-HeQJyohk1V8-1IFBL8ZOsZShkS-aprGmNVOrMXK9py6hqeWMoGkBEC85G1dOJPdbvaGgT2_8YrC2inXBBeUtY4=w1280' },
-  { n: 'Krux', d: 'cold wallet', k: 'wallet', eur: 68,
+  { site: 'krux coldwallet', n: 'Krux', d: 'cold wallet', k: 'wallet', eur: 68,
     img: 'AMxu72tKcm6IWLvO6JmFu-57D5SWWPLxm7ouAkyjW0f4OJS5d_ORrmIaz-UE_Zca1CPTtOE-jgeNPAWPPQ6Fgl6toaHd66UYX4yigo9OZGkZid2L3tLijoV4zu47c3McVf5Wuaz3lYwyNCsPaglK9YuW9k66HLRawfIGEd_EHiGfbRTN_tzVNQjIwNejHzovpnSHLVYn1yoZuHAArasBLZCKCVcyItKGM3kYgp2DwlnXImo=w1280' },
-  { n: 'Seeder Kit', d: 'gerador de chaves BIP-39 offline', k: 'wallet', eur: 29,
+  { site: 'SEEDER KIT - gerador de chaves bip-39 offline', n: 'Seeder Kit', d: 'gerador de chaves BIP-39 offline', k: 'wallet', eur: 29,
     img: 'AMxu72uKmlL_MluJrh85AuIAbNTvFyMyFZRKbJW-b9r1M2o9MAG9tEjNxlPWZyjOtN1MwHN-RyzrmS0TwexjUWLXHIbcLrCEHKz_BKQLVXzI0wZysPByU7X5IEQgru4AjXFEXY-1wzyPo8-F1Fssb_zXC4xussIFhaMhTB8Y9GSjfH_4PYyahYnP_rqEYX3MLuDACpwOrOJ72ejtl077MlsJ2roG5gDg1dYjMxAekchU8BQ=w1280' },
-  { n: 'Fonte Mean Well', d: '12 V · 350 W', k: 'part', eur: 48,
+  { site: 'Fonte de energia meanwell 12v 350w', n: 'Fonte Mean Well', d: '12 V · 350 W', k: 'part', eur: 48,
     img: 'AMxu72vGGMyYlmRz2fjOvcSuHGHw7SFXtslX9LiKc79wX35Z4EVBpwbzzmiM1bUaJHzkKi4kAKFTljUmj_mmah-QpjSGL2DZeQ7djImN7M1SNjRXkaGqOW_w6gMm7L407IUcnZhPcgDx54G-U61qtAGamOC0900jP2XoZ1CGQQKQ7UEwmrO7fjWH1r1gC2MhZTq3grG2m9xKnWtzyQm88Ee07LA5AH-Gwe2_GcjRgFm8=w1280' }
 ];
 
@@ -91,7 +93,47 @@ const LJ_DATA = [
   const final = eur => Math.round(eur * (1 - DISC) * 100) / 100;
   const eur2 = v => v.toLocaleString(loc(), { style: 'currency', currency: 'EUR', minimumFractionDigits: Number.isInteger(v) ? 0 : 2, maximumFractionDigits: 2 });
   // a máquina com o melhor €/TH leva o selo "Melhor €/TH"
-  const bestIdx = LJ_DATA.reduce((b, p, i) => perTh(p) < perTh(LJ_DATA[b]) ? i : b, 0);
+  let bestIdx = 0;
+  const calcBest = () => { bestIdx = LJ_DATA.reduce((b, p, i) => perTh(p) < perTh(LJ_DATA[b]) ? i : b, 0); };
+  calcBest();
+  const imgUrl = p => p.url || LJ_IMG + p.img;
+
+  // ---------- produtos atuais do site da loja (/api/shop/products, lido pelo servidor de 6 em 6 h) ----------
+  // Os produtos conhecidos (LJ_DATA) ficam com os nomes e dados arrumados, mas com o preço e a imagem atuais;
+  // os que saíram do site deixam de aparecer; os novos entram sozinhos (TH/s e W tirados do nome) e geram um aviso.
+  const SKEY = 'hc_lj_seen', NEW_DAYS = 14;
+  const keyOf = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  function fromSite(sp){
+    const s = sp.name, num = x => x ? Number(x.replace(',', '.')) : 0;
+    const ths = num((/(\d+(?:[.,]\d+)?)\s*th(?:\/s)?\b/i.exec(s) || [])[1]), w = num((/(\d{2,4})\s*w\b/i.exec(s) || [])[1]);
+    const k = /wallet|seed|krux|bip-?39|jade|coldcard|trezor|ledger|passport/i.test(s) ? 'wallet' : ths ? 'miner' : 'part';
+    return { site: s, n: s.replace(/\s+/g, ' ').trim(), d: '', k, eur: sp.eur, ths: ths || undefined, w: w || undefined, url: sp.img };
+  }
+  function mergeSite(list){
+    if(!Array.isArray(list) || !list.length) return false;
+    const known = {}; LJ_DATA.forEach(p => { if(p.site) known[keyOf(p.site)] = p; });
+    let seen = {}; try { seen = JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch(e) {}
+    const first = !Object.keys(seen).length, now = Date.now(), fresh = [];
+    const merged = list.map(sp => {
+      const key = keyOf(sp.name), base = known[key];
+      const p = base ? Object.assign({}, base, { eur: sp.eur, url: sp.img }) : fromSite(sp);
+      // na primeira leitura tudo o que já existe conta como visto (0 = sem selo "Novidade" nem aviso)
+      if(!(key in seen)){ seen[key] = first ? 0 : now; if(!first) fresh.push(p); }
+      p.fresh = seen[key] > 0 && now - seen[key] < NEW_DAYS * 864e5;
+      return p;
+    });
+    try { localStorage.setItem(SKEY, JSON.stringify(seen)); } catch(e) {}
+    LJ_DATA.splice(0, LJ_DATA.length, ...merged);
+    calcBest();
+    fresh.forEach(p => { try { addNotification('shop', t('lj_n_title'), p.n + ' — ' + eurFmt(p.eur), 'Loja Bitminer33'); } catch(e) {} });
+    return true;
+  }
+  async function syncSite(){
+    try {
+      const d = await (await fetch(`${API_BASE}/api/shop/products`)).json();
+      if(mergeSite(d && d.products)){ promo(); if(document.getElementById('ljGrid')) draw(); }
+    } catch(e) {}
+  }
 
   function card(p, i){
     const [kk, ki] = KIND[p.k], rate = btcEur();
@@ -101,11 +143,11 @@ const LJ_DATA = [
     if(p.w) specs.push('<span class="lj-spec"><b>' + p.w + '</b> W <i>' + t('lj_power') + '</i></span>');
     if(p.ths && p.w) specs.push('<span class="lj-spec"><b>' + (p.w / p.ths).toFixed(1) + '</b> J/TH <i>' + t('lj_eff') + '</i></span>');
     if(p.ths) specs.push('<span class="lj-spec eur"><b>' + (p.eur / p.ths).toFixed(0) + ' €</b>/TH</span>');
-    const badge = i === bestIdx ? '<span class="lj-badge best">🏆 ' + t('lj_best') + '</span>' : p.hot ? '<span class="lj-badge hot">🔥 ' + t('lj_hot') + '</span>' : '';
+    const badge = p.fresh ? '<span class="lj-badge fresh">✨ ' + t('lj_new') + '</span>' : i === bestIdx ? '<span class="lj-badge best">🏆 ' + t('lj_best') + '</span>' : p.hot ? '<span class="lj-badge hot">🔥 ' + t('lj_hot') + '</span>' : '';
     const name = p.n + (p.d ? ' — ' + p.d : '');
     return '<article class="lj-card k-' + p.k + '" data-i="' + i + '">' +
       '<div class="lj-media"><span class="lj-glow"></span>' +
-        '<img loading="lazy" referrerpolicy="no-referrer" alt="' + esc(p.n) + '" src="' + LJ_IMG + p.img + '" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'lj-noimg\',textContent:\'' + ki + '\'}))">' +
+        '<img loading="lazy" referrerpolicy="no-referrer" alt="' + esc(p.n) + '" src="' + esc(imgUrl(p)) + '" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'lj-noimg\',textContent:\'' + ki + '\'}))">' +
         '<span class="lj-kind">' + ki + ' ' + t(kk) + '</span>' + badge +
       '</div>' +
       '<div class="lj-body">' +
@@ -190,7 +232,7 @@ const LJ_DATA = [
   }
   function promoItems(){
     const one = LJ_DATA.map((p, i) => '<button type="button" class="ljp-item" data-i="' + i + '" tabindex="-1">' +
-      '<img loading="lazy" referrerpolicy="no-referrer" alt="" src="' + LJ_IMG + p.img + '" onerror="this.style.visibility=\'hidden\'">' +
+      '<img loading="lazy" referrerpolicy="no-referrer" alt="" src="' + esc(imgUrl(p)) + '" onerror="this.style.visibility=\'hidden\'">' +
       '<span><b>' + esc(p.n) + '</b><i><s>' + eurFmt(p.eur) + '</s> ' + eur2(final(p.eur)) + (p.ths ? ' · ' + p.ths.toLocaleString(loc()) + ' TH/s' : '') + '</i></span></button>').join('');
     return one + one;   // duas vezes seguidas para a faixa dar a volta sem salto
   }
@@ -225,5 +267,9 @@ const LJ_DATA = [
     .observe(tab, { attributes: true, attributeFilter: ['class'] });
   const ol = window.setLanguage;
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', promo); else promo();
+  // produtos atuais da loja: ao abrir o painel e depois de 6 em 6 horas (o aviso de produto novo chega mesmo sem abrir a aba)
+  syncSite();
+  setInterval(syncSite, 6 * 3600 * 1000);
+  window.hcShopSync = syncSite;
   if(typeof ol === 'function') window.setLanguage = function(){ const r = ol.apply(this, arguments); try { promo(); if(document.getElementById('ljGrid')){ draw(); const w = document.getElementById('ljWa'); if(w) w.href = wa(t('lj_msg0')); } } catch(e) {} return r; };
 })();

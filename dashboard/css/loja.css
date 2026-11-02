@@ -61,6 +61,7 @@
 .lj-kind{position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#e8f7ff;background:#05080dcc;border:1px solid #ffffff22;backdrop-filter:blur(6px)}
 .lj-badge{position:absolute;right:10px;top:10px;padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:800;backdrop-filter:blur(6px)}
 .lj-badge.best{color:#1a0d00;background:linear-gradient(180deg,#ffe08a,#ffb020);box-shadow:0 0 14px -2px #ffb020}
+.lj-badge.fresh{color:#04210f;background:linear-gradient(180deg,#8dffc4,#21d17a);box-shadow:0 0 14px -2px #21ffb0}
 .lj-badge.hot{color:#fff;background:linear-gradient(180deg,#ff6b9d,#d6336c);box-shadow:0 0 14px -2px #ff6b9d}
 .lj-body{display:flex;flex-direction:column;gap:8px;padding:14px 16px 16px;flex:1}
 .lj-body h3{margin:0;font:800 16px/1.2 'Space Grotesk',sans-serif;color:#fff}

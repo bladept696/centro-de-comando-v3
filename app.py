@@ -85,7 +85,8 @@ def _urlopen_https(req, timeout):
     except urllib.error.URLError as e:
         reason = getattr(e, "reason", e)
         if isinstance(reason, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(reason):
-            return _urlopen_https(req, timeout=timeout)
+            # 2.ª tentativa com os certificados do sistema (sem context=); antes chamava-se a si própria e repetia sem fim
+            return urllib.request.urlopen(req, timeout=timeout)
         raise
 
 try:
@@ -2029,6 +2030,62 @@ def start_update_install(silent=True):
     )
     t.start()
     return True, None
+
+
+# --- Loja Bitminer33 (aba Loja) ---
+# Lê a página de compras da loja (Google Sites) para a aba Loja mostrar sempre os produtos, preços e imagens atuais
+# e avisar quando aparece um produto novo. Cada produto na página é: imagem -> nome -> preço em € -> "comprar".
+# As imagens do Google Sites têm links assinados que mudam, por isso vêm sempre daqui e não ficam fixas no código.
+SHOP_URL = "https://www.bitminer33.xyz/comprar"
+SHOP_CACHE_SECONDS = 6 * 3600
+_shop_cache = {"ts": 0, "data": None}
+_shop_cache_lock = threading.Lock()
+
+
+def _shop_parse(raw):
+    import html as _html
+    txt = re.sub(r'<img[^>]*?src="(https://lh\d-[a-z]+\.googleusercontent\.com/[^"]+)"[^>]*>', lambda m: "\n@@IMG " + m.group(1) + "\n", raw)
+    txt = re.sub(r"<(script|style)[\s\S]*?</\1>", " ", txt)
+    txt = re.sub(r"<br\s*/?>|</p>|</div>|</h\d>|</a>", "\n", txt)
+    txt = _html.unescape(re.sub(r"<[^>]+>", " ", txt))
+    lines = [re.sub(r"\s+", " ", l).strip() for l in txt.split("\n")]
+    lines = [l for l in lines if l]
+    out, img, name = [], None, None
+    for l in lines:
+        if l.startswith("@@IMG "):
+            img, name = l[6:], None
+            continue
+        m = re.fullmatch(r"(\d{1,6}(?:[.,]\d{1,2})?)\s*€", l)
+        if m and img and name:
+            out.append({"name": name, "eur": float(m.group(1).replace(",", ".")), "img": img})
+            img = name = None
+        elif img and not name and l.lower() != "comprar" and len(l) <= 160:
+            name = l
+    return out
+
+
+def fetch_shop_products(force=False):
+    with _shop_cache_lock:
+        if not force and _shop_cache["data"] is not None and time.time() - _shop_cache["ts"] < SHOP_CACHE_SECONDS:
+            return _shop_cache["data"]
+    try:
+        req = urllib.request.Request(SHOP_URL, headers={"User-Agent": "Mozilla/5.0 (CentroDeComando)"})
+        with _urlopen_https(req, timeout=12) as resp:
+            products = _shop_parse(resp.read(3 * 1024 * 1024).decode("utf-8", "ignore"))
+        if not products:
+            raise RuntimeError("nenhum produto encontrado na página da loja")
+        data = {"products": products, "ts": int(time.time()), "stale": False}
+    except Exception as e:
+        with _shop_cache_lock:
+            old = _shop_cache["data"]
+        if old:
+            # a loja falhou agora: continua com a última lista boa
+            return dict(old, stale=True, error=str(e))
+        return {"products": [], "ts": int(time.time()), "stale": True, "error": str(e)}
+    with _shop_cache_lock:
+        _shop_cache["ts"] = time.time()
+        _shop_cache["data"] = data
+    return data
 
 
 # --- Notícias de Bitcoin (rodapé da dashboard) ---
@@ -4642,6 +4699,11 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(data).encode('utf-8'))
+            return
+
+        if path == '/api/shop/products':
+            force = query_params.get('force', ['0'])[0] == '1'
+            self._send_json(fetch_shop_products(force=force))
             return
 
         if path == '/api/btc-news':

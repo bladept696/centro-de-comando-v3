@@ -543,6 +543,7 @@ Object.assign(I18N_DICT, {
   nf_best: { pt: `🏆 Recordes`, en: `🏆 Records`, es: `🏆 Récords`, fr: `🏆 Records` },
   nf_thermal: { pt: `🧬 Térmicos`, en: `🧬 Thermal`, es: `🧬 Térmicos`, fr: `🧬 Thermiques` },
   nf_machine: { pt: `⚠️ Máquinas`, en: `⚠️ Machines`, es: `⚠️ Máquinas`, fr: `⚠️ Machines` },
+  nf_shop: { pt: `🛒 Loja`, en: `🛒 Shop`, es: `🛒 Tienda`, fr: `🛒 Boutique` },
   nf_empty: { pt: `Ainda não existem notificações registadas.`, en: `No notifications recorded yet.`, es: `Aún no hay notificaciones registradas.`, fr: `Aucune notification enregistrée pour l'instant.` },
   nf_empty_f: { pt: `Sem alertas deste tipo.`, en: `No alerts of this type.`, es: `Sin alertas de este tipo.`, fr: `Aucune alerte de ce type.` },
   nf_today: { pt: `Hoje`, en: `Today`, es: `Hoy`, fr: `Aujourd'hui` },

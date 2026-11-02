@@ -80,6 +80,9 @@ Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: st
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; Atualização pelo botão "Atualizar agora" (instalador em /VERYSILENT): a app fechou-se para deixar instalar,
+; por isso volta a abri-la no fim; sem isto ficava fechada e parecia que a atualização não tinha funcionado.
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: WizardSilent
 
 [UninstallDelete]
 ; Limpa a pasta de instaladores descarregados automaticamente, mas NUNCA

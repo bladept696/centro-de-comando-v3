@@ -109,6 +109,9 @@ initQuickActions();
   updateLogMachineDropdown();
   renderAll();
   checkForUpdate();
+  // o painel costuma ficar aberto dias seguidos: volta a procurar atualizações de 6 em 6 horas
+  // (não mexe no aviso se já estiver a descarregar uma)
+  setInterval(() => { const b = $('updateBannerInstall'); if(!(b && b.disabled)) checkForUpdate(); }, 6 * 3600 * 1000);
 
   // Assistente de primeira execução: se ainda não há nenhuma máquina
   // registada e nunca mostrámos isto antes neste browser, abre a
