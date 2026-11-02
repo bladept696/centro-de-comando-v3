@@ -18,6 +18,7 @@ Object.assign(I18N_DICT, {
   wg_g_cards: { pt: `Dentro das máquinas`, en: `Inside the machines`, es: `Dentro de las máquinas`, fr: `Dans les machines` },
   wg_wx: { pt: `Relógio e tempo`, en: `Clock and weather`, es: `Reloj y tiempo`, fr: `Horloge et météo` },
   wg_spot: { pt: `Destaque da pool`, en: `Pool spotlight`, es: `Destacado del pool`, fr: `Mise en avant du pool` },
+  wg_shop: { pt: `Destaque da Loja Bitminer33`, en: `Bitminer33 Shop spotlight`, es: `Destacado de la Tienda Bitminer33`, fr: `Mise en avant de la Boutique Bitminer33` },
   wg_blocks: { pt: `Blocos do mempool`, en: `Mempool blocks`, es: `Bloques del mempool`, fr: `Blocs du mempool` },
   wg_hash: { pt: `Indicador: hashrate`, en: `Indicator: hashrate`, es: `Indicador: hashrate`, fr: `Indicateur : hashrate` },
   wg_best: { pt: `Indicador: melhor share`, en: `Indicator: best share`, es: `Indicador: mejor share`, fr: `Indicateur : meilleur share` },
@@ -54,6 +55,7 @@ const WG_KEY = 'nerdqaxe:widgets_hidden';
 const WG_ITEMS = [
   { id: 'wx', k: 'wg_wx', g: 'top', find: () => document.getElementById('wxPanel') },
   { id: 'spot', k: 'wg_spot', g: 'top', find: () => document.getElementById('gpSpotlight') },
+  { id: 'shop', k: 'wg_shop', g: 'top', find: () => document.getElementById('ljPromo') },
   { id: 'blocks', k: 'wg_blocks', g: 'top', find: () => document.querySelector('#tab-dashboard .blocks-container') },
   { id: 'gauge-hashrate', k: 'wg_hash', g: 'side', lay: true }, { id: 'gauge-best', k: 'wg_best', g: 'side', lay: true },
   { id: 'gauge-temp', k: 'wg_temp', g: 'side', lay: true }, { id: 'gauge-fan', k: 'wg_fan', g: 'side', lay: true },
@@ -71,7 +73,7 @@ const WG_GROUPS = [['top', 'wg_g_top'], ['side', 'wg_g_side'], ['main', 'wg_g_ma
 const WG_PRESETS = {
   all: [],
   ess: ['wx', 'spot', 'blocks', 'gauge-best', 'gauge-fan', 'gauge-ai', 'main-machines', 'network-map', 'main-charts', 'chart-hashrate', 'chart-best', 'chart-donut', 'main-eventlog', 'com', 'sched', 'evt'],
-  mach: ['wx', 'spot', 'blocks', 'gauge-hashrate', 'gauge-best', 'gauge-temp', 'gauge-fan', 'gauge-power', 'gauge-count', 'gauge-ai', 'main-machines', 'network-map', 'main-charts', 'main-eventlog', 'com', 'sched', 'evt']
+  mach: ['wx', 'spot', 'shop', 'blocks', 'gauge-hashrate', 'gauge-best', 'gauge-temp', 'gauge-fan', 'gauge-power', 'gauge-count', 'gauge-ai', 'main-machines', 'network-map', 'main-charts', 'main-eventlog', 'com', 'sched', 'evt']
 };
 let wgHidden = (() => { try { const a = JSON.parse(localStorage.getItem(WG_KEY) || '[]'); return new Set(Array.isArray(a) ? a : []); } catch(e) { return new Set(); } })();
 function wgSave(){ try { localStorage.setItem(WG_KEY, JSON.stringify([...wgHidden])); } catch(e) {} }

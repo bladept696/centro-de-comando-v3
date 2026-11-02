@@ -1,0 +1,139 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ---------- Aba Loja Bitminer33 (loja.js) ---------- */
+#tab-loja .lj-wrap{display:flex;flex-direction:column;gap:18px}
+
+/* cabeçalho da loja */
+.lj-hero{position:relative;display:flex;align-items:center;gap:26px;padding:22px 28px;border-radius:22px;overflow:hidden;isolation:isolate;
+  border:1px solid #ffb02055;background:linear-gradient(120deg,#1d1203 0%,#0b0d14 55%,#06121c 100%);
+  box-shadow:inset 0 1px 0 #ffe2a330,0 30px 60px -34px #000,0 0 40px -18px #ffb02088}
+.lj-hero-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(520px circle at 12% 40%,#ffb0202e,transparent 60%),
+    repeating-linear-gradient(90deg,transparent 0 46px,#ffb02010 46px 47px),repeating-linear-gradient(0deg,transparent 0 46px,#ffb0200c 46px 47px)}
+.lj-hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,#ffffff12 45%,transparent 60%);
+  transform:translateX(-100%);animation:lj-sweep 7s ease-in-out infinite}
+@keyframes lj-sweep{55%,100%{transform:translateX(100%)}}
+.lj-logo{width:min(320px,38%);border-radius:14px;box-shadow:0 18px 40px -16px #000,0 0 0 1px #ffb02044;transform:perspective(900px) rotateY(10deg);flex:none}
+.lj-hero-txt h2{margin:0 0 8px;font:900 34px/1 Orbitron,'Space Grotesk',sans-serif;letter-spacing:.12em;
+  background:linear-gradient(180deg,#fff3c9,#ffc04d 55%,#c97a0a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #5a2d02) drop-shadow(0 0 18px #ffb02066)}
+.lj-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.lj-tags span{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.04em;color:#f3e6c8;background:#ffffff0d;border:1px solid #ffffff1f}
+.lj-tags span.btc{color:#1a0d00;background:linear-gradient(180deg,#ffd27a,#ff9d1c);border-color:#ffd27a;box-shadow:0 0 16px -4px #ffb020}
+.lj-hero-acts{display:flex;flex-wrap:wrap;gap:10px}
+.lj-wa,.lj-ghost{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;border-radius:11px;font-weight:800;font-size:13px;text-decoration:none;transition:transform .15s,box-shadow .2s}
+.lj-wa{color:#04210f;background:linear-gradient(180deg,#5cf59a,#1fbf63);box-shadow:0 4px 0 #0d6b36,0 10px 24px -10px #25d366}
+.lj-wa::before{content:"💬"}
+.lj-ghost{color:#e8f7ff;background:#ffffff0a;border:1px solid #ffffff26}
+.lj-wa:hover,.lj-ghost:hover{transform:translateY(-2px)}
+.lj-ghost:hover{border-color:#ffb02088;box-shadow:0 0 18px -6px #ffb020}
+
+/* barra de filtros */
+.lj-panel{padding:18px 20px}
+.lj-tools{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px}
+.lj-views{display:flex;flex-wrap:wrap;gap:6px}
+.lj-views button{height:34px;padding:0 14px;border-radius:999px;border:1px solid #ffffff22;background:#ffffff08;color:#cfe6f5;font-weight:700;font-size:12.5px;cursor:pointer;transition:all .15s}
+.lj-views button:hover{border-color:#ffb02088;color:#fff}
+.lj-views button.on{color:#1a0d00;background:linear-gradient(180deg,#ffd27a,#ff9d1c);border-color:#ffd27a;box-shadow:0 0 18px -6px #ffb020}
+.lj-count{color:var(--muted);font-size:12px;margin-right:auto}
+.lj-sort{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.lj-sort select{height:34px;padding:0 10px;border-radius:10px;border:1px solid #ffffff26;background:#0c1a26;color:#e8f7ff;color-scheme:dark;cursor:pointer}
+.lj-sort select option{background:#0c1a26;color:#e8f7ff}
+
+/* montra */
+.lj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;perspective:1100px}
+.lj-card{--rx:0deg;--ry:0deg;--mx:50%;--my:50%;--acc:#ffb020;position:relative;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;
+  background:linear-gradient(180deg,#121a26,#0a0f17);border:1px solid #ffffff17;
+  transform:rotateX(var(--rx)) rotateY(var(--ry));transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s,border-color .25s;
+  box-shadow:0 18px 34px -22px #000;animation:lj-in .5s backwards}
+.lj-card.k-wallet{--acc:#4fd6ff}.lj-card.k-part{--acc:#21ffb0}
+.lj-card:hover{border-color:color-mix(in srgb,var(--acc) 60%,transparent);box-shadow:0 28px 50px -24px #000,0 0 34px -12px var(--acc)}
+.lj-card::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;opacity:0;transition:opacity .25s;
+  background:radial-gradient(320px circle at var(--mx) var(--my),#ffffff14,transparent 55%)}
+.lj-card:hover::after{opacity:1}
+@keyframes lj-in{from{opacity:0;transform:translateY(14px)}}
+.lj-media{position:relative;height:210px;display:flex;align-items:center;justify-content:center;padding:14px;
+  background:radial-gradient(70% 80% at 50% 45%,color-mix(in srgb,var(--acc) 22%,#1a2333) 0%,#0b111a 70%)}
+.lj-glow{position:absolute;left:50%;bottom:14px;width:60%;height:16px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,#000a,transparent)}
+.lj-media img{position:relative;max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;filter:drop-shadow(0 14px 18px #000b);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.lj-card:hover .lj-media img{transform:scale(1.05) translateY(-4px)}
+.lj-noimg{font-size:64px;filter:drop-shadow(0 10px 14px #000b)}
+.lj-kind{position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#e8f7ff;background:#05080dcc;border:1px solid #ffffff22;backdrop-filter:blur(6px)}
+.lj-badge{position:absolute;right:10px;top:10px;padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:800;backdrop-filter:blur(6px)}
+.lj-badge.best{color:#1a0d00;background:linear-gradient(180deg,#ffe08a,#ffb020);box-shadow:0 0 14px -2px #ffb020}
+.lj-badge.hot{color:#fff;background:linear-gradient(180deg,#ff6b9d,#d6336c);box-shadow:0 0 14px -2px #ff6b9d}
+.lj-body{display:flex;flex-direction:column;gap:8px;padding:14px 16px 16px;flex:1}
+.lj-body h3{margin:0;font:800 16px/1.2 'Space Grotesk',sans-serif;color:#fff}
+.lj-sub{font-size:12px;color:var(--muted);min-height:16px}
+.lj-specs{display:flex;flex-wrap:wrap;gap:6px}
+.lj-spec{padding:4px 8px;border-radius:8px;font-size:11px;color:#bcd4e4;background:#ffffff08;border:1px solid #ffffff14}
+.lj-spec b{color:#fff;font-weight:800}
+.lj-spec i{font-style:normal;opacity:.6;margin-left:2px}
+.lj-spec.hs{border-color:color-mix(in srgb,var(--acc) 45%,transparent);color:var(--acc)}
+.lj-spec.hs b{color:var(--acc)}
+.lj-spec.eur b{color:#ffd27a}
+.lj-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin-top:auto;padding-top:6px}
+.lj-price b{font:900 28px/1 'Space Grotesk',sans-serif;background:linear-gradient(180deg,#fff2c8,#ffc04d 60%,#d98a10);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #4a2502)}
+.lj-sats{font-size:11.5px;color:#e8c48a}
+.lj-acts{display:flex;gap:8px}
+.lj-buy,.lj-more{display:inline-flex;align-items:center;justify-content:center;height:38px;border-radius:11px;font-weight:800;font-size:13px;text-decoration:none;transition:transform .15s,box-shadow .2s}
+.lj-buy{flex:1;color:#1a0d00;background:linear-gradient(180deg,#ffd27a,#ff9d1c);box-shadow:0 4px 0 #9a5a06,0 10px 22px -12px #ffb020}
+.lj-buy:hover{transform:translateY(-2px);box-shadow:0 6px 0 #9a5a06,0 14px 26px -10px #ffb020}
+.lj-buy:active{transform:translateY(2px);box-shadow:0 1px 0 #9a5a06}
+.lj-more{padding:0 12px;color:#cfe6f5;background:#ffffff08;border:1px solid #ffffff22;font-size:12px}
+.lj-more:hover{border-color:var(--acc);color:#fff}
+.lj-note{margin-top:16px;font-size:11.5px;color:var(--muted);line-height:1.5}
+
+/* ---------- destaque da loja na página principal (#ljPromo) ---------- */
+.ljp{position:relative;display:flex;align-items:stretch;gap:0;margin:14px 0;border-radius:20px;overflow:hidden;cursor:pointer;isolation:isolate;
+  background:linear-gradient(110deg,#221403 0%,#0d0f16 42%,#0a1520 100%);border:1px solid transparent;
+  box-shadow:0 26px 50px -30px #000,0 0 36px -16px #ffb02099}
+/* moldura com luz a correr à volta */
+.ljp::before{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;padding:1.5px;pointer-events:none;
+  background:conic-gradient(from var(--ljp-a,0deg),#ffb02022,#ffd27a,#ff9d1c,#ffb02022 30%,#ffb02022 70%,#ffd27a);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ljp-spin 6s linear infinite}
+@property --ljp-a{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes ljp-spin{to{--ljp-a:360deg}}
+.ljp:hover{box-shadow:0 30px 56px -28px #000,0 0 50px -12px #ffb020}
+.ljp-left{position:relative;z-index:1;display:flex;align-items:center;gap:18px;padding:14px 22px;flex:none;
+  background:linear-gradient(90deg,#2a1803ee 70%,transparent);}
+.ljp-logo{width:150px;border-radius:10px;box-shadow:0 10px 24px -10px #000,0 0 0 1px #ffb02055;transform:perspective(700px) rotateY(12deg);transition:transform .3s}
+.ljp:hover .ljp-logo{transform:perspective(700px) rotateY(0deg) scale(1.04)}
+.ljp-title{display:flex;align-items:center;gap:8px;font:900 19px/1.1 Orbitron,'Space Grotesk',sans-serif;letter-spacing:.06em;
+  background:linear-gradient(180deg,#fff3c9,#ffc04d 60%,#d98a10);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #4a2502)}
+.ljp-new{-webkit-text-fill-color:#fff;color:#fff;font:800 10px/1 'Space Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase;padding:4px 7px;border-radius:999px;
+  background:linear-gradient(180deg,#ff6b9d,#d6336c);box-shadow:0 0 12px #ff6b9d;animation:ljp-pulse 1.6s ease-in-out infinite;filter:none}
+@keyframes ljp-pulse{50%{box-shadow:0 0 22px 2px #ff6b9d;transform:scale(1.08)}}
+.ljp-sub{margin-top:5px;font-size:12px;color:#e9d9b8}
+.ljp-btc{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;color:#1a0d00;background:linear-gradient(180deg,#ffd27a,#ff9d1c)}
+.ljp-go{height:40px;padding:0 18px;border:0;border-radius:12px;cursor:pointer;font-weight:900;font-size:13px;color:#1a0d00;white-space:nowrap;
+  background:linear-gradient(180deg,#ffe08a,#ff9d1c);box-shadow:0 4px 0 #9a5a06,0 10px 22px -10px #ffb020;transition:transform .15s}
+.ljp:hover .ljp-go{transform:translateY(-2px)}
+.ljp-go:active{transform:translateY(2px)}
+/* faixa de máquinas a passar */
+.ljp-rail{position:relative;flex:1;min-width:0;overflow:hidden;display:flex;align-items:center;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.ljp-track{display:flex;gap:12px;padding:10px 0;width:max-content;animation:ljp-roll 48s linear infinite}
+.ljp:hover .ljp-track{animation-play-state:paused}
+@keyframes ljp-roll{to{transform:translateX(-50%)}}
+.ljp-item{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:14px;cursor:pointer;color:inherit;font:inherit;text-align:left;
+  background:#ffffff08;border:1px solid #ffffff17;transition:border-color .2s,background .2s}
+.ljp-item:hover{border-color:#ffb020aa;background:#ffb02012}
+.ljp-item img{width:62px;height:62px;object-fit:contain;border-radius:9px;background:radial-gradient(circle,#2a3442,#0b111a);padding:3px;filter:drop-shadow(0 6px 8px #000a)}
+.ljp-item b{display:block;font-size:12.5px;color:#fff;white-space:nowrap}
+.ljp-item i{display:block;font-style:normal;font-size:12px;font-weight:800;color:#ffd27a;margin-top:3px;white-space:nowrap}
+body.perf-mode .ljp-track,body.perf-mode .ljp::before,body.perf-mode .ljp-new{animation:none}
+@media (prefers-reduced-motion:reduce){.ljp-track,.ljp::before,.ljp-new{animation:none}}
+@media (max-width:900px){
+  .ljp{flex-direction:column}
+  .ljp-left{background:none}
+  .ljp-logo{width:110px}
+}
+
+@media (max-width:700px){
+  .lj-hero{flex-direction:column;align-items:flex-start;padding:18px}
+  .lj-logo{width:100%;transform:none}
+  .lj-hero-txt h2{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){.lj-hero-bg::after,.lj-card{animation:none}.lj-card{transform:none}}
+body.perf-mode .lj-hero-bg::after{animation:none}

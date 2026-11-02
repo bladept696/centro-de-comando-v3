@@ -22,7 +22,7 @@ Object.assign(I18N_DICT, {
   ab_supporters: { pt: `Os canais e a comunidade que apoiam o projeto.`, en: `The channels and the community that back the project.`, es: `Los canales y la comunidad que apoyan el proyecto.`, fr: `Les chaînes et la communauté qui soutiennent le projet.` },
   ab_support: { pt: `Ajuda, contactos e ligações úteis.`, en: `Help, contacts and useful links.`, es: `Ayuda, contactos y enlaces útiles.`, fr: `Aide, contacts et liens utiles.` }
 });
-const AB_COLORS = { logs: '#4fd6ff', notifications: '#ffb020', thermal: '#ff7b5d', power: '#21ffb0', oc: '#b07cff', parasite: '#ff6b9d', latency: '#4fd6ff', cooling: '#4fd6ff', genpools: '#ffb020', boards: '#21ffb0', renting: '#b07cff', alerts: '#ff5d5d', simulator: '#ffd34a', converter: '#21ffb0', donate: '#ffd34a', supporters: '#ff6b9d', support: '#4fd6ff' };
+const AB_COLORS = { logs: '#4fd6ff', notifications: '#ffb020', thermal: '#ff7b5d', power: '#21ffb0', oc: '#b07cff', parasite: '#ff6b9d', latency: '#4fd6ff', cooling: '#4fd6ff', genpools: '#ffb020', boards: '#21ffb0', renting: '#b07cff', alerts: '#ff5d5d', simulator: '#ffd34a', converter: '#21ffb0', donate: '#ffd34a', supporters: '#ff6b9d', support: '#4fd6ff', loja: '#ffb020' };
 
 // ícones desenhados dos separadores (viewBox 24×24, só traço): substituem os emojis no quadrado do banner
 const AB_ICONS = {
@@ -42,7 +42,8 @@ const AB_ICONS = {
   mercado: 'M4 4v16h16 M7 15l4-4 3 3 5-6 M15 8h4v4',
   renting: 'M4 21h16 M6 21V8 M6 8h13 M6 8l6-5 M16 8v5 M14 13h4v3h-4z',
   alerts: 'M3 11v2a1 1 0 0 0 1 1h2l8 4V6L6 10H4a1 1 0 0 0-1 1z M17 9a4 4 0 0 1 0 6',
-  thermal: 'M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0z M12 9v7'
+  thermal: 'M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0z M12 9v7',
+  loja: 'M3 4h2.5l2.2 11h10.6l2-8H6.6 M9.5 19.5a1 1 0 1 0 0 .01 M16.5 19.5a1 1 0 1 0 0 .01'
 };
 
 function abHeroSync(){
@@ -58,7 +59,7 @@ function abHeroSync(){
       hero.style.setProperty('--hero', AB_COLORS[name] || '#4fd6ff');
       tab.insertBefore(hero, tab.firstChild);
     }
-    const icon = btn && btn.querySelector('.tab-icon'), label = btn ? [...btn.childNodes].filter(n => !(n.classList && n.classList.contains('tab-icon'))).map(n => n.textContent).join('').trim() : name;
+    const icon = btn && btn.querySelector('.tab-icon'), label = btn ? [...btn.childNodes].filter(n => !(n.classList && (n.classList.contains('tab-icon') || n.classList.contains('badge-counter')))).map(n => n.textContent).join('').trim() : name;
     const ico = hero.querySelector('.th-ico'), h2 = hero.querySelector('h2'), p = hero.querySelector('p');
     // alguns separadores (ex.: Parasite Pool) têm uma imagem como ícone, não texto: copia-se a imagem para o quadrado
     const iconImg = icon && icon.querySelector('img');
@@ -78,7 +79,8 @@ function abHeroSync(){
       if(ico.querySelector('img,svg')){ ico.textContent = ''; delete ico.dataset.svg; }
       if(ico.textContent !== ic) ico.textContent = ic;
     }
-    const lab = label.replace(/\s*\d+\s*$/, '');
+    // o contador (badge-counter) já fica de fora acima; não se cortam números do nome ("Loja Bitminer33")
+    const lab = label;
     if(h2.textContent !== lab) h2.textContent = lab;
     const desc = I18N_DICT['ab_' + name] ? t('ab_' + name) : '';
     if(p.textContent !== desc) p.textContent = desc;

@@ -223,6 +223,7 @@ const TAB_LABEL_KEYS = {
   oc: 'overclock',
   converter: 'conversor',
   mercado: 'mercado_t',
+  loja: 'loja_t',
   donate: 'apoiar_doar',
   supporters: 'apoiantes',
   support: 'suporte',
