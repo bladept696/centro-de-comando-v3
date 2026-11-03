@@ -1,5 +1,7 @@
 # Centro de Comando — Dashboard NerdQAxe++
 
+🇬🇧 [English version](README.en.md)
+
 Painel de monitorização para mineradores NerdQAxe++, com histórico de best
 shares, deteção de blocos, simulador, latência, saúde térmica preditiva e
 gestão dinâmica de perfil de alimentação via MQTT / Home Assistant.
