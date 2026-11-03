@@ -124,7 +124,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.4.0"
+APP_VERSION = "4.4.1"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -2502,12 +2502,19 @@ def _market_offer_event(m, machines, status="active"):
     tags = [["d", m["d"]], ["title", f"Hashrate {ths:.2f} TH/s"], ["summary", f"{ths:.2f} TH/s a {rate:g} sats/TH/min"],
             ["published_at", str(m.get("first_ts") or now)], ["t", MARKET_TAG], ["t", "hashcommander"],
             ["price", f"{rate * ths:.3f}", "SAT", "minute"], ["hashrate", f"{ths:.3f}", "TH/s"], ["rate", f"{rate:g}", "sats/TH/min"],
-            ["max_minutes", str(int(m["max_min"]))], ["lud16", m["lud16"]], ["status", status],
+            ["max_minutes", str(int(m["max_min"]))], ["status", status],
             ["expiration", str(now + (86400 if status == "active" else 120))], ["client", "hash-commander", APP_VERSION]]
+    oc = m.get("onchain") or {}
+    if m.get("lud16"):
+        tags += [["lud16", m["lud16"]], ["pay", "ln"]]
+    if oc.get("enabled"):
+        # só as regras: a xpub nunca sai deste PC (cada aluguer recebe um endereço novo por mensagem cifrada)
+        tags += [["pay", "onchain"], ["onchain", str(int(oc["min_min"])), str(int(oc["min_sats"])), "0conf" if oc.get("zeroconf") else "1conf"]]
     tags += [["machine", k, str(v)] for k, v in models.items()]
     if m.get("location"):
         tags.append(["location", str(m["location"])[:40]])
-    content = (note + "\n\n" if note else "") + f"Aluguer de hashrate SHA-256 pela Hash Commander: {ths:.2f} TH/s, pago ao minuto em Lightning ({rate:g} sats por TH/s por minuto)."
+    pays = " e ".join(x for x in ("Lightning ao minuto" if m.get("lud16") else "", "BTC on-chain adiantado" if oc.get("enabled") else "") if x)
+    content = (note + "\n\n" if note else "") + f"Aluguer de hashrate SHA-256 pela Hash Commander: {ths:.2f} TH/s a {rate:g} sats por TH/s por minuto, pago em {pays}."
     return hc_nostr.sign_event(nostr_keys().seckey(), MARKET_KIND, content, tags)
 
 
@@ -2534,16 +2541,46 @@ def market_set_offer(body):
         return {"ok": False, "error": "escolhe pelo menos uma máquina"}
     if not (0.001 <= rate <= 1000):
         return {"ok": False, "error": "o preço tem de estar entre 0,001 e 1000 sats por TH/s por minuto"}
-    if not (10 <= max_min <= 1440):
-        return {"ok": False, "error": "a duração máxima tem de estar entre 10 e 1440 minutos"}
-    chk = lud16_check(body.get("lud16"))
-    if not chk["ok"]:
-        return {"ok": False, "error": chk["error"]}
+    if not (10 <= max_min <= 10080):
+        return {"ok": False, "error": "a duração máxima tem de estar entre 10 minutos e 7 dias"}
+    ln_on = body.get("ln", True) is not False
+    lud16 = str(body.get("lud16") or "").strip() if ln_on else ""
+    if ln_on:
+        chk = lud16_check(lud16)
+        if not chk["ok"]:
+            return {"ok": False, "error": chk["error"]}
+    oc_in = body.get("onchain") or {}
+    with _market_lock:
+        old_oc = ((market_load().get("offer") or {}).get("onchain") or {})
+    onchain = {"enabled": False}
+    if oc_in.get("enabled"):
+        # a xpub não volta para o browser: campo vazio = manter a que já está guardada
+        xpub = str(oc_in.get("xpub") or "").strip() or old_oc.get("xpub", "")
+        try:
+            ext = hc_onchain.ExtPub(xpub, oc_in.get("script"))
+            min_min, min_sats = int(oc_in.get("min_min") or 1440), int(oc_in.get("min_sats") or 0)
+        except (ValueError, TypeError) as e:
+            return {"ok": False, "error": str(e)}
+        if ext.net != "main" and not os.environ.get("HC_MEMPOOL_API"):
+            return {"ok": False, "error": "a chave é de testnet: usa a da carteira Bitcoin normal"}
+        if not 60 <= min_min <= max_min:
+            return {"ok": False, "error": "o aluguer mínimo on-chain tem de estar entre 1 h e a duração máxima"}
+        if not 0 <= min_sats <= 10 ** 8:
+            return {"ok": False, "error": "valor mínimo on-chain inválido"}
+        if old_oc.get("xpub") and old_oc["xpub"] != ext.text:
+            with _market_lock:      # outra carteira: os índices guardados já não servem
+                mm = market_load()
+                mm.pop("onchain_used", None)
+                market_save(mm)
+        onchain = {"enabled": True, "xpub": ext.text, "script": ext.script, "min_min": min_min, "min_sats": min_sats,
+                   "zeroconf": bool(oc_in.get("zeroconf"))}
+    if not ln_on and not onchain["enabled"]:
+        return {"ok": False, "error": "escolhe pelo menos uma forma de receber (Lightning ou BTC on-chain)"}
     with _market_lock:
         m = market_load()
         offer = m.get("offer") or {}
         offer.update({"d": offer.get("d") or ("hc-" + secrets_hex(6)), "machines": sel, "rate": rate, "max_min": max_min,
-                      "lud16": str(body.get("lud16")).strip(), "location": str(body.get("location") or "").strip()[:40],
+                      "lud16": lud16, "onchain": onchain, "location": str(body.get("location") or "").strip()[:40],
                       "note": str(body.get("note") or "").strip()[:400], "active": True})
         offer.setdefault("first_ts", int(time.time()))
     ok, res, ev = market_publish(offer)
@@ -2610,7 +2647,11 @@ def market_offers(force=False):
             ths, rate = float(_tag(ev, "hashrate", default="0")), float(_tag(ev, "rate", default="0"))
             if ths <= 0 or rate <= 0:
                 continue
+            pays = [t[1] for t in ev["tags"] if t and t[0] == "pay" and len(t) > 1 and t[1] in ("ln", "onchain")] or ["ln"]
+            oct_ = next((t for t in ev["tags"] if t and t[0] == "onchain" and len(t) > 3), None)
+            onchain = {"min_min": int(oct_[1]), "min_sats": int(oct_[2]), "zeroconf": oct_[3] == "0conf"} if oct_ and "onchain" in pays else None
             out.append({"pubkey": ev["pubkey"], "npub": hc_nostr.npub(ev["pubkey"]), "d": _tag(ev, "d"), "ths": ths, "rate": rate,
+                        "pay": pays, "onchain": onchain,
                         "price_min": round(ths * rate, 3), "max_min": int(_tag(ev, "max_minutes", default="60")),
                         "lud16": _tag(ev, "lud16", default=""), "location": _tag(ev, "location", default=""),
                         "machines": [{"model": t[1], "n": int(t[2]) if len(t) > 2 and str(t[2]).isdigit() else 1} for t in ev["tags"] if t[0] == "machine" and len(t) > 1],
@@ -2664,12 +2705,23 @@ def market_state():
     with _market_lock:
         m = market_load()
     pk = nostr_keys().pubkey()
-    return {"pubkey": pk, "npub": hc_nostr.npub(pk), "relays": market_relays(), "offer": m.get("offer"), "machines": market_machines(),
+    offer = copy.deepcopy(m.get("offer"))
+    oc = (offer or {}).get("onchain") or {}
+    if oc.get("xpub"):
+        # a xpub fica só no servidor: o browser vê o início, o fim e o 1.º endereço (para confirmar que é a carteira certa)
+        x = oc.pop("xpub")
+        oc["xpub_hint"] = x[:8] + "…" + x[-6:]
+        try:
+            oc["first"] = hc_onchain.ExtPub(x, oc.get("script")).address(0)
+        except ValueError:
+            pass
+    return {"pubkey": pk, "npub": hc_nostr.npub(pk), "relays": market_relays(), "offer": offer, "machines": market_machines(),
             "hashprice": market_hashprice()}
 
 
 # --- Mercado de hashrate — fase 2: o aluguer (motor em hc_market.py) ---
 import hc_market
+import hc_onchain
 
 NWC_FILENAME = 'nwc.json'
 MARKET_SESSIONS_FILENAME = 'market_sessions.json'
@@ -2755,6 +2807,61 @@ def market_notify(title, text):
     del _market_events[:-20]
 
 
+def market_xpub_check(body):
+    """Confirma a chave pública da carteira e mostra os 2 primeiros endereços (o vendedor compara com a carteira)."""
+    try:
+        ext = hc_onchain.ExtPub(str(body.get("xpub") or ""), body.get("script"))
+    except ValueError as e:
+        return {"ok": False, "error": str(e)}
+    # xpub/tpub não dizem o tipo de endereço: o vendedor escolhe e confirma pelo 1.º endereço
+    return {"ok": True, "kind": ext.kind, "script": ext.script, "net": ext.net, "ask_script": ext.kind in ("xpub", "tpub"),
+            "first": [ext.address(0), ext.address(1)]}
+
+
+def market_onchain_reserve(sid):
+    """Endereço novo da xpub do vendedor para um aluguer: o primeiro que nunca recebeu nada e não está reservado."""
+    with _market_lock:
+        m = market_load()
+        oc = (m.get("offer") or {}).get("onchain") or {}
+        reserved, used = m.get("onchain_reserved") or {}, set(m.get("onchain_used") or [])
+    ext = hc_onchain.ExtPub(oc.get("xpub", ""), oc.get("script"))
+    for i in range(0, 1000):
+        if i in used:
+            continue
+        addr = ext.address(i)
+        if addr in reserved:
+            continue
+        if hc_onchain.address_used(addr):     # usado pela carteira fora da app: salta para sempre
+            used.add(i)
+            continue
+        with _market_lock:
+            m = market_load()
+            m.setdefault("onchain_reserved", {})[addr] = {"i": i, "sid": sid, "ts": int(time.time())}
+            m["onchain_used"] = sorted(used)
+            market_save(m)
+        return addr
+    raise RuntimeError("sem endereços livres na carteira")
+
+
+def market_onchain_release(addr):
+    with _market_lock:
+        m = market_load()
+        if (m.get("onchain_reserved") or {}).pop(addr, None) is not None:
+            market_save(m)
+
+
+_fee_cache = {"ts": 0.0, "v": None}
+
+
+def market_fee_rate():
+    if time.time() - _fee_cache["ts"] > 600:
+        try:
+            _fee_cache.update(ts=time.time(), v=hc_onchain.fee_rate())
+        except Exception:
+            _fee_cache["ts"] = time.time() - 480
+    return _fee_cache["v"]
+
+
 def market_engine():
     global _market_engine
     if _market_engine is None:
@@ -2770,6 +2877,7 @@ def market_engine():
             "save_state": lambda d: _json_save(MARKET_SESSIONS_FILENAME, d), "load_state": lambda: _json_file(MARKET_SESSIONS_FILENAME),
             "notify": market_notify,
             "pool_ths": lambda h, a, w: hc_market.pool_worker_ths(h, a, w, base_url=base),
+            "onchain_reserve": market_onchain_reserve, "onchain_release": market_onchain_release,
         })
     return _market_engine
 
@@ -2786,7 +2894,8 @@ def market_rent(body):
     port = {"public-pool.io": 21496}.get(host) or (3333 if host in hc_market.SUPPORTED_POOLS else body.get("pool_port"))
     try:
         sid = market_engine().rent(offer, int(body.get("minutes") or 0), host, port, str(body.get("address") or "").strip(),
-                                   user=str(body.get("pool_user") or "").strip() or None, password=str(body.get("pool_pass") or "x").strip())
+                                   user=str(body.get("pool_user") or "").strip() or None, password=str(body.get("pool_pass") or "x").strip(),
+                                   pay="onchain" if body.get("pay") == "onchain" else "ln")
     except (ValueError, TypeError) as e:
         return {"ok": False, "error": str(e)}
     return {"ok": True, "sid": sid}
@@ -2797,7 +2906,7 @@ def market_sessions():
     for s in d["sessions"]:
         s["peer_npub"] = hc_nostr.npub(s["peer"])
     nwc = _json_file(NWC_FILENAME)
-    d.update(nwc={"connected": bool(nwc.get("secret_uri")), "alias": nwc.get("alias", "")}, events=list(_market_events),
+    d.update(nwc={"connected": bool(nwc.get("secret_uri")), "alias": nwc.get("alias", "")}, events=list(_market_events), fee_rate=market_fee_rate(),
              pools=sorted(set(hc_market.SUPPORTED_POOLS) - {"eusolo.ckpool.org", "ausolo.ckpool.org"}))
     return d
 
@@ -6591,6 +6700,10 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/market/rent':
             self._send_json(market_rent(body))
+            return
+
+        if path == '/api/market/xpub':
+            self._send_json(market_xpub_check(body))
             return
 
         if path == '/api/market/session/stop':

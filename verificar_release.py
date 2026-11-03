@@ -28,7 +28,7 @@ os.chdir(RAIZ)
 PROIBIDOS = re.compile(r'(^|/)(config\.json|power_profiles\.json|block_cert_key\.json|screen_key\.json|nostr_key\.json|market\.json|nwc\.json|market_sessions\.json|auth_grace\.json|account_activity\.json|'
                        r'user_presence\.json|diff_(buckets|history|records)\.json|\.install_id|[^/]*\.bak|update-signing-key\.pem)$|(^|/)updates/', re.I)
 # nomes de campos JSON que guardam segredos
-CAMPOS = re.compile(r'(key|secret|token|password|passwd|pass|webhook|private|priv|seed|mnemonic)', re.I)
+CAMPOS = re.compile(r'(key|secret|token|password|passwd|pass|webhook|private|priv|seed|mnemonic|xpub)', re.I)
 # padrões que são sempre segredos, estejam onde estiverem
 PADROES = [
     ('webhook do Discord', re.compile(r'https://(?:canary\.|ptb\.)?discord(?:app)?\.com/api/webhooks/\d+/[\w-]{20,}')),
@@ -36,7 +36,7 @@ PADROES = [
     # só conta com o conteúdo da chave a seguir ao cabeçalho: o firmware do ESP32 traz os cabeçalhos soltos (texto do mbedTLS)
     ('chave privada PEM', re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----(?:\r?\n[\w-]+:[^\n]*)*\s+[A-Za-z0-9+/=]{40}')),
 ]
-FONTES = ['config.json', 'power_profiles.json', 'block_cert_key.json', 'screen_key.json', 'nostr_key.json', 'nwc.json', 'auth_grace.json'] + glob.glob('*.bak') + glob.glob('*.json.bak')
+FONTES = ['config.json', 'power_profiles.json', 'block_cert_key.json', 'screen_key.json', 'nostr_key.json', 'nwc.json', 'market.json', 'auth_grace.json'] + glob.glob('*.bak') + glob.glob('*.json.bak')
 CHAVE_ASSINATURA = os.environ.get('HC_SIGN_KEY') or os.path.join(os.path.expanduser('~'), '.centro-de-comando', 'update-signing-key.pem')
 
 

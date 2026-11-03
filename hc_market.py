@@ -11,6 +11,13 @@ Protocolo (mensagens kind 4402 entre as duas apps, cifradas com NIP-44, tag "p" 
   qualquer um            {"t":"end","sid","why"}
 O vendedor aponta as máquinas para a pool do comprador e repõe a pool original no fim ou se um pagamento falhar.
 O comprador paga pela sua carteira (NWC, NIP-47) e deixa de pagar se o hashrate não aparecer na API da pool.
+
+Pagamento em BTC on-chain (o pedido leva "pay":"onchain"; tudo pago adiantado):
+  vendedor  -> comprador {"t":"addr","sid","address","sats","until","zeroconf"}   (endereço novo, reservado 30 min)
+  vendedor  -> comprador {"t":"seen","sid","sats"}                                (visto na rede, à espera de confirmação)
+  vendedor  -> comprador {"t":"start","sid","minutes","sats"}                     (máquinas a minerar para o comprador)
+Os dois lados vigiam o endereço na API do mempool.space (hc_onchain). Com "zeroconf" o vendedor começa logo que o
+pagamento aparece e para se ele desaparecer (substituído) ou não confirmar em 3 h.
 """
 import hashlib
 import ipaddress
@@ -27,6 +34,7 @@ import urllib.request
 import websocket
 
 import hc_nostr
+import hc_onchain
 
 MSG_KIND = 4402
 SUPPORTED_POOLS = {   # só pools onde o comprador consegue confirmar o hashrate do worker
@@ -37,6 +45,16 @@ WARMUP_PERIODS_MIN = 4          # minutos até a pool mostrar o hashrate (a máq
 PAY_GRACE_SECONDS = 100         # tempo para pagar uma fatura antes de o vendedor terminar
 MIN_HASHRATE_RATIO = 0.4        # abaixo disto (2 leituras seguidas) o comprador termina
 MINUTE = 60                     # segundos num minuto (os testes encurtam-no)
+# on-chain (minutos)
+ONCHAIN_RESERVE_MIN = 30        # o endereço fica reservado para o comprador pagar
+ONCHAIN_LATE_MIN = 180          # pagamento atrasado ainda é aceite / pagamento sem confirmação pára o aluguer
+ONCHAIN_CONFIRM_MAX_MIN = 1440  # no modo "1 confirmação": quanto tempo se espera por ela
+ONCHAIN_TOLERANCE = 0.98        # pagar 98% ou mais conta como pago por inteiro (arredondamentos das carteiras)
+SELLER_BUSY = ("starting", "running", "awaiting_payment", "confirming")
+
+
+def onchain_sats(ths, rate, minutes):
+    return int(math.ceil(ths * rate * minutes))
 
 
 # ---------------------------------------------------------------- Lightning: bolt11 e LNURL
@@ -275,7 +293,8 @@ class Market:
 
     hooks (dados pela app): seckey(), relays(), offer() -> oferta ativa ou None, machines_for_offer() -> [ip],
     snapshot(ip) -> dict, switch(ip, host, port, user) -> (ok, msg), restore(ip, snap), nwc() -> NWC ou None,
-    save_state(dict), load_state() -> dict, notify(titulo, texto), pool_ths(host, address, worker) -> float|None
+    save_state(dict), load_state() -> dict, notify(titulo, texto), pool_ths(host, address, worker) -> float|None,
+    onchain_reserve(sid) -> endereço novo da zpub do vendedor, onchain_release(endereço)
     """
 
     def __init__(self, hooks):
@@ -329,14 +348,28 @@ class Market:
         return out
 
     # -- comprador: começar
-    def rent(self, offer, minutes, host, port, address=None, user=None, password="x"):
+    def rent(self, offer, minutes, host, port, address=None, user=None, password="x", pay="ln"):
         """Pool conhecida (SUPPORTED_POOLS): utilizador = endereço.worker e o hashrate é confirmado na pool.
-        Qualquer outra pool: o comprador dá o utilizador completo e paga sem confirmação do hashrate."""
+        Qualquer outra pool: o comprador dá o utilizador completo e paga sem confirmação do hashrate.
+        pay="onchain": paga-se tudo adiantado em BTC para um endereço que o vendedor manda."""
         host = normalize_pool_host(host)
-        if not 1 <= minutes <= int(offer["max_min"]):
-            raise ValueError("duração fora do permitido pela oferta")
-        if not self.h["nwc"]():
-            raise ValueError("liga primeiro a tua carteira (NWC)")
+        onchain = pay == "onchain"
+        if onchain:
+            oc = offer.get("onchain") or {}
+            if "onchain" not in (offer.get("pay") or []):
+                raise ValueError("este vendedor não aceita BTC on-chain")
+            if not int(oc.get("min_min") or 0) <= minutes <= int(offer["max_min"]):
+                h = lambda m: f"{m / 60:g} h" if m >= 60 else f"{m} min"
+                raise ValueError(f"em on-chain a duração tem de estar entre {h(int(oc.get('min_min') or 0))} e {h(int(offer['max_min']))}")
+            if onchain_sats(offer["ths"], offer["rate"], minutes) < int(oc.get("min_sats") or 0):
+                raise ValueError(f"o vendedor só aceita on-chain a partir de {oc.get('min_sats')} sats")
+        else:
+            if "ln" not in (offer.get("pay") or ["ln"]):
+                raise ValueError("este vendedor só aceita BTC on-chain")
+            if not 1 <= minutes <= int(offer["max_min"]):
+                raise ValueError("duração fora do permitido pela oferta")
+            if not self.h["nwc"]():
+                raise ValueError("liga primeiro a tua carteira (NWC)")
         sid = secrets.token_hex(6)
         worker = "hcr" + sid
         verify = host in SUPPORTED_POOLS
@@ -352,12 +385,14 @@ class Market:
         s = {"role": "buyer", "peer": offer["pubkey"], "d": offer["d"], "ths": offer["ths"], "rate": offer["rate"], "minutes": minutes,
              "pool": {"host": host, "port": int(port), "user": user, "pass": password}, "address": address, "worker": worker,
              "verify": verify, "state": "requested", "created": int(time.time()), "paid_sats": 0, "period": period, "sats_per": sats,
-             "budget": sats * math.ceil(minutes / period) + 2, "seen_ths": None, "low": 0}
-        self._log(s, "pedido enviado ao vendedor" + ("" if verify else " (pool sem confirmação do hashrate)"))
+             "budget": sats * math.ceil(minutes / period) + 2, "seen_ths": None, "low": 0, "pay": pay}
+        if onchain:
+            s.update(period=None, sats_per=None, need=onchain_sats(offer["ths"], offer["rate"], minutes))
+        self._log(s, "pedido enviado ao vendedor" + (" (pagamento em BTC on-chain)" if onchain else "") + ("" if verify else " (pool sem confirmação do hashrate)"))
         with self.lock:
             self.sessions[sid] = s
             self._save()
-        self._send(offer["pubkey"], {"t": "req", "sid": sid, "d": offer["d"], "pool": s["pool"], "minutes": minutes})
+        self._send(offer["pubkey"], {"t": "req", "sid": sid, "d": offer["d"], "pool": s["pool"], "minutes": minutes, "pay": pay})
         return sid
 
     def stop(self, sid, why="parado por ti"):
@@ -374,7 +409,13 @@ class Market:
                     self.h["restore"](ip, snap)
                 except Exception as e:
                     self._log(s, f"falha a repor a pool de uma máquina: {e}")
-            self._log(s, "pool original reposta nas máquinas")
+            if s.get("snaps"):
+                self._log(s, "pool original reposta nas máquinas")
+            if s.get("pay") == "onchain" and not s.get("paid_sats") and s.get("pay_address"):
+                try:
+                    self.h["onchain_release"](s["pay_address"])   # endereço que não chegou a receber volta a poder ser usado
+                except Exception:
+                    pass
         if notify_peer:
             try:
                 self._send(s["peer"], {"t": "end", "sid": sid, "why": why})
@@ -384,7 +425,7 @@ class Market:
         self.done.add(sid)
         self._log(s, f"terminado: {why}")
         with self.lock:
-            self.history.append({k: s.get(k) for k in ("role", "peer", "ths", "rate", "minutes", "paid_sats", "created", "ended", "why")})
+            self.history.append({k: s.get(k) for k in ("role", "peer", "ths", "rate", "minutes", "paid_sats", "created", "ended", "why", "pay", "txids")})
             self.sessions.pop(sid, None)
             self._save()
         try:
@@ -398,18 +439,30 @@ class Market:
         offer = self.h["offer"]()
         pool = dict(m.get("pool") or {})
         pool["host"], pool["pass"] = normalize_pool_host(pool.get("host")), str(pool.get("pass") or "x")
+        pay = "onchain" if m.get("pay") == "onchain" else "ln"
+        oc = (offer or {}).get("onchain") or {}
+        minutes = int(m.get("minutes") or 0)
         why = None
         if not offer or offer.get("d") != m.get("d"):
             why = "oferta já não está ativa"
-        elif any(s["role"] == "seller" for s in self.sessions.values()):
+        elif any(s["role"] == "seller" and s["state"] in SELLER_BUSY for s in self.sessions.values()):
             why = "as máquinas já estão alugadas"
-        elif not 1 <= int(m.get("minutes") or 0) <= int(offer["max_min"]):
+        elif pay == "ln" and not offer.get("lud16"):
+            why = "este vendedor só aceita BTC on-chain"
+        elif pay == "onchain" and not oc.get("enabled"):
+            why = "este vendedor não aceita BTC on-chain"
+        elif not (int(oc.get("min_min") or 0) if pay == "onchain" else 1) <= minutes <= int(offer["max_min"]):
             why = "duração fora do permitido"
+        elif pay == "onchain" and onchain_sats(offer["ths"], offer["rate"], minutes) < int(oc.get("min_sats") or 0):
+            why = f"valor abaixo do mínimo on-chain ({oc.get('min_sats')} sats)"
         else:
             # qualquer pool serve, mas nunca um endereço da rede de casa (o nome também é resolvido e verificado)
             why = pool_problem(pool["host"], pool.get("port"), pool.get("user"), pool["pass"], resolve=True)
         if why:
             self._send(peer, {"t": "rej", "sid": sid, "why": why})
+            return
+        if pay == "onchain":
+            self._onchain_offer(sid, peer, offer, pool, minutes)
             return
         ips = self.h["machines_for_offer"]()
         period, sats = billing(offer["ths"], offer["rate"])
@@ -475,9 +528,163 @@ class Market:
             s["paid_sats"] += s["sats_per"]
             self._log(s, f"recebeste a fatura #{m.get('n')} ({s['sats_per']} sats) ✓")
 
+    # -- on-chain, vendedor: reservar um endereço novo e esperar pelo pagamento
+    def _onchain_offer(self, sid, peer, offer, pool, minutes):
+        oc = offer["onchain"]
+        try:
+            address = self.h["onchain_reserve"](sid)
+        except Exception as e:
+            self._send(peer, {"t": "rej", "sid": sid, "why": f"o vendedor não conseguiu criar o endereço ({str(e)[:80]})"})
+            return
+        now = int(time.time())
+        need = onchain_sats(offer["ths"], offer["rate"], minutes)
+        s = {"role": "seller", "peer": peer, "d": offer["d"], "ths": offer["ths"], "rate": offer["rate"], "minutes": minutes,
+             "pool": pool | {"port": int(pool["port"])}, "state": "awaiting_payment", "created": now, "paid_sats": 0,
+             "period": None, "sats_per": None, "snaps": {}, "pay": "onchain", "pay_address": address, "need": need,
+             "until": now + ONCHAIN_RESERVE_MIN * MINUTE, "zeroconf": bool(oc.get("zeroconf")), "txids": []}
+        with self.lock:
+            self.sessions[sid] = s
+            self._save()
+        self._log(s, f"pedido on-chain: à espera de {need} sats em {address}")
+        self._send(peer, {"t": "addr", "sid": sid, "address": address, "sats": need, "until": s["until"], "zeroconf": s["zeroconf"]})
+
+    def _onchain_start(self, sid, s):
+        if any(x is not s and x["role"] == "seller" and x["state"] in ("starting", "running") for x in self.sessions.values()):
+            if not s.get("queued"):
+                s["queued"] = True
+                self._log(s, "pagamento recebido: começa quando o aluguer atual acabar")
+            return
+        ips = self.h["machines_for_offer"]()
+        for ip in ips:
+            if ip not in s["snaps"]:     # se a app reabriu a meio do arranque, a pool original já está guardada
+                s["snaps"][ip] = self.h["snapshot"](ip)
+        s["state"] = "starting"
+        with self.lock:
+            self._save()      # guarda a pool original ANTES de mexer nas máquinas
+        for ip in ips:
+            ok, msg = self.h["switch"](ip, s["pool"]["host"], int(s["pool"]["port"]), s["pool"]["user"], s["pool"]["pass"])
+            self._log(s, "máquina apontada para a pool do comprador" if ok else f"falha ao mudar a pool: {msg}")
+        s["state"], s["start"] = "running", int(time.time())
+        self._log(s, f"aluguer on-chain a começar: {s['minutes']} min pagos ({s['paid_sats']} sats)")
+        self._send(s["peer"], {"t": "start", "sid": sid, "minutes": s["minutes"], "sats": s["paid_sats"]})
+
+    def _onchain_seller_tick(self, sid, s, now):
+        if s["state"] == "running" and now - s["start"] >= s["minutes"] * MINUTE:
+            self._end(sid, s, "terminou o tempo combinado", True)
+            return
+        if now - s.get("polled", 0) < MINUTE or (s["state"] == "running" and s.get("confirmed")):
+            return
+        s["polled"] = now
+        try:
+            r = hc_onchain.received(s["pay_address"])
+        except Exception:
+            return
+        if r["seen"] and not s.get("seen_at"):
+            s["seen_at"] = int(now)
+        s["txids"] = r["txids"]
+        if s["state"] in ("awaiting_payment", "late"):
+            if not r["seen"]:
+                if s["state"] == "awaiting_payment" and now > s["until"]:
+                    s["state"] = "late"
+                    self._log(s, "a reserva do endereço acabou sem pagamento: um pagamento atrasado ainda é aceite durante 3 h")
+                elif s["state"] == "late" and now > s["until"] + ONCHAIN_LATE_MIN * MINUTE:
+                    self._end(sid, s, "o comprador não pagou", True)
+                return
+            if r["seen"] < s["need"] * ONCHAIN_TOLERANCE and now < s["until"]:
+                if not s.get("partial"):
+                    s["partial"] = True
+                    self._log(s, f"chegou um pagamento parcial ({r['seen']} de {s['need']} sats)")
+                return    # pode ainda chegar o resto até ao fim da reserva
+            s["paid_sats"] = r["seen"]
+            if r["seen"] < s["need"] * ONCHAIN_TOLERANCE:
+                # pagou menos: aluga-se o tempo correspondente ao que pagou
+                s["minutes"] = int(r["seen"] // max(1e-9, s["ths"] * s["rate"]))
+                self._log(s, f"pagamento abaixo do combinado: {s['minutes']} min pelo valor recebido")
+                if s["minutes"] < 1:
+                    self._end(sid, s, "pagamento demasiado pequeno", True)
+                    return
+            if s["zeroconf"] or r["confirmed"] >= r["seen"]:
+                s["confirmed"] = r["confirmed"] >= r["seen"]
+                self._onchain_start(sid, s)
+            else:
+                s["state"] = "confirming"
+                self._log(s, f"pagamento visto na rede ({r['seen']} sats): à espera de 1 confirmação")
+                self._send(s["peer"], {"t": "seen", "sid": sid, "sats": r["seen"]})
+        elif s["state"] == "confirming":
+            if not r["seen"]:
+                self._end(sid, s, "o pagamento desapareceu da rede (foi substituído)", True)
+            elif r["confirmed"] >= r["seen"]:
+                s["confirmed"] = True
+                self._onchain_start(sid, s)
+            elif now - s["seen_at"] > ONCHAIN_CONFIRM_MAX_MIN * MINUTE:
+                self._end(sid, s, "o pagamento não confirmou em 24 h", True)
+        elif s["state"] == "running":
+            # começou sem confirmação: pára se o pagamento for substituído ou demorar demais a confirmar
+            if r["seen"] < s["paid_sats"] * ONCHAIN_TOLERANCE:
+                self._end(sid, s, "o pagamento desapareceu da rede (foi substituído)", True)
+            elif r["confirmed"] >= r["seen"]:
+                s["confirmed"] = True
+                self._log(s, "pagamento confirmado ✓")
+            elif now - s["seen_at"] > ONCHAIN_LATE_MIN * MINUTE:
+                self._end(sid, s, "o pagamento não confirmou em 3 h", True)
+
+    # -- on-chain, comprador: acompanhar o endereço e o hashrate (o pagamento já está feito: não se pode parar)
+    def _onchain_buyer_tick(self, sid, s, now):
+        if s["state"] == "running" and now - s["start"] > s["minutes"] * MINUTE + 2 * MINUTE:
+            self._end(sid, s, "terminou o tempo combinado", False)
+            return
+        if s["state"] in ("awaiting_payment", "confirming") and now > s.get("until", now) + (ONCHAIN_LATE_MIN + ONCHAIN_CONFIRM_MAX_MIN) * MINUTE:
+            self._end(sid, s, "o vendedor não começou o aluguer", True)
+            return
+        if s.get("pay_address") and now - s.get("polled", 0) >= MINUTE and not s.get("confirmed"):
+            s["polled"] = now
+            try:
+                r = hc_onchain.received(s["pay_address"])
+                s["paid_sats"], s["txids"], s["confirmed"] = r["seen"], r["txids"], bool(r["seen"]) and r["confirmed"] >= r["seen"]
+                if r["seen"] and not s.get("seen_at"):
+                    s["seen_at"] = int(now)
+                    self._log(s, f"o teu pagamento apareceu na rede ({r['seen']} sats)")
+            except Exception:
+                pass
+        if s["state"] == "running" and s["verify"] and now - s.get("checked", 0) >= MINUTE and now - s["start"] >= WARMUP_PERIODS_MIN * MINUTE:
+            s["checked"] = now
+            try:
+                v = self.h["pool_ths"](s["pool"]["host"], s["address"], s["worker"])
+            except Exception:
+                v = None
+            if v is not None:
+                s["seen_ths"] = round(v, 3)
+                s["low"] = s["low"] + 1 if v < s["ths"] * MIN_HASHRATE_RATIO else 0
+                if s["low"] == 2:
+                    self._log(s, "⚠️ o hashrate não está a chegar à tua pool")
+                    try:
+                        self.h["notify"]("Aluguer on-chain: hashrate em falta", "O hashrate alugado não está a chegar à tua pool. Fala com o vendedor pelo Nostr.")
+                    except Exception:
+                        pass
+
+    def _on_addr(self, sid, s, m):
+        try:
+            sats = int(m.get("sats"))
+        except (TypeError, ValueError):
+            sats = -1
+        address = str(m.get("address") or "")
+        if sats != s["need"] or not hc_onchain.ADDRESS_RE.fullmatch(address):
+            self._end(sid, s, f"o vendedor pediu {sats} sats, fora do combinado", True)
+            return
+        s.update(state="awaiting_payment", pay_address=address, until=int(m.get("until") or time.time() + ONCHAIN_RESERVE_MIN * MINUTE), zeroconf=bool(m.get("zeroconf")))
+        self._log(s, f"envia {sats} sats para {address}")
+
     # -- relógio de cada aluguer
     def _tick(self, sid, s):
         now = time.time()
+        if s.get("pay") == "onchain":
+            if s["role"] == "seller":
+                self._onchain_seller_tick(sid, s, now)
+            elif s["state"] == "requested" and now - s["created"] > 1.5 * MINUTE:
+                self._end(sid, s, "o vendedor não respondeu", False)
+            else:
+                self._onchain_buyer_tick(sid, s, now)
+            return
         if s["role"] == "seller" and s["state"] == "running":
             elapsed = now - s["start"]
             for n, inv in s["invoices"].items():
@@ -534,6 +741,15 @@ class Market:
                         self._on_inv(sid, s, m)
                     elif t == "paid" and s["role"] == "seller":
                         self._on_paid(sid, s, m)
+                    elif t == "addr" and s["role"] == "buyer" and s.get("pay") == "onchain" and s["state"] == "requested":
+                        self._on_addr(sid, s, m)
+                    elif t == "seen" and s["role"] == "buyer" and s.get("pay") == "onchain":
+                        s["state"] = "confirming"
+                        self._log(s, "o vendedor viu o pagamento: começa com 1 confirmação")
+                    elif t == "start" and s["role"] == "buyer" and s.get("pay") == "onchain" and s["state"] != "running":
+                        s["state"], s["start"] = "running", int(time.time())
+                        s["minutes"] = max(1, min(s["minutes"], int(m.get("minutes") or s["minutes"])))
+                        self._log(s, f"as máquinas estão a minerar para ti ({s['minutes']} min)")
                     elif t == "end":
                         self._end(sid, s, f"o outro lado terminou: {m.get('why')}", False)
             except Exception as e:
@@ -554,7 +770,12 @@ class Market:
         with self.lock:
             items = list(self.sessions.items())
         for sid, s in items:
-            if s["role"] == "seller":
+            if s.get("pay") == "onchain" and s["state"] != "requested":
+                # pago adiantado: o aluguer continua (as máquinas ficaram na pool do comprador); o relógio trata do fim
+                self._log(s, "a app reabriu: o aluguer on-chain continua")
+                if s["role"] == "seller" and s["state"] == "starting":
+                    s["state"] = "late"     # parou a meio do arranque: volta a arrancar ao ver o pagamento
+            elif s["role"] == "seller":
                 self._end(sid, s, "a app do vendedor foi fechada a meio", True)
             elif s["role"] == "buyer":
                 self._end(sid, s, "a tua app foi fechada a meio", True)
