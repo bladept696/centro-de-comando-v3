@@ -41,6 +41,7 @@
 <link rel="stylesheet" href="dashboard/css/ecra-fisico.css">
 <link rel="stylesheet" href="dashboard/css/pool-honesta.css">
 <link rel="stylesheet" href="dashboard/css/mercado-hashrate.css">
+<link rel="stylesheet" href="dashboard/css/hash-commander-os.css">
 <link rel="stylesheet" href="dashboard/css/cargos.css">
 <link rel="stylesheet" href="dashboard/css/regras.css">
 <link rel="stylesheet" href="dashboard/css/voz-alertas.css">
@@ -366,6 +367,7 @@
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('genpools', this)"><span class="tab-icon" style="--tab-icon-delay:0.9s" aria-hidden="true">🪙</span><span data-i18n="gp_titulo_tab">Pools</span></button>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('hashmarket', this)"><span class="tab-icon" style="--tab-icon-delay:0.95s" aria-hidden="true">⚡</span><span data-i18n="hm_t">Mercado de hashrate</span></button>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('boards', this)"><span class="tab-icon" style="--tab-icon-delay:0.7s" aria-hidden="true">🔩</span><span data-i18n="placas_hash">Placas de Hash</span></button>
+      <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('hcos', this)"><span class="tab-icon" style="--tab-icon-delay:0.75s" aria-hidden="true">🧬</span><span data-i18n="hco_t">Hash Commander OS</span></button>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('renting', this)"><span class="tab-icon" style="--tab-icon-delay:1.4s" aria-hidden="true">🏗️</span><span data-i18n="renting">Renting</span></button>
       <div class="nav-menu-group-label"><span class="nav-menu-group-icon" aria-hidden="true">🔔</span><span data-i18n="nav_grupo_alertas">Alertas</span></div>
       <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('notifications', this)">
@@ -1324,6 +1326,7 @@
   <div id="tab-mercado" class="tab-content"></div>
   <div id="tab-loja" class="tab-content"></div>
   <div id="tab-hashmarket" class="tab-content"></div>
+  <div id="tab-hcos" class="tab-content"></div>
 
   <div id="tab-renting" class="tab-content">
     <div class="blocks-container">
@@ -1631,6 +1634,7 @@
 <script src="dashboard/js/ecra-fisico.js"></script>
 <script src="dashboard/js/pool-honesta.js"></script>
 <script src="dashboard/js/mercado-hashrate.js"></script>
+<script src="dashboard/js/hash-commander-os.js"></script>
 <script src="dashboard/js/voz-alertas.js"></script>
 <script src="dashboard/js/nivel.js"></script>
 <script src="dashboard/js/chips.js"></script>

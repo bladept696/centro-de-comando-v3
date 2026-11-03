@@ -124,7 +124,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.4.3"
+APP_VERSION = "4.5.0"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -2722,6 +2722,7 @@ def market_state():
 # --- Mercado de hashrate — fase 2: o aluguer (motor em hc_market.py) ---
 import hc_market
 import hc_onchain
+import hc_os
 
 NWC_FILENAME = 'nwc.json'
 MARKET_SESSIONS_FILENAME = 'market_sessions.json'
@@ -2899,6 +2900,37 @@ def market_rent(body):
     except (ValueError, TypeError) as e:
         return {"ok": False, "error": str(e)}
     return {"ok": True, "sid": sid}
+
+
+HCOS_BACKUP_FILENAME = 'hcos_backups.json'
+_hcos = None
+
+
+def hcos_backup(ip, info):
+    """Copia das definicoes da maquina antes de instalar o HC OS (tem a rede Wi-Fi e a pool: nunca vai para o git)."""
+    d = _json_file(HCOS_BACKUP_FILENAME)
+    d[ip] = {"at": int(time.time()), "info": info}
+    _json_save(HCOS_BACKUP_FILENAME, d)
+
+
+def hcos():
+    global _hcos
+    if _hcos is None:
+        def cache_dir():
+            path = os.path.join(writable_dir(), 'hcos_fw')
+            os.makedirs(path, exist_ok=True)
+            return path
+        _hcos = hc_os.HcOs({"allowed": is_proxy_target_allowed, "verify": verify_update_signature,
+                            "cache_dir": cache_dir, "backup": hcos_backup})
+    return _hcos
+
+
+def hcos_scan(ips):
+    ips = [ip for ip in ips if is_proxy_target_allowed(ip)][:40]
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        found = [r for r in ex.map(hc_os.probe, ips) if r]
+    hcos().want_live([r["ip"] for r in found if r.get("hcos")])
+    return {"ok": True, "machines": found, "release": hcos().latest(), "board": hc_os.BOARD}
 
 
 def market_sessions():
@@ -5842,6 +5874,27 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json(market_sessions())
             return
 
+        if path == '/api/hcos/scan':
+            self._send_json(hcos_scan([x for x in (query_params.get('ips', [''])[0] or '').split(',') if x]))
+            return
+
+        if path == '/api/hcos/live':
+            ips = [x for x in (query_params.get('ips', [''])[0] or '').split(',') if x]
+            hcos().want_live(ips)
+            self._send_json({"ok": True, "live": hcos().live_view(), "jobs": hcos().jobs_view()})
+            return
+
+        if path == '/api/hcos/shares':
+            ip = (query_params.get('ip', [''])[0] or '').strip()
+            if not is_proxy_target_allowed(ip):
+                self._send_json({"ok": False, "error": "esta máquina não está na lista do painel"}, 403)
+                return
+            try:
+                self._send_json(dict(hcos().shares(ip, int(query_params.get('since', ['0'])[0] or 0), int(query_params.get('limit', ['200'])[0] or 200)), ok=True))
+            except Exception as e:
+                self._send_json({"ok": False, "error": f"a máquina não respondeu ({e})"})
+            return
+
         if path == '/api/market/lud16':
             self._send_json(lud16_check(query_params.get('addr', [''])[0]))
             return
@@ -6704,6 +6757,19 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/market/xpub':
             self._send_json(market_xpub_check(body))
+            return
+
+        if path == '/api/hcos/install':
+            ips = [str(x) for x in (body.get("ips") or []) if is_proxy_target_allowed(str(x))]
+            if not ips:
+                self._send_json({"ok": False, "error": "nenhuma máquina válida"})
+                return
+            self._send_json({"ok": True, "queued": hcos().install(ips, str(body.get("otp") or "").strip()[:12])})
+            return
+
+        if path == '/api/hcos/rollback':
+            st, msg = hcos().rollback(str(body.get("ip") or ""), str(body.get("otp") or "").strip()[:12])
+            self._send_json({"ok": st == 200, "error": None if st == 200 else ("a máquina pediu o código OTP" if st == 401 else msg.strip()[:160])})
             return
 
         if path == '/api/market/session/stop':

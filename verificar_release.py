@@ -25,7 +25,7 @@ RAIZ = os.path.dirname(os.path.abspath(__file__))
 os.chdir(RAIZ)
 
 # ficheiros de dados da app: nunca podem ir para o repositório nem para o instalador
-PROIBIDOS = re.compile(r'(^|/)(config\.json|power_profiles\.json|block_cert_key\.json|screen_key\.json|nostr_key\.json|market\.json|nwc\.json|market_sessions\.json|auth_grace\.json|account_activity\.json|'
+PROIBIDOS = re.compile(r'(^|/)(config\.json|power_profiles\.json|block_cert_key\.json|screen_key\.json|nostr_key\.json|market\.json|nwc\.json|market_sessions\.json|hcos_backups\.json|auth_grace\.json|account_activity\.json|'
                        r'user_presence\.json|diff_(buckets|history|records)\.json|\.install_id|[^/]*\.bak|update-signing-key\.pem)$|(^|/)updates/', re.I)
 # nomes de campos JSON que guardam segredos
 CAMPOS = re.compile(r'(key|secret|token|password|passwd|pass|webhook|private|priv|seed|mnemonic|xpub)', re.I)

@@ -39,3 +39,5 @@ nostr_key.json
 market.json
 nwc.json
 market_sessions.json
+hcos_backups.json
+hcos_fw/

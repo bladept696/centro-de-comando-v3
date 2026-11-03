@@ -1,0 +1,57 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ---------- Aba Hash Commander OS (hash-commander-os.js); usa .hm e .hm-btn do mercado-hashrate.css ---------- */
+.hco{border-color:#b48cff33}
+.hco-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hco-top>b{font-size:19px}
+.hco-sub{color:var(--muted);font-size:12.5px;line-height:1.5;margin:8px 0 14px;max-width:900px}
+.hco-mut{color:var(--muted);font-size:13px;padding:14px 6px}
+.hco-pill{display:inline-flex;align-items:center;font:700 11px 'JetBrains Mono',ui-monospace,monospace;padding:3px 9px;border-radius:999px;text-decoration:none;white-space:nowrap}
+.hco-pill.pur{background:#b48cff22;color:#d6c2ff}.hco-pill.grn{background:#21ffb01c;color:#7dffd0}.hco-pill.amb{background:#ffb0201f;color:#ffd27a;white-space:normal}.hco-pill.blu{background:#4dc3ff1c;color:#9fe0ff}
+.hco-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#21ffb0;box-shadow:0 0 8px #21ffb0;margin-right:6px;animation:hcoBlink 1.6s ease-in-out infinite}
+@keyframes hcoBlink{50%{opacity:.35}}
+.hco-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr) auto;gap:12px;align-items:center;padding:11px 8px;border-bottom:1px solid #ffffff0a;font-size:13px}
+.hco-row.hd{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding-top:0;border-bottom-color:#ffffff14}
+.hco-row.on{background:#b48cff0d;border-radius:10px}
+.hco-row small{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
+.hco-act{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.hco-jmsg{font-size:12px;padding:6px 10px;margin:4px 8px 8px;border-radius:9px}
+.hco-jmsg.ok{background:#21ffb00a;border:1px solid #21ffb026;color:#c8ffe9}.hco-jmsg.bad{background:#ff5a6a0d;border:1px solid #ff5a6a33;color:#ffd0d5}
+.hco-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding:12px 14px;border-radius:12px;background:#ffffff05;border:1px solid #ffffff0d}
+.hco-foot b{font-size:14px}.hco-foot small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.hco-bar{height:6px;border-radius:9px;background:#ffffff10;overflow:hidden;margin-top:7px;max-width:520px}.hco-bar i{display:block;height:100%;background:linear-gradient(90deg,#4dc3ff,#21ffb0);transition:width .4s}
+.hco-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.hco-card{background:#0b141c;border:1px solid #ffffff14;border-radius:14px;padding:16px 18px}
+.hco-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}.hco-hd b{font-size:16px}
+.hco-big{display:flex;gap:10px;margin-bottom:10px}
+.hco-big div{flex:1;background:#ffffff05;border:1px solid #ffffff0d;border-radius:11px;padding:9px 11px;font-size:11.5px;color:var(--muted)}
+.hco-big b{display:block;font-size:20px;color:var(--text);margin-top:3px}.hco-big b.g{color:#21ffb0}.hco-big b.a{color:#ffc04d}
+.hco-spark{display:block;width:100%;height:124px}.hco-spark .l{fill:none;stroke:#21ffb0;stroke-width:2;vector-effect:non-scaling-stroke}.hco-spark .a{fill:#21ffb014}
+.hco-flt{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.hco-flt button{font:inherit;font-size:12px;padding:5px 10px;border-radius:8px;background:#ffffff06;border:1px solid #ffffff10;color:var(--muted);cursor:pointer}
+.hco-flt button.on{color:#1a1200;background:#ffb020;border-color:#ffb020;font-weight:700}
+.hco-tbl{max-height:290px;overflow:auto}
+.hco-tr{display:grid;grid-template-columns:1fr 1fr .8fr 1fr;gap:8px;padding:7px 6px;border-bottom:1px solid #ffffff0a;font:500 12px 'JetBrains Mono',ui-monospace,monospace}
+.hco-tr.hd{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);position:sticky;top:0;background:#0b141c}
+.hco-tr.best{background:#ffb02010}
+.hco-tr .st1{color:#7dffd0}.hco-tr .st2{color:#ffb3bb}.hco-tr .st3,.hco-tr .st0{color:var(--muted)}
+.hco-go{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}.hco-go small{color:var(--muted);font-size:12px}
+.hco-go.end{justify-content:flex-end}
+.hco-modal-bg{position:fixed;inset:0;z-index:2147483000;background:#000a;display:flex;align-items:center;justify-content:center;padding:16px}
+.hco-modal{width:min(560px,100%);max-height:92vh;overflow:auto;background:#0b141c;border:1px solid #ffb02055;border-radius:16px;padding:18px 20px;box-shadow:0 20px 60px #000a}
+.hco-kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 12px}
+.hco-kv div{background:#ffffff05;border:1px solid #ffffff0d;border-radius:10px;padding:9px 11px;font-size:12px;color:var(--muted)}.hco-kv b{display:block;color:var(--text);font-size:13.5px;margin-top:2px}
+.hco-st{display:flex;gap:10px;align-items:center;font-size:13px;padding:8px 12px;border-radius:10px;background:#ffffff05;border:1px solid #ffffff0d;margin-bottom:6px;color:var(--muted)}
+.hco-st i{font-style:normal;width:20px;text-align:center}.hco-st em{margin-left:auto;font-style:normal;font-size:11px}
+.hco-st.ok{color:#c8ffe9;border-color:#21ffb033;background:#21ffb00a}.hco-st.now{border-color:#ffb02055;color:#ffd27a}
+.hco-warn{font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:10px;background:#ff5a6a0d;border:1px solid #ff5a6a33;color:#ffd0d5;margin-top:8px}
+.hco-info{font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:10px;background:#21ffb008;border:1px solid #21ffb026;color:#c8ffe9;margin-top:8px}
+.hco-otp{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);margin-top:10px}
+.hco-otp input{font:600 14px 'JetBrains Mono',ui-monospace,monospace;color:var(--text);background:#060b11;border:1px solid #ffffff22;border-radius:8px;padding:8px 10px;max-width:160px}
+.hco-chk{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;margin-top:12px;line-height:1.45;cursor:pointer}
+@media (max-width:900px){
+  .hco-cols{grid-template-columns:1fr}
+  .hco-row{grid-template-columns:1fr 1fr}.hco-row.hd{display:none}.hco-act{grid-column:1/-1;justify-content:flex-start}
+  .hco-foot{flex-direction:column;align-items:flex-start}
+}
