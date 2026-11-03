@@ -17,7 +17,8 @@ Object.assign(I18N_DICT, {
   hco_official: { pt: `firmware oficial`, en: `official firmware` },
   hco_only_hc: { pt: `— só com HC OS`, en: `— only with HC OS` }, hco_unsup: { pt: `— ainda não suportada`, en: `— not supported yet` },
   hco_only_nqa: { pt: `Só NerdQAxe++`, en: `NerdQAxe++ only` },
-  hco_install: { pt: `Instalar HC OS`, en: `Install HC OS` }, hco_log: { pt: `Ver registo`, en: `View log` }, hco_back: { pt: `Voltar à anterior`, en: `Previous version` },
+  hco_install: { pt: `Instalar HC OS`, en: `Install HC OS` },
+  hco_upd: { pt: `Atualizar para {0}`, en: `Update to {0}` }, hco_log: { pt: `Ver registo`, en: `View log` }, hco_back: { pt: `Voltar à anterior`, en: `Previous version` },
   hco_best: { pt: `melhor {0} · {1} rejeitadas`, en: `best {0} · {1} rejected` },
   hco_scan: { pt: `A procurar as máquinas…`, en: `Looking for miners…` }, hco_none: { pt: `Ainda não tens máquinas no painel.`, en: `You have no miners on the dashboard yet.` },
   hco_new: { pt: `Nova versão disponível: HC OS {0}`, en: `New version available: HC OS {0}` },
@@ -92,7 +93,8 @@ Object.assign(I18N_DICT, {
                       : '<span class="hco-mut">' + t(m.model === S.scan.board ? 'hco_only_hc' : 'hco_unsup') + '</span>';
     let act;
     if(j && !['done', 'failed', 'rolled_back'].includes(j.state)) act = '<span class="hco-pill amb">' + esc(j.step) + (j.state === 'upload' ? ' · ' + j.progress + '%' : '') + '</span>';
-    else if(hc) act = '<button type="button" class="hm-btn" data-hco="sel" data-ip="' + esc(m.ip) + '">' + t('hco_log') + '</button> <button type="button" class="hm-btn red" data-hco="back" data-ip="' + esc(m.ip) + '">' + t('hco_back') + '</button>';
+    else if(hc) act = (r.ok && newer(r.version, hc.hcos) ? '<button type="button" class="hm-btn y" data-hco="inst" data-ip="' + esc(m.ip) + '">' + fmt('hco_upd', esc(r.version)) + '</button> ' : '') +
+      '<button type="button" class="hm-btn" data-hco="sel" data-ip="' + esc(m.ip) + '">' + t('hco_log') + '</button> <button type="button" class="hm-btn red" data-hco="back" data-ip="' + esc(m.ip) + '">' + t('hco_back') + '</button>';
     else if(m.model === S.scan.board) act = '<button type="button" class="hm-btn y" data-hco="inst" data-ip="' + esc(m.ip) + '"' + (r.ok ? '' : ' disabled title="' + esc(t('hco_norel')) + '"') + '>' + t('hco_install') + '</button>';
     else act = '<button type="button" class="hm-btn" disabled>' + t('hco_only_nqa') + '</button>';
     const jmsg = j && ['done', 'failed', 'rolled_back'].includes(j.state) ? '<div class="hco-jmsg ' + (j.state === 'done' ? 'ok' : 'bad') + '">' + esc(j.step) + '</div>' : '';

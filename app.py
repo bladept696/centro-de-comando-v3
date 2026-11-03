@@ -124,7 +124,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.5.0"
+APP_VERSION = "4.5.1"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
