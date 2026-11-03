@@ -9,6 +9,9 @@ Protocolo (mensagens kind 4402 entre as duas apps, cifradas com NIP-44, tag "p" 
   vendedor  -> comprador {"t":"inv","sid","n","pr","sats"}       (fatura adiantada de cada período)
   comprador -> vendedor  {"t":"paid","sid","n","preimage"}       (comprovativo: sha256(preimage) = payment_hash)
   qualquer um            {"t":"end","sid","why"}
+Taxa da app (só Lightning): o pedido leva "fee":1 e, se o vendedor concordar, "acc" e "inv" também. A fatura #n vem
+com menos fee_part(n) sats e a app do comprador paga essa parte ao endereço da app (APP_FEE_LUD16): quem aluga paga o
+mesmo e o vendedor recebe 99%. Uma versão antiga de qualquer dos lados não manda "fee" e o aluguer corre sem taxa.
 O vendedor aponta as máquinas para a pool do comprador e repõe a pool original no fim ou se um pagamento falhar.
 O comprador paga pela sua carteira (NWC, NIP-47) e deixa de pagar se o hashrate não aparecer na API da pool.
 
@@ -51,10 +54,21 @@ ONCHAIN_LATE_MIN = 180          # pagamento atrasado ainda é aceite / pagamento
 ONCHAIN_CONFIRM_MAX_MIN = 1440  # no modo "1 confirmação": quanto tempo se espera por ela
 ONCHAIN_TOLERANCE = 0.98        # pagar 98% ou mais conta como pago por inteiro (arredondamentos das carteiras)
 SELLER_BUSY = ("starting", "running", "awaiting_payment", "confirming")
+# taxa da app nos alugueres Lightning (mantém o Hash Commander)
+APP_FEE_PCT = 1
+APP_FEE_LUD16 = "plainpen116@walletofsatoshi.com"
+APP_FEE_BATCH = 10              # a taxa junta-se e paga-se de 10 em 10 sats (e o que sobrar no fim)
 
 
 def onchain_sats(ths, rate, minutes):
     return int(math.ceil(ths * rate * minutes))
+
+
+def fee_part(n, sats_per):
+    """Parte da taxa na fatura #n. Conta-se pelo acumulado para que pequenas faturas também cheguem a 1% no total;
+    a fatura do vendedor nunca fica abaixo de 1 sat."""
+    f = (n + 1) * sats_per * APP_FEE_PCT // 100 - n * sats_per * APP_FEE_PCT // 100
+    return min(f, sats_per - 1)
 
 
 # ---------------------------------------------------------------- Lightning: bolt11 e LNURL
@@ -392,7 +406,10 @@ class Market:
         with self.lock:
             self.sessions[sid] = s
             self._save()
-        self._send(offer["pubkey"], {"t": "req", "sid": sid, "d": offer["d"], "pool": s["pool"], "minutes": minutes, "pay": pay})
+        req = {"t": "req", "sid": sid, "d": offer["d"], "pool": s["pool"], "minutes": minutes, "pay": pay}
+        if not onchain:
+            req["fee"] = APP_FEE_PCT
+        self._send(offer["pubkey"], req)
         return sid
 
     def stop(self, sid, why="parado por ti"):
@@ -416,6 +433,8 @@ class Market:
                     self.h["onchain_release"](s["pay_address"])   # endereço que não chegou a receber volta a poder ser usado
                 except Exception:
                     pass
+        elif s.get("fee_owed"):
+            self._pay_fee(s, final=True)
         if notify_peer:
             try:
                 self._send(s["peer"], {"t": "end", "sid": sid, "why": why})
@@ -425,11 +444,12 @@ class Market:
         self.done.add(sid)
         self._log(s, f"terminado: {why}")
         with self.lock:
-            self.history.append({k: s.get(k) for k in ("role", "peer", "ths", "rate", "minutes", "paid_sats", "created", "ended", "why", "pay", "txids")})
+            self.history.append({k: s.get(k) for k in ("role", "peer", "ths", "rate", "minutes", "paid_sats", "created", "ended", "why", "pay", "txids", "fee_paid")})
             self.sessions.pop(sid, None)
             self._save()
         try:
-            self.h["notify"]("Aluguer de hashrate terminado", f"{'Recebeste' if s['role'] == 'seller' else 'Pagaste'} {s.get('paid_sats', 0)} sats · {why}")
+            self.h["notify"]("Aluguer de hashrate terminado", f"{'Recebeste' if s['role'] == 'seller' else 'Pagaste'} {s.get('paid_sats', 0)} sats"
+                                                                + (f" (+{s['fee_paid']} de taxa da app)" if s.get("fee_paid") else "") + f" · {why}")
         except Exception:
             pass
 
@@ -468,7 +488,8 @@ class Market:
         period, sats = billing(offer["ths"], offer["rate"])
         s = {"role": "seller", "peer": peer, "d": offer["d"], "ths": offer["ths"], "rate": offer["rate"], "minutes": int(m["minutes"]),
              "pool": {"host": pool["host"], "port": int(pool["port"]), "user": pool["user"], "pass": pool["pass"]}, "state": "starting", "created": int(time.time()),
-             "paid_sats": 0, "period": period, "sats_per": sats, "snaps": {}, "invoices": {}, "lud16": offer["lud16"]}
+             "paid_sats": 0, "period": period, "sats_per": sats, "snaps": {}, "invoices": {}, "lud16": offer["lud16"],
+             "fee": APP_FEE_PCT if m.get("fee") == APP_FEE_PCT else 0}
         for ip in ips:
             s["snaps"][ip] = self.h["snapshot"](ip)
         with self.lock:
@@ -479,19 +500,27 @@ class Market:
             self._log(s, f"máquina apontada para a pool do comprador" if ok else f"falha ao mudar a pool: {msg}")
         s["state"], s["start"] = "running", int(time.time())
         self._log(s, f"aluguer aceite: {s['minutes']} min, fatura de {sats} sats a cada {period} min")
-        self._send(peer, {"t": "acc", "sid": sid, "period": period, "sats": sats})
+        acc = {"t": "acc", "sid": sid, "period": period, "sats": sats}
+        if s["fee"]:
+            acc["fee"] = s["fee"]
+            self._log(s, f"taxa da app: {s['fee']}% de cada fatura, paga por quem aluga")
+        self._send(peer, acc)
         self._invoice(sid, s, 0)
 
     def _invoice(self, sid, s, n):
+        amount = s["sats_per"] - (fee_part(n, s["sats_per"]) if s.get("fee") else 0)
         try:
-            pr, dec = lnurl_invoice(s["lud16"], s["sats_per"], f"Hash Commander aluguer {sid} #{n}")
+            pr, dec = lnurl_invoice(s["lud16"], amount, f"Hash Commander aluguer {sid} #{n}")
         except Exception as e:
             self._log(s, f"não foi possível criar a fatura: {e}")
             self._end(sid, s, "o endereço Lightning do vendedor falhou", True)
             return
-        s["invoices"][str(n)] = {"hash": dec["payment_hash"], "at": int(time.time()), "paid": False}
-        self._send(s["peer"], {"t": "inv", "sid": sid, "n": n, "pr": pr, "sats": s["sats_per"]})
-        self._log(s, f"fatura #{n} enviada ({s['sats_per']} sats)")
+        s["invoices"][str(n)] = {"hash": dec["payment_hash"], "at": int(time.time()), "paid": False, "sats": amount}
+        inv = {"t": "inv", "sid": sid, "n": n, "pr": pr, "sats": amount}
+        if s.get("fee"):
+            inv["fee"] = s["fee"]
+        self._send(s["peer"], inv)
+        self._log(s, f"fatura #{n} enviada ({amount} sats)")
 
     # -- comprador: fatura chegou
     def _on_inv(self, sid, s, m):
@@ -501,7 +530,9 @@ class Market:
             self._end(sid, s, "fatura inválida do vendedor", True)
             return
         sats = (dec["msat"] or 0) // 1000
-        if sats != s["sats_per"] or s["paid_sats"] + sats > s["budget"]:
+        fee = fee_part(int(m.get("n") or 0), s["sats_per"]) if m.get("fee") == APP_FEE_PCT else 0
+        spent = s["paid_sats"] + s.get("fee_owed", 0) + s.get("fee_paid", 0)
+        if sats + fee != s["sats_per"] or spent + sats + fee > s["budget"]:
             self._end(sid, s, f"o vendedor pediu {sats} sats, fora do combinado", True)
             return
         try:
@@ -515,6 +546,24 @@ class Market:
         s["paid_sats"] += sats
         self._log(s, f"pagaste a fatura #{m.get('n')} ({sats} sats)")
         self._send(s["peer"], {"t": "paid", "sid": sid, "n": m.get("n"), "preimage": pre})
+        if fee:
+            s["fee_owed"] = s.get("fee_owed", 0) + fee
+            if s["fee_owed"] >= APP_FEE_BATCH:
+                self._pay_fee(s)
+
+    def _pay_fee(self, s, final=False):
+        """Paga ao endereço da app a taxa que se juntou. Se falhar, tenta na vez seguinte; nunca pára o aluguer."""
+        owed = s.get("fee_owed", 0)
+        try:
+            pr, dec = lnurl_invoice(APP_FEE_LUD16, owed, "Hash Commander: taxa do mercado")
+            pre = self.h["nwc"]().pay_invoice(pr)
+            if hashlib.sha256(bytes.fromhex(pre)).hexdigest() != dec["payment_hash"]:
+                raise RuntimeError("comprovativo errado")
+        except Exception as e:
+            self._log(s, f"taxa da app de {owed} sats não paga{'' if final else ' (tenta mais tarde)'}: {e}")
+            return
+        s["fee_owed"], s["fee_paid"] = 0, s.get("fee_paid", 0) + owed
+        self._log(s, f"taxa da app paga ({owed} sats)")
 
     # -- vendedor: pagamento chegou
     def _on_paid(self, sid, s, m):
@@ -525,8 +574,9 @@ class Market:
             ok = False
         if ok and not inv["paid"]:
             inv["paid"] = True
-            s["paid_sats"] += s["sats_per"]
-            self._log(s, f"recebeste a fatura #{m.get('n')} ({s['sats_per']} sats) ✓")
+            got = inv.get("sats", s["sats_per"])
+            s["paid_sats"] += got
+            self._log(s, f"recebeste a fatura #{m.get('n')} ({got} sats) ✓")
 
     # -- on-chain, vendedor: reservar um endereço novo e esperar pelo pagamento
     def _onchain_offer(self, sid, peer, offer, pool, minutes):
@@ -732,7 +782,8 @@ class Market:
                 elif s and s["peer"] == peer:
                     if t == "acc" and s["role"] == "buyer":
                         s["state"], s["start"] = "running", int(time.time())
-                        self._log(s, f"o vendedor aceitou: fatura de {m.get('sats')} sats a cada {m.get('period')} min")
+                        self._log(s, f"o vendedor aceitou: fatura de {m.get('sats')} sats a cada {m.get('period')} min"
+                                  + (f" ({APP_FEE_PCT}% vai para a taxa da app)" if m.get("fee") == APP_FEE_PCT else ""))
                     elif t == "rej" and s["role"] == "buyer":
                         self._end(sid, s, f"recusado: {m.get('why')}", False)
                     elif t == "inv" and s["role"] == "buyer" and s["state"] in ("requested", "running"):

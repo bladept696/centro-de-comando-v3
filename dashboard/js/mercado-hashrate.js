@@ -60,7 +60,7 @@ Object.assign(I18N_DICT, {
   hm_r_min: { pt: `Duração (minutos)`, en: `Duration (minutes)`, es: `Duración (minutos)`, fr: `Durée (minutes)` },
   hm_r_pool: { pt: `A tua pool`, en: `Your pool`, es: `Tu pool`, fr: `Votre pool` },
   hm_r_addr: { pt: `O teu endereço Bitcoin (recebe o bloco se sair)`, en: `Your Bitcoin address (gets the block if found)`, es: `Tu dirección Bitcoin (recibe el bloque si sale)`, fr: `Votre adresse Bitcoin (reçoit le bloc s'il est trouvé)` },
-  hm_r_cost: { pt: `Custo: {0} sats a cada {1} min · total até {2} sats{3}`, en: `Cost: {0} sats every {1} min · total up to {2} sats{3}`, es: `Coste: {0} sats cada {1} min · total hasta {2} sats{3}`, fr: `Coût : {0} sats toutes les {1} min · total jusqu'à {2} sats{3}` },
+  hm_r_cost: { pt: `Custo: {0} sats a cada {1} min · total até {2} sats{3} (inclui 1% de taxa da app)`, en: `Cost: {0} sats every {1} min · total up to {2} sats{3} (includes 1% app fee)`, es: `Coste: {0} sats cada {1} min · total hasta {2} sats{3} (incluye 1% de comisión de la app)`, fr: `Coût : {0} sats toutes les {1} min · total jusqu'à {2} sats{3} (dont 1 % de frais de l'app)` },
   hm_r_go: { pt: `Começar aluguer`, en: `Start rental`, es: `Empezar alquiler`, fr: `Démarrer la location` },
   hm_r_cancel: { pt: `Cancelar`, en: `Cancel`, es: `Cancelar`, fr: `Annuler` },
   hm_r_needw: { pt: `Liga primeiro a tua carteira (em cima).`, en: `Connect your wallet first (above).`, es: `Conecta primero tu cartera (arriba).`, fr: `Connectez d'abord votre portefeuille (en haut).` },
@@ -84,7 +84,7 @@ Object.assign(I18N_DICT, {
   hm_hist: { pt: `Alugueres anteriores`, en: `Past rentals`, es: `Alquileres anteriores`, fr: `Locations passées` },
   // pagamento em BTC on-chain
   hm_s_pay: { pt: `4. Como recebes`, en: `4. How you get paid`, es: `4. Cómo cobras`, fr: `4. Comment vous êtes payé` },
-  hm_p_ln_d: { pt: `Paga de poucos em poucos minutos e para se o hashrate parar.`, en: `Paid every few minutes; stops if the hashrate stops.`, es: `Se paga cada pocos minutos y se detiene si el hashrate se detiene.`, fr: `Payé toutes les quelques minutes ; s'arrête si le hashrate s'arrête.` },
+  hm_p_ln_d: { pt: `Paga de poucos em poucos minutos e para se o hashrate parar. Recebes 99%: 1% é a taxa que mantém a app.`, en: `Paid every few minutes; stops if the hashrate stops. You get 99%: 1% is the fee that keeps the app going.`, es: `Se paga cada pocos minutos y se detiene si el hashrate se detiene. Recibes el 99%: el 1% es la comisión que mantiene la app.`, fr: `Payé toutes les quelques minutes ; s'arrête si le hashrate s'arrête. Vous recevez 99 % : 1 % est la commission qui fait vivre l'app.` },
   hm_p_oc: { pt: `₿ BTC on-chain`, en: `₿ BTC on-chain`, es: `₿ BTC on-chain`, fr: `₿ BTC on-chain` },
   hm_p_oc_d: { pt: `Pago tudo adiantado. Só para alugueres grandes, porque a taxa da rede é cara.`, en: `Paid fully upfront. Only for large rentals, because network fees are expensive.`, es: `Se paga todo por adelantado. Solo para alquileres grandes, porque la comisión de red es cara.`, fr: `Payé entièrement d'avance. Seulement pour les grosses locations, car les frais du réseau sont chers.` },
   hm_oc_xpub_ph: { pt: `zpub… (chave pública da carteira, só de leitura)`, en: `zpub… (wallet public key, read-only)`, es: `zpub… (clave pública de la cartera, solo lectura)`, fr: `zpub… (clé publique du portefeuille, lecture seule)` },
