@@ -144,10 +144,18 @@ function hc3dLine(c, vals){
     hc3dClear(c); c.sig = sig;
     const th = hc3dTheme(), g = c.group = new THREE.Group(); c.scene.add(g);
     hc3dStage(c, g, D, H, ticks.map(v => { const f = formatHashrate(v); return { y: yOf(v), text: f.value.replace(/\.?0+$/, '') + ' ' + f.unit }; }), th);
-    const L = c.line = { N, D, H, cur: prev || target.slice(), target, rs, th, yOf };
-    L.front = hc3dMesh(g, hc3dStrip(N), .92);   // face da frente (área)
-    L.top = hc3dMesh(g, hc3dStrip(N), .9);      // topo com profundidade
-    L.edge = hc3dMesh(g, hc3dStrip(N));          // linha brilhante na aresta da frente
+    // M pontos na curva: entre cada leitura entram 3 pontos interpolados, para a linha sair suave e não aos bicos
+    const M = (N - 1) * 3 + 1;
+    const L = c.line = { N, M, D, H, cur: prev || target.slice(), target, rs, th, yOf, ys: new Float32Array(M) };
+    // linhas verticais de tempo na parede (fracas), para o olho seguir a hora
+    const zb = -D / 2 - .34, tl = [];
+    for(let k = 1; k < 4; k++){ const x = c.xL + (c.xR - c.xL) * k / 4; tl.push(new THREE.Vector3(x, 0, zb), new THREE.Vector3(x, H, zb)); }
+    g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(tl), new THREE.LineBasicMaterial({ color: th.grid, transparent: true, opacity: .35 })));
+    L.front = hc3dMesh(g, hc3dStrip(M), .95);   // face da frente (área)
+    L.top = hc3dMesh(g, hc3dStrip(M), .9);      // topo com profundidade
+    L.glow = hc3dMesh(g, hc3dStrip(M), .45);    // halo à volta da linha
+    L.glow.material.blending = THREE.AdditiveBlending;
+    L.edge = hc3dMesh(g, hc3dStrip(M));          // linha brilhante na aresta da frente
     L.mark = new THREE.Mesh(new THREE.SphereGeometry(.14, 20, 20), new THREE.MeshStandardMaterial({ color: th.accent, emissive: th.accent, emissiveIntensity: .7, roughness: .3 })); g.add(L.mark);
     L.halo = hc3dHalo('rgba(255,190,80,.55)'); L.halo.scale.set(1, 1, 1); g.add(L.halo);
     L.guide = new THREE.Mesh(new THREE.BoxGeometry(.025, 1, .025), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .5 })); L.guide.geometry.translate(0, .5, 0); L.guide.visible = false; g.add(L.guide);
@@ -166,20 +174,31 @@ function hc3dLine(c, vals){
 }
 function hc3dFrameLine(c, dt){
   const L = c.line; if(!L) return;
-  const N = L.N, D = L.D, e = Math.min(1, dt * 5), a = L.th.accent, f = L.th.floor, xL = c.xL, PW = c.xR - c.xL;
-  const fp = L.front.geometry.attributes, tp = L.top.geometry.attributes, ep = L.edge.geometry.attributes;
-  for(let i = 0; i < N; i++){
-    L.cur[i] += (L.target[i] - L.cur[i]) * e;
-    const x = xL + i * PW / (N - 1), y = L.cur[i], k = .35 + .65 * (y / L.H);
-    fp.position.setXYZ(2*i, x, y, D / 2); fp.position.setXYZ(2*i + 1, x, 0, D / 2);
-    fp.color.setXYZ(2*i, f.r + (a.r - f.r) * .55 * k, f.g + (a.g - f.g) * .55 * k, f.b + (a.b - f.b) * .55 * k);
-    fp.color.setXYZ(2*i + 1, f.r, f.g, f.b);
-    tp.position.setXYZ(2*i, x, y, -D / 2); tp.position.setXYZ(2*i + 1, x, y, D / 2);
-    tp.color.setXYZ(2*i, a.r * .35, a.g * .35, a.b * .35); tp.color.setXYZ(2*i + 1, a.r * .7, a.g * .7, a.b * .7);
-    ep.position.setXYZ(2*i, x, y + .05, D / 2 + .005); ep.position.setXYZ(2*i + 1, x, y - .05, D / 2 + .005);
-    ep.color.setXYZ(2*i, a.r, a.g, a.b); ep.color.setXYZ(2*i + 1, a.r, a.g, a.b);
+  const N = L.N, M = L.M, D = L.D, e = Math.min(1, dt * 5), a = L.th.accent, f = L.th.floor, xL = c.xL, PW = c.xR - c.xL;
+  const fp = L.front.geometry.attributes, tp = L.top.geometry.attributes, gp = L.glow.geometry.attributes, ep = L.edge.geometry.attributes;
+  for(let i = 0; i < N; i++) L.cur[i] += (L.target[i] - L.cur[i]) * e;
+  // curva suave (Catmull-Rom) pelas leituras
+  const cu = L.cur, ys = L.ys;
+  for(let j = 0; j < M; j++){
+    const i = Math.min(N - 2, Math.floor(j / 3)), u = j / 3 - i;
+    const p0 = cu[Math.max(0, i - 1)], p1 = cu[i], p2 = cu[i + 1], p3 = cu[Math.min(N - 1, i + 2)];
+    const y = .5 * (2 * p1 + (p2 - p0) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (3 * p1 - p0 - 3 * p2 + p3) * u * u * u);
+    ys[j] = Math.max(0, Math.min(L.H * 1.04, y));
   }
-  [fp, tp, ep].forEach(at => { at.position.needsUpdate = true; at.color.needsUpdate = true; });
+  for(let j = 0; j < M; j++){
+    const x = xL + j * PW / (M - 1), y = ys[j], k = .3 + .7 * (y / L.H);
+    fp.position.setXYZ(2*j, x, y, D / 2); fp.position.setXYZ(2*j + 1, x, 0, D / 2);
+    fp.color.setXYZ(2*j, f.r + (a.r - f.r) * .78 * k, f.g + (a.g - f.g) * .78 * k, f.b + (a.b - f.b) * .78 * k);
+    fp.color.setXYZ(2*j + 1, f.r, f.g, f.b);
+    tp.position.setXYZ(2*j, x, y, -D / 2); tp.position.setXYZ(2*j + 1, x, y, D / 2);
+    tp.color.setXYZ(2*j, a.r * .3, a.g * .3, a.b * .3); tp.color.setXYZ(2*j + 1, a.r * .75, a.g * .75, a.b * .75);
+    gp.position.setXYZ(2*j, x, y + .17, D / 2 + .004); gp.position.setXYZ(2*j + 1, x, Math.max(0, y - .17), D / 2 + .004);
+    gp.color.setXYZ(2*j, a.r * .35, a.g * .35, a.b * .35); gp.color.setXYZ(2*j + 1, a.r * .35, a.g * .35, a.b * .35);
+    ep.position.setXYZ(2*j, x, y + .045, D / 2 + .006); ep.position.setXYZ(2*j + 1, x, y - .045, D / 2 + .006);
+    const w = Math.min(1, .75 + .25 * k);
+    ep.color.setXYZ(2*j, a.r * w + (1 - w), a.g * w + (1 - w), a.b * w + (1 - w)); ep.color.setXYZ(2*j + 1, a.r, a.g, a.b);
+  }
+  [fp, tp, gp, ep].forEach(at => { at.position.needsUpdate = true; at.color.needsUpdate = true; });
   const ly = L.cur[N - 1];
   L.mark.position.set(c.xR, ly, D / 2 + .02); L.halo.position.copy(L.mark.position); L.halo.scale.setScalar(.9 + .25 * Math.sin(c.t * 2.2));
   // passar o rato: guia vertical, ponto e dica com o valor e o tempo
@@ -210,23 +229,42 @@ function hc3dBars(c, buckets, range){
   const n = buckets.length, W = c.W, D = 1.1, H = 3.2;
   const vals = buckets.map(b => Math.max(1, b.value)), top = Math.max(...vals), low = Math.min(...vals);
   c.xL = -W / 2 + 1.5; c.xR = W / 2 - .4;
-  // marcas 1-3-10: do primeiro valor abaixo do mínimo ao primeiro acima do máximo
-  const steps = []; for(let e = Math.floor(Math.log10(low)) - 1; e <= Math.ceil(Math.log10(top)) + 1; e++) steps.push(Math.pow(10, e), 3 * Math.pow(10, e));
-  const lo = steps.filter(v => v <= low).pop() || steps[0], hi = steps.find(v => v >= top * 1.05) || top * 1.5;
-  const tickVals = steps.filter(v => v >= lo && v <= hi);
-  const logMin = Math.log10(lo), lr = (Math.log10(hi) - logMin) || 1, hOf = v => .06 + (Math.log10(Math.max(1, v)) - logMin) / lr * (H - .06);
+  let hOf, tickVals;
+  if(top / low >= 8){
+    // valores muito diferentes: escala logarítmica com marcas 1-3-10
+    const steps = []; for(let e = Math.floor(Math.log10(low)) - 1; e <= Math.ceil(Math.log10(top)) + 1; e++) steps.push(Math.pow(10, e), 3 * Math.pow(10, e));
+    const lo = steps.filter(v => v <= low).pop() || steps[0], hi = steps.find(v => v >= top * 1.05) || top * 1.5;
+    tickVals = steps.filter(v => v >= lo && v <= hi);
+    const logMin = Math.log10(lo), lr = (Math.log10(hi) - logMin) || 1;
+    hOf = v => .06 + (Math.log10(Math.max(1, v)) - logMin) / lr * (H - .06);
+  } else {
+    // valores parecidos: escala linear a partir de um pouco abaixo do mais baixo, para as diferenças se verem
+    const lo = Math.max(0, low - (top - low || top * .2) * .9), hi = top + (top - lo) * .12;
+    tickVals = hc3dNiceTicks(lo, hi, 3).filter(v => v >= lo && v <= hi);
+    hOf = v => .25 + (v - lo) / ((hi - lo) || 1) * (H - .25);
+  }
   hc3dStage(c, g, D, H, tickVals.map(v => { const f = formatDiff(v); return { y: hOf(v), text: f.value.replace(/\.0+$/, '') + f.unit }; }), th);
   const step = (c.xR - c.xL) / n, bw = Math.min(1.0, step * .62), best = vals.indexOf(top);
-  const dim = th.accent.clone().lerp(th.wall, .5), capCol = th.accent.clone().lerp(new THREE.Color(0xffffff), .35);
+  // cor de cada coluna pelo valor: as mais baixas escuras, as mais altas quase da cor do tema; a melhor em dourado vivo
+  const dim = th.accent.clone().lerp(th.wall, .62), hot = th.accent.clone().lerp(th.wall, .12), gold = th.accent.clone().lerp(new THREE.Color(0xfff1a8), .3);
+  const lmin = Math.log10(low), lspan = (Math.log10(top) - lmin) || 1;
   const B = c.bars = { meshes: [], caps: [], best };
   buckets.forEach((b, i) => {
-    const h = hOf(vals[i]), isBest = i === best, col = isBest ? th.accent : dim;
+    const h = hOf(vals[i]), isBest = i === best, tv = (Math.log10(vals[i]) - lmin) / lspan;
+    const col = isBest ? gold : dim.clone().lerp(hot, tv);
     const geo = new THREE.BoxGeometry(bw, 1, D * .8); geo.translate(0, .5, 0);
-    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: isBest ? .28 : .08, metalness: .15, roughness: .5 }));
-    m.position.set(c.xL + i * step + step / 2, 0, 0); m.scale.y = .001; m.userData = { h, delay: i * .04, b, base: isBest ? .28 : .08 }; g.add(m); B.meshes.push(m);
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(bw, .04, D * .8), new THREE.MeshBasicMaterial({ color: isBest ? capCol : dim.clone().lerp(new THREE.Color(0xffffff), .2) }));
+    // degradê na vertical: base mais escura, topo mais claro
+    const pos = geo.attributes.position, cols = new Float32Array(pos.count * 3);
+    for(let v = 0; v < pos.count; v++){ const s = pos.getY(v) > .5 ? 1 : .45; cols[3*v] = s; cols[3*v + 1] = s; cols[3*v + 2] = s; }
+    geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    const base = isBest ? .4 : .06 + .1 * tv;
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, vertexColors: true, emissive: col, emissiveIntensity: base, metalness: .25, roughness: .4 }));
+    m.position.set(c.xL + i * step + step / 2, 0, 0); m.scale.y = .001; m.userData = { h, delay: i * .04, b, base }; g.add(m); B.meshes.push(m);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(bw * 1.02, .05, D * .82), new THREE.MeshBasicMaterial({ color: isBest ? 0xffffff : col.clone().lerp(new THREE.Color(0xffffff), .35) }));
     cap.position.set(m.position.x, 0, 0); g.add(cap); B.caps.push(cap);
   });
+  // brilho por cima da melhor coluna
+  B.halo = hc3dHalo('rgba(255,215,90,.7)'); B.halo.scale.set(1.6, 1.6, 1); B.halo.visible = false; g.add(B.halo);
   const fb = formatDiff(top);
   B.bestLabel = hc3dAddLabel(c, fb.value + fb.unit, B.meshes[best].position.x, hOf(top) + .12, 0, 'b', 'hc3d-lbl-strong'); B.bestLabel.hidden = true;
   const cnt = Math.min(n, Math.max(2, Math.floor(W / 3)));
@@ -250,6 +288,9 @@ function hc3dFrameBars(c, dt){
     m.material.emissiveIntensity += (want - m.material.emissiveIntensity) * Math.min(1, dt * 10);
   });
   B.bestLabel.hidden = !done;
+  const bm = B.meshes[B.best];
+  B.halo.visible = done; B.halo.position.set(bm.position.x, bm.userData.h + .1, .2);
+  const hs = 1.5 + .25 * Math.sin(c.t * 2.4); B.halo.scale.set(hs, hs, 1);
   if(hit){
     const b = hit.object.userData.b, f = formatDiff(b.value), d = new Date(b.ts * 1000);
     c.tip.style.display = 'block'; c.tip.style.left = (c.px + 12) + 'px'; c.tip.style.top = Math.max(0, c.py - 30) + 'px';

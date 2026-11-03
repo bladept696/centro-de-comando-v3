@@ -2,6 +2,7 @@ dist/
 build/
 *.spec
 !CentroDeComando.spec
+!CentroDeComando-unix.spec
 __pycache__/
 *.pyc
 
@@ -26,3 +27,15 @@ diff_records.json
 block_cert_key.json
 *.bak
 updates/
+
+# Imagens da loja guardadas pela app (aba Loja)
+shop_imgs/
+# Chave do ecrã físico (gerada pela app)
+screen_key.json
+# Compilação do programa do ecrã físico (o resultado fica em screen_fw/)
+screen-firmware/.pio/
+# Chave Nostr e oferta do Mercado de hashrate (geradas pela app)
+nostr_key.json
+market.json
+nwc.json
+market_sessions.json

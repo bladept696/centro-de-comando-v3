@@ -89,6 +89,8 @@ Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: WizardSilent
 ; toca em config.json nem nos históricos (diff_history.json, etc.) - ficam
 ; para o caso de o utilizador reinstalar a seguir.
 Type: filesandordirs; Name: "{app}\updates"
+; Imagens da loja guardadas pela app (aba Loja); voltam a ser descarregadas sozinhas.
+Type: filesandordirs; Name: "{app}\shop_imgs"
 
 [Code]
 // Se já houver uma instância da app a correr, o CloseApplications=yes acima

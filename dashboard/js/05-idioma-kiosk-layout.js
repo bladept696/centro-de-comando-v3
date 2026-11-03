@@ -224,6 +224,7 @@ const TAB_LABEL_KEYS = {
   converter: 'conversor',
   mercado: 'mercado_t',
   loja: 'loja_t',
+  hashmarket: 'hm_t',
   donate: 'apoiar_doar',
   supporters: 'apoiantes',
   support: 'suporte',

@@ -15,7 +15,7 @@ const mcToday = () => { const d = new Date(); return d.getFullYear() + '-' + Str
 const MC_MENU_GROUPS = [
   ['data', ['export', 'import']],
   ['alerts', ['pause', 'sched', 'rules', 'limits', 'valerts', 'tariff']],
-  ['net', ['scan', 'remote', 'lock']],
+  ['net', ['scan', 'remote', 'screen', 'lock']],
   ['panel', ['report', 'xp', 'chips', 'real', 'cert', 'trophy', 'level', 'help']]
 ];
 const MC_MENU_GTX = {
@@ -32,6 +32,7 @@ function mcMenuLabel(k){
     case 'tariff': return t('mc_m_tariff'); case 'limits': return t('mc_m_limits');
     case 'lock': return t(mc.locked ? 'mc_m_unlock' : 'mc_m_lock'); case 'report': return t('mc_m_report');
     case 'remote': return typeof hcRemoteLabel === 'function' ? hcRemoteLabel() : '🌐 Acesso remoto';
+    case 'screen': return typeof hcScreenLabel === 'function' ? hcScreenLabel() : '📟 Ecrã físico';
     case 'chips': return typeof hcChipsLabel === 'function' ? hcChipsLabel() : '🧩 Saúde dos chips';
     case 'cert': return typeof hcCertLabel === 'function' ? hcCertLabel() : '📜 Certificados de bloco';
     case 'real': return typeof hcRealLabel === 'function' ? hcRealLabel() : '📐 Hashrate real';
@@ -105,6 +106,7 @@ document.addEventListener('click', e => {
   else if(k === 'lock'){ mcLockToggle(); }
   else if(k === 'report'){ if(typeof mcReportOpen === 'function') mcReportOpen(); }
   else if(k === 'remote'){ if(typeof hcRemoteOpen === 'function') hcRemoteOpen(); }
+  else if(k === 'screen'){ if(typeof hcScreenOpen === 'function') hcScreenOpen(); }
   else if(k === 'chips'){ if(typeof hcChipsOpen === 'function') hcChipsOpen(); }
   else if(k === 'cert'){ if(typeof hcCertOpen === 'function') hcCertOpen(); }
   else if(k === 'real'){ if(typeof hcRealOpen === 'function') hcRealOpen(); }

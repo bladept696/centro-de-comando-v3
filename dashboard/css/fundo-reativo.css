@@ -1,0 +1,51 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* Fundo que reage: brilho quente nas bordas do ecrã quando o hashrate está acima da média,
+   e uma onda dourada quando aparece uma share acima de 100M. Fica por cima de tudo mas só nas
+   bordas (centro transparente) e sem apanhar cliques, para não atrapalhar a leitura dos painéis. */
+#hcMood{
+  position:fixed; inset:0; z-index:8990; pointer-events:none;
+  --mood:0;
+  opacity:calc(var(--mood) * .9);
+  transition:opacity 6s ease;
+  background:
+    radial-gradient(120% 85% at 50% 50%, transparent 52%, #ff9d2a40 78%, #ff7a1a8c 100%),
+    radial-gradient(70% 45% at 50% 100%, #ffb02033, transparent 70%);
+  mix-blend-mode:screen;
+  animation:hcMoodBreathe 10s ease-in-out infinite;
+}
+@keyframes hcMoodBreathe{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.35); } }
+
+/* Onda de share grande */
+#hcWave{ position:fixed; inset:0; z-index:8991; pointer-events:none; overflow:hidden; }
+#hcWave .ring{
+  position:absolute; left:50%; top:50%; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%;
+  border:2px solid #ffd45a; box-shadow:0 0 24px #ffc83c99, inset 0 0 18px #ffc83c66;
+  animation:hcRing 4.5s cubic-bezier(.25,.5,.35,1) forwards;
+}
+#hcWave .ring.r2{ animation-delay:.9s; opacity:0; }
+@keyframes hcRing{ 0%{ transform:scale(.2); opacity:0; } 8%{ opacity:.95; } 100%{ transform:scale(40); opacity:0; } }
+#hcWave .flash{
+  position:absolute; inset:0;
+  background:radial-gradient(130% 90% at 50% 50%, transparent 55%, #ffd45a40 85%, #ffcc3380 100%);
+  mix-blend-mode:screen; animation:hcFlash 4s ease-in-out forwards;
+}
+@keyframes hcFlash{ 0%{ opacity:0; } 30%{ opacity:1; } 100%{ opacity:0; } }
+#hcWave .chip{
+  position:absolute; left:50%; top:64px; transform:translateX(-50%);
+  padding:7px 16px; border-radius:999px; white-space:nowrap;
+  font:700 14px 'Space Grotesk',system-ui,sans-serif; color:#1a1200;
+  background:linear-gradient(90deg,#ffd45a,#ffb020); box-shadow:0 6px 24px #ffb02066, 0 0 0 1px #fff4;
+  animation:hcChip 7s ease forwards;
+}
+@keyframes hcChip{
+  0%{ opacity:0; transform:translate(-50%,-14px) scale(.9); }
+  10%,80%{ opacity:1; transform:translate(-50%,0) scale(1); }
+  100%{ opacity:0; transform:translate(-50%,-8px) scale(.97); }
+}
+
+body.perf-mode #hcMood, body.perf-mode #hcWave{ display:none; }
+@media (prefers-reduced-motion: reduce){
+  #hcMood{ animation:none; }
+  #hcWave .ring{ display:none; }
+}

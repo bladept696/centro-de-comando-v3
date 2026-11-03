@@ -112,6 +112,12 @@ try:
 except ImportError:
     _WinToastNotification = None
     WINDOWS_TOAST_AVAILABLE = False
+# Mac e Linux: notificações do próprio sistema (osascript / notify-send) — o nome ficou do tempo em que era só Windows
+if sys.platform == 'darwin':
+    WINDOWS_TOAST_AVAILABLE = os.path.exists('/usr/bin/osascript')
+elif sys.platform.startswith('linux'):
+    import shutil as _shutil
+    WINDOWS_TOAST_AVAILABLE = bool(_shutil.which('notify-send'))
 
 PORT = 8765
 SCAN_TIMEOUT = 0.6
@@ -1753,6 +1759,23 @@ def _parse_version(v):
     return tuple(parts[:3])
 
 
+def _machine_arch():
+    import platform
+    m = platform.machine().lower()
+    return {'amd64': 'x86_64', 'x64': 'x86_64', 'aarch64': 'arm64'}.get(m, m)
+
+
+def _update_asset_for_this_os(name):
+    """Ficheiro da release que serve a este sistema: Windows .exe, Mac CentroDeComando-X-mac-<arm64|x64>.zip,
+    Linux CentroDeComando-X-linux-<x86_64|arm64>.AppImage."""
+    n = (name or '').lower()
+    if sys.platform == 'darwin':
+        return n.endswith('-mac-' + ('arm64' if _machine_arch() == 'arm64' else 'x64') + '.zip')
+    if sys.platform.startswith('linux'):
+        return n.endswith('-linux-' + _machine_arch() + '.appimage')
+    return n.endswith('.exe')
+
+
 def check_for_update(force=False):
     with _update_cache_lock:
         cached = _update_cache["data"]
@@ -1795,7 +1818,7 @@ def check_for_update(force=False):
         best = None
         for a in assets:
             name = (a.get('name') or '')
-            if not name.lower().endswith('.exe'):
+            if not _update_asset_for_this_os(name):
                 continue
             if best is None:
                 best = a
@@ -1988,11 +2011,14 @@ def _do_download_and_launch_installer(url, name, silent, sig_url=None):
         with _update_install_lock:
             _update_install_state = {"status": "launching", "error": None, "verified": True}
 
-        args = [dest]
-        if silent:
-            args.append('/VERYSILENT')
-        args.append('/SP-')
-        subprocess.Popen(args, close_fds=True, shell=False)
+        if sys.platform == 'darwin' or sys.platform.startswith('linux'):
+            _launch_unix_update(dest)
+        else:
+            args = [dest]
+            if silent:
+                args.append('/VERYSILENT')
+            args.append('/SP-')
+            subprocess.Popen(args, close_fds=True, shell=False)
 
         with _update_install_lock:
             _update_install_state = {"status": "done", "error": None, "verified": True}
@@ -2002,6 +2028,49 @@ def _do_download_and_launch_installer(url, name, silent, sig_url=None):
     except Exception as e:
         with _update_install_lock:
             _update_install_state = {"status": "error", "error": str(e)}
+
+
+def _launch_unix_update(dest):
+    """Mac e Linux (ficheiro já verificado pela assinatura): um script espera que esta app feche, troca o
+    programa pelo novo e volta a abri-lo."""
+    import shlex
+    import stat
+    pid = os.getpid()
+    if sys.platform == 'darwin':
+        # sys.executable = .../CentroDeComando.app/Contents/MacOS/CentroDeComando
+        app_path = os.path.abspath(os.path.join(os.path.dirname(sys.executable), '..', '..'))
+        if not app_path.endswith('.app'):
+            raise RuntimeError("esta cópia não está dentro de um .app: atualiza à mão")
+        work = os.path.join(update_download_dir(), 'novo')
+        if os.path.isdir(work):
+            import shutil
+            shutil.rmtree(work, ignore_errors=True)
+        os.makedirs(work, exist_ok=True)
+        # ditto (do próprio macOS) mantém as permissões e as ligações internas do .app
+        subprocess.run(['/usr/bin/ditto', '-x', '-k', dest, work], check=True, timeout=180)
+        new_app = next((os.path.join(work, f) for f in os.listdir(work) if f.endswith('.app')), None)
+        if not new_app:
+            raise RuntimeError("o .zip da atualização não traz o .app")
+        if not os.access(os.path.dirname(app_path), os.W_OK):
+            raise RuntimeError(f"sem permissão para substituir {app_path}: atualiza à mão")
+        script = (f"while kill -0 {pid} 2>/dev/null; do sleep 0.5; done\n"
+                  f"rm -rf {shlex.quote(app_path)}\nmv {shlex.quote(new_app)} {shlex.quote(app_path)}\n"
+                  f"xattr -dr com.apple.quarantine {shlex.quote(app_path)} 2>/dev/null\nopen {shlex.quote(app_path)}\n")
+    else:
+        target = os.environ.get('APPIMAGE')
+        if not target or not os.path.isfile(target):
+            raise RuntimeError("esta cópia não é um AppImage: atualiza à mão")
+        if not os.access(os.path.dirname(target), os.W_OK):
+            raise RuntimeError(f"sem permissão para substituir {target}: atualiza à mão")
+        os.chmod(dest, os.stat(dest).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        script = (f"while kill -0 {pid} 2>/dev/null; do sleep 0.5; done\n"
+                  f"mv -f {shlex.quote(dest)} {shlex.quote(target)}\nnohup {shlex.quote(target)} >/dev/null 2>&1 &\n")
+    sh = os.path.join(update_download_dir(), 'atualizar.sh')
+    with open(sh, 'w') as f:
+        f.write("#!/bin/sh\n" + script)
+    os.chmod(sh, 0o755)
+    subprocess.Popen(['/bin/sh', sh], close_fds=True, start_new_session=True,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def start_update_install(silent=True):
@@ -2085,7 +2154,907 @@ def fetch_shop_products(force=False):
     with _shop_cache_lock:
         _shop_cache["ts"] = time.time()
         _shop_cache["data"] = data
+    threading.Thread(target=_shop_cache_images, args=(products,), daemon=True).start()
     return data
+
+
+# Os links das imagens do Google Sites expiram (dão 403 passado algum tempo), por isso cada imagem é guardada
+# neste PC e servida em /shop-img/<chave>. A chave sai do nome do produto (só letras e números, igual ao keyOf
+# do loja.js), para a imagem continuar a aparecer mesmo quando o link muda ou o site da loja está em baixo.
+SHOP_IMG_DIRNAME = 'shop_imgs'
+SHOP_IMG_MAX_BYTES = 6 * 1024 * 1024
+SHOP_IMG_REFRESH_SECONDS = 3 * 86400
+
+
+def shop_img_key(name):
+    return re.sub(r'[^a-z0-9]', '', str(name or '').lower())[:60]
+
+
+def shop_img_path(key):
+    return os.path.join(writable_dir(), SHOP_IMG_DIRNAME, key)
+
+
+def _shop_cache_images(products):
+    try:
+        os.makedirs(os.path.join(writable_dir(), SHOP_IMG_DIRNAME), exist_ok=True)
+    except Exception:
+        return
+    for p in products:
+        key, url = shop_img_key(p.get("name")), p.get("img") or ""
+        if not key or not url.startswith("https://"):
+            continue
+        dest = shop_img_path(key)
+        try:
+            if os.path.exists(dest) and time.time() - os.path.getmtime(dest) < SHOP_IMG_REFRESH_SECONDS:
+                continue
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (CentroDeComando)"})
+            with _urlopen_https(req, timeout=20) as resp:
+                if not (resp.headers.get("Content-Type") or "").startswith("image/"):
+                    continue
+                body = resp.read(SHOP_IMG_MAX_BYTES + 1)
+            if not body or len(body) > SHOP_IMG_MAX_BYTES:
+                continue
+            tmp = dest + ".tmp"
+            with open(tmp, "wb") as f:
+                f.write(body)
+            os.replace(tmp, dest)
+        except Exception:
+            # falhou agora: fica a imagem antiga (se houver) e tenta-se na próxima leitura da loja
+            continue
+
+
+# --- Pool honesta: para quem vai a recompensa do bloco ---
+# Liga-se à pool de cada máquina como um mineiro (mesmo endereço, worker "hcverify"), recebe o trabalho
+# (mining.notify), monta a transação da recompensa (coinbase = coinb1 + extranonce1 + extranonce2 + coinb2) e lê
+# os endereços que recebem. Numa pool solo o endereço da máquina tem de levar (quase) tudo; numa partilhada é normal
+# ir para a pool. Não envia shares: só lê o trabalho. Limite: vê o trabalho que a pool dá a esta ligação.
+POOL_CHECK_CACHE_SECONDS = 600
+POOL_SOLO_HOST_RE = re.compile(r'solo|public-pool|molepool', re.I)
+_pool_check_cache = {}
+_pool_check_lock = threading.Lock()
+_B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+_B32 = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
+
+
+def _b58check(payload):
+    data = payload + hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4]
+    n, out = int.from_bytes(data, 'big'), ''
+    while n:
+        n, r = divmod(n, 58)
+        out = _B58[r] + out
+    return '1' * (len(data) - len(data.lstrip(b'\0'))) + out
+
+
+def _bech32_polymod(values):
+    gen = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+    chk = 1
+    for v in values:
+        b = chk >> 25
+        chk = (chk & 0x1ffffff) << 5 ^ v
+        for i in range(5):
+            chk ^= gen[i] if ((b >> i) & 1) else 0
+    return chk
+
+
+def _segwit_addr(ver, prog, hrp='bc'):
+    data, acc, bits = [ver], 0, 0
+    for b in prog:
+        acc, bits = (acc << 8) | b, bits + 8
+        while bits >= 5:
+            bits -= 5
+            data.append((acc >> bits) & 31)
+    if bits:
+        data.append((acc << (5 - bits)) & 31)
+    const = 1 if ver == 0 else 0x2bc830a3   # bech32 (v0) / bech32m (v1+)
+    hx = [ord(c) >> 5 for c in hrp] + [0] + [ord(c) & 31 for c in hrp]
+    pm = _bech32_polymod(hx + data + [0] * 6) ^ const
+    return hrp + '1' + ''.join(_B32[d] for d in data + [(pm >> 5 * (5 - i)) & 31 for i in range(6)])
+
+
+def script_to_address(spk):
+    if len(spk) == 25 and spk[:3] == b'\x76\xa9\x14' and spk[23:] == b'\x88\xac':
+        return _b58check(b'\x00' + spk[3:23])
+    if len(spk) == 23 and spk[:2] == b'\xa9\x14' and spk[22] == 0x87:
+        return _b58check(b'\x05' + spk[2:22])
+    if len(spk) in (22, 34) and spk[0] == 0 and spk[1] == len(spk) - 2:
+        return _segwit_addr(0, spk[2:])
+    if len(spk) == 34 and spk[0] == 0x51 and spk[1] == 0x20:
+        return _segwit_addr(1, spk[2:])
+    return None
+
+
+def _looks_like_btc_address(s):
+    return bool(re.fullmatch(r'(bc1[02-9ac-hj-np-z]{11,71}|[13][1-9A-HJ-NP-Za-km-z]{25,34})', s or '', re.I))
+
+
+def _read_varint(b, i):
+    v = b[i]
+    if v < 0xfd:
+        return v, i + 1
+    n = {0xfd: 2, 0xfe: 4, 0xff: 8}[v]
+    return int.from_bytes(b[i + 1:i + 1 + n], 'little'), i + 1 + n
+
+
+def coinbase_outputs(tx):
+    """Saídas (valor em sats, endereço ou None) de uma transação coinbase sem dados de testemunha."""
+    i = 4
+    n_in, i = _read_varint(tx, i)
+    for _ in range(n_in):
+        i += 36
+        sl, i = _read_varint(tx, i)
+        i += sl + 4
+    n_out, i = _read_varint(tx, i)
+    outs = []
+    for _ in range(n_out):
+        val = int.from_bytes(tx[i:i + 8], 'little')
+        sl, i = _read_varint(tx, i + 8)
+        spk = tx[i:i + sl]
+        i += sl
+        outs.append((val, script_to_address(spk) if spk[:1] != b'\x6a' else None))
+    return outs
+
+
+def stratum_coinbase(host, port, user, tls=False, timeout=12):
+    sock = socket.create_connection((host, int(port)), timeout=timeout)
+    try:
+        if tls:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            sock = ctx.wrap_socket(sock, server_hostname=host)
+        sock.settimeout(timeout)
+        f = sock.makefile('rwb')
+        for msg in ({"id": 1, "method": "mining.subscribe", "params": ["HashCommander/verify"]},
+                    {"id": 2, "method": "mining.authorize", "params": [user, "x"]}):
+            f.write((json.dumps(msg) + "\n").encode())
+        f.flush()
+        en1, en2size, deadline = None, None, time.time() + timeout
+        while time.time() < deadline:
+            line = f.readline(1 << 20)
+            if not line:
+                break
+            try:
+                m = json.loads(line)
+            except ValueError:
+                continue
+            if m.get("id") == 1 and isinstance(m.get("result"), list):
+                en1, en2size = m["result"][1], int(m["result"][2])
+            elif m.get("id") == 2 and m.get("result") is False:
+                raise RuntimeError("a pool recusou o utilizador")
+            elif m.get("method") == "mining.set_extranonce":
+                en1, en2size = m["params"][0], int(m["params"][1])
+            elif m.get("method") == "mining.notify" and en1 is not None:
+                p = m["params"]
+                return bytes.fromhex(p[2] + en1 + "00" * en2size + p[3])
+        raise RuntimeError("a pool não mandou trabalho a tempo")
+    finally:
+        try:
+            sock.close()
+        except Exception:
+            pass
+
+
+def _mask_addr(a):
+    return (a[:6] + '…' + a[-4:]) if a and len(a) > 12 else (a or '?')
+
+
+def check_pool(host, port, user, tls=False, force=False):
+    key = (host, int(port), user)
+    with _pool_check_lock:
+        hit = _pool_check_cache.get(key)
+    if hit and not force and time.time() - hit["ts"] < POOL_CHECK_CACHE_SECONDS:
+        return hit["res"]
+    base = user.split('.', 1)[0].strip()
+    mine = base if _looks_like_btc_address(base) else None
+    res = {"host": host, "port": int(port), "solo_host": bool(POOL_SOLO_HOST_RE.search(host)), "addr": _mask_addr(mine) if mine else None, "ts": int(time.time())}
+    try:
+        tx = stratum_coinbase(host, port, (base + '.hcverify') if mine else user, tls)
+        outs = coinbase_outputs(tx)
+        total = sum(v for v, _ in outs) or 1
+        to_me = sum(v for v, a in outs if mine and a and a.lower() == mine.lower())
+        res.update(total_sats=total, pct=round(to_me / total * 100, 2),
+                   outputs=[{"addr": _mask_addr(a) if a else None, "mine": bool(mine and a and a.lower() == mine.lower()), "pct": round(v / total * 100, 2)}
+                            for v, a in sorted(outs, key=lambda o: -o[0]) if v > 0][:6])
+        if not mine:
+            res["status"] = "shared"             # utilizador é um nome de conta: pool partilhada, paga a pool
+        elif res["pct"] >= 50:
+            res["status"] = "ok"                 # o bloco seria (quase todo) teu
+        elif res["pct"] > 0:
+            res["status"] = "partial"            # parte da recompensa vai direto para ti (ex.: OCEAN)
+        else:
+            res["status"] = "other"              # o teu endereço não aparece: alarme numa pool solo
+    except Exception as e:
+        res.update(status="error", error=str(e)[:200])
+    with _pool_check_lock:
+        _pool_check_cache[key] = {"ts": time.time(), "res": res}
+    return res
+
+
+def pool_honesty(force=False):
+    with POWER_CONFIG_LOCK:
+        devs = [d for d in copy.deepcopy(power_config.get("devices", []) or []) if d.get("ip")][:16]
+
+    def one(d):
+        r = _screen_reading(str(d["ip"]).strip()) or {}
+        fb = bool(r.get("isUsingFallbackStratum") or (r.get("stratum") or {}).get("usingFallback"))
+        pre = 'fallbackStratum' if fb else 'stratum'
+        host = str(r.get(pre + "URL") or "").split("://")[-1].split("/")[0]
+        port, user = r.get(pre + "Port"), str(r.get(pre + "User") or "")
+        tls = bool(r.get(pre + "TLS"))
+        out = {"name": str(d.get("name") or d.get("ip")), "fallback": fb}
+        if ':' in host and not port:
+            host, port = host.rsplit(':', 1)
+        if not host or not port or not user:
+            out.update(status="unsupported")
+            return out
+        out.update(check_pool(host, port, user, tls, force))
+        return out
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        return list(ex.map(one, devs))
+
+
+# --- Mercado de hashrate (Nostr) — fase 1: ofertas ---
+# Quem vende publica uma oferta NIP-99 (kind 30402, "t"=hashrate-rental) assinada com a chave Nostr deste PC
+# (nostr_key.json, só local). A oferta nunca leva IPs nem nomes das máquinas: só modelo, hashrate, preço, duração
+# máxima e endereço Lightning. Expira em 24 h e é republicada de 6 em 6 h enquanto estiver ativa.
+import hc_nostr
+
+MARKET_FILENAME = 'market.json'
+NOSTR_KEY_FILENAME = 'nostr_key.json'
+MARKET_KIND = 30402
+MARKET_TAG = 'hashrate-rental'
+MARKET_REPUBLISH_SECONDS = 6 * 3600
+_market_lock = threading.Lock()
+_market_offers_cache = {"ts": 0.0, "data": []}
+_nostr_keys = None
+
+
+def nostr_keys():
+    global _nostr_keys
+    if _nostr_keys is None:
+        _nostr_keys = hc_nostr.KeyStore(os.path.join(writable_dir(), NOSTR_KEY_FILENAME))
+    return _nostr_keys
+
+
+def market_load():
+    try:
+        with open(os.path.join(writable_dir(), MARKET_FILENAME), 'r', encoding='utf-8') as f:
+            d = json.load(f)
+            return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def market_save(d):
+    path = os.path.join(writable_dir(), MARKET_FILENAME)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(d, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+
+
+def market_relays():
+    env = os.environ.get('HC_NOSTR_RELAYS')
+    if env:
+        return [r.strip() for r in env.split(',') if r.strip()]
+    rel = market_load().get("relays")
+    return rel if isinstance(rel, list) and rel else list(hc_nostr.DEFAULT_RELAYS)
+
+
+BITAXE_FAMILY = {"BM1397": "Max", "BM1366": "Ultra", "BM1368": "Supra", "BM1370": "Gamma"}
+
+
+def _device_model(r):
+    m = r.get("deviceModel")
+    if not m and r.get("boardVersion"):
+        # AxeOS da Bitaxe não diz o modelo: sai do chip e da placa (ex.: BM1370 + 601 = Bitaxe Gamma 601)
+        m = f"Bitaxe {BITAXE_FAMILY.get(str(r.get('ASICModel')), '')} {r.get('boardVersion')}".replace('  ', ' ')
+    m = str(m or r.get("ASICModel") or r.get("minerType") or r.get("type") or "Miner")
+    return re.sub(r'[^\w +.\-]', '', m)[:24] or "Miner"
+
+
+def market_machines():
+    """Máquinas deste painel com o hashrate atual (para escolher o que vender)."""
+    with POWER_CONFIG_LOCK:
+        devs = [d for d in copy.deepcopy(power_config.get("devices", []) or []) if d.get("ip")][:16]
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        reads = list(ex.map(lambda d: _screen_reading(str(d["ip"]).strip()), devs))
+    out = []
+    for d, r in zip(devs, reads):
+        try:
+            ths = float((r or {}).get("hashRate") or 0) / 1000
+        except (TypeError, ValueError):
+            ths = 0.0
+        out.append({"ip": str(d["ip"]).strip(), "name": str(d.get("name") or d.get("ip")), "model": _device_model(r or {}),
+                    "ths": round(ths, 3), "online": bool(r), "axeos": bool(r and (set(r.keys()) & NERDQAXE_SIGNATURE_FIELDS))})
+    return out
+
+
+LUD16_RE = re.compile(r'^[a-z0-9._+-]{1,64}@[a-z0-9.-]{3,253}\.[a-z]{2,24}$', re.I)
+
+
+def lud16_check(addr):
+    """Confirma que o endereço Lightning existe (LNURL-pay, LUD-16)."""
+    addr = (addr or '').strip()
+    if not LUD16_RE.match(addr):
+        return {"ok": False, "error": "endereço Lightning inválido (formato nome@dominio)"}
+    user, domain = addr.split('@', 1)
+    try:
+        req = urllib.request.Request(f"https://{domain}/.well-known/lnurlp/{urllib.parse.quote(user)}", headers={"User-Agent": "HashCommander"})
+        with _urlopen_https(req, timeout=8) as r:
+            d = json.loads(r.read(64 * 1024).decode('utf-8'))
+        if d.get("tag") != "payRequest" or not str(d.get("callback", "")).startswith("https://"):
+            return {"ok": False, "error": d.get("reason") or "o domínio não respondeu como endereço Lightning"}
+        return {"ok": True, "min_sats": int(d.get("minSendable", 1000)) // 1000, "max_sats": int(d.get("maxSendable", 0)) // 1000}
+    except Exception as e:
+        return {"ok": False, "error": f"não foi possível confirmar o endereço ({str(e)[:100]})"}
+
+
+def _market_offer_event(m, machines, status="active"):
+    sel = [x for x in machines if x["ip"] in set(m.get("machines") or [])]
+    ths = round(sum(x["ths"] for x in sel if x["online"]), 3)
+    models = {}
+    for x in sel:
+        models[x["model"]] = models.get(x["model"], 0) + 1
+    rate = float(m["rate"])
+    now = int(time.time())
+    note = str(m.get("note") or "")[:400]
+    tags = [["d", m["d"]], ["title", f"Hashrate {ths:.2f} TH/s"], ["summary", f"{ths:.2f} TH/s a {rate:g} sats/TH/min"],
+            ["published_at", str(m.get("first_ts") or now)], ["t", MARKET_TAG], ["t", "hashcommander"],
+            ["price", f"{rate * ths:.3f}", "SAT", "minute"], ["hashrate", f"{ths:.3f}", "TH/s"], ["rate", f"{rate:g}", "sats/TH/min"],
+            ["max_minutes", str(int(m["max_min"]))], ["lud16", m["lud16"]], ["status", status],
+            ["expiration", str(now + (86400 if status == "active" else 120))], ["client", "hash-commander", APP_VERSION]]
+    tags += [["machine", k, str(v)] for k, v in models.items()]
+    if m.get("location"):
+        tags.append(["location", str(m["location"])[:40]])
+    content = (note + "\n\n" if note else "") + f"Aluguer de hashrate SHA-256 pela Hash Commander: {ths:.2f} TH/s, pago ao minuto em Lightning ({rate:g} sats por TH/s por minuto)."
+    return hc_nostr.sign_event(nostr_keys().seckey(), MARKET_KIND, content, tags)
+
+
+def market_publish(m, status="active"):
+    machines = market_machines()
+    ev = _market_offer_event(m, machines, status)
+    res = hc_nostr.publish(ev, market_relays())
+    ok = sum(1 for v in res.values() if v[0])
+    m["ths"] = float(_tag(ev, "hashrate", default="0"))   # o hashrate publicado é o que conta para a faturação
+    return ok, {k: {"ok": v[0], "msg": v[1]} for k, v in res.items()}, ev
+
+
+def market_set_offer(body):
+    machines = market_machines()
+    # só máquinas AxeOS (Bitaxe, NerdQAxe…): são as que a app sabe apontar para outra pool e repor no fim
+    known = {x["ip"] for x in machines if x["axeos"]}
+    sel = [str(ip) for ip in (body.get("machines") or []) if str(ip) in known]
+    try:
+        rate = float(body.get("rate"))
+        max_min = int(body.get("max_min"))
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "preço ou duração inválidos"}
+    if not sel:
+        return {"ok": False, "error": "escolhe pelo menos uma máquina"}
+    if not (0.001 <= rate <= 1000):
+        return {"ok": False, "error": "o preço tem de estar entre 0,001 e 1000 sats por TH/s por minuto"}
+    if not (10 <= max_min <= 1440):
+        return {"ok": False, "error": "a duração máxima tem de estar entre 10 e 1440 minutos"}
+    chk = lud16_check(body.get("lud16"))
+    if not chk["ok"]:
+        return {"ok": False, "error": chk["error"]}
+    with _market_lock:
+        m = market_load()
+        offer = m.get("offer") or {}
+        offer.update({"d": offer.get("d") or ("hc-" + secrets_hex(6)), "machines": sel, "rate": rate, "max_min": max_min,
+                      "lud16": str(body.get("lud16")).strip(), "location": str(body.get("location") or "").strip()[:40],
+                      "note": str(body.get("note") or "").strip()[:400], "active": True})
+        offer.setdefault("first_ts", int(time.time()))
+    ok, res, ev = market_publish(offer)
+    if not ok:
+        return {"ok": False, "error": "nenhum relay Nostr aceitou a oferta", "relays": res}
+    with _market_lock:
+        m = market_load()
+        offer["published_at"] = int(time.time())
+        offer["event_id"] = ev["id"]
+        m["offer"] = offer
+        market_save(m)
+    with _market_lock:
+        _market_offers_cache["ts"] = 0
+    return {"ok": True, "relays": res, "accepted": ok}
+
+
+def market_stop_offer():
+    with _market_lock:
+        m = market_load()
+        offer = m.get("offer")
+    if not offer:
+        return {"ok": True}
+    ok, res, ev = market_publish(offer, status="inactive")
+    # pedido de apagar (NIP-09) para os relays que o respeitam
+    pk = nostr_keys().pubkey()
+    hc_nostr.publish(hc_nostr.sign_event(nostr_keys().seckey(), 5, "oferta retirada", [["a", f"{MARKET_KIND}:{pk}:{offer['d']}"], ["k", str(MARKET_KIND)]]), market_relays())
+    with _market_lock:
+        m = market_load()
+        if m.get("offer"):
+            m["offer"]["active"] = False
+            market_save(m)
+        _market_offers_cache["ts"] = 0
+    return {"ok": True, "accepted": ok}
+
+
+def secrets_hex(n):
+    import secrets
+    return secrets.token_hex(n)
+
+
+def _tag(ev, name, idx=1, default=None):
+    for t in ev.get("tags", []):
+        if t and t[0] == name and len(t) > idx:
+            return t[idx]
+    return default
+
+
+def market_offers(force=False):
+    with _market_lock:
+        c = _market_offers_cache
+        if not force and time.time() - c["ts"] < 60:
+            return c["data"]
+    evs = hc_nostr.query([{"kinds": [MARKET_KIND], "#t": [MARKET_TAG], "since": int(time.time()) - 3 * 86400, "limit": 300}], market_relays())
+    latest = {}
+    for ev in evs:
+        k = (ev["pubkey"], _tag(ev, "d", default=""))
+        if k not in latest or ev["created_at"] > latest[k]["created_at"]:
+            latest[k] = ev
+    me, now, out = nostr_keys().pubkey(), int(time.time()), []
+    for ev in latest.values():
+        try:
+            if _tag(ev, "status") != "active" or int(_tag(ev, "expiration", default="0")) < now:
+                continue
+            ths, rate = float(_tag(ev, "hashrate", default="0")), float(_tag(ev, "rate", default="0"))
+            if ths <= 0 or rate <= 0:
+                continue
+            out.append({"pubkey": ev["pubkey"], "npub": hc_nostr.npub(ev["pubkey"]), "d": _tag(ev, "d"), "ths": ths, "rate": rate,
+                        "price_min": round(ths * rate, 3), "max_min": int(_tag(ev, "max_minutes", default="60")),
+                        "lud16": _tag(ev, "lud16", default=""), "location": _tag(ev, "location", default=""),
+                        "machines": [{"model": t[1], "n": int(t[2]) if len(t) > 2 and str(t[2]).isdigit() else 1} for t in ev["tags"] if t[0] == "machine" and len(t) > 1],
+                        "note": ev.get("content", "")[:600], "updated": ev["created_at"], "mine": ev["pubkey"] == me,
+                        "client": _tag(ev, "client", default="")})
+        except (TypeError, ValueError):
+            continue
+    out.sort(key=lambda o: (o["rate"], -o["ths"]))
+    with _market_lock:
+        _market_offers_cache.update(ts=time.time(), data=out)
+    return out
+
+
+def market_republish_loop():
+    while True:
+        time.sleep(300)
+        try:
+            with _market_lock:
+                offer = (market_load().get("offer") or {})
+            if offer.get("active") and time.time() - float(offer.get("published_at") or 0) > MARKET_REPUBLISH_SECONDS:
+                ok, _, ev = market_publish(offer)
+                if ok:
+                    with _market_lock:
+                        m = market_load()
+                        if m.get("offer"):
+                            m["offer"].update(published_at=int(time.time()), event_id=ev["id"], ths=offer.get("ths"))
+                            market_save(m)
+        except Exception as e:
+            print(f"[market] falha ao republicar a oferta: {e}", flush=True)
+
+
+_hashprice_cache = {"ts": 0.0, "v": None}
+
+
+def market_hashprice():
+    """Quanto rende 1 TH/s por minuto, em média, a minerar (sats): a referência para pôr o preço."""
+    if time.time() - _hashprice_cache["ts"] < 1800 and _hashprice_cache["v"]:
+        return _hashprice_cache["v"]
+    try:
+        d = _generic_pool_http_json("https://mempool.space/api/v1/mining/hashrate/3d")
+        diff = float(d.get("currentDifficulty") or 0)
+        reward = 3.125 + 0.03   # subsídio atual + taxas médias por bloco (BTC)
+        v = round(1e12 * 60 / (diff * 2 ** 32) * reward * 1e8, 5) if diff else None
+        _hashprice_cache.update(ts=time.time(), v=v)
+        return v
+    except Exception:
+        return _hashprice_cache["v"]
+
+
+def market_state():
+    with _market_lock:
+        m = market_load()
+    pk = nostr_keys().pubkey()
+    return {"pubkey": pk, "npub": hc_nostr.npub(pk), "relays": market_relays(), "offer": m.get("offer"), "machines": market_machines(),
+            "hashprice": market_hashprice()}
+
+
+# --- Mercado de hashrate — fase 2: o aluguer (motor em hc_market.py) ---
+import hc_market
+
+NWC_FILENAME = 'nwc.json'
+MARKET_SESSIONS_FILENAME = 'market_sessions.json'
+_market_engine = None
+_market_events = []
+
+
+def _json_file(name):
+    try:
+        with open(os.path.join(writable_dir(), name), 'r', encoding='utf-8') as f:
+            d = json.load(f)
+            return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def _json_save(name, d):
+    path = os.path.join(writable_dir(), name)
+    with open(path + '.tmp', 'w', encoding='utf-8') as f:
+        json.dump(d, f, ensure_ascii=False)
+    os.replace(path + '.tmp', path)
+
+
+def market_nwc():
+    uri = _json_file(NWC_FILENAME).get("secret_uri")   # o nome "secret_" faz o verificar_release.py procurá-lo
+    try:
+        return hc_market.NWC(uri) if uri else None
+    except ValueError:
+        return None
+
+
+def market_nwc_set(uri):
+    try:
+        w = hc_market.NWC(uri)
+    except ValueError as e:
+        return {"ok": False, "error": str(e)}
+    try:
+        bal = w.balance_sats()
+    except Exception as e:
+        return {"ok": False, "error": f"a carteira não respondeu ({str(e)[:120]}). Confirma que o código NWC tem permissão para pagar."}
+    info = w.info()
+    _json_save(NWC_FILENAME, {"secret_uri": uri.strip(), "alias": str(info.get("alias") or "")[:40]})
+    return {"ok": True, "balance": bal, "alias": info.get("alias") or ""}
+
+
+def _axeos_patch(ip, payload):
+    req = urllib.request.Request(f"http://{ip}/api/system", data=json.dumps(payload).encode('utf-8'), method='PATCH',
+                                 headers={'Content-Type': 'application/json'})
+    with _urlopen_https(req, timeout=6) as r:
+        r.read()
+    req = urllib.request.Request(f"http://{ip}/api/system/restart", data=b'', method='POST')
+    try:
+        with _urlopen_https(req, timeout=6) as r:
+            r.read()
+    except Exception:
+        pass    # a máquina reinicia e pode cortar a ligação antes de responder
+
+
+def market_snapshot(ip):
+    r = _screen_reading(ip) or {}
+    return {"stratumURL": r.get("stratumURL"), "stratumPort": r.get("stratumPort"), "stratumUser": r.get("stratumUser")}
+
+
+def market_switch(ip, host, port, user, password="x"):
+    try:
+        _axeos_patch(ip, {"stratumURL": host, "stratumPort": int(port), "stratumUser": user, "stratumPassword": password or "x"})
+        with endpoint_cache_lock:
+            endpoint_cache.pop(ip, None)
+        return True, "ok"
+    except Exception as e:
+        return False, str(e)[:120]
+
+
+def market_restore(ip, snap):
+    if snap and snap.get("stratumURL") and snap.get("stratumUser"):
+        # a palavra-passe da pool não se consegue ler da máquina: volta "x", que é o que as pools solo usam
+        _axeos_patch(ip, {"stratumURL": snap["stratumURL"], "stratumPort": int(snap.get("stratumPort") or 3333),
+                          "stratumUser": snap["stratumUser"], "stratumPassword": "x"})
+
+
+def market_notify(title, text):
+    _market_events.append({"ts": int(time.time()), "title": title, "text": text})
+    del _market_events[:-20]
+
+
+def market_engine():
+    global _market_engine
+    if _market_engine is None:
+        base = os.environ.get('HC_POOL_API_BASE')   # só para testes (pool simulada)
+
+        def offer():
+            o = (market_load().get("offer") or {})
+            return o if o.get("active") and o.get("ths") else None
+        _market_engine = hc_market.Market({
+            "seckey": lambda: nostr_keys().seckey(), "relays": market_relays, "offer": offer,
+            "machines_for_offer": lambda: list((market_load().get("offer") or {}).get("machines") or []),
+            "snapshot": market_snapshot, "switch": market_switch, "restore": market_restore, "nwc": market_nwc,
+            "save_state": lambda d: _json_save(MARKET_SESSIONS_FILENAME, d), "load_state": lambda: _json_file(MARKET_SESSIONS_FILENAME),
+            "notify": market_notify,
+            "pool_ths": lambda h, a, w: hc_market.pool_worker_ths(h, a, w, base_url=base),
+        })
+    return _market_engine
+
+
+def market_rent(body):
+    key = (str(body.get("pubkey") or ""), str(body.get("d") or ""))
+    offer = next((o for o in market_offers() if (o["pubkey"], o["d"]) == key), None)
+    if not offer:
+        return {"ok": False, "error": "a oferta já não está disponível"}
+    if offer["mine"]:
+        return {"ok": False, "error": "não podes alugar a tua própria oferta"}
+    host = hc_market.normalize_pool_host(body.get("pool_host"))
+    # pools conhecidas: a porta certa é posta aqui; qualquer outra: o comprador escreve porta, utilizador e palavra-passe
+    port = {"public-pool.io": 21496}.get(host) or (3333 if host in hc_market.SUPPORTED_POOLS else body.get("pool_port"))
+    try:
+        sid = market_engine().rent(offer, int(body.get("minutes") or 0), host, port, str(body.get("address") or "").strip(),
+                                   user=str(body.get("pool_user") or "").strip() or None, password=str(body.get("pool_pass") or "x").strip())
+    except (ValueError, TypeError) as e:
+        return {"ok": False, "error": str(e)}
+    return {"ok": True, "sid": sid}
+
+
+def market_sessions():
+    d = market_engine().public()
+    for s in d["sessions"]:
+        s["peer_npub"] = hc_nostr.npub(s["peer"])
+    nwc = _json_file(NWC_FILENAME)
+    d.update(nwc={"connected": bool(nwc.get("secret_uri")), "alias": nwc.get("alias", "")}, events=list(_market_events),
+             pools=sorted(set(hc_market.SUPPORTED_POOLS) - {"eusolo.ckpool.org", "ausolo.ckpool.org"}))
+    return d
+
+
+# --- Ecrã físico (LilyGO T-Display-S3) ---
+# Um ecrã ESP32 ao lado das máquinas lê /screen/data na rede de casa e desenha o resumo em 3D.
+# Não usa o login do painel (um ESP32 não faz login Firebase): tem uma chave própria, gerada neste PC e gravada
+# no ecrã pela instalação por USB, e só é aceite de IPs da rede local. A instalação (/api/screen/*) usa o esptool
+# para gravar o programa e depois manda o Wi-Fi e a chave pela porta série; só se faz a partir do próprio PC.
+SCREEN_KEY_FILENAME = 'screen_key.json'
+SCREEN_FW_RELPATH = os.path.join('screen_fw', 'hc-screen.bin')
+SCREEN_ESP_VID = 0x303A
+_screen_lock = threading.Lock()
+_screen_state = {"best": None, "rec": 0, "rec_val": 0.0, "hist": [], "hist_ts": 0.0}
+_screen_install = {"busy": False, "step": "", "pct": 0, "ok": None, "error": None}
+
+
+def screen_key():
+    path = os.path.join(writable_dir(), SCREEN_KEY_FILENAME)
+    with _screen_lock:
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                k = json.load(f).get("key", "")
+            if re.fullmatch(r'[0-9a-f]{32}', k or ''):
+                return k
+        except Exception:
+            pass
+        import secrets
+        k = secrets.token_hex(16)
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump({"key": k}, f)
+        except Exception:
+            pass
+        return k
+
+
+def _screen_ip_allowed(ip):
+    try:
+        a = ipaddress.ip_address(ip)
+        return a.is_private or a.is_loopback
+    except Exception:
+        return False
+
+
+def _screen_reading(ip):
+    with LATEST_READINGS_LOCK:
+        cached = LATEST_READINGS.get(ip)
+    if cached and time.time() - cached["ts"] < READING_MAX_AGE:
+        return cached["data"]
+    # o painel não está aberto (ou ainda não leu esta máquina): lê-a diretamente
+    try:
+        if endpoint_cache.get(ip, 'info') in ('info', 'system'):
+            req = urllib.request.Request(f"http://{ip}/api/system/info", headers={'User-Agent': 'NerdQaxeDashboard/1.0'})
+            with urllib.request.urlopen(req, timeout=1.8) as r:
+                raw = r.read(512 * 1024)
+            if raw[:2] == b'\x1f\x8b':
+                raw = gzip.decompress(raw)
+            d = json.loads(raw.decode('utf-8'))
+            if isinstance(d, dict) and set(d.keys()) & NERDQAXE_SIGNATURE_FIELDS:
+                cache_reading(ip, d)
+                return d
+    except Exception:
+        pass
+    try:
+        d = fetch_cgminer_full(ip)
+        if d:
+            cache_reading(ip, d)
+            return d
+    except Exception:
+        pass
+    # sem resposta agora: uma leitura com até 1 min ainda conta
+    if cached and time.time() - cached["ts"] < 60:
+        return cached["data"]
+    return None
+
+
+def screen_data():
+    with POWER_CONFIG_LOCK:
+        devs = [d for d in copy.deepcopy(power_config.get("devices", []) or []) if d.get("ip")][:12]
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        reads = list(ex.map(lambda d: _screen_reading(str(d["ip"]).strip()), devs))
+    machines, total, temps, best, shares = [], 0.0, [], 0.0, 0
+    for d, r in zip(devs, reads):
+        name = str(d.get("name") or d.get("ip"))[:14]
+        if not r:
+            machines.append({"n": name, "h": 0, "t": 0, "o": 0})
+            continue
+        try:
+            ghs = float(r.get("hashRate") or 0)
+        except (TypeError, ValueError):
+            ghs = 0.0
+        t = r.get("temp")
+        t = float(t) if isinstance(t, (int, float)) else 0.0
+        b = max(_parse_difficulty_value(r.get("bestDiff")) or 0, _parse_difficulty_value(r.get("bestSessionDiff")) or 0)
+        total += ghs / 1000
+        if t:
+            temps.append(t)
+        best = max(best, b)
+        try:
+            shares += int(r.get("sharesAccepted") or 0)
+        except (TypeError, ValueError):
+            pass
+        machines.append({"n": name, "h": round(ghs / 1000, 3), "t": round(t, 1), "o": 1})
+    now = time.time()
+    with _screen_lock:
+        st = _screen_state
+        # recorde: a melhor dificuldade de todas as máquinas subiu (a primeira leitura só serve de referência)
+        if st["best"] is None:
+            st["best"] = best
+        elif best > st["best"]:
+            st["best"], st["rec"], st["rec_val"] = best, st["rec"] + 1, best
+        if now - st["hist_ts"] >= 15:
+            st["hist"] = (st["hist"] + [round(total, 3)])[-60:]
+            st["hist_ts"] = now
+        hist, rec, rec_val = list(st["hist"]), st["rec"], st["rec_val"]
+    return {
+        "v": 1, "ts": int(now), "total": round(total, 3), "on": sum(m["o"] for m in machines), "n": len(machines),
+        "temp": round(max(temps), 1) if temps else 0, "best": best, "shares": shares,
+        "rec": rec, "rec_val": rec_val, "hist": hist, "m": machines,
+        # lista das máquinas para o ecrã as ler sozinho quando o PC estiver desligado
+        "ips": screen_machine_list(devs),
+    }
+
+
+def screen_machine_list(devs=None):
+    if devs is None:
+        with POWER_CONFIG_LOCK:
+            devs = [d for d in copy.deepcopy(power_config.get("devices", []) or []) if d.get("ip")][:12]
+    return [{"n": str(d.get("name") or d.get("ip"))[:14], "ip": str(d["ip"]).strip()} for d in devs]
+
+
+def screen_fw_path():
+    p = os.path.join(resource_dir(), SCREEN_FW_RELPATH)
+    return p if os.path.isfile(p) else None
+
+
+def screen_ports():
+    try:
+        from serial.tools import list_ports
+    except Exception:
+        return []
+    out = []
+    for p in list_ports.comports():
+        out.append({"port": p.device, "desc": (p.description or "")[:60], "esp": p.vid == SCREEN_ESP_VID})
+    out.sort(key=lambda p: (not p["esp"], p["port"]))
+    return out
+
+
+def screen_dashboard_url():
+    return f"{dashboard_url_scheme()}://{get_local_ip()}:{PORT}"
+
+
+def _screen_set(**kw):
+    with _screen_lock:
+        _screen_install.update(kw)
+
+
+class _EsptoolProgress(io.TextIOBase):
+    """Recebe a saída do esptool e passa a percentagem da gravação para o estado da instalação."""
+    def write(self, s):
+        m = re.findall(r'(\d{1,3}(?:\.\d)?)\s*%', s or '')
+        if m:
+            try:
+                _screen_set(pct=min(100, int(float(m[-1]))))
+            except ValueError:
+                pass
+        return len(s or '')
+
+
+def _screen_send_config(port, cfg):
+    import serial
+    line = (json.dumps(cfg, separators=(',', ':')) + "\n").encode('utf-8')
+    deadline = time.time() + 25
+    last_err = None
+    while time.time() < deadline:
+        try:
+            with serial.Serial(port, 115200, timeout=0.5) as s:
+                s.reset_input_buffer()
+                sent_at = 0.0
+                end = time.time() + 12
+                buf = b''
+                while time.time() < end:
+                    if time.time() - sent_at > 2:
+                        s.write(line)
+                        s.flush()
+                        sent_at = time.time()
+                    buf = (buf + s.read(256))[-2048:]
+                    if b'HC_OK' in buf:
+                        return True, None
+                    if b'HC_ERR' in buf:
+                        return False, "o ecrã recusou a configuração"
+        except Exception as e:
+            # depois de gravar, a placa reinicia e a porta USB desaparece uns segundos
+            last_err = e
+            time.sleep(1)
+    if last_err is not None and 'could not open' in str(last_err).lower():
+        return False, f"não foi possível abrir a porta {port}: o cabo está desligado ou outro programa está a usar a porta"
+    return False, f"o ecrã não respondeu na porta {port} (confirma que o programa do ecrã está gravado)"
+
+
+def _screen_install_job(port, ssid, password, flash):
+    try:
+        if flash:
+            fw = screen_fw_path()
+            if not fw:
+                raise RuntimeError("o programa do ecrã não está incluído nesta versão da app")
+            _screen_set(step="flash", pct=0)
+            import esptool
+            import contextlib
+            out = _EsptoolProgress()
+            argv = ['--chip', 'esp32s3', '--port', port, '--baud', '921600',
+                    '--before', 'default-reset', '--after', 'hard-reset', 'write-flash', '0x0', fw]
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+                try:
+                    esptool.main(argv)
+                except SystemExit as e:
+                    if e.code not in (0, None):
+                        raise RuntimeError("o esptool não conseguiu gravar (tenta com o botão BOOT carregado ao ligar o cabo)")
+                except Exception as e:
+                    if 'could not open' in str(e).lower() or 'busy' in str(e).lower():
+                        raise RuntimeError(f"não foi possível abrir a porta {port}: o cabo está desligado ou outro programa está a usar a porta")
+                    raise RuntimeError(f"a gravação falhou ({str(e).splitlines()[0][:160]}); tenta com o botão BOOT carregado ao ligar o cabo")
+            _screen_set(pct=100)
+        _screen_set(step="config", pct=100)
+        ok, err = _screen_send_config(port, {"cmd": "cfg", "ssid": ssid, "pass": password, "url": screen_dashboard_url(), "key": screen_key(),
+                                             "m": screen_machine_list()})
+        if not ok:
+            raise RuntimeError(err)
+        _screen_set(busy=False, step="done", ok=True, error=None)
+    except Exception as e:
+        _screen_set(busy=False, step="error", ok=False, error=str(e)[:300])
+
+
+def screen_install(port, ssid, password, flash=True):
+    if not re.fullmatch(r'(COM\d{1,3}|/dev/[A-Za-z0-9_./-]{1,40})', port or ''):
+        return False, "porta inválida"
+    if not ssid or len(ssid) > 32 or len(password or '') > 64:
+        return False, "nome ou palavra-passe do Wi-Fi inválidos"
+    with _screen_lock:
+        if _screen_install["busy"]:
+            return False, "já há uma instalação a decorrer"
+        _screen_install.update(busy=True, step="start", pct=0, ok=None, error=None)
+    threading.Thread(target=_screen_install_job, args=(port, ssid, password or '', bool(flash)), daemon=True).start()
+    return True, None
+
+
+def shop_img_type(body):
+    if body[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if body[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if body[:4] == b"RIFF" and body[8:12] == b"WEBP":
+        return "image/webp"
+    if body[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    return None
 
 
 # --- Notícias de Bitcoin (rodapé da dashboard) ---
@@ -3166,10 +4135,31 @@ def fetch_parasite_refinery(address=None, force=False, debug=False):
     return result
 
 
+_WRITABLE_DIR = None
+
+
 def writable_dir():
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(os.path.abspath(sys.executable))
-    return os.path.dirname(os.path.abspath(__file__))
+    """Pasta dos dados da app (config.json, históricos, chaves…).
+    Windows: ao lado do .exe (como sempre). Mac: ~/Library/Application Support/CentroDeComando (o .app é só de
+    leitura). Linux: $XDG_DATA_HOME/CentroDeComando ou ~/.local/share/CentroDeComando (o AppImage é só de leitura).
+    A partir do código-fonte: a pasta do projeto."""
+    global _WRITABLE_DIR
+    if _WRITABLE_DIR:
+        return _WRITABLE_DIR
+    if not getattr(sys, 'frozen', False):
+        d = os.path.dirname(os.path.abspath(__file__))
+    elif sys.platform == 'darwin':
+        d = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support', 'CentroDeComando')
+    elif sys.platform.startswith('linux'):
+        d = os.path.join(os.environ.get('XDG_DATA_HOME') or os.path.join(os.path.expanduser('~'), '.local', 'share'), 'CentroDeComando')
+    else:
+        d = os.path.dirname(os.path.abspath(sys.executable))
+    try:
+        os.makedirs(d, exist_ok=True)
+    except Exception:
+        pass
+    _WRITABLE_DIR = d
+    return d
 
 
 def power_config_path():
@@ -3461,6 +4451,8 @@ def _ping_ms(host, timeout_ms=1500):
     try:
         if os.name == 'nt':
             cmd, flags = ['ping', '-n', '1', '-w', str(timeout_ms), host], getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+        elif sys.platform == 'darwin':   # no Mac o -W é em milissegundos
+            cmd, flags = ['ping', '-c', '1', '-W', str(max(1, timeout_ms)), host], 0
         else:
             cmd, flags = ['ping', '-c', '1', '-W', str(max(1, timeout_ms // 1000)), host], 0
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_ms / 1000 + 2, creationflags=flags).stdout or ""
@@ -3606,6 +4598,20 @@ def send_custom_webhook(url, message):
 
 def send_windows_toast(title, message):
     if not WINDOWS_TOAST_AVAILABLE:
+        return
+    if sys.platform == 'darwin':
+        try:
+            q = lambda s: '"' + str(s).replace('\\', '\\\\').replace('"', '\\"') + '"'
+            subprocess.run(['/usr/bin/osascript', '-e', f'display notification {q(message)} with title {q(title)}'], timeout=5)
+        except Exception as e:
+            print(f"[toast] falha ao mostrar notificação: {e}", flush=True)
+        return
+    if sys.platform.startswith('linux'):
+        try:
+            icon_path = os.path.join(resource_dir(), TRAY_ICON_FILENAME)
+            subprocess.run(['notify-send', '-a', 'Centro de Comando'] + (['-i', icon_path] if os.path.exists(icon_path) else []) + [str(title), str(message)], timeout=5)
+        except Exception as e:
+            print(f"[toast] falha ao mostrar notificação: {e}", flush=True)
         return
     try:
         icon_path = os.path.join(resource_dir(), TRAY_ICON_FILENAME)
@@ -4061,6 +5067,10 @@ def find_tailscale():
             p = os.path.join(base, 'Tailscale', 'tailscale.exe')
             if os.path.isfile(p):
                 return p
+    # Mac: a app da App Store / do site traz o comando dentro do .app
+    for p in ('/Applications/Tailscale.app/Contents/MacOS/Tailscale', '/usr/local/bin/tailscale', '/opt/homebrew/bin/tailscale'):
+        if os.path.isfile(p):
+            return p
     return None
 
 
@@ -4699,6 +5709,66 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(data).encode('utf-8'))
+            return
+
+        if path == '/screen/data':
+            k = query_params.get('k', [''])[0]
+            if not _screen_ip_allowed(self._client_ip()) or not hmac.compare_digest(k.encode(), screen_key().encode()):
+                self.send_response(403)
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+                return
+            self._send_json(screen_data())
+            return
+
+        if path == '/api/market/state':
+            self._send_json(market_state())
+            return
+
+        if path == '/api/market/offers':
+            self._send_json({"offers": market_offers(force=query_params.get('force', ['0'])[0] == '1')})
+            return
+
+        if path == '/api/market/sessions':
+            self._send_json(market_sessions())
+            return
+
+        if path == '/api/market/lud16':
+            self._send_json(lud16_check(query_params.get('addr', [''])[0]))
+            return
+
+        if path == '/api/pool-honesty':
+            self._send_json({"machines": pool_honesty(force=query_params.get('force', ['0'])[0] == '1')})
+            return
+
+        if path == '/api/screen/status':
+            with _screen_lock:
+                inst = dict(_screen_install)
+            self._send_json({"local": self._is_local_request(), "fw": bool(screen_fw_path()), "ports": screen_ports(),
+                             "url": screen_dashboard_url(), "install": inst})
+            return
+
+        if path.startswith('/shop-img/'):
+            key = path[len('/shop-img/'):]
+            body = None
+            if re.fullmatch(r'[a-z0-9]{1,60}', key) and os.path.isfile(shop_img_path(key)):
+                try:
+                    with open(shop_img_path(key), 'rb') as f:
+                        body = f.read(SHOP_IMG_MAX_BYTES + 1)
+                except Exception:
+                    body = None
+            ctype = shop_img_type(body) if body else None
+            if not ctype:
+                self.send_response(404)
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.send_header('Content-Type', ctype)
+            self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'max-age=86400')
+            self.end_headers()
+            self.wfile.write(body)
             return
 
         if path == '/api/shop/products':
@@ -5502,6 +6572,41 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"ok": saved}).encode('utf-8'))
             return
 
+        if path == '/api/market/offer':
+            self._send_json(market_set_offer(body))
+            return
+
+        if path == '/api/market/offer/stop':
+            self._send_json(market_stop_offer())
+            return
+
+        if path == '/api/market/nwc':
+            self._send_json(market_nwc_set(str(body.get("uri") or "")))
+            return
+
+        if path == '/api/market/nwc/forget':
+            _json_save(NWC_FILENAME, {})
+            self._send_json({"ok": True})
+            return
+
+        if path == '/api/market/rent':
+            self._send_json(market_rent(body))
+            return
+
+        if path == '/api/market/session/stop':
+            threading.Thread(target=market_engine().stop, args=(str(body.get("sid") or ""),), daemon=True).start()
+            self._send_json({"ok": True})
+            return
+
+        if path == '/api/screen/install':
+            # grava por USB um ecrã ligado a este PC: só a partir do próprio PC (e com login)
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "só é possível a partir do próprio PC"}, 403)
+                return
+            ok, err = screen_install(str(body.get("port") or ''), str(body.get("ssid") or ''), str(body.get("password") or ''), bool(body.get("flash", True)))
+            self._send_json({"ok": ok, "error": err}, 200 if ok else 400)
+            return
+
         if path in ('/api/remote/serve', '/api/remote/keepalive'):
             # mexer na exposição do servidor só é permitido a partir deste PC (e com login)
             if not self._is_local_request():
@@ -5701,21 +6806,35 @@ def _load_tray_image():
 
 
 def _find_chrome():
-    candidatos = [os.path.join(os.environ.get(v, ''), *rel) for v, rel in (
-        ('ProgramFiles', ('Google', 'Chrome', 'Application', 'chrome.exe')),
-        ('ProgramFiles(x86)', ('Google', 'Chrome', 'Application', 'chrome.exe')),
-        ('LOCALAPPDATA', ('Google', 'Chrome', 'Application', 'chrome.exe')))]
+    if sys.platform == 'darwin':
+        candidatos = ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+                      os.path.expanduser('~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
+                      '/Applications/Chromium.app/Contents/MacOS/Chromium']
+    elif sys.platform.startswith('linux'):
+        import shutil
+        candidatos = [shutil.which(n) for n in ('google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser')]
+    else:
+        candidatos = [os.path.join(os.environ.get(v, ''), *rel) for v, rel in (
+            ('ProgramFiles', ('Google', 'Chrome', 'Application', 'chrome.exe')),
+            ('ProgramFiles(x86)', ('Google', 'Chrome', 'Application', 'chrome.exe')),
+            ('LOCALAPPDATA', ('Google', 'Chrome', 'Application', 'chrome.exe')))]
     return next((c for c in candidatos if c and os.path.isfile(c)), None)
 
 
 def perfil_leve_dir():
+    if os.name != 'nt':
+        return os.path.join(writable_dir(), 'perfil-leve')
     return os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'CentroDeComando', 'perfil-leve')
 
 
 def extensao_telegram_dir():
-    """Pasta da extensão que deixa o Telegram abrir dentro do painel (vem ao lado do programa), ou None."""
-    d = os.path.join(writable_dir(), 'extensao-telegram')
-    return d if os.path.isfile(os.path.join(d, 'manifest.json')) else None
+    """Pasta da extensão que deixa o Telegram abrir dentro do painel, ou None. No Windows o instalador põe-na ao
+    lado do programa; no Mac e no Linux vem dentro do próprio programa."""
+    for base in (writable_dir(), resource_dir()):
+        d = os.path.join(base, 'extensao-telegram')
+        if os.path.isfile(os.path.join(d, 'manifest.json')):
+            return d
+    return None
 
 
 def abrir_dashboard():
@@ -5753,11 +6872,13 @@ def _tray_sair(icon=None, item=None):
     os._exit(0)
 
 
-def start_tray_icon():
+def start_tray_icon(blocking=False):
+    """Ícone na bandeja/barra de menus. No Mac o ícone tem de correr na thread principal (blocking=True:
+    só volta quando se escolhe "Sair")."""
     if not TRAY_AVAILABLE:
         print("[tray] pystray/Pillow não disponíveis - ícone de bandeja desativado "
               "(a app continua a funcionar normalmente).", flush=True)
-        return
+        return False
 
     def _run():
         try:
@@ -5771,8 +6892,12 @@ def start_tray_icon():
         except Exception as e:
             print(f"[tray] falha ao arrancar o ícone da bandeja: {e}", flush=True)
 
+    if blocking:
+        _run()
+        return True
     tray_thread = threading.Thread(target=_run, daemon=True)
     tray_thread.start()
+    return True
 
 
 def port_in_use(port):
@@ -5831,15 +6956,22 @@ def main():
         pool_autoswitch_thread = threading.Thread(target=pool_autoswitch_loop, daemon=True)
         pool_autoswitch_thread.start()
 
+        threading.Thread(target=market_republish_loop, daemon=True).start()
+        threading.Thread(target=lambda: market_engine().run(), daemon=True).start()
+
         presence_thread = threading.Thread(target=presence_cleanup_loop, daemon=True)
         presence_thread.start()
 
         coolant_thread = threading.Thread(target=coolant_loop, daemon=True)
         coolant_thread.start()
 
-        start_tray_icon()
-
-        abrir_dashboard()
+        if sys.platform == 'darwin':
+            # Mac: o ícone da barra de menus só funciona na thread principal; o painel abre antes de ele bloquear
+            abrir_dashboard()
+            start_tray_icon(blocking=True)
+        else:
+            start_tray_icon()
+            abrir_dashboard()
 
         while True:
             time.sleep(3600)

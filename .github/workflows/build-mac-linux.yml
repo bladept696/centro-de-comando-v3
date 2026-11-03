@@ -1,0 +1,43 @@
+# Constrói o Centro de Comando para Mac (Apple Silicon e Intel) e Linux (AppImage x86_64).
+# Corre à mão (Actions → "Build Mac e Linux" → Run workflow) ou quando se publica uma tag v*.
+# Os ficheiros ficam como "artifacts" do run: NÃO são assinados aqui. A assinatura Ed25519 das atualizações
+# faz-se sempre no PC do autor (sign_release.py), e só depois os ficheiros vão para a release.
+name: Build Mac e Linux
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14          # Apple Silicon (arm64)
+          - os: macos-15-intel    # Intel (x64); o macos-13 foi desativado pelo GitHub
+          - os: ubuntu-22.04      # glibc mais antiga = o AppImage abre em mais distribuições
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependências do sistema (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgirepository1.0-dev gir1.2-ayatanaappindicator3-0.1 libfuse2 file
+      - name: Build
+        env:
+          PYTHON: python
+        run: bash build_unix.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: centrodecomando-${{ matrix.os }}
+          path: |
+            Output/*.zip
+            Output/*.AppImage
+          if-no-files-found: error

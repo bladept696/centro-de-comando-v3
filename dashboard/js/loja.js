@@ -96,7 +96,11 @@ const LJ_DATA = [
   let bestIdx = 0;
   const calcBest = () => { bestIdx = LJ_DATA.reduce((b, p, i) => perTh(p) < perTh(LJ_DATA[b]) ? i : b, 0); };
   calcBest();
-  const imgUrl = p => p.url || LJ_IMG + p.img;
+  // Imagem guardada neste PC pelo servidor (/shop-img/<nome do produto>): os links do Google Sites expiram.
+  // Se ainda não houver cópia local, cai para o link do site (onerror troca para data-alt).
+  const imgRemote = p => p.url || LJ_IMG + p.img;
+  const imgUrl = p => p.site ? `${API_BASE}/shop-img/${keyOf(p.site).slice(0, 60)}` : imgRemote(p);
+  const imgFallback = "if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt='';return;}";
 
   // ---------- produtos atuais do site da loja (/api/shop/products, lido pelo servidor de 6 em 6 h) ----------
   // Os produtos conhecidos (LJ_DATA) ficam com os nomes e dados arrumados, mas com o preço e a imagem atuais;
@@ -147,7 +151,7 @@ const LJ_DATA = [
     const name = p.n + (p.d ? ' — ' + p.d : '');
     return '<article class="lj-card k-' + p.k + '" data-i="' + i + '">' +
       '<div class="lj-media"><span class="lj-glow"></span>' +
-        '<img loading="lazy" referrerpolicy="no-referrer" alt="' + esc(p.n) + '" src="' + esc(imgUrl(p)) + '" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'lj-noimg\',textContent:\'' + ki + '\'}))">' +
+        '<img loading="lazy" referrerpolicy="no-referrer" alt="' + esc(p.n) + '" src="' + esc(imgUrl(p)) + '" data-alt="' + esc(imgRemote(p)) + '" onerror="' + imgFallback + 'this.replaceWith(Object.assign(document.createElement(\'span\'),{className:\'lj-noimg\',textContent:\'' + ki + '\'}))">' +
         '<span class="lj-kind">' + ki + ' ' + t(kk) + '</span>' + badge +
       '</div>' +
       '<div class="lj-body">' +
@@ -232,7 +236,7 @@ const LJ_DATA = [
   }
   function promoItems(){
     const one = LJ_DATA.map((p, i) => '<button type="button" class="ljp-item" data-i="' + i + '" tabindex="-1">' +
-      '<img loading="lazy" referrerpolicy="no-referrer" alt="" src="' + esc(imgUrl(p)) + '" onerror="this.style.visibility=\'hidden\'">' +
+      '<img loading="lazy" referrerpolicy="no-referrer" alt="" src="' + esc(imgUrl(p)) + '" data-alt="' + esc(imgRemote(p)) + '" onerror="' + imgFallback + 'this.style.visibility=\'hidden\'">' +
       '<span><b>' + esc(p.n) + '</b><i><s>' + eurFmt(p.eur) + '</s> ' + eur2(final(p.eur)) + (p.ths ? ' · ' + p.ths.toLocaleString(loc()) + ' TH/s' : '') + '</i></span></button>').join('');
     return one + one;   // duas vezes seguidas para a faixa dar a volta sem salto
   }

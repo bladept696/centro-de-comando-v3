@@ -22,7 +22,7 @@ Object.assign(I18N_DICT, {
   ab_supporters: { pt: `Os canais e a comunidade que apoiam o projeto.`, en: `The channels and the community that back the project.`, es: `Los canales y la comunidad que apoyan el proyecto.`, fr: `Les chaînes et la communauté qui soutiennent le projet.` },
   ab_support: { pt: `Ajuda, contactos e ligações úteis.`, en: `Help, contacts and useful links.`, es: `Ayuda, contactos y enlaces útiles.`, fr: `Aide, contacts et liens utiles.` }
 });
-const AB_COLORS = { logs: '#4fd6ff', notifications: '#ffb020', thermal: '#ff7b5d', power: '#21ffb0', oc: '#b07cff', parasite: '#ff6b9d', latency: '#4fd6ff', cooling: '#4fd6ff', genpools: '#ffb020', boards: '#21ffb0', renting: '#b07cff', alerts: '#ff5d5d', simulator: '#ffd34a', converter: '#21ffb0', donate: '#ffd34a', supporters: '#ff6b9d', support: '#4fd6ff', loja: '#ffb020' };
+const AB_COLORS = { logs: '#4fd6ff', notifications: '#ffb020', thermal: '#ff7b5d', power: '#21ffb0', oc: '#b07cff', parasite: '#ff6b9d', latency: '#4fd6ff', cooling: '#4fd6ff', genpools: '#ffb020', boards: '#21ffb0', renting: '#b07cff', alerts: '#ff5d5d', simulator: '#ffd34a', converter: '#21ffb0', donate: '#ffd34a', supporters: '#ff6b9d', support: '#4fd6ff', loja: '#ffb020', hashmarket: '#ffb020' };
 
 // ícones desenhados dos separadores (viewBox 24×24, só traço): substituem os emojis no quadrado do banner
 const AB_ICONS = {
@@ -43,7 +43,8 @@ const AB_ICONS = {
   renting: 'M4 21h16 M6 21V8 M6 8h13 M6 8l6-5 M16 8v5 M14 13h4v3h-4z',
   alerts: 'M3 11v2a1 1 0 0 0 1 1h2l8 4V6L6 10H4a1 1 0 0 0-1 1z M17 9a4 4 0 0 1 0 6',
   thermal: 'M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0z M12 9v7',
-  loja: 'M3 4h2.5l2.2 11h10.6l2-8H6.6 M9.5 19.5a1 1 0 1 0 0 .01 M16.5 19.5a1 1 0 1 0 0 .01'
+  loja: 'M3 4h2.5l2.2 11h10.6l2-8H6.6 M9.5 19.5a1 1 0 1 0 0 .01 M16.5 19.5a1 1 0 1 0 0 .01',
+  hashmarket: 'M13 2 4 14h7l-1 8 9-12h-7z M3 20h4 M17 20h4'
 };
 
 function abHeroSync(){

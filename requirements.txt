@@ -18,3 +18,10 @@ cryptography>=42.0
 # Notificação nativa do Windows (toast) nos alertas - só tem efeito no
 # Windows; noutros sistemas fica sem efeito em silêncio.
 winotify>=1.1; sys_platform == "win32"
+
+# Mercado de hashrate (relays Nostr por websocket)
+websocket-client>=1.6
+
+# Ecrã físico (LilyGO): gravar o programa e falar com a placa pela USB
+esptool>=4.7
+pyserial>=3.5

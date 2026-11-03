@@ -818,6 +818,7 @@ function extractPoolInfo(d){
 let miniWin = null;
 let miniTimer = null;
 let miniIsPip = false;
+let miniHist = [];
 
 function miniWindowRiskColor(temp){
   if(temp == null || isNaN(temp)) return 'var(--muted)';
@@ -833,42 +834,73 @@ function buildMiniWindowDoc(win){
   const g = n => (cs.getPropertyValue(n) || '').trim();
   const vars = ['--bg','--panel','--line-strong','--green','--amber','--red','--cyan','--text','--muted']
     .map(n => `${n}:${g(n) || getComputedStyle(document.documentElement).getPropertyValue(n).trim()};`).join('');
-  // Tipos de letra: copia as folhas de estilo externas (Google Fonts) da página.
-  document.querySelectorAll('link[rel="stylesheet"]').forEach(l => { try { d.head.appendChild(l.cloneNode()); } catch(_){} });
+  // Tipos de letra: copia só as folhas do Google Fonts; as da dashboard metiam margens e estilos
+  // (.row, .list, .top...) que empurravam a caixa e cortavam a lista.
+  document.querySelectorAll('link[rel="stylesheet"][href*="fonts.googleapis"]').forEach(l => { try { d.head.appendChild(l.cloneNode()); } catch(_){} });
   const style = d.createElement('style');
   style.textContent = `
     :root{${vars}}
     *{box-sizing:border-box;}
-    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
-      font-family:'Space Grotesk',system-ui,sans-serif;overflow:hidden;}
-    .wrap{height:100%;display:flex;flex-direction:column;padding:10px 12px;gap:8px;
-      border:1px solid var(--line-strong);}
-    .wrap.hot{border-color:var(--red);box-shadow:inset 0 0 14px #ff5d5d55;}
-    .top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
-    .big{font-size:26px;font-weight:700;color:var(--green);line-height:1;}
-    .big small{font-size:12px;color:var(--muted);margin-left:4px;font-weight:600;}
-    .on{font-size:12px;color:var(--muted);white-space:nowrap;}
-    .on b{color:var(--text);}
-    .stats{display:flex;gap:14px;font-size:11px;color:var(--muted);}
-    .stats b{display:block;font-size:14px;color:var(--text);margin-top:1px;}
-    .list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:3px;
-      border-top:1px solid var(--line-strong);padding-top:6px;}
-    .row{display:grid;grid-template-columns:8px 1fr auto auto;align-items:center;gap:8px;font-size:12px;}
-    .row .dot{width:8px;height:8px;border-radius:50%;background:var(--red);}
-    .row.up .dot{background:var(--green);}
-    .row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .row .hr{color:var(--cyan);font-weight:600;}
-    .row .tp{min-width:46px;text-align:right;font-weight:600;}
+    html,body{margin:0;height:100%;color:var(--text);overflow:hidden;
+      font-family:'Space Grotesk',system-ui,sans-serif;
+      background:radial-gradient(120% 70% at 0% 0%,#00e5a01a,transparent 60%),
+        radial-gradient(90% 60% at 100% 100%,#00c8ff14,transparent 60%),var(--bg);}
+    .wrap{height:100%;display:flex;flex-direction:column;padding:10px 12px 12px;gap:9px;
+      border-top:2px solid var(--green);transition:border-color .3s;}
+    .wrap.hot{border-top-color:var(--red);box-shadow:inset 0 0 22px #ff5d5d40;}
+    .brand{display:flex;align-items:center;justify-content:space-between;font-size:10px;
+      letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+    .brand .live{display:flex;align-items:center;gap:6px;}
+    .brand .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);
+      box-shadow:0 0 0 0 var(--green);animation:pulse 1.8s infinite;}
+    .wrap.hot .brand .pulse{background:var(--red);}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 #00e5a088}70%{box-shadow:0 0 0 7px #00e5a000}100%{box-shadow:0 0 0 0 #00e5a000}}
+    .on{padding:2px 8px;border-radius:999px;border:1px solid var(--line-strong);
+      letter-spacing:.04em;text-transform:none;font-size:11px;}
+    .on b{color:var(--green);}
+    .hero{position:relative;padding:8px 10px 6px;border-radius:10px;overflow:hidden;
+      background:linear-gradient(160deg,#ffffff0d,#ffffff03);border:1px solid #ffffff12;}
+    .big{position:relative;z-index:1;font-size:30px;font-weight:700;line-height:1;color:var(--green);
+      text-shadow:0 0 18px #00e5a066;font-variant-numeric:tabular-nums;}
+    .big small{font-size:12px;color:var(--muted);margin-left:5px;font-weight:600;text-shadow:none;}
+    .spark{position:absolute;left:0;right:0;bottom:0;width:100%;height:34px;opacity:.9;}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+    .stat{padding:6px 9px;border-radius:9px;background:#ffffff08;border:1px solid #ffffff10;}
+    .stat span{display:block;font-size:10px;color:var(--muted);letter-spacing:.05em;}
+    .stat b{display:block;font-size:15px;margin-top:2px;font-variant-numeric:tabular-nums;}
+    .list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:5px;
+      scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent;}
+    .row{position:relative;display:grid;grid-template-columns:8px 1fr auto auto;align-items:center;gap:8px;
+      padding:6px 9px 8px;border-radius:8px;background:#ffffff06;border:1px solid #ffffff0d;font-size:12px;}
+    .row .dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);}
+    .row.up .dot{background:var(--green);box-shadow:0 0 6px var(--green);}
+    .row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;}
+    .row .hr{color:var(--cyan);font-weight:600;font-variant-numeric:tabular-nums;}
+    .row .tp{min-width:44px;text-align:center;font-weight:700;font-size:11px;padding:1px 6px;
+      border-radius:999px;background:#ffffff0a;}
+    .row .bar{position:absolute;left:9px;right:9px;bottom:3px;height:2px;border-radius:2px;background:#ffffff0d;overflow:hidden;}
+    .row .bar i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .6s;}
+    .row:not(.up){opacity:.65;}
     .empty{font-size:12px;color:var(--muted);text-align:center;padding:10px 0;}
     .note{font-size:10px;color:var(--muted);line-height:1.3;}
   `;
   d.head.appendChild(style);
   d.body.innerHTML = `
     <div class="wrap" id="mw">
-      <div class="top"><div class="big" id="mwHash">—</div><div class="on" id="mwOn"></div></div>
+      <div class="brand"><span class="live"><i class="pulse"></i>Hash Commander</span><span class="on" id="mwOn"></span></div>
+      <div class="hero">
+        <svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="mwSg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#00e5a0" stop-opacity=".35"/><stop offset="1" stop-color="#00e5a0" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path id="mwSpA" fill="url(#mwSg)"/><path id="mwSpL" fill="none" stroke="#00e5a0" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="big" id="mwHash">—</div>
+        <div style="height:24px"></div>
+      </div>
       <div class="stats">
-        <div><span id="mwTempL"></span><b id="mwTemp">—</b></div>
-        <div><span id="mwBestL"></span><b id="mwBest">—</b></div>
+        <div class="stat"><span id="mwTempL"></span><b id="mwTemp">—</b></div>
+        <div class="stat"><span id="mwBestL"></span><b id="mwBest">—</b></div>
       </div>
       <div class="list" id="mwList"></div>
       <div class="note" id="mwNote" style="display:none;"></div>
@@ -906,6 +938,18 @@ function updateMiniWindow(){
   $m('mwBest').textContent = best > 0 ? `${bf.value}${bf.unit}` : '—';
   $m('mw').classList.toggle('hot', maxTemp != null && maxTemp >= 75);
 
+  // Gráfico do hashrate total (últimos ~4 min, uma amostra a cada 2 s).
+  miniHist.push(totalHash);
+  if(miniHist.length > 120) miniHist.shift();
+  const spL = $m('mwSpL'), spA = $m('mwSpA');
+  if(spL && miniHist.length > 1){
+    const lo = Math.min(...miniHist), hi = Math.max(...miniHist), span = (hi - lo) || 1;
+    const pts = miniHist.map((v, i) => `${(i / (miniHist.length - 1) * 100).toFixed(2)},${(30 - (v - lo) / span * 24).toFixed(2)}`);
+    const line = 'M' + pts.join(' L');
+    spL.setAttribute('d', line);
+    spA.setAttribute('d', `${line} L100,34 L0,34 Z`);
+  }
+
   const list = $m('mwList');
   list.textContent = '';
   if(!rows.length){
@@ -931,7 +975,11 @@ function updateMiniWindow(){
       hr.style.color = 'var(--red)';
       tp.textContent = '—';
     }
-    row.append(dot, nm, hr, tp);
+    const bar = d.createElement('span'); bar.className = 'bar';
+    const fill = d.createElement('i');
+    fill.style.width = up && totalHash > 0 ? `${Math.max(2, (Number(r.hashrate) || 0) / totalHash * 100)}%` : '0%';
+    bar.appendChild(fill);
+    row.append(dot, nm, hr, tp, bar);
     list.appendChild(row);
   });
 }
@@ -947,7 +995,8 @@ function closeMiniWindow(){
 
 async function toggleMiniWindow(){
   if(miniWin && !miniWin.closed){ closeMiniWindow(); return; }
-  const height = Math.min(420, 130 + Math.max(devices.length, 1) * 22);
+  const height = Math.min(480, 192 + Math.max(devices.length, 1) * 33);
+  miniHist = [];
   let win = null;
   miniIsPip = false;
   try {

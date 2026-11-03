@@ -28,6 +28,11 @@ Object.assign(I18N_DICT, {
   "gp_noblocks": { pt: `Sem blocos recentes.`, en: `No recent blocks.`, es: `Sin bloques recientes.`, fr: `Aucun bloc récent.` },
   "gp_nt_found": { pt: `Bloco encontrado! 🎉`, en: `Block found! 🎉`, es: `¡Bloque encontrado! 🎉`, fr: `Bloc trouvé ! 🎉` },
   "gp_nt_new": { pt: `Novo bloco na pool`, en: `New block on the pool`, es: `Nuevo bloque en el pool`, fr: `Nouveau bloc sur le pool` },
+  "gp_nt_mine": { pt: `🎉 Bloco encontrado — É TEU!`, en: `🎉 Block found — IT'S YOURS!`, es: `🎉 Bloque encontrado — ¡ES TUYO!`, fr: `🎉 Bloc trouvé — C'EST LE VÔTRE !` },
+  "gp_nt_other": { pt: `Bloco de outro mineiro (não é teu)`, en: `Block by another miner (not yours)`, es: `Bloque de otro minero (no es tuyo)`, fr: `Bloc d'un autre mineur (pas le vôtre)` },
+  "gp_nt_by": { pt: `encontrado por {0}`, en: `found by {0}`, es: `encontrado por {0}`, fr: `trouvé par {0}` },
+  "gp_nt_byunk": { pt: `a pool não diz quem o encontrou`, en: `the pool doesn't say who found it`, es: `el pool no dice quién lo encontró`, fr: `le pool n'indique pas qui l'a trouvé` },
+  "gp_nt_your": { pt: `o teu endereço {0}`, en: `your address {0}`, es: `tu dirección {0}`, fr: `votre adresse {0}` },
   "gp_nt_desc": { pt: `{0} — altura {1}, dificuldade {2}`, en: `{0} — height {1}, difficulty {2}`, es: `{0} — altura {1}, dificultad {2}`, fr: `{0} — hauteur {1}, difficulté {2}` }
 });
 
@@ -190,8 +195,10 @@ async function gpFetch(first){
     ].map(([l, v]) => `<div class="gp-stat"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
   } else { accEl.style.display = 'none'; accEl.innerHTML = ''; }
   const rows = [...(data.candidates || []), ...(data.blocks || [])];
+  const own = gpOwnAddrs();
+  rows.forEach(b => { const f = gpSplitMiner(b.miner); if(f.addr && own.has(f.addr.toLowerCase())) b.mine = true; });
   $('gpBlocksBody').innerHTML = rows.map(b => {
-    const who = b.mine ? t('gp_you') : (b.miner ? b.miner.slice(0, 6) + '…' + b.miner.slice(-4) : '—');
+    const who = b.mine ? t('gp_you') : (b.miner ? gpShortMiner(gpSplitMiner(b.miner)) : '—');
     const st = b.status || '—', stClass = (st === 'confirmed') ? 'confirmed' : (st === 'pending' || st === 'immature') ? 'pending' : '';
     return `<tr class="${b.mine ? 'gp-mine' : ''}"><td>${b.height ?? '—'}</td><td>${mpEsc(who)}</td><td>${fmtDiff(b.diff)}</td><td>${b.effort != null ? (b.effort * 100).toFixed(0) + '%' : '—'}</td><td><span class="gp-badge ${stClass}">${mpEsc(st)}</span></td><td>${gpTimeAgo(b.ts)}</td></tr>`;
   }).join('') || '<tr><td colspan="6" class="hint">' + t('gp_noblocks') + '</td></tr>';
@@ -200,12 +207,30 @@ async function gpFetch(first){
     if(!b.hash || GP_STATE.seenBlocks.has(b.hash)) return;
     GP_STATE.seenBlocks.add(b.hash);
     const poolLabel = (GP_STATE.pools[GP_STATE.current] || {}).label || GP_STATE.current;
-    if(b.mine){
-      addNotification('block', t('gp_nt_found'), t('gp_nt_desc').replace('{0}', poolLabel).replace('{1}', b.height).replace('{2}', (f => f.value + f.unit)(formatDiff(b.diff))), poolLabel);
+    const desc = t('gp_nt_desc').replace('{0}', poolLabel).replace('{1}', b.height).replace('{2}', (f => f.value + f.unit)(formatDiff(b.diff)));
+    // o aviso diz sempre quem encontrou: o teu endereço (bloco teu) ou o de outro mineiro (nunca parece teu)
+    const finder = gpSplitMiner(b.miner);
+    if(b.mine || (finder.addr && gpOwnAddrs().has(finder.addr.toLowerCase()))){
+      addNotification('block', t('gp_nt_mine'), desc + ' · ' + t('gp_nt_your').replace('{0}', gpShortMiner(finder) || gpShortAddr($('gpAddress').value.trim())), poolLabel);
     } else {
-      addNotification('best', t('gp_nt_new'), t('gp_nt_desc').replace('{0}', poolLabel).replace('{1}', b.height).replace('{2}', (f => f.value + f.unit)(formatDiff(b.diff))), poolLabel);
+      addNotification('poolblock', t('gp_nt_other'), desc + ' · ' + (finder.addr ? t('gp_nt_by').replace('{0}', gpShortMiner(finder)) : t('gp_nt_byunk')), poolLabel);
     }
   });
+}
+// "endereço.worker" -> { addr, worker }
+function gpSplitMiner(m){
+  const s = String(m || '').trim(); if(!s) return { addr: '', worker: '' };
+  const i = s.indexOf('.');
+  return i > 0 ? { addr: s.slice(0, i), worker: s.slice(i + 1) } : { addr: s, worker: '' };
+}
+function gpShortAddr(a){ a = String(a || ''); return a.length > 14 ? a.slice(0, 6) + '…' + a.slice(-6) : a; }
+function gpShortMiner(f){ return f.addr ? gpShortAddr(f.addr) + (f.worker ? ' (' + f.worker + ')' : '') : ''; }
+// os teus endereços: o que escreveste na aba Pools e os das pools configuradas nas tuas máquinas
+function gpOwnAddrs(){
+  const set = new Set(), add = u => { const a = gpSplitMiner(u).addr; if(/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/i.test(a)) set.add(a.toLowerCase()); };
+  add($('gpAddress') && $('gpAddress').value);
+  try { (devices || []).forEach(d => { const r = readings[d.id] || {}; add(r.stratumUser); add(r.fallbackStratumUser); (r.pools || []).forEach(p => add(p && p.stratumUser)); }); } catch(e) {}
+  return set;
 }
 async function gpStart(){
   gpStop();

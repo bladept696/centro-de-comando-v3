@@ -1,0 +1,37 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* Pool honesta (pool-honesta.js), no topo da aba Pools */
+.ph{margin-bottom:18px;}
+.ph-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.ph-when{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:500;}
+.ph-when button{font:inherit;font-size:11px;font-weight:700;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:8px;padding:5px 11px;cursor:pointer;}
+.ph-when button:hover{border-color:var(--cyan);color:var(--cyan);}
+.ph-when button:disabled{opacity:.5;cursor:wait;}
+.ph-hint{margin-bottom:6px;}
+.ph-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.55fr) minmax(0,2fr);gap:14px;align-items:center;padding:11px 4px;border-bottom:1px solid #ffffff0d;}
+.ph-row.has{cursor:pointer;}
+.ph-row.has:hover{background:#ffffff05;}
+.ph-m b{display:block;font-size:13px;color:var(--text);}
+.ph-m small,.ph-st small{display:block;font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4;}
+.ph-tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:#ffffff0d;color:var(--muted);}
+.ph-tag.solo{background:color-mix(in srgb,var(--cyan) 16%,transparent);color:var(--cyan);}
+.ph-tag.direct{background:color-mix(in srgb,#b07cff 18%,transparent);color:#c9a6ff;}
+.ph-pill{display:inline-block;font-size:12px;font-weight:700;padding:4px 11px;border-radius:999px;background:#ffffff0d;color:var(--muted);}
+.ph-pill.good{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green);}
+.ph-pill.info{background:color-mix(in srgb,#b07cff 16%,transparent);color:#c9a6ff;}
+.ph-pill.warn{background:color-mix(in srgb,var(--amber,#ffb020) 16%,transparent);color:var(--amber,#ffb020);}
+.ph-pill.bad{background:color-mix(in srgb,var(--red,#ff5d5d) 18%,transparent);color:var(--red,#ff5d5d);}
+.ph-outs{grid-column:1/-1;display:none;padding:4px 0 2px;}
+.ph-row.open .ph-outs{display:block;}
+.ph-outs-t{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.ph-out{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 56px;gap:10px;align-items:center;font-size:11.5px;color:var(--muted);margin:4px 0;}
+.ph-out span{font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ph-out b{height:6px;border-radius:3px;background:#ffffff0d;overflow:hidden;}
+.ph-out i{display:block;height:100%;border-radius:3px;background:#7fa6b3;}
+.ph-out em{font-style:normal;text-align:right;}
+.ph-out.me{color:var(--green);}
+.ph-out.me i{background:var(--green);}
+.ph-empty{padding:14px 4px;font-size:12px;color:var(--muted);}
+.ph-limit{margin-top:8px;font-size:10.5px;color:var(--muted-2);}
+@media (max-width:700px){.ph-row{grid-template-columns:1fr;gap:6px;}}

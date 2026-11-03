@@ -1,0 +1,79 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* ---------- Aba Mercado de hashrate (mercado-hashrate.js) ---------- */
+.hm{margin:16px 22px 22px;padding:18px 22px;border-radius:18px;background:linear-gradient(140deg,#0c1621,#08111a 60%,#0d1018);border:1px solid #ffb02033;box-shadow:inset 0 1px 0 #ffffff0d}
+.hm-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hm-top>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hm-top small{color:var(--muted);font-size:11px}
+.hm-top code{font:600 12px monospace;color:#c9a6ff;background:#ffffff08;border:1px solid #ffffff14;border-radius:8px;padding:5px 9px}
+.hm-relays{font-size:11px;color:#ffc04d;font-weight:700}
+.hm-phase{margin:10px 0 12px;padding:9px 12px;border-radius:10px;background:#4fd6ff0d;border:1px solid #4fd6ff2e;font-size:12px;color:#bfe9f7}
+.hm-tabs{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.hm-tabs button{font:inherit;font-size:13px;font-weight:700;padding:7px 14px;border-radius:10px;border:1px solid #ffffff14;background:#ffffff08;color:#9fb6bf;cursor:pointer}
+.hm-tabs button.on{background:#ffb02022;color:#ffc04d;border-color:#ffb02055}
+.hm-tabs .hm-ref{margin-left:auto;font-size:12px}
+.hm-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.7fr) minmax(0,1.2fr) minmax(0,.5fr) auto;gap:12px;align-items:center;padding:11px 6px;border-bottom:1px solid #ffffff0d;font-size:13px}
+.hm-row.hm-hd{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding-top:0}
+.hm-row small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.hm-row.mine{background:#ffb0200a;border-radius:8px}
+.hm-tag{font-style:normal;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;background:#ffb020;color:#1a1200}
+.hm-btn{font:inherit;font-size:12px;font-weight:800;padding:6px 13px;border-radius:9px;border:1px solid #4fd6ff;color:#4fd6ff;background:#4fd6ff14;cursor:pointer}
+.hm-btn:disabled{opacity:.45;cursor:not-allowed}
+.hm-btn.y{border-color:#ffb020;color:#1a1200;background:linear-gradient(180deg,#ffd27a,#ff9d1c);padding:9px 22px}
+.hm-btn.red{border-color:#ff5d5d;color:#ff8080;background:#ff5d5d14}
+.hm-empty{padding:18px 6px;color:var(--muted);font-size:13px}
+.hm-sec{margin:0 0 16px}
+.hm-sec,.hm-priv,.hm-go,.hm-live,.hm-msg{max-width:780px}
+.hm-sec>b{display:block;font-size:13px;margin-bottom:8px;color:var(--text)}
+.hm-mach{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;margin:0 0 6px;border-radius:10px;background:#ffffff06;border:1px solid #ffffff10;cursor:pointer}
+.hm-mach.off{opacity:.5;cursor:default}
+/* a dashboard desenha as caixas como interruptores: aqui volta a ser uma caixa simples */
+.hm-mach input{all:revert;width:16px;height:16px;margin:0;accent-color:#ffb020;cursor:pointer}
+.hm-mach b{font-size:13px}.hm-mach small{display:block;font-size:11px;color:var(--muted)}
+.hm-mach em{font-style:normal;font-weight:700;color:#21ffb0;font-size:13px}
+.hm-in{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.hm-in input{flex:1;min-width:0;font:inherit;font-size:13px;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:9px;padding:8px 11px}
+.hm-in input[type=number]{flex:0 0 140px}
+.hm-in input:focus{outline:none;border-color:#ffb020}
+.hm-in span{font-size:12px;color:var(--muted)}
+.hm-calc{display:block;font-size:12px;color:#ffc04d;font-weight:700;margin-top:2px}
+.hm-hint{display:block;font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
+#hmLnMsg{font-size:12px}#hmLnMsg.ok{color:#21ffb0}#hmLnMsg.bad{color:#ff8080}
+.hm-priv{font-size:11.5px;color:#9fb6bf;margin:4px 0 12px}
+.hm-go{display:flex;justify-content:flex-end}
+.hm-msg{margin:10px 0 0;padding:9px 12px;border-radius:10px;background:#ffffff08;border:1px solid #ffffff14;font-size:12.5px}
+.hm-live{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 14px;padding:10px 12px;border-radius:12px;background:#21ffb00d;border:1px solid #21ffb040;font-size:12.5px;color:#c8ffe9}
+/* carteira, janela Alugar, alugueres a decorrer e histórico (fase 2) */
+.hm-wallet{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:#ffffff06;border:1px solid #ffffff12;max-width:780px}
+.hm-wallet>b{display:block;font-size:13px;margin-bottom:8px}
+.hm-wallet.on{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#21ffb00d;border-color:#21ffb040;color:#c8ffe9;font-size:13px}
+.hm-bad{display:block;font-size:12px;color:#ff8080;margin-top:4px}
+.hm-err{font-size:12px;color:#ff8080;margin:6px 0}
+.hm-rent{margin:4px 0 10px;padding:14px 16px;border-radius:14px;background:#ffb0200a;border:1px solid #ffb02044}
+.hm-rent>b{display:block;margin-bottom:10px;font-size:14px}
+.hm-rent{max-width:780px}
+.hm-rgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:8px}
+.hm-rgrid label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted)}
+.hm-rgrid label.wide,.hm-rgrid .wide{grid-column:1/-1}
+.hm-rgrid p{margin:0}
+.hm-warn{font-size:12px;line-height:1.45;color:#ffd27a;background:#ffb02012;border:1px solid #ffb02044;border-radius:10px;padding:8px 10px}
+.hm-rgrid input,.hm-rgrid select{font:inherit;font-size:13px;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:9px;padding:8px 10px}
+.hm-ses{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#4fd6ff0a;border:1px solid #4fd6ff40}
+.hm-ses.sell{background:#21ffb00a;border-color:#21ffb040}
+.hm-ses-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.hm-ses-h span{flex:1;font-size:12px;color:var(--muted)}
+.hm-ses small{font-size:11px;color:var(--muted)}
+.hm-bar{height:7px;border-radius:4px;background:#ffffff10;overflow:hidden;margin:6px 0 4px}
+.hm-bar i{display:block;height:100%;background:linear-gradient(90deg,#4fd6ff,#21ffb0);transition:width 1s}
+.hm-stats{display:flex;gap:10px;margin:8px 0}
+.hm-stats span{flex:1;max-width:200px;padding:8px 10px;border-radius:10px;background:#ffffff07;border:1px solid #ffffff10;font-size:11px;color:var(--muted)}
+.hm-stats b{display:block;font-size:17px;color:#ffc04d;margin-top:2px}
+.hm-log{font-size:11.5px;color:#9fb6bf}
+.hm-log div{padding:3px 0;border-top:1px solid #ffffff08}
+.hm-log em{font-style:normal;color:var(--muted);font-family:monospace;margin-right:6px}
+.hm-hist{margin-top:16px;font-size:12px}
+.hm-hist summary{cursor:pointer;color:var(--muted);font-weight:700}
+.hm-hist div{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:7px 0;border-bottom:1px solid #ffffff0a}
+.hm-hist small{grid-column:1/-1;color:var(--muted);font-size:11px}
+@media (max-width:760px){.hm-row{grid-template-columns:1fr 1fr;}.hm-row.hm-hd{display:none}}

@@ -1,0 +1,27 @@
+/* © 2026 bladept696 — Centro de Comando / Hash Commander. Todos os direitos reservados.
+   é proibido copiar, modificar, redistribuir ou publicar este ficheiro, no todo ou em parte, sem autorização escrita do autor.
+   https://github.com/bladept696/centro-de-comando-v3 */
+/* Ecrã físico (ecra-fisico.js): usa a base da janela do Acesso remoto (.hcr-*) */
+.hcs-row{display:flex;align-items:center;gap:10px;margin:0 0 10px;}
+.hcs-row label{flex:0 0 110px;color:var(--muted);font-size:12px;}
+.hcs-row input,.hcs-row select{flex:1;min-width:0;font:inherit;font-size:12.5px;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;}
+.hcs-row input:focus,.hcs-row select:focus{outline:none;border-color:var(--cyan);}
+.hcs-ports{flex:1;min-width:0;display:flex;}
+.hcs-ports select{width:100%;}
+.hcs-ports p{margin:0;}
+.hcs-row button,.hcs-go button{font:inherit;font-size:12px;font-weight:700;color:var(--text);background:var(--deep);border:1px solid var(--line-strong);border-radius:8px;padding:7px 12px;cursor:pointer;}
+.hcs-row button:hover{border-color:var(--cyan);color:var(--cyan);}
+.hcs-go{display:flex;justify-content:flex-end;margin:4px 0 12px;}
+.hcs-go button.primary{border-color:var(--cyan);color:var(--cyan);background:color-mix(in srgb,var(--cyan) 14%,var(--deep));padding:8px 22px;}
+.hcs-go button:disabled{opacity:.5;cursor:wait;}
+.hcs-err{color:var(--red,#ff5d5d);font-size:11.5px;margin:0 0 8px;}
+.hcs-prog{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--deep);border:1px solid var(--line-strong);}
+.hcs-prog b{display:block;height:6px;border-radius:3px;background:#ffffff12;overflow:hidden;margin-bottom:8px;}
+.hcs-prog i{display:block;height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .4s;}
+.hcs-prog span{font-size:12px;}
+.hcs-prog.ok{border-color:var(--green);}
+.hcs-prog.ok span{color:var(--green);font-weight:700;}
+.hcs-prog.bad{border-color:var(--red,#ff5d5d);}
+.hcs-prog.bad span{color:var(--red,#ff5d5d);}
+.hcs-body code{font:600 11px monospace;color:var(--cyan);}
+@media (max-width:480px){.hcs-row{flex-wrap:wrap;}.hcs-row label{flex-basis:100%;}}

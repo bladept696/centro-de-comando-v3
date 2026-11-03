@@ -332,6 +332,8 @@ const TOAST_STYLES = {
   offline:           { itemClass: 'type-offline',             icon: '⚠️' },
   anomaly:           { itemClass: 'type-offline',             icon: '🔧' },
   shop:              { itemClass: 'type-best',                icon: '🛒' },
+  poolblock:         { itemClass: 'type-poolblock',           icon: '⛏️' },
+  market:            { itemClass: 'type-best',                icon: '⚡' },
 };
 
 function toastsEnabled() {
@@ -432,7 +434,7 @@ function clearNotifications() {
 }
 
 let notifFilter = 'all';
-const NOTIF_GROUP = { block: 'block', best: 'best', thermal: 'thermal', 'thermal-warning': 'thermal', critical: 'thermal', anomaly: 'machine', offline: 'machine', shop: 'shop' };
+const NOTIF_GROUP = { block: 'block', best: 'best', thermal: 'thermal', 'thermal-warning': 'thermal', critical: 'thermal', anomaly: 'machine', offline: 'machine', shop: 'shop', poolblock: 'block', market: 'shop' };
 function renderNotifications() {
   const list = $('notifList');
   if(!list) return;
@@ -462,6 +464,8 @@ function renderNotifications() {
     anomaly:          { itemClass: 'type-offline',              tagClass: 'offline',           label: '🔧 Anomalia Detetada' },
     offline:          { itemClass: 'type-offline',              tagClass: 'offline',           label: '⚠️ Máquina Offline' },
     shop:             { itemClass: 'type-best',                 tagClass: 'best',              label: '🛒 Loja Bitminer33' },
+    poolblock:        { itemClass: 'type-poolblock',            tagClass: 'poolblock',         label: '⛏️ Bloco de outro mineiro' },
+    market:           { itemClass: 'type-best',                 tagClass: 'best',              label: '⚡ Mercado de hashrate' },
   };
 
   list.innerHTML = '';
