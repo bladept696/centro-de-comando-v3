@@ -9,9 +9,9 @@ Protocolo (mensagens kind 4402 entre as duas apps, cifradas com NIP-44, tag "p" 
   vendedor  -> comprador {"t":"inv","sid","n","pr","sats"}       (fatura adiantada de cada período)
   comprador -> vendedor  {"t":"paid","sid","n","preimage"}       (comprovativo: sha256(preimage) = payment_hash)
   qualquer um            {"t":"end","sid","why"}
-Taxa da app (só Lightning): o pedido leva "fee":1 e, se o vendedor concordar, "acc" e "inv" também. A fatura #n vem
+Taxa da app (só Lightning): o pedido leva "fee":<percentagem> e, se o vendedor a conhecer, "acc" e "inv" também. A fatura #n vem
 com menos fee_part(n) sats e a app do comprador paga essa parte ao endereço da app (APP_FEE_LUD16): quem aluga paga o
-mesmo e o vendedor recebe 99%. Uma versão antiga de qualquer dos lados não manda "fee" e o aluguer corre sem taxa.
+mesmo e o vendedor recebe o resto. Uma versão antiga de qualquer dos lados não manda "fee" e o aluguer corre sem taxa.
 O vendedor aponta as máquinas para a pool do comprador e repõe a pool original no fim ou se um pagamento falhar.
 O comprador paga pela sua carteira (NWC, NIP-47) e deixa de pagar se o hashrate não aparecer na API da pool.
 
@@ -55,7 +55,8 @@ ONCHAIN_CONFIRM_MAX_MIN = 1440  # no modo "1 confirmação": quanto tempo se esp
 ONCHAIN_TOLERANCE = 0.98        # pagar 98% ou mais conta como pago por inteiro (arredondamentos das carteiras)
 SELLER_BUSY = ("starting", "running", "awaiting_payment", "confirming")
 # taxa da app nos alugueres Lightning (mantém o Hash Commander)
-APP_FEE_PCT = 1
+APP_FEE_PCT = 4
+FEE_KNOWN = (1, 4)              # percentagens que o vendedor aceita (a v4.4.2 pedia 1%)
 APP_FEE_LUD16 = "plainpen116@walletofsatoshi.com"
 APP_FEE_BATCH = 10              # a taxa junta-se e paga-se de 10 em 10 sats (e o que sobrar no fim)
 
@@ -64,10 +65,10 @@ def onchain_sats(ths, rate, minutes):
     return int(math.ceil(ths * rate * minutes))
 
 
-def fee_part(n, sats_per):
+def fee_part(n, sats_per, pct=APP_FEE_PCT):
     """Parte da taxa na fatura #n. Conta-se pelo acumulado para que pequenas faturas também cheguem a 1% no total;
     a fatura do vendedor nunca fica abaixo de 1 sat."""
-    f = (n + 1) * sats_per * APP_FEE_PCT // 100 - n * sats_per * APP_FEE_PCT // 100
+    f = (n + 1) * sats_per * pct // 100 - n * sats_per * pct // 100
     return min(f, sats_per - 1)
 
 
@@ -489,7 +490,7 @@ class Market:
         s = {"role": "seller", "peer": peer, "d": offer["d"], "ths": offer["ths"], "rate": offer["rate"], "minutes": int(m["minutes"]),
              "pool": {"host": pool["host"], "port": int(pool["port"]), "user": pool["user"], "pass": pool["pass"]}, "state": "starting", "created": int(time.time()),
              "paid_sats": 0, "period": period, "sats_per": sats, "snaps": {}, "invoices": {}, "lud16": offer["lud16"],
-             "fee": APP_FEE_PCT if m.get("fee") == APP_FEE_PCT else 0}
+             "fee": m.get("fee") if m.get("fee") in FEE_KNOWN else 0}
         for ip in ips:
             s["snaps"][ip] = self.h["snapshot"](ip)
         with self.lock:
@@ -508,7 +509,7 @@ class Market:
         self._invoice(sid, s, 0)
 
     def _invoice(self, sid, s, n):
-        amount = s["sats_per"] - (fee_part(n, s["sats_per"]) if s.get("fee") else 0)
+        amount = s["sats_per"] - (fee_part(n, s["sats_per"], s["fee"]) if s.get("fee") else 0)
         try:
             pr, dec = lnurl_invoice(s["lud16"], amount, f"Hash Commander aluguer {sid} #{n}")
         except Exception as e:
