@@ -85,6 +85,7 @@ Object.assign(I18N_DICT, {
   // pagamento em BTC on-chain
   hm_s_pay: { pt: `4. Como recebes`, en: `4. How you get paid`, es: `4. Cómo cobras`, fr: `4. Comment vous êtes payé` },
   hm_p_ln_d: { pt: `Paga de poucos em poucos minutos e para se o hashrate parar. Recebes 96%: 4% é a taxa que mantém a app.`, en: `Paid every few minutes; stops if the hashrate stops. You get 96%: 4% is the fee that keeps the app going.`, es: `Se paga cada pocos minutos y se detiene si el hashrate se detiene. Recibes el 96%: el 4% es la comisión que mantiene la app.`, fr: `Payé toutes les quelques minutes ; s'arrête si le hashrate s'arrête. Vous recevez 96 % : 4 % est la commission qui fait vivre l'app.` },
+  hm_oc_1only: { pt: `🔒 As máquinas só começam a minerar para quem aluga depois de o pagamento ter 1 confirmação na rede.`, en: `🔒 The miners only start mining for the renter once the payment has 1 network confirmation.`, es: `🔒 Las máquinas solo empiezan a minar para quien alquila cuando el pago tiene 1 confirmación en la red.`, fr: `🔒 Les machines ne minent pour le locataire qu'après 1 confirmation du paiement sur le réseau.` },
   hm_p_oc: { pt: `₿ BTC on-chain`, en: `₿ BTC on-chain`, es: `₿ BTC on-chain`, fr: `₿ BTC on-chain` },
   hm_p_oc_d: { pt: `Pago tudo adiantado. Só para alugueres grandes, porque a taxa da rede é cara.`, en: `Paid fully upfront. Only for large rentals, because network fees are expensive.`, es: `Se paga todo por adelantado. Solo para alquileres grandes, porque la comisión de red es cara.`, fr: `Payé entièrement d'avance. Seulement pour les grosses locations, car les frais du réseau sont chers.` },
   hm_oc_xpub_ph: { pt: `zpub… (chave pública da carteira, só de leitura)`, en: `zpub… (wallet public key, read-only)`, es: `zpub… (clave pública de la cartera, solo lectura)`, fr: `zpub… (clé publique du portefeuille, lecture seule)` },
@@ -324,8 +325,7 @@ Object.assign(I18N_DICT, {
         '<div class="hm-rgrid"><label>' + t('hm_oc_minh') + '<input id="hmOcMinH" type="number" min="1" max="168" step="1" value="' + esc(oc.min_min ? oc.min_min / 60 : 24) + '"></label>' +
           '<label>' + t('hm_oc_mins') + '<input id="hmOcMinS" type="number" min="0" step="1000" value="' + esc(oc.min_sats != null ? oc.min_sats : 4000) + '"></label></div>' +
         '<small class="hm-hint" style="color:var(--text);font-weight:600">' + t('hm_oc_when') + '</small>' +
-        '<label class="hm-radio"><input type="radio" name="hmZc" value="1"' + (oc.zeroconf !== false ? ' checked' : '') + '> ' + t('hm_oc_0') + '</label>' +
-        '<label class="hm-radio"><input type="radio" name="hmZc" value="0"' + (oc.zeroconf === false ? ' checked' : '') + '> ' + t('hm_oc_1') + '</label>' +
+        '<small class="hm-hint">' + t('hm_oc_1only') + '</small>' +
         '<p class="hm-msg">' + t('hm_oc_note') + '</p></div></div>';
   }
 
@@ -382,11 +382,11 @@ Object.assign(I18N_DICT, {
       const r = await api('/api/market/lud16?addr=' + encodeURIComponent(document.getElementById('hmLn').value.trim()));
       m.className = r.ok ? 'ok' : 'bad'; m.textContent = r.ok ? t('hm_ln_ok') : r.error;
     } else if(k === 'publish'){
-      const g = id => document.getElementById(id), zc = root().querySelector('input[name="hmZc"]:checked');
+      const g = id => document.getElementById(id);
       const body = { machines: [...root().querySelectorAll('.hm-mach input:checked')].map(i => i.dataset.ip), rate: Number(g('hmRate').value),
         max_min: Number(g('hmMax').value), ln: g('hmPayLn').checked, lud16: g('hmLn').value.trim(),
         onchain: { enabled: g('hmPayOc').checked, xpub: g('hmXpub').value.trim(), script: g('hmScript').value,
-          min_min: Math.round(Number(g('hmOcMinH').value) * 60), min_sats: Number(g('hmOcMinS').value), zeroconf: !zc || zc.value === '1' },
+          min_min: Math.round(Number(g('hmOcMinH').value) * 60), min_sats: Number(g('hmOcMinS').value), zeroconf: false },
         location: g('hmLoc').value.trim(), note: g('hmNote').value.trim() };
       S.busy = true; S.msg = ''; render();
       let r; try { r = await api('/api/market/offer', body); } catch(err) { r = { ok: false, error: (err && err.message) || String(err) }; }

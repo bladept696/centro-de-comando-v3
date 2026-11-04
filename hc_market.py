@@ -8,6 +8,7 @@ Protocolo (mensagens kind 4402 entre as duas apps, cifradas com NIP-44, tag "p" 
   vendedor  -> comprador {"t":"acc","sid","period","sats"} | {"t":"rej","sid","why"}
   vendedor  -> comprador {"t":"inv","sid","n","pr","sats"}       (fatura adiantada de cada período)
   comprador -> vendedor  {"t":"paid","sid","n","preimage"}       (comprovativo: sha256(preimage) = payment_hash)
+  As máquinas só passam para a pool do comprador depois de a fatura #0 estar paga.
   qualquer um            {"t":"end","sid","why"}
 Taxa da app (só Lightning): o pedido leva "fee":<percentagem> e, se o vendedor a conhecer, "acc" e "inv" também. A fatura #n vem
 com menos fee_part(n) sats e a app do comprador paga essa parte ao endereço da app (APP_FEE_LUD16): quem aluga paga o
@@ -19,7 +20,8 @@ Pagamento em BTC on-chain (o pedido leva "pay":"onchain"; tudo pago adiantado):
   vendedor  -> comprador {"t":"addr","sid","address","sats","until","zeroconf"}   (endereço novo, reservado 30 min)
   vendedor  -> comprador {"t":"seen","sid","sats"}                                (visto na rede, à espera de confirmação)
   vendedor  -> comprador {"t":"start","sid","minutes","sats"}                     (máquinas a minerar para o comprador)
-Os dois lados vigiam o endereço na API do mempool.space (hc_onchain). Com "zeroconf" o vendedor começa logo que o
+Os dois lados vigiam o endereço na API do mempool.space (hc_onchain). As máquinas só começam com 1 confirmação
+(o campo "zeroconf" vai sempre a false; versões antigas podiam começar mais cedo). Com "zeroconf" o vendedor começava logo que o
 pagamento aparece e para se ele desaparecer (substituído) ou não confirmar em 3 h.
 """
 import hashlib
@@ -490,17 +492,12 @@ class Market:
         s = {"role": "seller", "peer": peer, "d": offer["d"], "ths": offer["ths"], "rate": offer["rate"], "minutes": int(m["minutes"]),
              "pool": {"host": pool["host"], "port": int(pool["port"]), "user": pool["user"], "pass": pool["pass"]}, "state": "starting", "created": int(time.time()),
              "paid_sats": 0, "period": period, "sats_per": sats, "snaps": {}, "invoices": {}, "lud16": offer["lud16"],
-             "fee": m.get("fee") if m.get("fee") in FEE_KNOWN else 0}
-        for ip in ips:
-            s["snaps"][ip] = self.h["snapshot"](ip)
+             "fee": m.get("fee") if m.get("fee") in FEE_KNOWN else 0, "ips": list(ips)}
         with self.lock:
             self.sessions[sid] = s
-            self._save()      # guarda a pool original ANTES de mexer nas máquinas (se a app fechar, repõe ao arrancar)
-        for ip in ips:
-            ok, msg = self.h["switch"](ip, pool["host"], int(pool["port"]), pool["user"], pool["pass"])
-            self._log(s, f"máquina apontada para a pool do comprador" if ok else f"falha ao mudar a pool: {msg}")
-        s["state"], s["start"] = "running", int(time.time())
-        self._log(s, f"aluguer aceite: {s['minutes']} min, fatura de {sats} sats a cada {period} min")
+            self._save()
+        # as máquinas só mudam de pool depois de a 1.ª fatura estar paga (comprovativo Lightning): quem não paga não mina nada
+        self._log(s, f"aluguer aceite: {s['minutes']} min, fatura de {sats} sats a cada {period} min; à espera do 1.º pagamento")
         acc = {"t": "acc", "sid": sid, "period": period, "sats": sats}
         if s["fee"]:
             acc["fee"] = s["fee"]
@@ -578,6 +575,21 @@ class Market:
             got = inv.get("sats", s["sats_per"])
             s["paid_sats"] += got
             self._log(s, f"recebeste a fatura #{m.get('n')} ({got} sats) ✓")
+            if s["state"] == "starting":
+                self._ln_start(sid, s)
+
+    # -- vendedor: 1.ª fatura paga, as máquinas passam para a pool do comprador
+    def _ln_start(self, sid, s):
+        pool = s["pool"]
+        for ip in s.get("ips") or []:
+            s["snaps"][ip] = self.h["snapshot"](ip)
+        with self.lock:
+            self._save()      # guarda a pool original ANTES de mexer nas máquinas (se a app fechar, repõe ao arrancar)
+        for ip in s.get("ips") or []:
+            ok, msg = self.h["switch"](ip, pool["host"], int(pool["port"]), pool["user"], pool["pass"])
+            self._log(s, "máquina apontada para a pool do comprador" if ok else f"falha ao mudar a pool: {msg}")
+        s["state"], s["start"] = "running", int(time.time())
+        self._log(s, "pagamento confirmado: as máquinas estão a minerar para o comprador")
 
     # -- on-chain, vendedor: reservar um endereço novo e esperar pelo pagamento
     def _onchain_offer(self, sid, peer, offer, pool, minutes):
@@ -592,7 +604,7 @@ class Market:
         s = {"role": "seller", "peer": peer, "d": offer["d"], "ths": offer["ths"], "rate": offer["rate"], "minutes": minutes,
              "pool": pool | {"port": int(pool["port"])}, "state": "awaiting_payment", "created": now, "paid_sats": 0,
              "period": None, "sats_per": None, "snaps": {}, "pay": "onchain", "pay_address": address, "need": need,
-             "until": now + ONCHAIN_RESERVE_MIN * MINUTE, "zeroconf": bool(oc.get("zeroconf")), "txids": []}
+             "until": now + ONCHAIN_RESERVE_MIN * MINUTE, "zeroconf": False, "txids": []}
         with self.lock:
             self.sessions[sid] = s
             self._save()
@@ -735,6 +747,11 @@ class Market:
                 self._end(sid, s, "o vendedor não respondeu", False)
             else:
                 self._onchain_buyer_tick(sid, s, now)
+            return
+        if s["role"] == "seller" and s["state"] == "starting":
+            inv = s["invoices"].get("0")
+            if inv and not inv["paid"] and now - inv["at"] > PAY_GRACE_SECONDS:
+                self._end(sid, s, "o comprador não pagou a primeira fatura (as máquinas não chegaram a mudar)", True)
             return
         if s["role"] == "seller" and s["state"] == "running":
             elapsed = now - s["start"]

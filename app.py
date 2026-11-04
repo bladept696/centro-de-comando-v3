@@ -124,7 +124,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.5.1"
+APP_VERSION = "4.5.2"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -2509,7 +2509,7 @@ def _market_offer_event(m, machines, status="active"):
         tags += [["lud16", m["lud16"]], ["pay", "ln"]]
     if oc.get("enabled"):
         # só as regras: a xpub nunca sai deste PC (cada aluguer recebe um endereço novo por mensagem cifrada)
-        tags += [["pay", "onchain"], ["onchain", str(int(oc["min_min"])), str(int(oc["min_sats"])), "0conf" if oc.get("zeroconf") else "1conf"]]
+        tags += [["pay", "onchain"], ["onchain", str(int(oc["min_min"])), str(int(oc["min_sats"])), "1conf"]]   # as máquinas só começam com 1 confirmação
     tags += [["machine", k, str(v)] for k, v in models.items()]
     if m.get("location"):
         tags.append(["location", str(m["location"])[:40]])
@@ -2573,7 +2573,7 @@ def market_set_offer(body):
                 mm.pop("onchain_used", None)
                 market_save(mm)
         onchain = {"enabled": True, "xpub": ext.text, "script": ext.script, "min_min": min_min, "min_sats": min_sats,
-                   "zeroconf": bool(oc_in.get("zeroconf"))}
+                   "zeroconf": False}
     if not ln_on and not onchain["enabled"]:
         return {"ok": False, "error": "escolhe pelo menos uma forma de receber (Lightning ou BTC on-chain)"}
     with _market_lock:
