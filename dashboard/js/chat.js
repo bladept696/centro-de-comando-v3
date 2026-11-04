@@ -82,6 +82,8 @@
 
   function lrLoad(){ const v = lsGet('hc_chat_lastread', {}); return typeof v === 'number' ? { geral: v } : (v && typeof v === 'object' ? v : {}); }
   const CHANNELS = ['geral', 'ajuda', 'trocas'];
+  // conversas privadas fechadas neste PC: uid -> ts da última mensagem quando foi fechada (volta a aparecer se chegar uma mais nova)
+  const dmClosed = lsGet('hc_chat_dm_closed', {});
   const S = {
     msgs: new Map(), reacts: {}, typing: {}, typingSeen: {}, online: {}, local: 0,
     live: false, hasMore: true, loadingOlder: false, open: false, unread: 0, mention: false,
@@ -703,10 +705,11 @@
   function renderTabs(){
     const box = _c$('chatTabs');
     if(!box) return;
-    const dms = Object.keys(S.dms).sort((a, b) => (S.dms[b].ts || 0) - (S.dms[a].ts || 0)).map(p => 'dm:' + p);
+    const dms = Object.keys(S.dms).filter(p => S.chan === 'dm:' + p || !(p in dmClosed) || (S.dms[p].ts || 0) > dmClosed[p])
+      .sort((a, b) => (S.dms[b].ts || 0) - (S.dms[a].ts || 0)).map(p => 'dm:' + p);
     box.innerHTML = [...CHANNELS, ...dms].map(k => {
       const n = isDm(k) ? (S.dmUnread[k.slice(3)] ? 1 : 0) : (S.chUnread[k] || 0);
-      return '<button type="button" data-chan="' + escHtml(k) + '" class="chat-tab' + (k === S.chan ? ' on' : '') + (isDm(k) ? ' dm' : '') + '">' + escHtml(chanLabel(k)) + (n ? '<i>' + (isDm(k) ? '' : n) + '</i>' : '') + '</button>';
+      return '<button type="button" data-chan="' + escHtml(k) + '" class="chat-tab' + (k === S.chan ? ' on' : '') + (isDm(k) ? ' dm' : '') + '">' + escHtml(chanLabel(k)) + (n ? '<i>' + (isDm(k) ? '' : n) + '</i>' : '') + (isDm(k) ? '<span class="chat-tab-x" data-close-dm="' + escHtml(k.slice(3)) + '" title="' + escHtml(T('t_close')) + '" aria-label="' + escHtml(T('t_close')) + '">×</span>' : '') + '</button>';
     }).join('');
   }
   function placeholderText(){ return isDm(S.chan) ? T('dm_ph', (S.dms[S.chan.slice(3)] || {}).nick || '?') : T('chat_placeholder'); }
@@ -738,8 +741,18 @@
   }
   function openDm(uid, nick){
     if(!uid || uid === S.uid) return;
+    if(uid in dmClosed){ delete dmClosed[uid]; lsSet('hc_chat_dm_closed', dmClosed); }
     S.dms[uid] = Object.assign({ ts: 0 }, S.dms[uid] || {}, { nick: nick || (S.dms[uid] || {}).nick || '?' });
     switchChan('dm:' + uid);
+  }
+  // fecha o separador da conversa privada (só neste PC; as mensagens ficam e o separador volta com uma mensagem nova)
+  function closeDm(uid){
+    if(!uid) return;
+    dmClosed[uid] = (S.dms[uid] || {}).ts || 0;
+    lsSet('hc_chat_dm_closed', dmClosed);
+    delete S.dmUnread[uid];
+    if(S.chan === 'dm:' + uid) switchChan(CHANNELS[0]);
+    renderTabs(); updateBadge();
   }
   function touchDm(){
     if(!isDm(S.chan) || !_db || !S.uid) return;
@@ -1047,7 +1060,7 @@
     if(p){ CHAT_EMOJIS.forEach(em => { const b = document.createElement('button'); b.className = 'chat-emoji-pick'; b.textContent = em; b.onclick = () => { const i = _c$('chatInput'); if(i){ i.value += em; i.focus(); updateSendBtn(); } p.classList.remove('open'); }; p.appendChild(b); }); }
     applyTexts(); applySize(); wireGrip();
     _c$('chatFab')?.addEventListener('click', togglePanel);
-    _c$('chatTabs')?.addEventListener('click', e => { const b = e.target.closest('[data-chan]'); if(b) switchChan(b.dataset.chan); });
+    _c$('chatTabs')?.addEventListener('click', e => { const x = e.target.closest('[data-close-dm]'); if(x){ e.stopPropagation(); closeDm(x.dataset.closeDm); return; } const b = e.target.closest('[data-chan]'); if(b) switchChan(b.dataset.chan); });
     _c$('chatOnlineUsers')?.addEventListener('click', e => { const u = e.target.closest('[data-uid]'); if(u) openDm(u.dataset.uid, u.dataset.nick); });
     _c$('chatCloseBtn')?.addEventListener('click', togglePanel);
     _c$('chatEmojiBtn')?.addEventListener('click', () => { closeShare(); _c$('chatEmojiPicker')?.classList.toggle('open'); });

@@ -377,6 +377,8 @@
   .chat-tab.dm{ color:#d9b3ff; } .chat-tab.dm.on{ color:#e6ccff; border-color:#b07cff; background:#b07cff22; }
   .chat-tab i{ font-style:normal; margin-left:6px; min-width:15px; height:15px; border-radius:8px; background:var(--red); color:#fff; font-size:9px; display:inline-flex; align-items:center; justify-content:center; padding:0 4px; vertical-align:middle; }
   .chat-tab i:empty{ width:8px; min-width:8px; height:8px; padding:0; }
+  .chat-tab-x{ display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; margin:0 -3px 0 6px; border-radius:50%; font-size:12px; line-height:1; color:inherit; opacity:.55; cursor:pointer; }
+  .chat-tab-x:hover{ opacity:1; background:#ffffff1f; color:#fff; }
   .chat-sidebar-user.can-dm{ cursor:pointer; } .chat-sidebar-user.can-dm:hover{ background:var(--panel); }
   .chat-msg-sys.has-act{ background:#ff5d5d14; border:1px solid #ff5d5d55; border-radius:10px; padding:8px 10px; color:var(--text); max-width:94%; }
   .chat-msg-sys.has-act button{ display:block; margin:6px auto 0; font:inherit; font-size:11px; font-weight:700; color:#04210f; background:var(--green); border:none; border-radius:8px; padding:5px 12px; cursor:pointer; }

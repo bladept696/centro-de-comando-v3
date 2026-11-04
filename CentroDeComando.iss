@@ -13,7 +13,7 @@
 ; ============================================================================
 
 #define MyAppName "Centro de Comando"
-#define MyAppVersion "4.5.3"
+#define MyAppVersion "4.5.4"
 #define MyAppPublisher "Centro de Comando"
 #define MyAppExeName "CentroDeComando.exe"
 ; GUID fixo do produto - gera o teu próprio uma vez (Tools > Generate GUID no

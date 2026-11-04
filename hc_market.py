@@ -48,6 +48,7 @@ SUPPORTED_POOLS = {   # só pools onde o comprador consegue confirmar o hashrate
 }
 WARMUP_PERIODS_MIN = 4          # minutos até a pool mostrar o hashrate (a máquina reinicia e a média demora)
 PAY_GRACE_SECONDS = 100         # tempo para pagar uma fatura antes de o vendedor terminar
+PAY_RETRY_DELAYS = (10, 15, 20)  # o comprador volta a tentar pagar uma fatura que falhou (segundos), dentro do PAY_GRACE_SECONDS
 MIN_HASHRATE_RATIO = 0.4        # abaixo disto (2 leituras seguidas) o comprador termina
 MINUTE = 60                     # segundos num minuto (os testes encurtam-no)
 # on-chain (minutos)
@@ -215,6 +216,26 @@ class NWC:
 
     def balance_sats(self):
         return int(self.request("get_balance", timeout=20).get("balance", 0)) // 1000
+
+
+def explain_pay_error(e):
+    """Junta à mensagem crua da carteira uma explicação do que fazer."""
+    raw = str(e)
+    low = raw.lower()
+    if "paymentsendingfailed" in low or "no route" in low or "route not found" in low or "unable to route" in low:
+        tip = ("a tua carteira não conseguiu enviar o pagamento pela rede Lightning. No Alby Hub vê em Node/Channels "
+               "quanto podes ENVIAR (Spendable): um canal novo ou pequeno pode ter saldo mas quase nada para enviar")
+    elif "insufficient" in low or "saldo" in low or "balance" in low:
+        tip = "a tua carteira não tem saldo suficiente para enviar"
+    elif "quota" in low or "budget" in low or "limit" in low:
+        tip = "chegaste ao limite de gasto da ligação NWC: aumenta-o na tua carteira"
+    elif "restricted" in low or "permission" in low or "not allowed" in low:
+        tip = "o código NWC não tem permissão para pagar: cria uma ligação com 'Send payments'"
+    elif "não respondeu" in low or "timeout" in low:
+        tip = "a tua carteira não respondeu: confirma que está ligada à internet"
+    else:
+        return raw
+    return f"{tip} ({raw})"
 
 
 # ---------------------------------------------------------------- hashrate do worker na pool (o comprador confirma)
@@ -387,6 +408,15 @@ class Market:
                 raise ValueError("duração fora do permitido pela oferta")
             if not self.h["nwc"]():
                 raise ValueError("liga primeiro a tua carteira (NWC)")
+            # saldo antes de começar: com 0 sats em Lightning a 1.ª fatura falha sempre (ex.: Alby Hub sem saldo)
+            first = billing(offer["ths"], offer["rate"])[1]
+            try:
+                bal = self.h["nwc"]().balance_sats()
+            except Exception:
+                bal = None      # carteira que não diz o saldo: tenta na mesma
+            if bal is not None and bal < first:
+                raise ValueError(f"a tua carteira tem {bal} sats em Lightning e o primeiro pagamento é de {first} sats: "
+                                 "põe sats na carteira (Lightning, não on-chain) antes de alugar")
         sid = secrets.token_hex(6)
         worker = "hcr" + sid
         verify = host in SUPPORTED_POOLS
@@ -533,11 +563,22 @@ class Market:
         if sats + fee != s["sats_per"] or spent + sats + fee > s["budget"]:
             self._end(sid, s, f"o vendedor pediu {sats} sats, fora do combinado", True)
             return
+        n = str(m.get("n"))
+        tries = s.setdefault("pay_tries", {}).get(n, 0) + 1
+        s["pay_tries"][n] = tries
         try:
             pre = self.h["nwc"]().pay_invoice(m["pr"])
         except Exception as e:
-            self._end(sid, s, f"pagamento falhou: {e}", True)
+            if tries <= len(PAY_RETRY_DELAYS):
+                wait = PAY_RETRY_DELAYS[tries - 1]
+                s["retry"] = {"m": m, "at": time.time() + wait}
+                self._log(s, f"pagamento da fatura #{n} falhou (tentativa {tries} de {len(PAY_RETRY_DELAYS) + 1}), "
+                             f"volta a tentar daqui a {wait} s: {e}")
+                return
+            s.pop("retry", None)
+            self._end(sid, s, f"pagamento falhou depois de {tries} tentativas: {explain_pay_error(e)}", True)
             return
+        s.pop("retry", None)
         if hashlib.sha256(bytes.fromhex(pre)).hexdigest() != dec["payment_hash"]:
             self._end(sid, s, "a carteira devolveu um comprovativo errado", True)
             return
@@ -766,6 +807,12 @@ class Market:
             if str(n) not in s["invoices"] and n * s["period"] < s["minutes"]:
                 self._invoice(sid, s, n)
         elif s["role"] == "buyer":
+            r = s.get("retry")
+            if r and now >= r["at"]:
+                s.pop("retry", None)
+                self._on_inv(sid, s, r["m"])
+                if sid not in self.sessions:
+                    return
             if s["state"] == "requested" and now - s["created"] > 1.5 * MINUTE:
                 self._end(sid, s, "o vendedor não respondeu", False)
                 return

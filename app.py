@@ -124,7 +124,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.5.3"
+APP_VERSION = "4.5.4"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -5236,14 +5236,52 @@ def _run_tailscale(args, timeout=8):
     exe = find_tailscale()
     if not exe:
         return None, 'tailscale não instalado'
+    # stdin fechado e, fora do Windows, numa sessão própria: no Mac o binário da app Tailscale pode lançar outros processos
+    # que herdam as saídas; assim um tempo esgotado mata o grupo todo em vez de ficar à espera para sempre
+    kw = {'creationflags': getattr(subprocess, 'CREATE_NO_WINDOW', 0)} if sys.platform == 'win32' else {'start_new_session': True}
     try:
-        r = subprocess.run([exe] + args, capture_output=True, text=True, timeout=timeout,
-                           creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0), encoding='utf-8', errors='replace')
-        return r, None
+        p = subprocess.Popen([exe] + args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True, encoding='utf-8', errors='replace', **kw)
+    except Exception as e:
+        return None, str(e)
+    try:
+        out, err = p.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
+        try:
+            if sys.platform == 'win32':
+                p.kill()
+            else:
+                os.killpg(p.pid, 9)
+        except Exception:
+            pass
         return None, 'timeout'
     except Exception as e:
         return None, str(e)
+    return subprocess.CompletedProcess(p.args, p.returncode, out, err), None
+
+
+def tailscale_status_safe(limit=20):
+    """tailscale_status() com um prazo e sem exceções: a rota responde sempre (no Mac o comando do Tailscale
+    já deixou o pedido sem resposta, e o painel só via "Failed to fetch")."""
+    box = {}
+
+    def run():
+        try:
+            box["r"] = tailscale_status()
+        except Exception as e:
+            box["e"] = f"{type(e).__name__}: {e}"
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(limit)
+    if "r" in box:
+        return box["r"]
+    try:
+        installed = bool(find_tailscale())
+    except Exception:
+        installed = False
+    return {"installed": installed, "running": False, "state": "", "ips": [], "dns": "", "tailnet": "", "peers_online": 0,
+            "serve": False, "scheme": dashboard_url_scheme(), "port": PORT, "keepalive": remote_keepalive(),
+            "error": box.get("e") or "o Tailscale não respondeu a tempo"}
 
 
 def tailscale_status():
@@ -6151,7 +6189,7 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/api/remote/status':
-            st = tailscale_status()
+            st = tailscale_status_safe()
             st["local"] = self._is_local_request()
             self._send_json(st)
             return

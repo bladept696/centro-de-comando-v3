@@ -34,6 +34,7 @@
     enableUrl: { pt: '1) Abre esta página e ativa o Serve na tua conta Tailscale (uma única vez). 2) Volta aqui e carrega outra vez em "Ativar HTTPS privado".', en: '1) Open this page and enable Serve on your Tailscale account (one time only). 2) Come back and press "Turn on private HTTPS" again.', es: '1) Abre esta página y activa Serve en tu cuenta de Tailscale (solo una vez). 2) Vuelve y pulsa otra vez "Activar HTTPS privado".', fr: '1) Ouvrez cette page et activez Serve sur votre compte Tailscale (une seule fois). 2) Revenez et cliquez de nouveau sur « Activer le HTTPS privé ».' },
     timeout: { pt: 'O Tailscale demorou a responder. Se pediu uma ativação no navegador, conclui-a e tenta de novo.', en: 'Tailscale took too long to answer. If it asked for activation in the browser, finish it and try again.', es: 'Tailscale tardó en responder. Si pidió una activación en el navegador, complétala e inténtalo de nuevo.', fr: 'Tailscale a mis trop de temps à répondre. S\'il a demandé une activation dans le navigateur, terminez-la et réessayez.' },
     fail: { pt: 'Não foi possível: ', en: 'Could not do it: ', es: 'No fue posible: ', fr: 'Impossible : ' },
+    noapp: { pt: 'Não foi possível falar com o Centro de Comando (porta 8765). Confirma que a app está aberta neste computador e carrega em F5. Se abriste o painel noutro aparelho, confirma que o PC está ligado e na mesma rede.', en: 'Could not reach Centro de Comando (port 8765). Make sure the app is open on this computer and press F5. If you opened the dashboard on another device, check that the PC is on and on the same network.', es: 'No se pudo contactar con Centro de Comando (puerto 8765). Comprueba que la app está abierta en este ordenador y pulsa F5. Si abriste el panel en otro dispositivo, comprueba que el PC está encendido y en la misma red.', fr: 'Impossible de joindre Centro de Comando (port 8765). Vérifie que l’app est ouverte sur cet ordinateur et appuie sur F5. Si tu as ouvert le tableau de bord sur un autre appareil, vérifie que le PC est allumé et sur le même réseau.' },
     noaddr: { pt: 'Ainda não há endereço Tailscale neste PC.', en: 'There is no Tailscale address on this PC yet.', es: 'Aún no hay dirección de Tailscale en este PC.', fr: 'Aucune adresse Tailscale sur ce PC pour l\'instant.' },
     fw: { pt: 'Sem HTTPS privado, o Windows pode pedir-te para permitir a ligação na firewall.', en: 'Without private HTTPS, Windows may ask you to allow the connection in the firewall.', es: 'Sin HTTPS privado, Windows puede pedirte que permitas la conexión en el firewall.', fr: 'Sans HTTPS privé, Windows peut demander d\'autoriser la connexion dans le pare-feu.' },
   };
@@ -73,10 +74,15 @@
     return { best: secure || direct, secure, direct };
   }
 
+  // erro de rede (a app fechada ou inalcançável) -> mensagem explicada em vez do "Failed to fetch" do navegador
+  const NOAPP = new Error('noapp');
   async function api(path, body){
-    const r = await fetch(API_BASE + path, body === undefined ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    let r;
+    try { r = await fetch(API_BASE + path, body === undefined ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
+    catch(e) { throw NOAPP; }
     return r.json();
   }
+  const errText = e => e === NOAPP ? x('noapp') : x('fail') + esc(e && e.message || e);
 
   function view(m, st, msg){
     const card = m.querySelector('.hcr-body'), local = isLocal() && st.local !== false;
@@ -84,7 +90,7 @@
     if(!st.installed){
       h += '<p class="hcr-warn">' + x('notinst') + '</p><p>' + x('s1') + '</p><div class="mc-th-actions"><a class="hcr-link" href="https://tailscale.com/download" target="_blank" rel="noopener">' + x('dl') + '</a><button type="button" data-r="refresh">' + x('recheck') + '</button></div>';
     } else if(!st.running){
-      h += '<p class="hcr-warn">' + x('notrun') + '</p><div class="mc-th-actions"><button type="button" data-r="refresh">' + x('recheck') + '</button></div>';
+      h += '<p class="hcr-warn">' + x('notrun') + '</p>' + (st.error ? '<p class="hcr-note">' + esc(st.error) + '</p>' : '') + '<div class="mc-th-actions"><button type="button" data-r="refresh">' + x('recheck') + '</button></div>';
     } else {
       const u = urls(st);
       h += '<p class="hcr-ok">● ' + x('on') + (st.tailnet ? ' · ' + esc(st.tailnet) : '') + ' · ' + x('devs', st.peers_online) + '</p>';
@@ -105,7 +111,7 @@
     const card = m.querySelector('.hcr-body');
     if(!m.dataset.ready) card.innerHTML = '<p class="hcr-intro">' + x('loading') + '</p>';
     try { m._st = await api('/api/remote/status'); m.dataset.ready = '1'; view(m, m._st, msg); }
-    catch(e) { card.innerHTML = '<p class="hcr-warn">' + x('fail') + esc(e && e.message || e) + '</p>'; }
+    catch(e) { card.innerHTML = '<p class="hcr-warn">' + errText(e) + '</p>'; }
   }
 
   window.hcRemoteOpen = function(){
@@ -123,19 +129,19 @@
         try { await navigator.clipboard.writeText(t0); b.textContent = x('copied'); setTimeout(() => { b.textContent = x('copy'); }, 1500); } catch(err) {}
       } else if(k === 'serve'){
         b.disabled = true;
-        let r; try { r = await api('/api/remote/serve', { enable: b.dataset.on === '1' }); } catch(err) { r = { ok: false, error: String(err) }; }
+        let r; try { r = await api('/api/remote/serve', { enable: b.dataset.on === '1' }); } catch(err) { r = { ok: false, error: String(err), noapp: err === NOAPP }; }
         let msg = '';
         if(!r.ok){
           if(r.enable_url) msg = '<a class="hcr-link" href="' + esc(r.enable_url) + '" target="_blank" rel="noopener">' + x('enableUrl') + '</a>';
-          else msg = r.hint === 'timeout' ? x('timeout') : x('fail') + esc(r.error || '');
+          else msg = r.noapp ? x('noapp') : r.hint === 'timeout' ? x('timeout') : x('fail') + esc(r.error || '');
         }
         refresh(m, msg);
       }
     });
     m.addEventListener('change', async e => {
       const c = e.target.closest('[data-r="keep"]'); if(!c) return;
-      let r; try { r = await api('/api/remote/keepalive', { enable: c.checked }); } catch(err) { r = { ok: false, error: String(err) }; }
-      refresh(m, r.ok ? '' : x('fail') + esc(r.error || ''));
+      let r; try { r = await api('/api/remote/keepalive', { enable: c.checked }); } catch(err) { r = { ok: false, error: String(err), noapp: err === NOAPP }; }
+      refresh(m, r.ok ? '' : r.noapp ? x('noapp') : x('fail') + esc(r.error || ''));
     });
     document.body.appendChild(m);
     refresh(m);
