@@ -1,0 +1,33 @@
+# Alternativa para o Mac Intel quando o GitHub não tem máquinas macos-15-intel livres (o job fica na fila e é cancelado).
+# Corre numa máquina Apple Silicon (macos-14) com Python x64 através do Rosetta: o PyInstaller gera um .app x86_64,
+# igual ao do runner Intel. Corre à mão: Actions → "Build Mac Intel (Rosetta)" → Run workflow.
+# Tal como no outro workflow, os ficheiros NÃO são assinados aqui (assina-se no PC do autor com sign_release.py).
+name: Build Mac Intel (Rosetta)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Build (x86_64 pelo Rosetta)
+        run: |
+          softwareupdate --install-rosetta --agree-to-license || true
+          PY="$(which python)"
+          arch -x86_64 "$PY" -c "import platform; print('python', platform.machine())"
+          PYTHON="$PY" arch -x86_64 /bin/bash build_unix.sh
+          file dist/CentroDeComando.app/Contents/MacOS/CentroDeComando
+      - uses: actions/upload-artifact@v4
+        with:
+          name: centrodecomando-mac-x64-rosetta
+          path: Output/*-mac-x64.zip
+          if-no-files-found: error
