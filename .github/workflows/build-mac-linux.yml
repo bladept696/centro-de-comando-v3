@@ -61,9 +61,14 @@ jobs:
       - name: Build (x86_64 pelo Rosetta)
         run: |
           softwareupdate --install-rosetta --agree-to-license || true
-          PY="$(which python)"
-          arch -x86_64 "$PY" -c "import platform; print('python', platform.machine())"
-          PYTHON="$PY" arch -x86_64 /bin/bash build_unix.sh
+          # every python call (pip and PyInstaller included) must run as x86_64, or pip picks arm64 wheels
+          REAL="$(which python)"
+          printf '#!/bin/bash
+exec arch -x86_64 "%s" "$@"
+' "$REAL" > "$RUNNER_TEMP/py86"
+          chmod +x "$RUNNER_TEMP/py86"
+          "$RUNNER_TEMP/py86" -c "import platform; print('python', platform.machine())"
+          PYTHON="$RUNNER_TEMP/py86" arch -x86_64 /bin/bash build_unix.sh
           file dist/CentroDeComando.app/Contents/MacOS/CentroDeComando
       - uses: actions/upload-artifact@v4
         with:
