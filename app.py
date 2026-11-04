@@ -124,7 +124,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.5.2"
+APP_VERSION = "4.5.3"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -2018,7 +2018,7 @@ def _do_download_and_launch_installer(url, name, silent, sig_url=None):
             if silent:
                 args.append('/VERYSILENT')
             args.append('/SP-')
-            subprocess.Popen(args, close_fds=True, shell=False)
+            subprocess.Popen(args, close_fds=True, shell=False, env=_clean_child_env())
 
         with _update_install_lock:
             _update_install_state = {"status": "done", "error": None, "verified": True}
@@ -2069,8 +2069,25 @@ def _launch_unix_update(dest):
     with open(sh, 'w') as f:
         f.write("#!/bin/sh\n" + script)
     os.chmod(sh, 0o755)
-    subprocess.Popen(['/bin/sh', sh], close_fds=True, start_new_session=True,
+    subprocess.Popen(['/bin/sh', sh], close_fds=True, start_new_session=True, env=_clean_child_env(),
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def _clean_child_env():
+    """Ambiente para lançar o instalador / a app nova sem as variáveis internas do PyInstaller desta cópia.
+    Sem isto, a app nova aberta no fim da atualização julga-se "filha" desta e tenta usar a pasta temporária
+    _MEIxxxx que esta já apagou ao fechar: "Failed to load Python DLL ... python3xx.dll"."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith('_PYI_') and k not in ('_MEIPASS2', '_PYI_ONEDIR_MODE')}
+    env['PYINSTALLER_RESET_ENVIRONMENT'] = '1'
+    if getattr(sys, 'frozen', False):
+        mei = getattr(sys, '_MEIPASS', '')
+        for k in ('PATH', 'LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH'):
+            if mei and env.get(k):
+                env[k] = os.pathsep.join(x for x in env[k].split(os.pathsep) if x and not x.startswith(mei))
+        orig = env.pop('LD_LIBRARY_PATH_ORIG', None)
+        if orig is not None:
+            env['LD_LIBRARY_PATH'] = orig
+    return env
 
 
 def start_update_install(silent=True):
