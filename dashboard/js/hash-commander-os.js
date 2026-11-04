@@ -18,7 +18,9 @@ Object.assign(I18N_DICT, {
   hco_only_hc: { pt: `— só com HC OS`, en: `— only with HC OS` }, hco_unsup: { pt: `— ainda não suportada`, en: `— not supported yet` },
   hco_only_nqa: { pt: `Só NerdQAxe++`, en: `NerdQAxe++ only` },
   hco_install: { pt: `Instalar HC OS`, en: `Install HC OS` },
-  hco_upd: { pt: `Atualizar para {0}`, en: `Update to {0}` }, hco_log: { pt: `Ver registo`, en: `View log` }, hco_back: { pt: `Voltar à anterior`, en: `Previous version` },
+  hco_upd: { pt: `Atualizar para {0}`, en: `Update to {0}` },
+  hco_old: { pt: `Atualiza primeiro para o AxeOS oficial v1.1.1`, en: `Update to the official AxeOS v1.1.1 first` },
+  hco_now: { pt: `Agora:`, en: `Now:` }, hco_log: { pt: `Ver registo`, en: `View log` }, hco_back: { pt: `Voltar à anterior`, en: `Previous version` },
   hco_best: { pt: `melhor {0} · {1} rejeitadas`, en: `best {0} · {1} rejected` },
   hco_scan: { pt: `A procurar as máquinas…`, en: `Looking for miners…` }, hco_none: { pt: `Ainda não tens máquinas no painel.`, en: `You have no miners on the dashboard yet.` },
   hco_new: { pt: `Nova versão disponível: HC OS {0}`, en: `New version available: HC OS {0}` },
@@ -78,6 +80,8 @@ Object.assign(I18N_DICT, {
   const hcIps = () => ((S.scan && S.scan.machines) || []).filter(m => m.hcos).map(m => m.ip);
   const rel = () => (S.scan && S.scan.release) || {};
   const jobOf = ip => S.jobs.find(j => j.ip === ip);
+  // AxeOS oficial anterior à 1.1.0: as definições mudaram na 1.1, tem de passar primeiro pelo oficial v1.1.1
+  const tooOld = m => { const x = /v?(\d+)\.(\d+)\.(\d+)/.exec(m.version || ''); if(!x || m.hcos) return false; const v = [+x[1], +x[2], +x[3]]; return v[0] < 1 || (v[0] === 1 && v[1] < 1); };
   const newer = (a, b) => { const p = s => String(s || '').split('.').map(n => parseInt(n, 10) || 0); const x = p(a), y = p(b); for(let i = 0; i < 3; i++){ if((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
 
   // ------------------------------------------------------------ desenho
@@ -95,6 +99,7 @@ Object.assign(I18N_DICT, {
     if(j && !['done', 'failed', 'rolled_back'].includes(j.state)) act = '<span class="hco-pill amb">' + esc(j.step) + (j.state === 'upload' ? ' · ' + j.progress + '%' : '') + '</span>';
     else if(hc) act = (r.ok && newer(r.version, hc.hcos) ? '<button type="button" class="hm-btn y" data-hco="inst" data-ip="' + esc(m.ip) + '">' + fmt('hco_upd', esc(r.version)) + '</button> ' : '') +
       '<button type="button" class="hm-btn" data-hco="sel" data-ip="' + esc(m.ip) + '">' + t('hco_log') + '</button> <button type="button" class="hm-btn red" data-hco="back" data-ip="' + esc(m.ip) + '">' + t('hco_back') + '</button>';
+    else if(m.model === S.scan.board && tooOld(m)) act = '<span class="hco-pill amb">' + t('hco_old') + '</span>';
     else if(m.model === S.scan.board) act = '<button type="button" class="hm-btn y" data-hco="inst" data-ip="' + esc(m.ip) + '"' + (r.ok ? '' : ' disabled title="' + esc(t('hco_norel')) + '"') + '>' + t('hco_install') + '</button>';
     else act = '<button type="button" class="hm-btn" disabled>' + t('hco_only_nqa') + '</button>';
     const jmsg = j && ['done', 'failed', 'rolled_back'].includes(j.state) ? '<div class="hco-jmsg ' + (j.state === 'done' ? 'ok' : 'bad') + '">' + esc(j.step) + '</div>' : '';
@@ -146,6 +151,7 @@ Object.assign(I18N_DICT, {
     return '<div class="hco-modal-bg"><div class="hco-modal"><div class="hco-hd"><b>' + fmt('hco_i_t', esc(nameOf(ip))) + '</b></div><p class="hco-sub">' + t('hco_i_sub') + '</p>' +
       '<div class="hco-kv"><div>' + t('hco_i_model') + '<b>' + esc(m.model) + ' ✓</b></div><div>' + t('hco_i_cur') + '<b>' + (m.hcos ? 'HC OS ' + esc(m.hcos.hcos) : 'AxeOS ' + esc(m.version)) + '</b></div><div>' + t('hco_i_new') + '<b>HC OS ' + esc(r.version || '?') + ' · ' + t('hco_i_signed') + '</b></div><div>' + t('hco_i_set') + '<b>' + t('hco_i_set_v') + '</b></div></div>' +
       (j ? step(0, 'hco_s1') + step(1, 'hco_s2') + step(2, 'hco_s3', j.state === 'upload' ? j.progress + '%' : '') + step(3, 'hco_s4') + step(4, 'hco_s5', t('hco_s5_d')) +
+           (j.state === 'mining_check' && j.detail ? '<div class="hco-info">' + t('hco_now') + ' ' + esc(j.detail) + '</div>' : '') +
            (['failed', 'rolled_back'].includes(j.state) ? '<div class="hco-warn">' + esc(j.step) + '</div>' : done ? '<div class="hco-info">✅ ' + esc(j.step) + '</div>' : '')
          : '<div class="hco-info">' + t('hco_i_back') + '</div><div class="hco-warn">⚠️ ' + t('hco_i_warn') + '</div>' +
            '<label class="hco-otp">' + t('hco_i_otp') + '<input id="hcoOtp" type="text" inputmode="numeric" maxlength="8" autocomplete="one-time-code"></label>' +

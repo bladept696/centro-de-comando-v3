@@ -24,6 +24,7 @@ import websocket
 
 REPO = "bladept696/hash-commander-os"
 BOARD = "NerdQAxe++"                 # o único modelo para que há firmware
+MIN_BASE = (1, 1, 0)                 # firmware oficial mais antigo de onde se pode passar direto (as definições mudaram na 1.1)
 ASSET_PREFIX = "hcos-NerdQAxe++-"
 WWW_PREFIX = "hcos-www-"           # página da máquina (AxeOS) da mesma versão: vai antes do firmware, como no oficial
 RELEASE_CACHE_S = 600
@@ -47,6 +48,36 @@ def _post(ip, path, otp="", timeout=8):
     body = r.read(4096).decode("utf-8", "replace")
     c.close()
     return r.status, body
+
+
+def version_tuple(v):
+    """'v1.0.37.4-LTS' -> (1, 0, 37); '' ou estranho -> None"""
+    m = re.match(r'v?(\d+)\.(\d+)\.(\d+)', str(v or '').strip())
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def too_old(info):
+    """True quando a máquina tem um AxeOS oficial anterior à 1.1.0 (o HC OS é feito sobre a 1.1.1)"""
+    if not info or info.get("hcos"):
+        return False
+    t = version_tuple(info.get("version"))
+    return bool(t) and t < MIN_BASE
+
+
+def why_not_mining(ip):
+    """Frase curta com o estado da máquina quando o HC OS não chega a minerar (para se saber a causa)."""
+    try:
+        d = _get_json(f"http://{ip}/api/v2/dashboard", timeout=4)
+    except Exception:
+        return "a máquina não responde"
+    perf, pools = d.get("performance") or {}, (d.get("stratum") or {}).get("pools") or []
+    up = (d.get("system") or {}).get("uptime")
+    bits = [f"hashrate {float(perf.get('hashRate') or 0):.0f} GH/s",
+            "pool ligada" if any(p.get("connected") for p in pools) else "pool desligada",
+            f"{int(perf.get('sharesAccepted') or 0)} shares"]
+    if up is not None:
+        bits.append(f"ligada há {int(up) // 60} min")
+    return ", ".join(bits)
 
 
 def probe(ip):
@@ -269,6 +300,9 @@ class HcOs:
             raise RuntimeError("a máquina não respondeu")
         if p["model"] != BOARD:
             raise RuntimeError(f"só há HC OS para a {BOARD} (esta é {p['model'] or 'desconhecida'})")
+        if too_old(p):
+            raise RuntimeError(f"a máquina tem o AxeOS {p['version']}, anterior à v1.1.0: atualiza primeiro para o firmware "
+                               "oficial v1.1.1 (AxeOS › Update › Install from GitHub) e confirma que mina; depois instala o HC OS")
         try:
             self.h["backup"](ip, _get_json(f"http://{ip}/api/system/info", timeout=4))
         except Exception:
@@ -293,15 +327,25 @@ class HcOs:
             return False
 
         self._set(ip, state="mining_check", step="a confirmar que volta a minerar")
+        last_up, reboots, state_txt = None, 0, ""
         while time.time() - t0 < BOOT_WAIT_S + MINING_WAIT_S:
             info = probe(ip)
+            state_txt = why_not_mining(ip)
+            m = re.search(r'ligada há (\d+) min', state_txt)
+            if m:
+                up = int(m.group(1))
+                if last_up is not None and up < last_up:
+                    reboots += 1
+                last_up = up
+            self._set(ip, detail=state_txt + (f", reiniciou {reboots}x" if reboots else ""))
             if info and info.get("hcos") and (info["hcos"].get("bootGuard") or {}).get("mining"):
                 self._set(ip, state="done", step=f"HC OS {info['hcos']['hcos']} instalado e a minerar", after=info["version"], finished=time.time())
                 return True
             time.sleep(10)
         st, _ = self.rollback(ip, otp)
         self._set(ip, state="rolled_back" if st == 200 else "failed",
-                  step="não voltou a minerar: regressou ao firmware anterior" if st == 200 else "não voltou a minerar e não foi possível voltar atrás sozinha")
+                  step=("não voltou a minerar: regressou ao firmware anterior" if st == 200 else "não voltou a minerar e não foi possível voltar atrás sozinha")
+                  + (f" · último estado: {state_txt}" + (f", reiniciou {reboots}x" if reboots else "") if state_txt else ""))
         return False
 
     def rollback(self, ip, otp=""):
