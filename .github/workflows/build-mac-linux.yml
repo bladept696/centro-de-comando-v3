@@ -63,9 +63,9 @@ jobs:
           softwareupdate --install-rosetta --agree-to-license || true
           # every python call (pip and PyInstaller included) must run as x86_64, or pip picks arm64 wheels
           REAL="$(which python)"
-          printf '#!/bin/bash
-exec arch -x86_64 "%s" "$@"
-' "$REAL" > "$RUNNER_TEMP/py86"
+          echo '#!/bin/bash' > "$RUNNER_TEMP/py86"
+          echo "exec arch -x86_64 \"$REAL\" \"\$@\"" >> "$RUNNER_TEMP/py86"
+          cat "$RUNNER_TEMP/py86"
           chmod +x "$RUNNER_TEMP/py86"
           "$RUNNER_TEMP/py86" -c "import platform; print('python', platform.machine())"
           PYTHON="$RUNNER_TEMP/py86" arch -x86_64 /bin/bash build_unix.sh
