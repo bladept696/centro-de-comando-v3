@@ -18,6 +18,14 @@ Object.assign(I18N_DICT, {
   hco_only_hc: { pt: `— só com HC OS`, en: `— only with HC OS` }, hco_unsup: { pt: `— ainda não suportada`, en: `— not supported yet` },
   hco_only_nqa: { pt: `Só NerdQAxe++`, en: `NerdQAxe++ only` },
   hco_install: { pt: `Instalar HC OS`, en: `Install HC OS` },
+  hco_inst_s: { pt: `Instalar · ecrã normal 1,9"`, en: `Install · standard 1.9" screen` },
+  hco_inst_b: { pt: `Instalar · ecrã grande 3,5"`, en: `Install · big 3.5" screen` },
+  hco_nobig: { pt: `Esta versão ainda não tem firmware para o ecrã de 3,5"`, en: `This version has no firmware for the 3.5" screen yet` },
+  hco_i_scr: { pt: `Ecrã`, en: `Screen` },
+  hco_scr_s: { pt: `normal 1,9" (320×170)`, en: `standard 1.9" (320×170)` },
+  hco_scr_b: { pt: `grande 3,5" (480×320)`, en: `big 3.5" (480×320)` },
+  hco_big_warn: { pt: `Só para a NerdQAxe++ com o ecrã grande de 3,5 polegadas (480×320, vendida pela YYSLUPING), que tem memória de 32 MB. Numa máquina com o ecrã normal de 1,9" este firmware não arranca e a máquina só volta a funcionar com cabo USB. Confirma o ecrã antes de continuar.`, en: `Only for the NerdQAxe++ with the big 3.5 inch screen (480×320, sold by YYSLUPING), which has 32 MB of memory. On a machine with the standard 1.9" screen this firmware does not start and the machine only recovers over USB. Check the screen before you continue.` },
+  hco_swap_warn: { pt: `Esta máquina tem agora o HC OS para o ecrã {0}. Vais instalar a versão para outro ecrã: confirma que é mesmo o ecrã que a máquina tem.`, en: `This machine now runs HC OS for the {0} screen. You are installing the version for another screen: make sure it matches the machine.` },
   hco_upd: { pt: `Atualizar para {0}`, en: `Update to {0}` },
   hco_old: { pt: `Atualiza primeiro para o AxeOS oficial v1.1.1`, en: `Update to the official AxeOS v1.1.1 first` },
   hco_now: { pt: `Agora:`, en: `Now:` }, hco_log: { pt: `Ver registo`, en: `View log` }, hco_back: { pt: `Voltar à anterior`, en: `Previous version` },
@@ -81,6 +89,7 @@ Object.assign(I18N_DICT, {
   const rel = () => (S.scan && S.scan.release) || {};
   const jobOf = ip => S.jobs.find(j => j.ip === ip);
   // AxeOS oficial anterior à 1.1.0: as definições mudaram na 1.1, tem de passar primeiro pelo oficial v1.1.1
+  const vOf = m => (m.hcos && m.hcos.display === '480x320') ? 'big' : 'small';
   const tooOld = m => { const x = /v?(\d+)\.(\d+)\.(\d+)/.exec(m.version || ''); if(!x || m.hcos) return false; const v = [+x[1], +x[2], +x[3]]; return v[0] < 1 || (v[0] === 1 && v[1] < 1); };
   const newer = (a, b) => { const p = s => String(s || '').split('.').map(n => parseInt(n, 10) || 0); const x = p(a), y = p(b); for(let i = 0; i < 3; i++){ if((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
 
@@ -97,10 +106,11 @@ Object.assign(I18N_DICT, {
                       : '<span class="hco-mut">' + t(m.model === S.scan.board ? 'hco_only_hc' : 'hco_unsup') + '</span>';
     let act;
     if(j && !['done', 'failed', 'rolled_back'].includes(j.state)) act = '<span class="hco-pill amb">' + esc(j.step) + (j.state === 'upload' ? ' · ' + j.progress + '%' : '') + '</span>';
-    else if(hc) act = (r.ok && newer(r.version, hc.hcos) ? '<button type="button" class="hm-btn y" data-hco="inst" data-ip="' + esc(m.ip) + '">' + fmt('hco_upd', esc(r.version)) + '</button> ' : '') +
+    else if(hc) act = (r.ok && newer(r.version, hc.hcos) && (vOf(m) === 'small' || r.fw_big) ? '<button type="button" class="hm-btn y" data-hco="inst" data-v="' + vOf(m) + '" data-ip="' + esc(m.ip) + '">' + fmt('hco_upd', esc(r.version)) + (vOf(m) === 'big' ? ' · 3,5"' : '') + '</button> ' : '') +
       '<button type="button" class="hm-btn" data-hco="sel" data-ip="' + esc(m.ip) + '">' + t('hco_log') + '</button> <button type="button" class="hm-btn red" data-hco="back" data-ip="' + esc(m.ip) + '">' + t('hco_back') + '</button>';
-    else if(m.model === S.scan.board && tooOld(m)) act = '<span class="hco-pill amb">' + t('hco_old') + '</span>';
-    else if(m.model === S.scan.board) act = '<button type="button" class="hm-btn y" data-hco="inst" data-ip="' + esc(m.ip) + '"' + (r.ok ? '' : ' disabled title="' + esc(t('hco_norel')) + '"') + '>' + t('hco_install') + '</button>';
+    else if(m.model === S.scan.board) act = (tooOld(m) ? '<span class="hco-pill amb">' + t('hco_old') + '</span> '
+        : '<button type="button" class="hm-btn y" data-hco="inst" data-v="small" data-ip="' + esc(m.ip) + '"' + (r.ok ? '' : ' disabled title="' + esc(t('hco_norel')) + '"') + '>' + t('hco_inst_s') + '</button> ') +
+      '<button type="button" class="hm-btn" data-hco="inst" data-v="big" data-ip="' + esc(m.ip) + '"' + (r.ok && r.fw_big ? '' : ' disabled title="' + esc(t(r.ok ? 'hco_nobig' : 'hco_norel')) + '"') + '>' + t('hco_inst_b') + '</button>';
     else act = '<button type="button" class="hm-btn" disabled>' + t('hco_only_nqa') + '</button>';
     const jmsg = j && ['done', 'failed', 'rolled_back'].includes(j.state) ? '<div class="hco-jmsg ' + (j.state === 'done' ? 'ok' : 'bad') + '">' + esc(j.step) + '</div>' : '';
     return '<div class="hco-row' + (S.sel === m.ip ? ' on' : '') + '"><span><b>' + esc(nameOf(m.ip)) + '</b><small>' + esc(m.model) + ' · ' + esc(m.ip) + '</small></span><span>' + fw + '</span><span>' + link + '</span><span>' + shares + '</span><span class="hco-act">' + act + '</span></div>' + jmsg;
@@ -149,11 +159,13 @@ Object.assign(I18N_DICT, {
     const order = ['checking', 'download', 'upload', 'rebooting', 'mining_check'], at = j ? order.indexOf(j.state) : -1, done = j && j.state === 'done';
     const step = (i, k, extra) => { const cls = done || at > i ? 'ok' : at === i ? 'now' : ''; return '<div class="hco-st ' + cls + '"><i>' + (cls === 'ok' ? '✓' : cls === 'now' ? '⏳' : '○') + '</i>' + t(k) + (extra ? '<em>' + extra + '</em>' : '') + '</div>'; };
     return '<div class="hco-modal-bg"><div class="hco-modal"><div class="hco-hd"><b>' + fmt('hco_i_t', esc(nameOf(ip))) + '</b></div><p class="hco-sub">' + t('hco_i_sub') + '</p>' +
-      '<div class="hco-kv"><div>' + t('hco_i_model') + '<b>' + esc(m.model) + ' ✓</b></div><div>' + t('hco_i_cur') + '<b>' + (m.hcos ? 'HC OS ' + esc(m.hcos.hcos) : 'AxeOS ' + esc(m.version)) + '</b></div><div>' + t('hco_i_new') + '<b>HC OS ' + esc(r.version || '?') + ' · ' + t('hco_i_signed') + '</b></div><div>' + t('hco_i_set') + '<b>' + t('hco_i_set_v') + '</b></div></div>' +
+      '<div class="hco-kv"><div>' + t('hco_i_model') + '<b>' + esc(m.model) + ' ✓</b></div><div>' + t('hco_i_cur') + '<b>' + (m.hcos ? 'HC OS ' + esc(m.hcos.hcos) : 'AxeOS ' + esc(m.version)) + '</b></div><div>' + t('hco_i_new') + '<b>HC OS ' + esc(r.version || '?') + ' · ' + t('hco_i_signed') + '</b></div><div>' + t('hco_i_set') + '<b>' + t('hco_i_set_v') + '</b></div><div>' + t('hco_i_scr') + '<b>' + t(S.variant === 'big' ? 'hco_scr_b' : 'hco_scr_s') + '</b></div></div>' +
       (j ? step(0, 'hco_s1') + step(1, 'hco_s2') + step(2, 'hco_s3', j.state === 'upload' ? j.progress + '%' : '') + step(3, 'hco_s4') + step(4, 'hco_s5', t('hco_s5_d')) +
            (j.state === 'mining_check' && j.detail ? '<div class="hco-info">' + t('hco_now') + ' ' + esc(j.detail) + '</div>' : '') +
            (['failed', 'rolled_back'].includes(j.state) ? '<div class="hco-warn">' + esc(j.step) + '</div>' : done ? '<div class="hco-info">✅ ' + esc(j.step) + '</div>' : '')
          : '<div class="hco-info">' + t('hco_i_back') + '</div><div class="hco-warn">⚠️ ' + t('hco_i_warn') + '</div>' +
+           (S.variant === 'big' ? '<div class="hco-warn">⚠️ ' + t('hco_big_warn') + '</div>' : '') +
+           (m.hcos && m.hcos.display && vOf(m) !== S.variant ? '<div class="hco-warn">⚠️ ' + fmt('hco_swap_warn', esc(m.hcos.display)) + '</div>' : '') +
            '<label class="hco-otp">' + t('hco_i_otp') + '<input id="hcoOtp" type="text" inputmode="numeric" maxlength="8" autocomplete="one-time-code"></label>' +
            '<label class="hco-chk"><input type="checkbox" id="hcoOk"> ' + t('hco_i_ok') + '</label>') +
       '<p class="hm-err" id="hcoErr" hidden></p>' +
@@ -219,18 +231,21 @@ Object.assign(I18N_DICT, {
     const k = b.dataset.hco, ip = b.dataset.ip;
     if(k === 'sel'){ S.sel = S.sel === ip ? null : ip; S.log = null; render(); loadLog(); }
     else if(k === 'flt'){ S.filter = b.dataset.f; render(); }
-    else if(k === 'inst'){ S.modal = ip; S.jobs = S.jobs.filter(j => j.ip !== ip || !['done', 'failed', 'rolled_back'].includes(j.state)); render(); }
+    else if(k === 'inst'){ S.modal = ip; S.variant = b.dataset.v === 'big' ? 'big' : 'small'; S.jobs = S.jobs.filter(j => j.ip !== ip || !['done', 'failed', 'rolled_back'].includes(j.state)); render(); }
     else if(k === 'mx'){ S.modal = null; render(); }
     else if(k === 'go'){
       b.disabled = true;
-      let r; try { r = await api('/api/hcos/install', { ips: [S.modal], otp: (document.getElementById('hcoOtp') || {}).value || '' }); } catch(err) { r = { ok: false, error: err.message }; }
+      let r; try { r = await api('/api/hcos/install', { ips: [S.modal], otp: (document.getElementById('hcoOtp') || {}).value || '', variant: S.variant || 'small', force: true }); } catch(err) { r = { ok: false, error: err.message }; }
       if(!r.ok){ const p = document.getElementById('hcoErr'); if(p){ p.textContent = r.error || '?'; p.hidden = false; } b.disabled = false; return; }
       startPoll();
     }
     else if(k === 'all'){
-      const r = rel(), list = ((S.scan && S.scan.machines) || []).filter(m => m.hcos && newer(r.version, m.hcos.hcos)).map(m => m.ip);
-      if(!list.length) return;
-      b.disabled = true; try { await api('/api/hcos/install', { ips: list }); } catch(err) { S.err = err.message; } startPoll();
+      const r = rel(), old = ((S.scan && S.scan.machines) || []).filter(m => m.hcos && newer(r.version, m.hcos.hcos) && (vOf(m) === 'small' || r.fw_big));
+      if(!old.length) return;
+      b.disabled = true;
+      // cada máquina recebe o firmware do ecrã que já tem
+      for(const v of ['small', 'big']){ const list = old.filter(m => vOf(m) === v).map(m => m.ip); if(list.length) try { await api('/api/hcos/install', { ips: list, variant: v }); } catch(err) { S.err = err.message; } }
+      startPoll();
     }
     else if(k === 'back'){
       if(!confirm(fmt('hco_back_q', nameOf(ip)))) return;

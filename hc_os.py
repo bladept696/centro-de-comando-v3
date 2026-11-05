@@ -26,6 +26,9 @@ REPO = "bladept696/hash-commander-os"
 BOARD = "NerdQAxe++"                 # o único modelo para que há firmware
 MIN_BASE = (1, 1, 0)                 # firmware oficial mais antigo de onde se pode passar direto (as definições mudaram na 1.1)
 ASSET_PREFIX = "hcos-NerdQAxe++-"
+# ecrã de 3,5" (480x320, NerdQAxe++ da YYSLUPING com flash de 32 MB): nome diferente de propósito, para que as versões
+# antigas da app (que só conhecem "hcos-NerdQAxe++-") nunca o instalem numa máquina com o ecrã normal
+BIG_PREFIX = "hcosbig-NerdQAxe++-"
 WWW_PREFIX = "hcos-www-"           # página da máquina (AxeOS) da mesma versão: vai antes do firmware, como no oficial
 RELEASE_CACHE_S = 600
 LIVE_IDLE_S = 60                     # sem pedidos da aba durante 1 min: a ligação ao vivo fecha (a máquina só aceita 3)
@@ -129,10 +132,10 @@ class HcOs:
                 continue
             assets = {a["name"]: a for a in r.get("assets", [])}
             pick = lambda pre: next((a for n, a in assets.items() if n.startswith(pre) and n.endswith(".bin") and n + ".sig" in assets), None)
-            fw, www = pick(ASSET_PREFIX), pick(WWW_PREFIX)
+            fw, www, big = pick(ASSET_PREFIX), pick(WWW_PREFIX), pick(BIG_PREFIX)
             if fw and www:
                 f = lambda a: {"name": a["name"], "size": a["size"], "url": a["browser_download_url"], "sig_url": assets[a["name"] + ".sig"]["browser_download_url"]}
-                self.release = {"ok": True, "tag": r["tag_name"], "version": r["tag_name"][len("hcos-v"):], "fw": f(fw), "www": f(www),
+                self.release = {"ok": True, "tag": r["tag_name"], "version": r["tag_name"][len("hcos-v"):], "fw": f(fw), "www": f(www), "fw_big": f(big) if big else None,
                                 "published": r.get("published_at")}
                 self.release_at = time.time()
                 return self.release
@@ -158,12 +161,15 @@ class HcOs:
             raise RuntimeError(f"{a['name']} não tem uma assinatura válida: nada foi instalado")
         return data
 
-    def _firmware(self):
-        """(versão, página da máquina, firmware), já verificados."""
+    def _firmware(self, variant="small"):
+        """(versão, página da máquina, firmware), já verificados. variant: "small" (ecrã 1,9") ou "big" (ecrã 3,5")."""
         rel = self.latest()
         if not rel.get("ok"):
             raise RuntimeError(rel.get("error"))
-        return rel, self._download(rel["www"]), self._download(rel["fw"])
+        fw = rel.get("fw_big") if variant == "big" else rel["fw"]
+        if not fw:
+            raise RuntimeError(f"a versão {rel['version']} não tem firmware para o ecrã de 3,5\"")
+        return rel, self._download(rel["www"]), self._download(fw)
 
     def _upload(self, ip, path, data, otp, p0, p1):
         """Envia um ficheiro para a máquina; a barra vai de p0 a p1 %."""
@@ -246,15 +252,17 @@ class HcOs:
         return _get_json(f"http://{ip}/api/hc/shares?since={int(since)}&limit={int(limit)}", timeout=6)
 
     # ------------------------------------------------------------ instalar / voltar atrás
-    def install(self, ips, otp=""):
-        """Põe as máquinas na fila; são instaladas uma de cada vez pela ordem dada."""
+    def install(self, ips, otp="", variant="small", force=False):
+        """Põe as máquinas na fila; são instaladas uma de cada vez pela ordem dada.
+        variant "big" = firmware do ecrã de 3,5" (480x320); force = a pessoa confirmou trocar o tipo de ecrã."""
         added = []
         with self.lock:
             for ip in ips:
                 j = self.jobs.get(ip)
                 if j and j["state"] not in ("done", "failed", "rolled_back"):
                     continue
-                self.jobs[ip] = {"ip": ip, "state": "queued", "step": "na fila", "progress": 0, "started": time.time(), "otp": otp}
+                self.jobs[ip] = {"ip": ip, "state": "queued", "step": "na fila", "progress": 0, "started": time.time(), "otp": otp,
+                                 "variant": "big" if variant == "big" else "small", "force": bool(force)}
                 self.queue.append(ip)
                 added.append(ip)
             if not self._runner or not self._runner.is_alive():
@@ -300,7 +308,12 @@ class HcOs:
             raise RuntimeError("a máquina não respondeu")
         if p["model"] != BOARD:
             raise RuntimeError(f"só há HC OS para a {BOARD} (esta é {p['model'] or 'desconhecida'})")
-        if too_old(p):
+        variant = job.get("variant") or "small"
+        now = (p.get("hcos") or {}).get("display")   # o HC OS diz que ecrã tem (desde a 0.5.0)
+        want = "480x320" if variant == "big" else "320x170"
+        if now and now != want and not job.get("force"):
+            raise RuntimeError(f"esta máquina tem o HC OS para o ecrã {now}: confirma na janela de instalação para trocar de ecrã")
+        if variant == "small" and too_old(p):
             raise RuntimeError(f"a máquina tem o AxeOS {p['version']}, anterior à v1.1.0: atualiza primeiro para o firmware "
                                "oficial v1.1.1 (AxeOS › Update › Install from GitHub) e confirma que mina; depois instala o HC OS")
         try:
@@ -308,7 +321,7 @@ class HcOs:
         except Exception:
             pass
         self._set(ip, state="download", step="a descarregar e verificar o firmware", model=p["model"], before=p["version"])
-        rel, www, fw = self._firmware()
+        rel, www, fw = self._firmware(variant)
         self._set(ip, state="upload", step="a enviar a página da máquina (AxeOS)", version=rel["version"], size=len(www) + len(fw))
         self._upload(ip, "/api/system/OTAWWW", www, otp, 0, 45)
         self._set(ip, step="a enviar o firmware")

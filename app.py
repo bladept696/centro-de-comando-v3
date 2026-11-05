@@ -124,7 +124,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.5.4"
+APP_VERSION = "4.5.5"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -6819,7 +6819,9 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             if not ips:
                 self._send_json({"ok": False, "error": "nenhuma máquina válida"})
                 return
-            self._send_json({"ok": True, "queued": hcos().install(ips, str(body.get("otp") or "").strip()[:12])})
+            self._send_json({"ok": True, "queued": hcos().install(ips, str(body.get("otp") or "").strip()[:12],
+                                                                  variant="big" if body.get("variant") == "big" else "small",
+                                                                  force=bool(body.get("force")))})
             return
 
         if path == '/api/hcos/rollback':
