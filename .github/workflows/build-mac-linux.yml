@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14          # Apple Silicon (arm64)
+          - os: macos-15          # Apple Silicon (arm64); o macos-14 deixou de arrancar
           - os: macos-15-intel    # Intel (x64); o macos-13 foi desativado pelo GitHub
           - os: ubuntu-22.04      # glibc mais antiga = o AppImage abre em mais distribuições
     runs-on: ${{ matrix.os }}
