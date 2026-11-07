@@ -41,3 +41,8 @@ nwc.json
 market_sessions.json
 hcos_backups.json
 hcos_fw/
+
+# Carteira da app: configuração local e as 12 palavras de cada carteira (nunca no GitHub)
+breez.json
+wallet.json
+wallet-data/

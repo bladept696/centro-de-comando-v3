@@ -124,7 +124,7 @@ SCAN_TIMEOUT = 0.6
 SCAN_MAX_WORKERS = 60
 
 # --- Versão da app / auto-update -------------------------------------------
-APP_VERSION = "4.5.5"
+APP_VERSION = "4.6.0"
 GITHUB_REPO = "bladept696/centro-de-comando-v3"
 # Chave PÚBLICA (Ed25519, em hexadecimal) com que o autor assina cada instalador publicado (ver sign_release.py).
 # A app só instala uma atualização se o ficheiro descarregado tiver uma assinatura (.sig) válida para esta chave.
@@ -2524,6 +2524,8 @@ def _market_offer_event(m, machines, status="active"):
     oc = m.get("onchain") or {}
     if m.get("lud16"):
         tags += [["lud16", m["lud16"]], ["pay", "ln"]]
+        if m.get("full") and wallet_ready():
+            tags.append(["pay", "full"])      # aceita o pagamento total à cabeça (a carteira da app devolve o que não entregar)
     if oc.get("enabled"):
         # só as regras: a xpub nunca sai deste PC (cada aluguer recebe um endereço novo por mensagem cifrada)
         tags += [["pay", "onchain"], ["onchain", str(int(oc["min_min"])), str(int(oc["min_sats"])), "1conf"]]   # as máquinas só começam com 1 confirmação
@@ -2598,6 +2600,7 @@ def market_set_offer(body):
         offer = m.get("offer") or {}
         offer.update({"d": offer.get("d") or ("hc-" + secrets_hex(6)), "machines": sel, "rate": rate, "max_min": max_min,
                       "lud16": lud16, "onchain": onchain, "location": str(body.get("location") or "").strip()[:40],
+                      "full": bool(body.get("full")) and bool(lud16) and wallet_ready(),
                       "note": str(body.get("note") or "").strip()[:400], "active": True})
         offer.setdefault("first_ts", int(time.time()))
     ok, res, ev = market_publish(offer)
@@ -2664,7 +2667,7 @@ def market_offers(force=False):
             ths, rate = float(_tag(ev, "hashrate", default="0")), float(_tag(ev, "rate", default="0"))
             if ths <= 0 or rate <= 0:
                 continue
-            pays = [t[1] for t in ev["tags"] if t and t[0] == "pay" and len(t) > 1 and t[1] in ("ln", "onchain")] or ["ln"]
+            pays = [t[1] for t in ev["tags"] if t and t[0] == "pay" and len(t) > 1 and t[1] in ("ln", "onchain", "full")] or ["ln"]
             oct_ = next((t for t in ev["tags"] if t and t[0] == "onchain" and len(t) > 3), None)
             onchain = {"min_min": int(oct_[1]), "min_sats": int(oct_[2]), "zeroconf": oct_[3] == "0conf"} if oct_ and "onchain" in pays else None
             out.append({"pubkey": ev["pubkey"], "npub": hc_nostr.npub(ev["pubkey"]), "d": _tag(ev, "d"), "ths": ths, "rate": rate,
@@ -2738,6 +2741,7 @@ def market_state():
 
 # --- Mercado de hashrate — fase 2: o aluguer (motor em hc_market.py) ---
 import hc_market
+import hc_wallet
 import hc_onchain
 import hc_os
 
@@ -2763,12 +2767,46 @@ def _json_save(name, d):
     os.replace(path + '.tmp', path)
 
 
-def market_nwc():
-    uri = _json_file(NWC_FILENAME).get("secret_uri")   # o nome "secret_" faz o verificar_release.py procurá-lo
+# --- Carteira da app (sem custódia): as 12 palavras ficam em wallet.json neste computador ---
+_wallet = None
+
+
+def breez_api_key():
+    """Chave de serviço da carteira (vem com a app)."""
+    k = _json_file('breez.json').get("api_key") or os.environ.get("HC_BREEZ_KEY") or ""
+    if not k:
+        try:
+            with open(os.path.join(resource_dir(), 'breez.json'), encoding='utf-8') as f:
+                k = json.load(f).get("api_key") or ""
+        except Exception:
+            pass
+    return k
+
+
+def wallet():
+    global _wallet
+    if _wallet is None:
+        _wallet = hc_wallet.Wallet({"data_dir": writable_dir, "api_key": breez_api_key})
+    return _wallet
+
+
+def wallet_ready():
     try:
-        return hc_market.NWC(uri) if uri else None
-    except ValueError:
-        return None
+        st = wallet()._load()
+        return wallet().available() and bool(st.get("mnemonic")) and bool(st.get("backed_up"))
+    except Exception:
+        return False
+
+
+def market_nwc():
+    """Carteira que paga os alugueres: uma ligação NWC, se houver; senão a carteira da app (com as 12 palavras guardadas)."""
+    uri = _json_file(NWC_FILENAME).get("secret_uri")   # o nome "secret_" faz o verificar_release.py procurá-lo
+    if uri:
+        try:
+            return hc_market.NWC(uri)
+        except ValueError:
+            return None
+    return wallet() if wallet_ready() else None
 
 
 def market_nwc_set(uri):
@@ -2896,6 +2934,7 @@ def market_engine():
             "notify": market_notify,
             "pool_ths": lambda h, a, w: hc_market.pool_worker_ths(h, a, w, base_url=base),
             "onchain_reserve": market_onchain_reserve, "onchain_release": market_onchain_release,
+            "refund": lambda addr, sats, comment: wallet().pay_address(addr, sats, comment),
         })
     return _market_engine
 
@@ -2913,7 +2952,8 @@ def market_rent(body):
     try:
         sid = market_engine().rent(offer, int(body.get("minutes") or 0), host, port, str(body.get("address") or "").strip(),
                                    user=str(body.get("pool_user") or "").strip() or None, password=str(body.get("pool_pass") or "x").strip(),
-                                   pay="onchain" if body.get("pay") == "onchain" else "ln")
+                                   pay=body.get("pay") if body.get("pay") in ("onchain", "full") else "ln",
+                                   refund_to=str(body.get("refund_to") or (wallet()._load().get("address") if wallet_ready() else "") or ""))
     except (ValueError, TypeError) as e:
         return {"ok": False, "error": str(e)}
     return {"ok": True, "sid": sid}
@@ -2955,7 +2995,9 @@ def market_sessions():
     for s in d["sessions"]:
         s["peer_npub"] = hc_nostr.npub(s["peer"])
     nwc = _json_file(NWC_FILENAME)
-    d.update(nwc={"connected": bool(nwc.get("secret_uri")), "alias": nwc.get("alias", "")}, events=list(_market_events), fee_rate=market_fee_rate(),
+    builtin = not nwc.get("secret_uri") and wallet_ready()
+    d.update(nwc={"connected": bool(nwc.get("secret_uri")) or builtin, "alias": nwc.get("alias", "") if not builtin else wallet().alias,
+                  "builtin": builtin}, events=list(_market_events), fee_rate=market_fee_rate(),
              pools=sorted(set(hc_market.SUPPORTED_POOLS) - {"eusolo.ckpool.org", "ausolo.ckpool.org"}))
     return d
 
@@ -5929,6 +5971,17 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json(market_sessions())
             return
 
+        if path == '/api/wallet/status':
+            self._send_json(dict(wallet().status(), local=self._is_local_request()))
+            return
+
+        if path == '/api/wallet/payments':
+            try:
+                self._send_json({"ok": True, "payments": wallet().payments(int(query_params.get('limit', ['50'])[0]))})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)[:200]})
+            return
+
         if path == '/api/hcos/scan':
             self._send_json(hcos_scan([x for x in (query_params.get('ips', [''])[0] or '').split(',') if x]))
             return
@@ -6795,6 +6848,40 @@ class NerdQaxeProxyHandler(http.server.SimpleHTTPRequestHandler):
 
         if path == '/api/market/offer/stop':
             self._send_json(market_stop_offer())
+            return
+
+        if path.startswith('/api/wallet/'):
+            # tudo o que mexe no dinheiro ou mostra as palavras só se faz neste PC (nunca pelo acesso remoto)
+            if not self._is_local_request():
+                self._send_json({"ok": False, "error": "a carteira só se gere no próprio computador"}, 403)
+                return
+            w = wallet()
+            try:
+                if path == '/api/wallet/create':
+                    self._send_json({"ok": True, "words": w.create()})
+                elif path == '/api/wallet/confirm':
+                    w.confirm_backup(str(body.get("words") or ""))
+                    self._send_json({"ok": True})
+                elif path == '/api/wallet/restore':
+                    w.restore(str(body.get("words") or ""))
+                    self._send_json({"ok": True})
+                elif path == '/api/wallet/words':
+                    self._send_json({"ok": True, "words": w.show_words()})
+                elif path == '/api/wallet/receive':
+                    self._send_json(dict(w.receive(int(body.get("sats") or 0)), ok=True))
+                elif path == '/api/wallet/fee':
+                    self._send_json({"ok": True, "fee": w.estimate_address_fee(str(body.get("to") or ""), int(body.get("sats") or 0))})
+                elif path == '/api/wallet/send':
+                    sats = int(body.get("sats") or 0)
+                    if sats <= 0:
+                        raise ValueError("indica um valor em sats")
+                    self._send_json(dict(w.pay_address(str(body.get("to") or ""), sats, "Levantamento Hash Commander"), ok=True))
+                elif path == '/api/wallet/address':
+                    self._send_json({"ok": True, "address": w.register_address(str(body.get("username") or ""))})
+                else:
+                    self._send_json({"ok": False, "error": "pedido desconhecido"}, 404)
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)[:200]})
             return
 
         if path == '/api/market/nwc':

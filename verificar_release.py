@@ -25,7 +25,7 @@ RAIZ = os.path.dirname(os.path.abspath(__file__))
 os.chdir(RAIZ)
 
 # ficheiros de dados da app: nunca podem ir para o repositório nem para o instalador
-PROIBIDOS = re.compile(r'(^|/)(config\.json|power_profiles\.json|block_cert_key\.json|screen_key\.json|nostr_key\.json|market\.json|nwc\.json|market_sessions\.json|hcos_backups\.json|auth_grace\.json|account_activity\.json|'
+PROIBIDOS = re.compile(r'(^|/)(config\.json|power_profiles\.json|block_cert_key\.json|screen_key\.json|nostr_key\.json|market\.json|nwc\.json|market_sessions\.json|hcos_backups\.json|breez\.json|wallet\.json|auth_grace\.json|account_activity\.json|'
                        r'user_presence\.json|diff_(buckets|history|records)\.json|\.install_id|[^/]*\.bak|update-signing-key\.pem)$|(^|/)updates/', re.I)
 # nomes de campos JSON que guardam segredos
 CAMPOS = re.compile(r'(key|secret|token|password|passwd|pass|webhook|private|priv|seed|mnemonic|xpub)', re.I)
@@ -36,7 +36,7 @@ PADROES = [
     # só conta com o conteúdo da chave a seguir ao cabeçalho: o firmware do ESP32 traz os cabeçalhos soltos (texto do mbedTLS)
     ('chave privada PEM', re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----(?:\r?\n[\w-]+:[^\n]*)*\s+[A-Za-z0-9+/=]{40}')),
 ]
-FONTES = ['config.json', 'power_profiles.json', 'block_cert_key.json', 'screen_key.json', 'nostr_key.json', 'nwc.json', 'market.json', 'auth_grace.json'] + glob.glob('*.bak') + glob.glob('*.json.bak')
+FONTES = ['config.json', 'power_profiles.json', 'block_cert_key.json', 'screen_key.json', 'nostr_key.json', 'nwc.json', 'market.json', 'auth_grace.json', 'breez.json', 'wallet.json'] + glob.glob('*.bak') + glob.glob('*.json.bak')
 CHAVE_ASSINATURA = os.environ.get('HC_SIGN_KEY') or os.path.join(os.path.expanduser('~'), '.centro-de-comando', 'update-signing-key.pem')
 
 
@@ -147,6 +147,8 @@ def main():
         fontes = re.findall(r'Source:\s*"([^"]+)"', texto) + re.findall(r'--add-data\s+"?([^";]+)', texto) + re.findall(r"\(\s*'([^']+)'\s*,\s*'[^']*'\s*\)", texto)
         for s in fontes:
             alvo = s.replace('\\', '/').rstrip('*').rstrip('/')
+            if alvo.endswith('breez.json'):
+                continue   # exceção autorizada: a chave da carteira vai dentro da app (nunca no git, ver os passos 1 a 3)
             if PROIBIDOS.search(alvo) or PROIBIDOS.search(alvo + '/'):
                 problemas.append(f'{f} mete no instalador/.exe um ficheiro de dados: {s}')
             elif os.path.isdir(alvo):

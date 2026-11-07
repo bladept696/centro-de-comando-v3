@@ -36,6 +36,11 @@ jobs:
       - name: Dependências do sistema (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libgirepository1.0-dev gir1.2-ayatanaappindicator3-0.1 libfuse2 file
+      - name: Configuração da carteira
+        env:
+          HC_BREEZ_KEY: ${{ secrets.HC_BREEZ_KEY }}
+        run: |
+          if [ -n "$HC_BREEZ_KEY" ]; then python -c "import json,os; json.dump({'api_key': os.environ['HC_BREEZ_KEY']}, open('breez.json','w'))"; fi
       - name: Build
         env:
           PYTHON: python

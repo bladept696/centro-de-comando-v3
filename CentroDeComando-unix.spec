@@ -1,17 +1,18 @@
+import os
 # -*- mode: python ; coding: utf-8 -*-
 # Build para Mac (.app) e Linux (pasta que o build_unix.sh transforma em AppImage).
 # No Windows continua a ser usado o CentroDeComando.spec (um .exe).
 import sys
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
 
 IS_MAC = sys.platform == 'darwin'
 datas = [('nerdqaxe-dashboard.html', '.'), ('dashboard', 'dashboard'), ('overlay-obs.html', '.'), ('bitminer33-banner.png', '.'),
          ('baroneclub-banner.png', '.'), ('lightning-qrcode.png', '.'), ('app_icon.ico', '.'), ('screen_fw', 'screen_fw'),
-         ('extensao-telegram', 'extensao-telegram')] + collect_data_files('esptool')
+         ('extensao-telegram', 'extensao-telegram'), ('bip39_english.txt', '.')] + ([('breez.json', '.')] if os.path.isfile('breez.json') else []) + collect_data_files('esptool') + collect_data_files('breez_sdk_spark')
 hidden = ['paho.mqtt.client', 'cryptography.hazmat.primitives.asymmetric.ed25519', 'serial.tools.list_ports'] + \
-    collect_submodules('esptool') + collect_submodules('pystray')
+    collect_submodules('esptool') + collect_submodules('pystray') + collect_submodules('breez_sdk_spark')
 
-a = Analysis(['app.py'], pathex=[], binaries=[], datas=datas, hiddenimports=hidden, hookspath=[], hooksconfig={},
+a = Analysis(['app.py'], pathex=[], binaries=collect_dynamic_libs('breez_sdk_spark'), datas=datas, hiddenimports=hidden, hookspath=[], hooksconfig={},
              runtime_hooks=[], excludes=['winotify'], noarchive=False, optimize=0)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='CentroDeComando', debug=False, bootloader_ignore_signals=False,

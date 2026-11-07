@@ -225,6 +225,7 @@ const TAB_LABEL_KEYS = {
   mercado: 'mercado_t',
   loja: 'loja_t',
   hashmarket: 'hm_t',
+  wallet: 'cw_t',
   hcos: 'hco_t',
   donate: 'apoiar_doar',
   supporters: 'apoiantes',

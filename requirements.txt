@@ -25,3 +25,6 @@ websocket-client>=1.6
 # Ecrã físico (LilyGO): gravar o programa e falar com a placa pela USB
 esptool>=4.7
 pyserial>=3.5
+
+# Carteira da app (sem custódia)
+breez-sdk-spark>=0.28

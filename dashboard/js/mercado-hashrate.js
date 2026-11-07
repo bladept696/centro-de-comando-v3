@@ -56,6 +56,11 @@ Object.assign(I18N_DICT, {
   hm_w_go: { pt: `Ligar carteira`, en: `Connect wallet`, es: `Conectar cartera`, fr: `Connecter` },
   hm_w_help: { pt: `Na tua carteira (Alby Hub, LNbits, Coinos, Primal, Zeus…) cria uma ligação "Nostr Wallet Connect" com um limite de gasto (ex.: 2000 sats por dia) e cola aqui o código. O código fica só neste PC.`, en: `In your wallet (Alby Hub, LNbits, Coinos, Primal, Zeus…) create a "Nostr Wallet Connect" link with a spending limit (e.g. 2000 sats a day) and paste the code here. The code stays on this PC.`, es: `En tu cartera (Alby Hub, LNbits, Coinos, Primal, Zeus…) crea una conexión "Nostr Wallet Connect" con un límite de gasto (ej.: 2000 sats al día) y pega aquí el código. El código se queda en este PC.`, fr: `Dans votre portefeuille (Alby Hub, LNbits, Coinos, Primal, Zeus…) créez une connexion « Nostr Wallet Connect » avec une limite de dépense (ex. : 2000 sats par jour) et collez le code ici. Il reste sur ce PC.` },
   hm_w_bal: { pt: ` · saldo {0} sats`, en: ` · balance {0} sats`, es: ` · saldo {0} sats`, fr: ` · solde {0} sats` },
+  hm_r_full: { pt: `Tudo de uma vez`, en: `All at once`, es: `Todo de una vez`, fr: `Tout d'un coup` },
+  hm_r_full_d: { pt: `Pagas o aluguer todo no início. Se o vendedor não entregar, devolve sozinho o tempo que faltar para a tua Carteira.`, en: `Pay the whole rental upfront. If the seller doesn't deliver, the unused time is refunded to your Wallet automatically.`, es: `Pagas todo el alquiler al inicio. Si el vendedor no entrega, te devuelve solo el tiempo que falte a tu Cartera.`, fr: `Vous payez toute la location au début. Si le vendeur ne livre pas, le temps restant est remboursé automatiquement sur votre Portefeuille.` },
+  hm_r_min_d: { pt: `Ao minuto`, en: `By the minute`, es: `Por minuto`, fr: `À la minute` },
+  hm_r_full_cost: { pt: `Pagas agora {0} sats + {1} de taxa da app = {2} sats{3}. Se o vendedor falhar, o tempo que faltar volta para a tua Carteira.`, en: `You pay {0} sats now + {1} app fee = {2} sats{3}. If the seller fails, the unused time returns to your Wallet.`, es: `Pagas ahora {0} sats + {1} de comisión = {2} sats{3}. Si el vendedor falla, el tiempo que falte vuelve a tu Cartera.`, fr: `Vous payez maintenant {0} sats + {1} de frais = {2} sats{3}. Si le vendeur échoue, le temps restant revient sur votre Portefeuille.` },
+  hm_p_full: { pt: `Aceitar também o pagamento total à cabeça (a tua Carteira devolve sozinha o tempo que não entregares). Recebe no endereço da tua Carteira.`, en: `Also accept full upfront payment (your Wallet automatically refunds any time you don't deliver). Receive at your Wallet address.`, es: `Aceptar también el pago total por adelantado (tu Cartera devuelve sola el tiempo que no entregues). Recibe en la dirección de tu Cartera.`, fr: `Accepter aussi le paiement total d'avance (votre Portefeuille rembourse automatiquement le temps non livré). Recevez sur l'adresse de votre Portefeuille.` },
   hm_r_t: { pt: `Alugar {0} TH/s`, en: `Rent {0} TH/s`, es: `Alquilar {0} TH/s`, fr: `Louer {0} TH/s` },
   hm_r_min: { pt: `Duração (minutos)`, en: `Duration (minutes)`, es: `Duración (minutos)`, fr: `Durée (minutes)` },
   hm_r_pool: { pt: `A tua pool`, en: `Your pool`, es: `Tu pool`, fr: `Votre pool` },
@@ -189,9 +194,11 @@ Object.assign(I18N_DICT, {
   }
   function rentHtml(o){
     const r = S.rent, pools = (S.ses && S.ses.pools) || ['public-pool.io', 'solo.ckpool.org'];
-    const pays = o.pay || ['ln'], oc = r.pay === 'onchain';
-    const seg = pays.length > 1 ? '<div class="hm-seg"><button type="button" data-hm="pay-ln" class="' + (oc ? '' : 'on') + '"><b>⚡ Lightning</b>' + t('hm_r_ln_d') + '</button>' +
-      '<button type="button" data-hm="pay-oc" class="oc' + (oc ? ' on' : '') + '"><b>₿ On-chain</b>' + t('hm_r_oc_d') + '</button></div>' : '';
+    const pays = o.pay || ['ln'], oc = r.pay === 'onchain', full = r.pay === 'full';
+    const seg = pays.length > 1 ? '<div class="hm-seg">' +
+      (pays.includes('full') ? '<button type="button" data-hm="pay-full" class="' + (full ? 'on' : '') + '"><b>⚡ ' + t('hm_r_full') + '</b>' + t('hm_r_full_d') + '</button>' : '') +
+      (pays.includes('ln') ? '<button type="button" data-hm="pay-ln" class="' + (!oc && !full ? 'on' : '') + '"><b>⚡ ' + t('hm_r_min_d') + '</b>' + t('hm_r_ln_d') + '</button>' : '') +
+      (pays.includes('onchain') ? '<button type="button" data-hm="pay-oc" class="oc' + (oc ? ' on' : '') + '"><b>₿ On-chain</b>' + t('hm_r_oc_d') + '</button>' : '') + '</div>' : '';
     const durIn = oc
       ? '<label>' + t('hm_r_hrs') + '<input id="hmRHrs" type="number" min="' + Math.ceil(o.onchain.min_min / 60) + '" max="' + Math.floor(o.max_min / 60) + '" step="1" value="' + esc(r.hours) + '"></label>'
       : '<label>' + t('hm_r_min') + '<input id="hmRMin" type="number" min="1" max="' + o.max_min + '" step="1" value="' + esc(r.minutes) + '"></label>';
@@ -226,6 +233,12 @@ Object.assign(I18N_DICT, {
       return;
     }
     const el = document.getElementById('hmRCost'); if(!el) return;
+    if(S.rent.pay === 'full'){
+      // mesmas contas do hc_market.full_sats / fee_total
+      const m = Math.max(1, Number((document.getElementById('hmRMin') || {}).value) || 1), tot = Math.max(1, Math.ceil(o.ths * o.rate * m)), fee = Math.max(1, Math.ceil(tot * 4 / 100)), e2 = eurPerSat();
+      el.textContent = fmt('hm_r_full_cost', num(tot, 0), num(fee, 0), num(tot + fee, 0), e2 ? ' ≈ ' + ((tot + fee) * e2).toLocaleString(loc(), { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }) : '');
+      return;
+    }
     const mins = Math.max(1, Number((document.getElementById('hmRMin') || {}).value) || 1), [p, s] = billing(o.ths, o.rate), total = s * Math.ceil(mins / p), e = eurPerSat();
     el.textContent = fmt('hm_r_cost', s, p, total, e ? ' ≈ ' + (total * e).toLocaleString(loc(), { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }) : '');
   }
@@ -315,6 +328,7 @@ Object.assign(I18N_DICT, {
     return '<div class="hm-sec"><b>' + t('hm_s_pay') + '</b>' +
       '<label class="hm-pm' + (lnOn ? ' on' : '') + '"><input type="checkbox" id="hmPayLn"' + (lnOn ? ' checked' : '') + '><span><b>⚡ Lightning</b><small>' + t('hm_p_ln_d') + '</small></span></label>' +
       '<div id="hmLnBox" class="hm-pm-box"' + (lnOn ? '' : ' hidden') + '><div class="hm-in"><input id="hmLn" type="text" maxlength="120" placeholder="' + esc(t('hm_ln_ph')) + '" value="' + esc(o.lud16 || '') + '" autocomplete="off" spellcheck="false"><button type="button" class="hm-btn" data-hm="check">' + t('hm_check') + '</button></div><small id="hmLnMsg"></small></div>' +
+      '<label class="hm-pm-full"><input type="checkbox" id="hmFull"' + (o.full ? ' checked' : '') + '> <span>' + t('hm_p_full') + '</span></label>' +
       '<label class="hm-pm' + (ocOn ? ' on' : '') + '"><input type="checkbox" id="hmPayOc"' + (ocOn ? ' checked' : '') + '><span><b>' + t('hm_p_oc') + ' <em class="hm-tag oc">NOVO</em></b><small>' + t('hm_p_oc_d') + '</small></span></label>' +
       '<div id="hmOcBox" class="hm-pm-box"' + (ocOn ? '' : ' hidden') + '>' +
         '<div class="hm-in"><input id="hmXpub" type="password" placeholder="' + esc(t('hm_oc_xpub_ph')) + '" autocomplete="off" spellcheck="false"><button type="button" class="hm-btn" data-hm="xpub-check">' + t('hm_check') + '</button></div>' +
@@ -384,7 +398,7 @@ Object.assign(I18N_DICT, {
     } else if(k === 'publish'){
       const g = id => document.getElementById(id);
       const body = { machines: [...root().querySelectorAll('.hm-mach input:checked')].map(i => i.dataset.ip), rate: Number(g('hmRate').value),
-        max_min: Number(g('hmMax').value), ln: g('hmPayLn').checked, lud16: g('hmLn').value.trim(),
+        max_min: Number(g('hmMax').value), ln: g('hmPayLn').checked, lud16: g('hmLn').value.trim(), full: !!(g('hmFull') && g('hmFull').checked),
         onchain: { enabled: g('hmPayOc').checked, xpub: g('hmXpub').value.trim(), script: g('hmScript').value,
           min_min: Math.round(Number(g('hmOcMinH').value) * 60), min_sats: Number(g('hmOcMinS').value), zeroconf: false },
         location: g('hmLoc').value.trim(), note: g('hmNote').value.trim() };
@@ -405,11 +419,11 @@ Object.assign(I18N_DICT, {
       await api('/api/market/nwc/forget', {}); S.bal = null; S.ses = null; await pollSessions(); render();
     } else if(k === 'rent'){
       const [pubkey, d] = b.dataset.k.split('|'), o = (S.offers || []).find(x => x.pubkey === pubkey && x.d === d) || {};
-      S.rent = { pubkey, d, minutes: 30, pool: 'public-pool.io', address: myAddress(), pay: (o.pay || ['ln']).includes('ln') ? 'ln' : 'onchain',
+      S.rent = { pubkey, d, minutes: 30, pool: 'public-pool.io', address: myAddress(), pay: (o.pay || ['ln']).includes('full') ? 'full' : (o.pay || ['ln']).includes('ln') ? 'ln' : 'onchain',
         hours: o.onchain ? Math.max(1, Math.ceil(o.onchain.min_min / 60)) : 24 };
       render();
     } else if(k === 'rent-x'){ S.rent = null; render(); }
-    else if(k === 'pay-ln' || k === 'pay-oc'){ S.rent.pay = k === 'pay-oc' ? 'onchain' : 'ln'; render(); }
+    else if(k === 'pay-ln' || k === 'pay-oc' || k === 'pay-full'){ S.rent.pay = k === 'pay-oc' ? 'onchain' : k === 'pay-full' ? 'full' : 'ln'; render(); }
     else if(k === 'oc-copy'){ try { await navigator.clipboard.writeText(b.dataset.a); b.textContent = t('hm_copied'); setTimeout(() => { b.textContent = t('hm_oc_copy'); }, 1500); } catch(err) {} }
     else if(k === 'xpub-check'){
       const m = document.getElementById('hmXpubMsg'), sb = document.getElementById('hmScriptBox'); m.textContent = '…';
